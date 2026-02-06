@@ -34,11 +34,18 @@
     box-sizing: border-box;
 }
 
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
     background: var(--bg-gradient);
     color: var(--text-primary);
     min-height: 100vh;
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
     overflow-x: hidden;
     position: relative;
     -webkit-font-smoothing: antialiased;
@@ -73,9 +80,13 @@ body {
     width: 100%;
     margin: 0 auto;
     padding: 20px;
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    min-height: 100dvh;
     gap: 30px;
     position: relative;
     z-index: 1;
@@ -1203,29 +1214,106 @@ footer {
 
 @media (max-width: 768px) {
     .container {
-        padding: 15px;
+        padding: 12px;
+        padding-left: max(12px, env(safe-area-inset-left));
+        padding-right: max(12px, env(safe-area-inset-right));
+        padding-bottom: max(12px, env(safe-area-inset-bottom));
+        gap: 20px;
+    }
+    
+    .app-header {
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 12px 0;
+    }
+    
+    .header-right {
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-end;
+    }
+    
+    .header-right .ios-button {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 10px 14px;
+    }
+    
+    .header-right .ios-button.secondary {
+        padding: 10px;
     }
     
     .app-title h1 {
         font-size: 1.8rem;
     }
     
+    .app-title p {
+        font-size: 0.8rem;
+    }
+    
     .chat-controls {
         flex-direction: column;
         align-items: stretch;
         gap: 10px;
+        padding: 12px 16px;
     }
     
     .control-group {
         justify-content: space-between;
     }
     
+    .chat-header {
+        padding: 14px 16px;
+        flex-wrap: nowrap;
+        gap: 10px;
+    }
+    
+    .chat-header-content {
+        min-width: 0;
+        flex: 1;
+    }
+    
+    .chat-header-text {
+        min-width: 0;
+    }
+    
+    .chat-header-text h2 {
+        font-size: 1.2rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .chat-header-text p {
+        font-size: 0.8rem;
+    }
+    
+    .voice-interface {
+        flex-shrink: 0;
+    }
+    
+    .ai-avatar {
+        flex-shrink: 0;
+    }
+    
+    .chat-messages {
+        padding: 16px;
+        max-height: min(500px, 50vh);
+        max-height: min(500px, 50dvh);
+    }
+    
     .message {
         max-width: 95%;
+        padding: 14px;
+    }
+    
+    .message-content {
+        font-size: 0.95rem;
     }
     
     .input-container {
         flex-direction: column;
+        padding: 12px 16px;
     }
     
     .input-actions {
@@ -1233,8 +1321,153 @@ footer {
         justify-content: center;
     }
     
+    .examples {
+        padding: 12px 16px;
+    }
+    
+    .examples h3 {
+        font-size: 1rem;
+    }
+    
     .modal-content {
         padding: 20px;
+        padding-top: max(20px, env(safe-area-inset-top));
         width: 95%;
+        max-height: 85vh;
+        max-height: 85dvh;
+    }
+    
+    .notification {
+        top: max(12px, env(safe-area-inset-top));
+        right: max(12px, env(safe-area-inset-right));
+        left: max(12px, env(safe-area-inset-left));
+        max-width: none;
+    }
+    
+    .presentation-nav {
+        bottom: max(16px, env(safe-area-inset-bottom));
+        right: max(16px, env(safe-area-inset-right));
+    }
+}
+
+/* Телефоны: узкие экраны */
+@media (max-width: 480px) {
+    .container {
+        padding: 10px;
+        padding-left: max(10px, env(safe-area-inset-left));
+        padding-right: max(10px, env(safe-area-inset-right));
+        padding-bottom: max(10px, env(safe-area-inset-bottom));
+        gap: 16px;
+    }
+    
+    .app-header {
+        padding: 10px 0;
+    }
+    
+    .logo-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+    }
+    
+    .app-title h1 {
+        font-size: 1.4rem;
+    }
+    
+    .app-title p {
+        display: none;
+    }
+    
+    #new-chat {
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+    
+    .sidebar-card {
+        padding: 16px;
+    }
+    
+    .sidebar-card h3 {
+        font-size: 1rem;
+        margin-bottom: 12px;
+    }
+    
+    .chat-header-text h2 {
+        font-size: 1.1rem;
+    }
+    
+    .chat-header-text p {
+        display: none;
+    }
+    
+    .ai-avatar {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+    }
+    
+    .chat-messages {
+        padding: 12px;
+        max-height: min(400px, 45dvh);
+    }
+    
+    .message {
+        padding: 12px;
+    }
+    
+    .message-content {
+        font-size: 0.9rem;
+    }
+    
+    #message-input {
+        font-size: 16px;
+        min-height: 48px;
+        padding: 12px 16px;
+    }
+    
+    .modal-content {
+        width: calc(100% - 20px);
+        max-width: calc(100vw - 20px);
+        margin-left: max(10px, env(safe-area-inset-left));
+        margin-right: max(10px, env(safe-area-inset-right));
+        padding: 16px;
+        padding-top: max(16px, env(safe-area-inset-top));
+    }
+    
+    .footer-content {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+    
+    .footer-links {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+    }
+}
+
+/* Очень узкие экраны (небольшие телефоны) */
+@media (max-width: 380px) {
+    .app-title h1 {
+        font-size: 1.25rem;
+    }
+    
+    .header-right .ios-button {
+        min-width: 40px;
+        min-height: 40px;
+        padding: 8px 12px;
+    }
+    
+    .chat-messages {
+        max-height: min(350px, 40dvh);
+    }
+    
+    .example-buttons {
+        flex-direction: column;
+    }
+    
+    .example-button {
+        width: 100%;
     }
 }
