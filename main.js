@@ -14,7 +14,7 @@ class VerdiktChatApp {
         // Конфигурация API
         this.API_CONFIG = {
             url: 'https://api.groq.com/openai/v1/chat/completions',
-    model: 'llama-3.1-8b-instant', // Бесплатно
+   model: 'meta-llama/llama-3.2-3b-instruct:free'
     apiKey: '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', // Нужно получить на groq.com
     maxTokens: 2048
         };
@@ -1393,6 +1393,7 @@ class VerdiktChatApp {
 
 // Создаем глобальный экземпляр для доступа из HTML
 window.VerdiktChat = new VerdiktChatApp();
+
 
 
 
