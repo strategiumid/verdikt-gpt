@@ -12,8 +12,8 @@ class VerdiktChatApp {
         this.API_CONFIG = {
             url: 'https://openrouter.ai/api/v1/chat/completions',
             model: 'stepfun/step-3.5-flash:free',
-            apiKey: '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',
-            maxTokens: 2500,
+            apiKey: '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',
+            maxTokens: 2000,
             temperature: 0.7
         };
 
@@ -871,3 +871,4 @@ class VerdiktChatApp {
 
 // Сохраняем глобальный доступ
 window.VerdiktChatApp = VerdiktChatApp;
+
