@@ -11,7 +11,7 @@ class VerdiktChatApp {
         // Конфигурация API
         this.API_CONFIG = {
             url: 'https://openrouter.ai/api/v1/chat/completions',
-            model: 'stepfun/step-3.5-flash:free',
+            model: 'tngtech/tng-r1t-chimera:free',
             apiKey: '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',
             maxTokens: 2500,
             temperature: 0.7
@@ -848,4 +848,5 @@ ${knowledge.psychology.maxVerdiktPrinciples.map((principle, i) => `${i+1}. ${pri
 
 // Сохраняем глобальный доступ
 window.VerdiktChat = new VerdiktChatApp();
+
 
