@@ -15,7 +15,7 @@ class VerdiktChatApp {
         this.API_CONFIG = {
             url: 'https://openrouter.ai/api/v1/chat/completions',
             model: 'deepseek/deepseek-r1-0528:free',
-            apiKey: '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',
+            apiKey: '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',
             maxTokens: 2000,
             temperature: 0.7
         };
