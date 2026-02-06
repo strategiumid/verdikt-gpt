@@ -15,7 +15,7 @@ class VerdiktChatApp {
         this.API_CONFIG = {
             url: 'https://openrouter.ai/api/v1/chat/completions',
             model: 'tngtech/deepseek-r1t2-chimera:free',
-            apiKey: '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',
+            apiKey: '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',
             maxTokens: 2000,
             temperature: 0.7
         };
@@ -1394,3 +1394,4 @@ class VerdiktChatApp {
 
 // Создаем глобальный экземпляр для доступа из HTML
 window.VerdiktChat = new VerdiktChatApp();
+
