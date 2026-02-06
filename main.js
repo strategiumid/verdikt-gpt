@@ -14,11 +14,10 @@ class VerdiktChatApp {
         // Конфигурация API
         this.API_CONFIG = {
             url: 'https://api.groq.com/openai/v1/chat/completions',
-   model: 'meta-llama/llama-3.2-3b-instruct:free'
-    apiKey: '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', // Нужно получить на groq.com
-    maxTokens: 2048
-        }
-
+            model: 'meta-llama/llama-3.2-3b-instruct', // Убрал :free так как это Groq
+            apiKey: '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',
+            maxTokens: 2048
+        };
         // Состояние приложения
         this.state = {
             conversationHistory: [
@@ -622,32 +621,31 @@ class VerdiktChatApp {
     }
 
     async getAIResponse(messages) {
-        const response = await fetch(this.API_CONFIG.url, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
-                'Content-Type': 'application/json',
-                'HTTP-Referer': window.location.origin,
-                'X-Title': 'Verdikt GPT Chat'
-            },
-            body: JSON.stringify({
-                model: this.API_CONFIG.model,
-                messages: messages,
-                max_tokens: this.API_CONFIG.maxTokens,
-                temperature: this.state.aiModes[this.state.currentMode].temperature,
-                stream: false
-            })
-        });
+    const response = await fetch(this.API_CONFIG.url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
+            'Content-Type': 'application/json'
+            // Убрал HTTP-Referer и X-Title для Groq
+        },
+             body: JSON.stringify({
+            model: this.API_CONFIG.model,
+            messages: messages,
+            max_tokens: this.API_CONFIG.maxTokens,
+            temperature: this.state.aiModes[this.state.currentMode].temperature,
+            stream: false
+        })
+    });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('API Response Error:', errorText);
-            throw new Error(`API Error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        return data.choices[0].message.content;
+        const errorText = await response.text();
+        console.error('API Response Error:', errorText);
+        throw new Error(`API Error: ${response.status} - ${errorText}`);
     }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+}
 
     addMessage(content, sender) {
         const messageId = 'msg-' + Date.now();
@@ -1393,6 +1391,7 @@ class VerdiktChatApp {
 
 // Создаем глобальный экземпляр для доступа из HTML
 window.VerdiktChat = new VerdiktChatApp();
+
 
 
 
