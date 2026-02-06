@@ -13,17 +13,12 @@ class VerdiktChatApp {
     constructor() {
         // Конфигурация API
         this.API_CONFIG = {
-          
-         model: 'meta-llama/llama-3.2-3b-instruct:free', // Быстрая и надежная
-    // ИЛИ: 'google/gemini-flash-1.5:free'
-    // ИЛИ: 'qwen/qwen-2.5-32b-instruct:free'
-    // ИЛИ: 'mistralai/mistral-7b-instruct:free'
-    
-    apiKey: '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',
-    
-    maxTokens: 2000,
-    temperature: 0.7
-};
+            url: 'https://openrouter.ai/api/v1/chat/completions',
+            model: 'deepseek/deepseek-chat:free',
+            apiKey: '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',
+            maxTokens: 3000,
+            temperature: 0.7
+        };
 
         // Состояние приложения
         this.state = {
@@ -1399,6 +1394,7 @@ class VerdiktChatApp {
 
 // Создаем глобальный экземпляр для доступа из HTML
 window.VerdiktChat = new VerdiktChatApp();
+
 
 
 
