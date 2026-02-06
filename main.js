@@ -15,8 +15,8 @@ class VerdiktChatApp {
         this.API_CONFIG = {
             url: 'https://openrouter.ai/api/v1/chat/completions',
             model: 'google/gemma-3-27b-it:free',
-            apiKey: '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',
-            maxTokens: 2000,
+            apiKey: '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',
+            maxTokens: 3000,
             temperature: 0.7
         };
 
@@ -1394,6 +1394,7 @@ class VerdiktChatApp {
 
 // Создаем глобальный экземпляр для доступа из HTML
 window.VerdiktChat = new VerdiktChatApp();
+
 
 
 
