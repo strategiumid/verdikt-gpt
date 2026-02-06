@@ -1348,6 +1348,7 @@ ${knowledge.psychology.maxVerdiktPrinciples.map((principle, i) => `${i+1}. ${pri
 }
 
 // Сохраняем глобальный доступ
-window.VerdiktChat = new VerdiktChatApp();
+
+
 
 
