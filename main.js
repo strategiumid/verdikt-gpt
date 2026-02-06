@@ -1,12 +1,5 @@
 // [file name]: main.js
 // Инициализация всех функций
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof hljs !== 'undefined') {
-        hljs.highlightAll();
-    }
-    
-    window.VerdiktChat.init();
-});
 
 // Основной класс приложения
 class VerdiktChatApp {
@@ -1356,4 +1349,5 @@ ${knowledge.psychology.maxVerdiktPrinciples.map((principle, i) => `${i+1}. ${pri
 
 // Сохраняем глобальный доступ
 window.VerdiktChat = new VerdiktChatApp();
+
 
