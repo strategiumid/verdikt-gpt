@@ -13,11 +13,13 @@ class VerdiktChatApp {
     constructor() {
         // Конфигурация API
         this.API_CONFIG = {
-            url: 'https://api.groq.com/openai/v1/chat/completions',
-            model: 'meta-llama/llama-3.2-3b-instruct', // Убрал :free так как это Groq
-            apiKey: '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',
-            maxTokens: 2048
+            url: 'https://openrouter.ai/api/v1/chat/completions',
+            model: 'tngtech/deepseek-r1t2-chimera:free',
+            apiKey: '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',
+            maxTokens: 2000,
+            temperature: 0.7
         };
+
         // Состояние приложения
         this.state = {
             conversationHistory: [
@@ -621,31 +623,32 @@ class VerdiktChatApp {
     }
 
     async getAIResponse(messages) {
-    const response = await fetch(this.API_CONFIG.url, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
-            'Content-Type': 'application/json'
-            // Убрал HTTP-Referer и X-Title для Groq
-        },
-             body: JSON.stringify({
-            model: this.API_CONFIG.model,
-            messages: messages,
-            max_tokens: this.API_CONFIG.maxTokens,
-            temperature: this.state.aiModes[this.state.currentMode].temperature,
-            stream: false
-        })
-    });
+        const response = await fetch(this.API_CONFIG.url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': window.location.origin,
+                'X-Title': 'Verdikt GPT Chat'
+            },
+            body: JSON.stringify({
+                model: this.API_CONFIG.model,
+                messages: messages,
+                max_tokens: this.API_CONFIG.maxTokens,
+                temperature: this.state.aiModes[this.state.currentMode].temperature,
+                stream: false
+            })
+        });
 
         if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Response Error:', errorText);
-        throw new Error(`API Error: ${response.status} - ${errorText}`);
-    }
+            const errorText = await response.text();
+            console.error('API Response Error:', errorText);
+            throw new Error(`API Error: ${response.status}`);
+        }
 
-    const data = await response.json();
-    return data.choices[0].message.content;
-}
+        const data = await response.json();
+        return data.choices[0].message.content;
+    }
 
     addMessage(content, sender) {
         const messageId = 'msg-' + Date.now();
@@ -1391,19 +1394,3 @@ class VerdiktChatApp {
 
 // Создаем глобальный экземпляр для доступа из HTML
 window.VerdiktChat = new VerdiktChatApp();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
