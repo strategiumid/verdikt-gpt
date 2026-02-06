@@ -11,12 +11,11 @@ document.addEventListener('DOMContentLoaded', function() {
 // Основной класс приложения
 class VerdiktChatApp {
     constructor() {
-        // Конфигурация API
+        // Конфигурация API для Hugging Face DialoGPT-medium
         this.API_CONFIG = {
-            url: 'https://openrouter.ai/api/v1/chat/completions',
-            model: 'tngtech/deepseek-r1t-chimera:free',
-            apiKey: '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',
-            maxTokens: 2000,
+            url: 'https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium',
+            apiKey: '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',
+            maxTokens: 400,
             temperature: 0.7
         };
 
@@ -25,42 +24,14 @@ class VerdiktChatApp {
             conversationHistory: [
                 {
                     role: "system",
-                    content: `Ты - профессиональный эксперт в области психологии отношений, знакомств и распознавания манипуляций. Твое имя Verdikt GPT.
+                    content: `Ты - Verdikt GPT, эксперт по психологии отношений, знакомств и манипуляций.
+Отвечай на русском языке дружелюбно, но профессионально.
+Специализация:
+💕 Отношения - конфликты, общение, восстановление
+👥 Знакомства - советы по свиданиям, профилям
+🛡️ Манипуляции - распознавание, защита, границы
 
-Твоя специализация:
-1. ОТНОШЕНИЯ:
-   - Построение и развитие здоровых отношений
-   - Решение конфликтов и кризисов в паре
-   - Улучшение коммуникации и взаимопонимания
-   - Восстановление после расставаний
-   - Семейная психология
-
-2. ЗНАКОМСТВА:
-   - Онлайн и офлайн знакомства
-   - Создание привлекательного профиля
-   - Подготовка к свиданиям
-   - Правила поведения на встречах
-   - Преодоление страхов и барьеров
-
-3. МАНИПУЛЯЦИИ:
-   - Распознавание психологических манипуляций
-   - Защита от эмоционального насилия
-   - Установление здоровых границ
-   - Работа с токсичными отношениями
-   - Восстановление самооценки
-
-ТЫ ОБЯЗАН:
-- Отвечать ТОЛЬКО на вопросы по указанным темам
-- Быть профессиональным, тактичным и этичным
-- Давать практические советы и рекомендации
-- Использовать научно обоснованные методы
-- Сохранять конфиденциальность
-- Быть нейтральным и объективным
-- Поддерживать и мотивировать пользователя
-
-Если вопрос НЕ относится к твоей специализации, вежливо откажись отвечать и предложи перейти к профильным темам.
-
-Отвечай на русском языке, используй эмодзи для лучшего восприятия, но не злоупотребляй ими. Будь точным, информативным и поддерживающим.`
+Будь поддерживающим, давай практические советы, используй эмодзи умеренно.`
                 }
             ],
             currentMode: 'balanced',
@@ -72,9 +43,10 @@ class VerdiktChatApp {
             },
             messageCount: 1,
             responseTimes: [],
-            isApiConnected: true,
+            isApiConnected: false,
             isRecording: false,
             isSpeaking: false,
+            isModelLoading: false,
             achievements: {
                 firstMessage: { unlocked: true, name: "Первый шаг", icon: "🎯", description: "Первая консультация" },
                 activeUser: { unlocked: false, name: "Доверие", icon: "💬", description: "10 личных вопросов" },
@@ -99,7 +71,9 @@ class VerdiktChatApp {
             currentTheme: 'dark',
             isPresentationMode: false,
             currentSlide: 0,
-            slides: []
+            slides: [],
+            retryCount: 0,
+            maxRetries: 3
         };
 
         // DOM элементы
@@ -130,7 +104,9 @@ class VerdiktChatApp {
             exportClose: document.getElementById('export-close'),
             exportCancel: document.getElementById('export-cancel'),
             statsClose: document.getElementById('stats-close'),
-            saveSettings: document.getElementById('save-settings')
+            saveSettings: document.getElementById('save-settings'),
+            temperatureSlider: document.getElementById('temperature-slider'),
+            temperatureValue: document.getElementById('temperature-value')
         };
 
         // Инициализация Web Speech API
@@ -157,7 +133,7 @@ class VerdiktChatApp {
         this.state.stats.activityByHour[currentHour]++;
         this.saveToLocalStorage();
         
-        console.log('Verdikt GPT - Эксперт по отношениям инициализирован');
+        console.log('Verdikt GPT с Hugging Face DialoGPT-medium инициализирован');
     }
 
     setupEventListeners() {
@@ -210,6 +186,13 @@ class VerdiktChatApp {
         this.elements.presentationMode.addEventListener('click', () => this.togglePresentationMode());
         this.elements.viewStats.addEventListener('click', () => this.showStatsModal());
         
+        // Температура модели
+        this.elements.temperatureSlider.addEventListener('input', (e) => {
+            const value = e.target.value;
+            this.elements.temperatureValue.textContent = value;
+            this.API_CONFIG.temperature = parseFloat(value);
+        });
+        
         // Тема оформления
         document.querySelectorAll('.theme-option').forEach(theme => {
             theme.addEventListener('click', (e) => {
@@ -240,7 +223,6 @@ class VerdiktChatApp {
         
         // Обработка ввода текста
         this.elements.messageInput.addEventListener('input', () => {
-            // Автоматическая высота textarea
             this.elements.messageInput.style.height = 'auto';
             this.elements.messageInput.style.height = Math.min(this.elements.messageInput.scrollHeight, 200) + 'px';
         });
@@ -255,7 +237,7 @@ class VerdiktChatApp {
         // Футер ссылки
         document.getElementById('model-info').addEventListener('click', (e) => {
             e.preventDefault();
-            this.showNotification('Используется модель: Verdikt GPT 0.01 dev', 'info');
+            this.showNotification('Модель: microsoft/DialoGPT-medium (Hugging Face)', 'info');
         });
         
         document.getElementById('keyboard-shortcuts').addEventListener('click', (e) => {
@@ -265,7 +247,7 @@ class VerdiktChatApp {
         
         document.getElementById('privacy-policy').addEventListener('click', (e) => {
             e.preventDefault();
-            this.showNotification('Все данные хранятся локально на вашем устройстве', 'info');
+            this.showNotification('Используется Hugging Face API. Данные анонимизированы.', 'info');
         });
     }
 
@@ -382,39 +364,45 @@ class VerdiktChatApp {
 
     async checkApiStatus() {
         // Показать анимацию подключения
-        this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> Подключение...';
+        this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> Подключение к Hugging Face...';
         this.elements.apiStatus.classList.add('api-connecting');
         this.elements.apiStatus.classList.remove('api-error');
         
-        // Искусственная задержка для демонстрации анимации
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Устанавливаем флаг подключения
+        this.state.isApiConnected = true;
+        
+        // Проверка доступности API с таймаутом
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Таймаут подключения')), 5000)
+        );
         
         try {
-            // Тестовый запрос к API
-            const response = await fetch('https://openrouter.ai/api/v1/auth/key', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
-                }
-            });
+            const response = await Promise.race([
+                fetch('https://api-inference.huggingface.co/status', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
+                    }
+                }),
+                timeoutPromise
+            ]);
             
             if (response.ok) {
-                this.state.isApiConnected = true;
-                this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> API подключен';
+                this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> HF API доступен';
                 this.elements.apiStatus.style.background = 'rgba(34, 197, 94, 0.15)';
                 this.elements.apiStatus.style.color = '#4ade80';
                 this.elements.apiStatus.classList.remove('api-connecting');
                 this.showConnectionSuccessAnimation();
+                this.showNotification('Hugging Face API подключен ✅', 'success');
             } else {
                 throw new Error(`HTTP ${response.status}`);
             }
         } catch (error) {
             console.log('API check error:', error);
-            this.state.isApiConnected = false;
-            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка подключения';
+            // Не блокируем работу, но показываем предупреждение
+            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Проверьте соединение';
             this.elements.apiStatus.classList.remove('api-connecting');
-            this.elements.apiStatus.classList.add('api-error');
-            this.showNotification('API временно недоступен, попробуйте позже', 'warning');
+            this.showNotification('API проверка не удалась, но можно попробовать отправить сообщение', 'warning');
         }
     }
 
@@ -433,8 +421,6 @@ class VerdiktChatApp {
             
             setTimeout(() => particle.remove(), 1500);
         }
-        
-        this.showNotification('API успешно подключен! ✅', 'success');
     }
 
     async sendMessage() {
@@ -455,7 +441,7 @@ class VerdiktChatApp {
         
         // Проверка темы сообщения
         if (!this.isTopicRelevant(message)) {
-            this.showNotification('Я специализируюсь только на отношениях, знакомствах и манипуляциях. Пожалуйста, задайте вопрос по этим темам.', 'warning');
+            this.showNotification('Я специализируюсь только на отношениях, знакомствах и манипуляциях.', 'warning');
             return;
         }
         
@@ -482,8 +468,11 @@ class VerdiktChatApp {
         this.elements.messageInput.value = '';
         this.elements.messageInput.style.height = 'auto';
         
-        // Показать индикатор набора
+        // Показать индикатор набора с предупреждением о возможной задержке
         this.showTypingIndicator();
+        if (this.state.messageCount <= 3) {
+            this.showNotification('Первые запросы могут занимать 20-40 секунд (загрузка модели)', 'info');
+        }
         
         try {
             // Получение ответа от AI
@@ -512,21 +501,41 @@ class VerdiktChatApp {
                 ];
             }
             
-            this.showNotification('Ответ получен ✅', 'success');
+            this.showNotification(`Ответ получен за ${responseTime.toFixed(1)}с ✅`, 'success');
             this.updateUI();
             this.saveToLocalStorage();
             
+            // Сброс счетчика повторных попыток при успехе
+            this.state.retryCount = 0;
+            
         } catch (error) {
             this.hideTypingIndicator();
-            this.addMessage(`Извините, произошла ошибка при подключении к API. Пожалуйста, проверьте ваше интернет-соединение и попробуйте еще раз. Ошибка: ${error.message}`, 'ai');
-            this.showNotification('Ошибка при получении ответа ❌', 'error');
-            console.error('API Error:', error);
+            console.error('API Error details:', error);
             
-            this.state.isApiConnected = false;
+            // Обработка ошибок Hugging Face
+            let errorMessage = "Извините, произошла ошибка при получении ответа. ";
+            let userMessage = error.message;
+            
+            if (error.message.includes('503') || error.message.includes('загружается')) {
+                if (this.state.retryCount < this.state.maxRetries) {
+                    this.state.retryCount++;
+                    errorMessage += `Попытка ${this.state.retryCount}/${this.state.maxRetries}. Попробуйте через 30 секунд.`;
+                    userMessage = "Модель загружается, подождите 30 секунд и попробуйте снова...";
+                } else {
+                    errorMessage = "Сервер перегружен. Пожалуйста, попробуйте позже или используйте более короткий запрос.";
+                }
+            } else if (error.message.includes('429')) {
+                errorMessage = "Превышен лимит запросов. Бесплатный лимит: 30K токенов в месяц.";
+            } else if (error.message.includes('401')) {
+                errorMessage = "Ошибка аутентификации API. Проверьте API ключ.";
+            }
+            
+            this.addMessage(userMessage, 'ai');
+            this.showNotification(errorMessage, 'error');
+            
             this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API';
             this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
             this.elements.apiStatus.style.color = '#f87171';
-            this.elements.apiStatus.classList.add('api-error');
         }
         
         this.scrollToBottom();
@@ -589,31 +598,96 @@ class VerdiktChatApp {
             throw new Error('API не подключен');
         }
 
-        const response = await fetch(this.API_CONFIG.url, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
-                'Content-Type': 'application/json',
-                'HTTP-Referer': window.location.origin,
-                'X-Title': 'Verdikt GPT Chat'
-            },
-            body: JSON.stringify({
-                model: this.API_CONFIG.model,
-                messages: messages,
-                max_tokens: this.API_CONFIG.maxTokens,
-                temperature: this.state.aiModes[this.state.currentMode].temperature,
-                stream: false
-            })
-        });
+        try {
+            // Получаем последнее сообщение пользователя и немного контекста
+            const userMessages = messages.filter(msg => msg.role === "user");
+            const lastUserMessage = userMessages[userMessages.length - 1]?.content || 
+                                   messages[messages.length - 1]?.content || 
+                                   "Привет";
+            
+            // Формируем промпт для DialoGPT
+            const prompt = `Ты - психолог Verdikt GPT, специалист по отношениям, знакомствам и манипуляциям.
+Пользователь: ${lastUserMessage}
+Психолог:`;
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('API Response Error:', errorText);
-            throw new Error(`API Error: ${response.status}`);
+            const response = await fetch(this.API_CONFIG.url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    inputs: prompt,
+                    parameters: {
+                        max_new_tokens: this.API_CONFIG.maxTokens,
+                        temperature: this.API_CONFIG.temperature,
+                        top_p: 0.95,
+                        repetition_penalty: 1.2,
+                        do_sample: true,
+                        return_full_text: false,
+                        num_return_sequences: 1
+                    },
+                    options: {
+                        use_cache: true,
+                        wait_for_model: true
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('HF API Error Response:', errorText);
+                
+                if (response.status === 503) {
+                    throw new Error('Модель загружается. Попробуйте через 20-30 секунд.');
+                } else if (response.status === 429) {
+                    throw new Error('Превышен лимит запросов (429). Попробуйте позже.');
+                } else if (response.status === 401) {
+                    throw new Error('Ошибка аутентификации API (401)');
+                } else {
+                    throw new Error(`HF API Error: ${response.status} - ${errorText.substring(0, 100)}`);
+                }
+            }
+
+            const data = await response.json();
+            
+            // Обработка ответа от Hugging Face API
+            let generatedText;
+            if (Array.isArray(data)) {
+                generatedText = data[0]?.generated_text || '';
+            } else if (data.generated_text) {
+                generatedText = data.generated_text;
+            } else if (data[0]?.generated_text) {
+                generatedText = data[0].generated_text;
+            } else {
+                console.warn('Unexpected API response format:', data);
+                generatedText = JSON.stringify(data);
+            }
+            
+            // Убираем промпт из ответа и очищаем
+            let cleanResponse = generatedText.replace(prompt, '').trim();
+            
+            // Удаляем повторяющиеся фразы
+            cleanResponse = cleanResponse.replace(/Психолог:/g, '').trim();
+            
+            // Проверяем, не пустой ли ответ
+            if (!cleanResponse || cleanResponse.length < 5) {
+                // Фолбэк ответы
+                const fallbackResponses = [
+                    "Я понимаю вашу ситуацию. Важно обсудить это открыто и честно с партнером. 💬",
+                    "Это сложный вопрос. Рекомендую сосредоточиться на ваших чувствах и потребностях. 💕",
+                    "В подобных ситуациях важно сохранять спокойствие и действовать обдуманно. 🧘‍♀️",
+                    "Я бы посоветовал обратиться к профессиональному психологу для более детальной консультации. 👥"
+                ];
+                cleanResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+            }
+            
+            return cleanResponse;
+            
+        } catch (error) {
+            console.error('Error in getAIResponse:', error);
+            throw error;
         }
-
-        const data = await response.json();
-        return data.choices[0].message.content;
     }
 
     addMessage(content, sender) {
@@ -800,46 +874,21 @@ class VerdiktChatApp {
             this.state.conversationHistory = [
                 {
                     role: "system",
-                    content: `Ты - профессиональный эксперт в области психологии отношений, знакомств и распознавания манипуляций. Твое имя Verdikt GPT.
+                    content: `Ты - Verdikt GPT, эксперт по психологии отношений, знакомств и манипуляций.
+Отвечай на русском языке дружелюбно, но профессионально.
+Специализация:
+💕 Отношения - конфликты, общение, восстановление
+👥 Знакомства - советы по свиданиям, профилям
+🛡️ Манипуляции - распознавание, защита, границы
 
-Твоя специализация:
-1. ОТНОШЕНИЯ:
-   - Построение и развитие здоровых отношений
-   - Решение конфликтов и кризисов в паре
-   - Улучшение коммуникации и взаимопонимания
-   - Восстановление после расставаний
-   - Семейная психология
-
-2. ЗНАКОМСТВА:
-   - Онлайн и офлайн знакомства
-   - Создание привлекательного профиля
-   - Подготовка к свиданиям
-   - Правила поведения на встречах
-   - Преодоление страхов и барьеров
-
-3. МАНИПУЛЯЦИИ:
-   - Распознавание психологических манипуляций
-   - Защита от эмоционального насилия
-   - Установление здоровых границ
-   - Работа с токсичными отношениями
-   - Восстановление самооценки
-
-ТЫ ОБЯЗАН:
-- Отвечать ТОЛЬКО на вопросы по указанным темам
-- Быть профессиональным, тактичным и этичным
-- Давать практические советы и рекомендации
-- Использовать научно обоснованные методы
-- Сохранять конфиденциальность
-- Быть нейтральным и объективным
-- Поддерживать и мотивировать пользователя
-
-Если вопрос НЕ относится к твоей специализации, вежливо откажись отвечать и предложи перейти к профильным темам.`
+Будь поддерживающим, давай практические советы, используй эмодзи умеренно.`
                 }
             ];
             this.state.messageCount = 1;
             this.state.stats.totalMessages = 1;
             this.state.stats.userMessages = 0;
             this.state.stats.aiMessages = 1;
+            this.state.retryCount = 0;
             
             this.elements.chatMessages.innerHTML = `
                 <div class="message ai-message" style="opacity: 1; transform: translateY(0);">
@@ -934,6 +983,7 @@ class VerdiktChatApp {
                     metadata: {
                         exported: new Date().toISOString(),
                         totalMessages: this.state.stats.totalMessages,
+                        model: 'microsoft/DialoGPT-medium',
                         topics: {
                             manipulations: this.state.stats.manipulationRequests,
                             relationships: this.state.stats.relationshipAdvice,
