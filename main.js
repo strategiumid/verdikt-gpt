@@ -14,7 +14,7 @@ class VerdiktChatApp {
         // Конфигурация API
         this.API_CONFIG = {
             url: 'https://openrouter.ai/api/v1/chat/completions',
-            model: 'stepfun/step-3.5-flash:free',
+            model: 'arcee-ai/trinity-mini:free',
             apiKey: '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',
             maxTokens: 2000,
             temperature: 0.7
