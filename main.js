@@ -17,7 +17,7 @@ class VerdiktChatApp {
    model: 'meta-llama/llama-3.2-3b-instruct:free'
     apiKey: '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', // Нужно получить на groq.com
     maxTokens: 2048
-        };
+        }
 
         // Состояние приложения
         this.state = {
@@ -1393,6 +1393,7 @@ class VerdiktChatApp {
 
 // Создаем глобальный экземпляр для доступа из HTML
 window.VerdiktChat = new VerdiktChatApp();
+
 
 
 
