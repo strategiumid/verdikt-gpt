@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verdikt GPT - Эксперт по отношениям</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="themes.css">
+</head>
+<body>
+    <!-- Фоновые элементы -->
+    <div class="background-elements">
+        <div class="grid-pattern"></div>
+        <div class="floating-hearts" id="floating-hearts"></div>
+        <div class="connection-particles" id="connection-particles"></div>
+    </div>
+
+    <!-- Уведомления -->
+    <div class="notification" id="notification">
+        <i class="fas fa-check-circle"></i>
+        <span id="notification-text">Сообщение отправлено</span>
+    </div>
+
+    <!-- Уведомления о достижениях -->
+    <div class="achievement-notification" id="achievement-notification" style="display: none;">
+        <div class="achievement-icon" id="achievement-icon">🎯</div>
+        <div>
+            <div id="achievement-title">Достижение получено!</div>
+            <div id="achievement-desc" style="font-size: 0.9rem; opacity: 0.9;"></div>
+        </div>
+    </div>
+
+    <!-- Модальное окно настроек -->
+    <div class="modal" id="settings-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="settings-close">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <h2 style="margin-bottom: 25px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-cog"></i> Настройки
+            </h2>
+            
+            <div class="modal-section">
+                <h3><i class="fas fa-palette"></i> Тема оформления</h3>
+                <div class="theme-selector">
+                    <div class="theme-option theme-dark active" data-theme="dark"></div>
+                    <div class="theme-option theme-light" data-theme="light"></div>
+                    <div class="theme-option theme-high-contrast" data-theme="high-contrast"></div>
+                    <div class="theme-option theme-gradient" data-theme="gradient"></div>
+                </div>
+            </div>
+            
+            <div class="modal-section" style="margin-top: 25px;">
+                <h3><i class="fas fa-robot"></i> Настройки AI</h3>
+                <div class="control-group" style="margin-top: 15px;">
+                    <label class="control-label">Температура:</label>
+                    <input type="range" id="temperature-slider" min="0.1" max="1" step="0.1" value="0.7" style="flex: 1;">
+                    <span id="temperature-value" style="min-width: 40px; text-align: center;">0.7</span>
+                </div>
+            </div>
+            
+            <div class="modal-section" style="margin-top: 25px;">
+                <h3><i class="fas fa-keyboard"></i> Горячие клавиши</h3>
+                <div style="margin-top: 15px; color: var(--text-secondary); font-size: 0.9rem;">
+                    <p><strong>Ctrl+Enter</strong> - Отправить сообщение</p>
+                    <p><strong>Ctrl+K</strong> - Быстрые команды</p>
+                    <p><strong>Ctrl+S</strong> - Сохранить чат</p>
+                    <p><strong>Ctrl+E</strong> - Экспорт</p>
+                    <p><strong>Ctrl+L</strong> - Очистить чат</p>
+                    <p><strong>Ctrl+P</strong> - Режим презентации</p>
+                </div>
+            </div>
+            
+            <button class="ios-button" style="width: 100%; margin-top: 30px;" id="save-settings">
+                <i class="fas fa-save"></i> Сохранить настройки
+            </button>
+        </div>
+    </div>
+
+    <!-- Модальное окно экспорта -->
+    <div class="modal" id="export-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="export-close">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <h2 style="margin-bottom: 25px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-download"></i> Экспорт чата
+            </h2>
+            
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                Выберите формат для экспорта истории диалога:
+            </p>
+            
+            <div class="export-options">
+                <div class="export-option" data-format="pdf">
+                    <div class="export-icon">
+                        <i class="fas fa-file-pdf"></i>
+                    </div>
+                    <div style="font-weight: 600;">PDF</div>
+                    <div style="font-size: 0.8rem; color: var(--text-tertiary);">Документ для печати</div>
+                </div>
+                
+                <div class="export-option" data-format="markdown">
+                    <div class="export-icon">
+                        <i class="fab fa-markdown"></i>
+                    </div>
+                    <div style="font-weight: 600;">Markdown</div>
+                    <div style="font-size: 0.8rem; color: var(--text-tertiary);">Для документации</div>
+                </div>
+                
+                <div class="export-option" data-format="html">
+                    <div class="export-icon">
+                        <i class="fab fa-html5"></i>
+                    </div>
+                    <div style="font-weight: 600;">HTML</div>
+                    <div style="font-size: 0.8rem; color: var(--text-tertiary);">Веб-страница</div>
+                </div>
+                
+                <div class="export-option" data-format="json">
+                    <div class="export-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <div style="font-weight: 600;">JSON</div>
+                    <div style="font-size: 0.8rem; color: var(--text-tertiary);">Для разработки</div>
+                </div>
+            </div>
+            
+            <button class="ios-button secondary" style="width: 100%; margin-top: 20px;" id="export-cancel">
+                <i class="fas fa-times"></i> Отмена
+            </button>
+        </div>
+    </div>
+
+    <!-- Модальное окно статистики -->
+    <div class="modal" id="stats-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="stats-close">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <h2 style="margin-bottom: 25px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-chart-line"></i> Статистика
+            </h2>
+            
+            <div class="stats-grid" style="margin-bottom: 25px;">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-messages">0</div>
+                    <div class="stat-label">Всего сообщений</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-value" id="avg-response">0с</div>
+                    <div class="stat-label">Среднее время ответа</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-value" id="user-messages">0</div>
+                    <div class="stat-label">Сообщений от вас</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-value" id="ai-messages">0</div>
+                    <div class="stat-label">Ответов AI</div>
+                </div>
+            </div>
+            
+            <h3 style="margin-bottom: 15px;">Активность по часам</h3>
+            <div style="background: rgba(255, 255, 255, 0.05); border-radius: var(--radius-md); padding: 20px; margin-bottom: 25px;">
+                <canvas id="activity-chart" style="width: 100%; height: 200px;"></canvas>
+            </div>
+            
+            <h3 style="margin-bottom: 15px;">Популярные темы</h3>
+            <div id="popular-topics" style="color: var(--text-secondary);">
+                Загрузка данных...
+            </div>
+        </div>
+    </div>
+
+    <!-- Навигация презентации -->
+    <div class="presentation-nav" style="display: none;">
+        <button class="ios-button small" id="prev-slide">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <button class="ios-button small" id="next-slide">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+        <button class="ios-button small secondary" id="exit-presentation">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <div class="container">
+        <!-- Шапка приложения -->
+        <div class="app-header">
+            <div class="header-left">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <div class="app-title">
+                        <h1>Verdikt GPT</h1>
+                        <p>Эксперт по отношениям и психологии</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="header-right">
+                <button class="ios-button secondary" id="voice-input" title="Голосовой ввод">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                
+                <button class="ios-button secondary" id="voice-output" title="Озвучить ответ">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+                
+                <button class="ios-button secondary" id="presentation-mode" title="Режим презентации">
+                    <i class="fas fa-expand"></i>
+                </button>
+                
+                <button class="ios-button secondary" id="settings-button" title="Настройки">
+                    <i class="fas fa-cog"></i>
+                </button>
+                
+                <button class="ios-button" id="new-chat">
+                    <i class="fas fa-plus"></i> Новый чат
+                </button>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <!-- Боковая панель -->
+            <div class="sidebar">
+                <!-- Режимы AI -->
+                <div class="sidebar-card">
+                    <h3><i class="fas fa-sliders-h"></i> Режим консультации</h3>
+                    <div class="ai-modes">
+                        <div class="mode-item active" data-mode="balanced">
+                            <div class="mode-icon">
+                                <i class="fas fa-balance-scale"></i>
+                            </div>
+                            <div class="mode-info">
+                                <h4>Сбалансированный</h4>
+                                <p>Объективный анализ</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mode-item" data-mode="creative">
+                            <div class="mode-icon">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div class="mode-info">
+                                <h4>Эмоциональный</h4>
+                                <p>Учет чувств и эмоций</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mode-item" data-mode="precise">
+                            <div class="mode-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="mode-info">
+                                <h4>Аналитический</h4>
+                                <p>Детальный разбор ситуации</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mode-item" data-mode="protective">
+                            <div class="mode-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div class="mode-info">
+                                <h4>Защитный</h4>
+                                <p>Распознавание манипуляций</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Быстрые команды -->
+                <div class="sidebar-card">
+                    <h3><i class="fas fa-terminal"></i> Быстрые команды</h3>
+                    <div class="quick-commands">
+                        <div class="command-item" data-command="/clear">/clear</div>
+                        <div class="command-item" data-command="/save">/save</div>
+                        <div class="command-item" data-command="/export">/export</div>
+                        <div class="command-item" data-command="/advice">/advice</div>
+                        <div class="command-item" data-command="/manipulation">/manipulation</div>
+                        <div class="command-item" data-command="/stats">/stats</div>
+                        <div class="command-item" data-command="/presentation">/presentation</div>
+                        <div class="command-item" data-command="/help">/help</div>
+                    </div>
+                </div>
+                
+                <!-- Достижения -->
+                <div class="sidebar-card">
+                    <h3><i class="fas fa-trophy"></i> Достижения</h3>
+                    <div class="achievements-grid">
+                        <div class="achievement-item unlocked">
+                            <div class="achievement-icon">🎯</div>
+                            <div class="achievement-name">Первый шаг</div>
+                            <div class="achievement-desc">Первая консультация</div>
+                        </div>
+                        
+                        <div class="achievement-item">
+                            <div class="achievement-icon">💬</div>
+                            <div class="achievement-name">Доверие</div>
+                            <div class="achievement-desc">10 личных вопросов</div>
+                        </div>
+                        
+                        <div class="achievement-item">
+                            <div class="achievement-icon">🛡️</div>
+                            <div class="achievement-name">Защитник</div>
+                            <div class="achievement-desc">Распознал 5 манипуляций</div>
+                        </div>
+                        
+                        <div class="achievement-item">
+                            <div class="achievement-icon">💕</div>
+                            <div class="achievement-name">Романтик</div>
+                            <div class="achievement-desc">Помог в отношениях</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Статистика -->
+                <div class="sidebar-card">
+                    <h3><i class="fas fa-chart-bar"></i> Статистика</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="sidebar-messages">1</div>
+                            <div class="stat-label">Консультации</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-value" id="sidebar-time">—</div>
+                            <div class="stat-label">Время ответа</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-value" id="sidebar-saved">0</div>
+                            <div class="stat-label">Сохранено</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-value" id="sidebar-sessions">1</div>
+                            <div class="stat-label">Сессии</div>
+                        </div>
+                    </div>
+                    <button class="ios-button tertiary small" style="width: 100%; margin-top: 15px;" id="view-stats">
+                        <i class="fas fa-chart-line"></i> Подробная статистика
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Основная область чата -->
+            <div class="chat-area">
+                <!-- Панель управления -->
+                <div class="chat-controls">
+                    <div class="control-group">
+                        <label class="control-label">Состояние:</label>
+                        <span class="status-indicator" id="api-status" style="padding: 5px 12px; border-radius: 15px;">
+                            <i class="fas fa-circle"></i> Подключение...
+                        </span>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label class="control-label">Экспорт:</label>
+                        <button class="ios-button tertiary small" id="export-chat">
+                            <i class="fas fa-download"></i> Экспорт
+                        </button>
+                        <button class="ios-button tertiary small" id="save-chat">
+                            <i class="fas fa-save"></i> Сохранить
+                        </button>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label class="control-label">Действия:</label>
+                        <button class="ios-button tertiary small" id="clear-chat">
+                            <i class="fas fa-eraser"></i> Очистить
+                        </button>
+                        <button class="ios-button tertiary small" id="share-chat">
+                            <i class="fas fa-share-alt"></i> Поделиться
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Контейнер чата -->
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <div class="chat-header-content">
+                            <div class="ai-avatar">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div class="chat-header-text">
+                                <h2>Verdikt GPT - Эксперт по отношениям</h2>
+                                <p>Специалист в психологии отношений, знакомств и распознавании манипуляций</p>
+                            </div>
+                        </div>
+                        
+                        <div class="voice-interface">
+                            <button class="voice-button" id="record-button" title="Запись голоса">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- История сообщений -->
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="message ai-message" style="opacity: 1; transform: translateY(0);">
+                            <div class="message-actions">
+                                <button class="message-action" onclick="VerdiktChat.copyMessage(this)">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button class="message-action" onclick="VerdiktChat.speakMessage(this)">
+                                    <i class="fas fa-volume-up"></i>
+                                </button>
+                            </div>
+                            <div class="message-sender"><i class="fas fa-heart"></i> Эксперт по отношениям</div>
+                            <div class="message-content">Привет! 👋 Я - эксперт в области психологии отношений, знакомств и распознавания манипуляций. Я специализируюсь на:
+<br><br>
+💕 <strong>Отношениях</strong> - помощь в построении здоровых отношений, решение конфликтов, улучшение коммуникации
+<br><br>
+👥 <strong>Знакомствах</strong> - советы по онлайн и офлайн знакомствам, созданию привлекательного профиля, первому свиданию
+<br><br>
+🛡️ <strong>Манипуляциях</strong> - распознавание психологических манипуляций, защита от эмоционального насилия, установление границ
+<br><br>
+Расскажите, с какой ситуацией вы столкнулись? Я помогу разобраться с профессиональной точки зрения! ✨</div>
+                            <div class="message-time" id="initial-time">Сейчас</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Умные подсказки -->
+                    <div class="smart-suggestions" id="smart-suggestions">
+                        <div class="suggestion-item">Как понять, что мной манипулируют?</div>
+                        <div class="suggestion-item">Как правильно знакомиться в интернете?</div>
+                        <div class="suggestion-item">Как наладить отношения после ссоры?</div>
+                        <div class="suggestion-item">Как распознать токсичные отношения?</div>
+                    </div>
+                    
+                    <!-- Индикатор набора текста -->
+                    <div class="typing-indicator" id="typing-indicator">
+                        <div class="typing-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Примеры вопросов -->
+                    <div class="examples">
+                        <h3><i class="fas fa-bolt"></i> Попробуйте спросить:</h3>
+                        <div class="example-buttons">
+                            <button class="example-button ios-button tertiary" data-question="Как распознать манипуляцию в отношениях?">
+                                <i class="fas fa-shield-alt"></i> Манипуляции
+                            </button>
+                            <button class="example-button ios-button tertiary" data-question="Как правильно вести себя на первом свидании?">
+                                <i class="fas fa-heart"></i> Первое свидание
+                            </button>
+                            <button class="example-button ios-button tertiary" data-question="Как установить здоровые границы в отношениях?">
+                                <i class="fas fa-user-shield"></i> Границы
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Панель ввода -->
+                    <div class="input-container">
+                        <div class="input-wrapper">
+                            <textarea id="message-input" placeholder="Опишите вашу ситуацию в отношениях, знакомствах или вопросы о манипуляциях..." maxlength="2000" autocomplete="off"></textarea>
+                        </div>
+                        <div class="input-actions">
+                            <button class="ios-button secondary" id="attach-button" title="Прикрепить файл">
+                                <i class="fas fa-paperclip"></i>
+                            </button>
+                            <button class="ios-button" id="send-button" title="Отправить сообщение">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <div class="footer-content">
+                <div class="copyright">
+                    &copy; 2026 Verdikt GPT - Эксперт по отношениям | Версия 2.0 | 
+                    <span id="offline-status" style="margin-left: 10px;">
+                        <i class="fas fa-wifi"></i> Онлайн
+                    </span>
+                </div>
+                <div class="footer-links">
+                    <a href="#" id="model-info"><i class="fas fa-robot"></i> О модели</a>
+                    <a href="#" id="keyboard-shortcuts"><i class="fas fa-keyboard"></i> Горячие клавиши</a>
+                    <a href="#" id="privacy-policy"><i class="fas fa-shield-alt"></i> Конфиденциальность</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
