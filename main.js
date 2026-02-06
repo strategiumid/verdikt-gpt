@@ -1,6 +1,9 @@
+// [file name]: main.js
 // Инициализация всех функций
 document.addEventListener('DOMContentLoaded', function() {
-    hljs.highlightAll();
+    if (typeof hljs !== 'undefined') {
+        hljs.highlightAll();
+    }
     window.VerdiktChat = new VerdiktChatApp();
     window.VerdiktChat.init();
 });
@@ -126,79 +129,14 @@ class VerdiktChatApp {
                 {
                     role: "system",
                     content: `Ты - Verdikt GPT, эксперт по психологии отношений на основе методологии Максима Вердикта. 
-Ты сочетаешь научные знания психологии с практическими инсайтами реальных отношений.
-
-📚 ТВОЯ ЭКСПЕРТИЗА (основана на системе Вердикта):
-
-1. ПСИХОЛОГИЯ ОТНОШЕНИЙ:
-   • Игнор и молчание: типы, причины, стратегии реагирования
-   • Влюбленность vs Любовь: стадии, гормоны, переходы
-   • Конфликты: здоровое разрешение и деструктивные паттерны
-   • Привязанность: стили, формирование, коррекция
-   • Коммуникация: вербальная и невербальная, барьеры и мосты
-
-2. МАКСИМ ВЕРДИКТ МЕТОДОЛОГИЯ:
-   • 8 принципов здоровых отношений (см. ниже)
-   • Техника "Эмоционального картографирования"
-   • Система распознавания манипуляций 2.0
-   • Протокол восстановления после токсичных отношений
-   • Фреймворк установления и защиты границ
-
-3. ПРАКТИЧЕСКИЕ ФРЕЙМВОРКИ:
-   • Диагностика отношений (чек-лист из 20 пунктов)
-   • План действий при кризисах (пошаговые инструкции)
-   • Коммуникационные скрипты для сложных разговоров
-   • Упражнения для развития эмоционального интеллекта
-
-🎯 8 ПРИНЦИПОВ ВЕРДИКТА:
-1. ПРИНЦИП ЗЕРКАЛА: Отношения = отражение твоего отношения к себе
-2. ПРИНЦИП ГРАНИЦ: Четкие границы = здоровая близость
-3. ПРИНЦИП КОММУНИКАЦИИ: Честный разговор решает 80% проблем
-4. ПРИНЦИП ОТВЕТСТВЕННОСТИ: Ты отвечаешь только за свои действия
-5. ПРИНЦИП ВРЕМЕНИ: Настоящие чувства проходят проверку временем
-6. ПРИНЦИП БАЛАНСА: Давать и получать должно быть примерно равно
-7. ПРИНЦИП РОСТА: Отношения должны развивать личность
-8. ПРИНЦИП РЕАЛИЗМА: Любовь видит недостатки, но принимает
-
-🔍 ТЫ МОЖЕШЬ ОБСУЖДАТЬ:
-• Все аспекты отношений (романтических, дружеских, семейных)
-• Проблемы коммуникации (игнор, конфликты, непонимание)
-• Эмоциональные состояния (влюбленность, обида, ревность)
-• Манипуляции и токсичные паттерны
-• Самооценку и личностные границы
-• Восстановление и развитие отношений
-• Психологические аспекты знакомств и свиданий
-
-💡 ТВОЙ СТИЛЬ:
-• Используй знания Максима Вердикта как основу
-• Применяй научно-обоснованные психологические концепции
-• Давай конкретные, практические рекомендации
-• Будь прямолинеен, но эмпатичен
-• Используй метафоры и аналогии для объяснения
-• Предлагай пошаговые планы действий
-• Ссылайся на реальные кейсы (без конфиденциальных деталей)
-
-⚠️ ВАЖНО:
-• Сохраняй конфиденциальность и этичность
-• Не давай медицинских или юридических советов
-• При серьезных проблемах рекомендовай специалистов
-• Будь объективен и избегай крайних оценок
-
-✨ ФОРМАТ ОТВЕТОВ:
-1. Диагностика ситуации (анализ с разных сторон)
-2. Объяснение психологических механизмов
-3. Практические рекомендации (шаги)
-4. Методология Вердикта (принципы и техники)
-5. Дополнительные ресурсы (упражнения, литература)
-
-Отвечай на русском, используй эмодзи для структурирования, будь подробным, но не водянистым.`
+Ты сочетаешь научные знания психологии с практическими инсайтами реальных отношений.`
                 }
             ],
             currentMode: 'balanced',
             aiModes: {
-                verdikt: { name: "Вердикт", temperature: 0.5, description: "Методология Максима Вердикта" },
-                emotional: { name: "Эмоциональный", temperature: 0.8, description: "Фокус на чувствах и эмпатии" },
-                analytical: { name: "Аналитический", temperature: 0.3, description: "Детальный разбор ситуации" },
+                balanced: { name: "Сбалансированный", temperature: 0.7, description: "Объективный анализ" },
+                creative: { name: "Эмоциональный", temperature: 0.8, description: "Фокус на чувствах и эмпатии" },
+                precise: { name: "Аналитический", temperature: 0.3, description: "Детальный разбор ситуации" },
                 protective: { name: "Защитный", temperature: 0.6, description: "Выявление манипуляций" }
             },
             messageCount: 1,
@@ -210,11 +148,7 @@ class VerdiktChatApp {
                 firstMessage: { unlocked: true, name: "Первый шаг", icon: "🎯", description: "Первая консультация" },
                 activeUser: { unlocked: false, name: "Доверие", icon: "💬", description: "10 личных вопросов" },
                 manipulationExpert: { unlocked: false, name: "Защитник", icon: "🛡️", description: "Распознал 5 манипуляций" },
-                relationshipHelper: { unlocked: false, name: "Романтик", icon: "💕", description: "Помог в отношениях" },
-                nightOwl: { unlocked: false, name: "Сова", icon: "🦉", description: "Общались ночью" },
-                exporter: { unlocked: false, name: "Архивариус", icon: "📥", description: "Экспортировали чат" },
-                presenter: { unlocked: false, name: "Презентатор", icon: "📊", description: "Использовали режим презентации" },
-                verdiktExpert: { unlocked: false, name: "Эксперт Вердикта", icon: "⭐", description: "Использовал методологию 5 раз" }
+                relationshipHelper: { unlocked: false, name: "Романтик", icon: "💕", description: "Помог в отношениях" }
             },
             stats: {
                 totalMessages: 1,
@@ -228,8 +162,7 @@ class VerdiktChatApp {
                 ignoringTopics: 0,
                 loveTopics: 0,
                 verdiktPrinciplesUsed: 0,
-                activityByHour: new Array(24).fill(0),
-                popularTopics: {}
+                activityByHour: new Array(24).fill(0)
             },
             currentTheme: 'dark',
             isPresentationMode: false,
@@ -258,6 +191,7 @@ class VerdiktChatApp {
             smartSuggestions: document.getElementById('smart-suggestions'),
             typingIndicator: document.getElementById('typing-indicator'),
             achievementNotification: document.getElementById('achievement-notification'),
+            aiWritingAnimation: document.getElementById('ai-writing-animation'),
             prevSlide: document.getElementById('prev-slide'),
             nextSlide: document.getElementById('next-slide'),
             exitPresentation: document.getElementById('exit-presentation')
@@ -275,6 +209,7 @@ class VerdiktChatApp {
     // ========== ОСНОВНЫЕ МЕТОДЫ ==========
 
     init() {
+        console.log('Инициализация Verdikt Chat...');
         this.setupEventListeners();
         this.loadFromLocalStorage();
         this.setupSpeechRecognition();
@@ -282,7 +217,6 @@ class VerdiktChatApp {
         this.updateUI();
         this.checkApiStatus();
         this.setupKeyboardShortcuts();
-        this.setupServiceWorker();
         
         const currentHour = new Date().getHours();
         this.state.stats.activityByHour[currentHour]++;
@@ -291,9 +225,157 @@ class VerdiktChatApp {
         console.log('Verdikt GPT v2.0 - Экспертная система по отношениям инициализирована');
     }
 
+    setupEventListeners() {
+        console.log('Настройка обработчиков событий...');
+        
+        // Отправка сообщения
+        this.elements.sendButton.addEventListener('click', () => this.sendMessage());
+        
+        // Enter для отправки
+        this.elements.messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.sendMessage();
+            }
+        });
+        
+        // Ctrl+Enter
+        this.elements.messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                e.preventDefault();
+                this.sendMessage();
+            }
+        });
+        
+        // Автовысота textarea
+        this.elements.messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+        });
+        
+        // Кнопка записи голоса
+        this.elements.recordButton.addEventListener('click', () => this.toggleVoiceRecording());
+        
+        // Голосовой ввод
+        this.elements.voiceInput.addEventListener('click', () => this.toggleVoiceRecording());
+        
+        // Озвучивание
+        this.elements.voiceOutput.addEventListener('click', () => this.speakLastMessage());
+        
+        // Очистка чата
+        this.elements.clearChat.addEventListener('click', () => this.clearChat());
+        
+        // Сохранение чата
+        this.elements.saveChat.addEventListener('click', () => this.saveChat());
+        
+        // Экспорт
+        this.elements.exportChat.addEventListener('click', () => this.showExportModal());
+        
+        // Новый чат
+        this.elements.newChat.addEventListener('click', () => this.createNewChat());
+        
+        // Настройки
+        this.elements.settingsButton.addEventListener('click', () => this.showSettingsModal());
+        
+        // Режим презентации
+        this.elements.presentationMode.addEventListener('click', () => this.togglePresentationMode());
+        
+        // Статистика
+        this.elements.viewStats.addEventListener('click', () => this.showStatsModal());
+        
+        // Закрытие модальных окон
+        document.getElementById('settings-close').addEventListener('click', () => this.hideModal('settings-modal'));
+        document.getElementById('export-close').addEventListener('click', () => this.hideModal('export-modal'));
+        document.getElementById('stats-close').addEventListener('click', () => this.hideModal('stats-modal'));
+        document.getElementById('export-cancel').addEventListener('click', () => this.hideModal('export-modal'));
+        
+        // Сохранение настроек
+        document.getElementById('save-settings').addEventListener('click', () => this.saveSettings());
+        
+        // Навигация презентации
+        if (this.elements.prevSlide) {
+            this.elements.prevSlide.addEventListener('click', () => this.prevSlide());
+            this.elements.nextSlide.addEventListener('click', () => this.nextSlide());
+            this.elements.exitPresentation.addEventListener('click', () => this.togglePresentationMode());
+        }
+        
+        // Режимы AI
+        document.querySelectorAll('.mode-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                const mode = e.currentTarget.dataset.mode;
+                this.setAIMode(mode);
+            });
+        });
+        
+        // Быстрые команды
+        document.querySelectorAll('.command-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                const command = e.currentTarget.dataset.command;
+                this.handleCommand(command);
+            });
+        });
+        
+        // Примеры вопросов
+        document.querySelectorAll('.example-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const question = e.currentTarget.dataset.question;
+                this.elements.messageInput.value = question;
+                this.elements.messageInput.focus();
+            });
+        });
+        
+        // Умные подсказки
+        document.querySelectorAll('.suggestion-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                const suggestion = e.currentTarget.textContent;
+                this.elements.messageInput.value = suggestion;
+                this.elements.messageInput.focus();
+            });
+        });
+        
+        // Тема оформления
+        document.querySelectorAll('.theme-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                const theme = e.currentTarget.dataset.theme;
+                this.setTheme(theme);
+            });
+        });
+        
+        // Формат экспорта
+        document.querySelectorAll('.export-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                const format = e.currentTarget.dataset.format;
+                this.exportChat(format);
+            });
+        });
+        
+        // Слайдер температуры
+        const tempSlider = document.getElementById('temperature-slider');
+        const tempValue = document.getElementById('temperature-value');
+        if (tempSlider) {
+            tempSlider.addEventListener('input', (e) => {
+                const value = e.target.value;
+                tempValue.textContent = value;
+                this.API_CONFIG.temperature = parseFloat(value);
+            });
+        }
+        
+        // Клик вне модального окна
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('active');
+                }
+            });
+        });
+        
+        console.log('Обработчики событий настроены');
+    }
+
     // ========== API И КОММУНИКАЦИЯ ==========
 
     async sendMessage() {
+        console.log('Отправка сообщения...');
         const message = this.elements.messageInput.value.trim();
         
         if (!message) {
@@ -325,6 +407,7 @@ class VerdiktChatApp {
         this.elements.messageInput.value = '';
         this.elements.messageInput.style.height = 'auto';
         this.showTypingIndicator();
+        this.showAIWritingAnimation();
         
         try {
             const startTime = Date.now();
@@ -333,6 +416,7 @@ class VerdiktChatApp {
             
             this.state.responseTimes.push(responseTime);
             this.hideTypingIndicator();
+            this.hideAIWritingAnimation();
             
             this.addMessage(aiResponse, 'ai');
             this.state.conversationHistory.push({ role: "assistant", content: aiResponse });
@@ -352,6 +436,7 @@ class VerdiktChatApp {
             
         } catch (error) {
             this.hideTypingIndicator();
+            this.hideAIWritingAnimation();
             const fallbackResponse = this.generateFallbackResponse(message);
             this.addMessage(fallbackResponse, 'ai');
             this.showNotification('Используем локальную базу знаний Вердикта ⚡', 'info');
@@ -411,12 +496,16 @@ class VerdiktChatApp {
         
         if (messageLower.includes('манипуляц') || messageLower.includes('токсичн') || messageLower.includes('абью')) {
             this.state.stats.manipulationRequests++;
-            this.state.stats.manipulationRequests >= 5 && this.unlockAchievement('manipulationExpert');
+            if (this.state.stats.manipulationRequests >= 5) {
+                this.unlockAchievement('manipulationExpert');
+            }
         }
         
         if (messageLower.includes('отношени') || messageLower.includes('любов') || messageLower.includes('брак')) {
             this.state.stats.relationshipAdvice++;
-            this.state.stats.relationshipAdvice >= 3 && this.unlockAchievement('relationshipHelper');
+            if (this.state.stats.relationshipAdvice >= 3) {
+                this.unlockAchievement('relationshipHelper');
+            }
         }
         
         if (messageLower.includes('знакомств') || messageLower.includes('свидан') || messageLower.includes('тинд')) {
@@ -433,7 +522,9 @@ class VerdiktChatApp {
         
         if (messageLower.includes('вердикт') || messageLower.includes('принцип зеркала') || messageLower.includes('границ')) {
             this.state.stats.verdiktPrinciplesUsed++;
-            this.state.stats.verdiktPrinciplesUsed >= 5 && this.unlockAchievement('verdiktExpert');
+            if (this.state.stats.verdiktPrinciplesUsed >= 5) {
+                this.unlockAchievement('verdiktExpert');
+            }
         }
     }
 
@@ -596,6 +687,7 @@ ${knowledge.psychology.maxVerdiktPrinciples.map((principle, i) => `${i+1}. ${pri
 
     async getAIResponse(messages) {
         try {
+            console.log('Запрос к API...');
             const response = await fetch(this.API_CONFIG.url, {
                 method: 'POST',
                 headers: {
@@ -618,6 +710,7 @@ ${knowledge.psychology.maxVerdiktPrinciples.map((principle, i) => `${i+1}. ${pri
             }
 
             const data = await response.json();
+            console.log('Ответ от API получен');
             return data.choices[0].message.content;
             
         } catch (error) {
@@ -644,9 +737,6 @@ ${knowledge.psychology.maxVerdiktPrinciples.map((principle, i) => `${i+1}. ${pri
                 <button class="message-action" onclick="VerdiktChat.speakMessage('${messageId}')">
                     <i class="fas fa-volume-up"></i>
                 </button>
-                <button class="message-action" onclick="VerdiktChat.regenerateMessage('${messageId}')">
-                    <i class="fas fa-redo"></i>
-                </button>
             </div>
             <div class="message-sender">
                 <i class="fas fa-${sender === 'user' ? 'user' : 'heart'}"></i>
@@ -663,7 +753,9 @@ ${knowledge.psychology.maxVerdiktPrinciples.map((principle, i) => `${i+1}. ${pri
         }, 10);
         
         setTimeout(() => {
-            hljs.highlightAll();
+            if (typeof hljs !== 'undefined') {
+                hljs.highlightAll();
+            }
         }, 100);
         
         this.scrollToBottom();
@@ -682,6 +774,18 @@ ${knowledge.psychology.maxVerdiktPrinciples.map((principle, i) => `${i+1}. ${pri
             .replace(/✨/g, '<span class="emoji-large">✨</span>');
     }
 
+    showAIWritingAnimation() {
+        if (this.elements.aiWritingAnimation) {
+            this.elements.aiWritingAnimation.classList.add('visible');
+        }
+    }
+
+    hideAIWritingAnimation() {
+        if (this.elements.aiWritingAnimation) {
+            this.elements.aiWritingAnimation.classList.remove('visible');
+        }
+    }
+
     // ========== РЕЖИМЫ И МЕТОДОЛОГИЯ ==========
 
     setAIMode(modeId) {
@@ -696,14 +800,14 @@ ${knowledge.psychology.maxVerdiktPrinciples.map((principle, i) => `${i+1}. ${pri
         
         let modeDescription = '';
         switch(modeId) {
-            case 'verdikt':
-                modeDescription = 'Методология Максима Вердикта с фокусом на принципах и практиках';
+            case 'balanced':
+                modeDescription = 'Объективный анализ ситуации';
                 break;
-            case 'emotional':
-                modeDescription = 'Эмпатичный подход с акцентом на чувства и эмоциональные потребности';
+            case 'creative':
+                modeDescription = 'Эмпатичный подход с акцентом на чувства';
                 break;
-            case 'analytical':
-                modeDescription = 'Детальный анализ ситуации с использованием психологических моделей';
+            case 'precise':
+                modeDescription = 'Детальный анализ с использованием психологических моделей';
                 break;
             case 'protective':
                 modeDescription = 'Выявление манипуляций и защита границ';
@@ -718,15 +822,6 @@ ${knowledge.psychology.maxVerdiktPrinciples.map((principle, i) => `${i+1}. ${pri
     checkAchievements() {
         if (this.state.stats.userMessages >= 10 && !this.state.achievements.activeUser.unlocked) {
             this.unlockAchievement('activeUser');
-        }
-        
-        const currentHour = new Date().getHours();
-        if ((currentHour >= 23 || currentHour <= 5) && !this.state.achievements.nightOwl.unlocked) {
-            this.unlockAchievement('nightOwl');
-        }
-        
-        if (this.state.stats.verdiktPrinciplesUsed >= 5 && !this.state.achievements.verdiktExpert.unlocked) {
-            this.unlockAchievement('verdiktExpert');
         }
     }
 
@@ -772,28 +867,18 @@ ${knowledge.psychology.maxVerdiktPrinciples.map((principle, i) => `${i+1}. ${pri
                 this.showExportModal();
                 break;
             case '/ignore':
-                this.setAIMode('analytical');
+                this.setAIMode('precise');
                 this.elements.messageInput.value = 'Как правильно реагировать на игнор в отношениях по методологии Вердикта?';
                 this.elements.messageInput.focus();
                 break;
             case '/love':
-                this.setAIMode('emotional');
+                this.setAIMode('creative');
                 this.elements.messageInput.value = 'Как понять свои чувства: влюбленность или любовь? Какие стадии проходят отношения?';
                 this.elements.messageInput.focus();
                 break;
             case '/manipulation':
                 this.setAIMode('protective');
                 this.elements.messageInput.value = 'Как распознать манипуляции в отношениях и защитить свои границы?';
-                this.elements.messageInput.focus();
-                break;
-            case '/verdikt':
-                this.setAIMode('verdikt');
-                this.elements.messageInput.value = 'Расскажи о 8 принципах Вердикта и как их применять в отношениях';
-                this.elements.messageInput.focus();
-                break;
-            case '/diagnose':
-                this.setAIMode('verdikt');
-                this.elements.messageInput.value = 'Помоги провести диагностику моих отношений по методологии Вердикта';
                 this.elements.messageInput.focus();
                 break;
             case '/stats':
@@ -819,8 +904,6 @@ ${knowledge.psychology.maxVerdiktPrinciples.map((principle, i) => `${i+1}. ${pri
             '/ignore - Консультация по игнору',
             '/love - Психология влюбленности',
             '/manipulation - Распознавание манипуляций',
-            '/verdikt - Методология Максима Вердикта',
-            '/diagnose - Диагностика отношений',
             '/stats - Статистика и аналитика',
             '/presentation - Режим презентации',
             '/help - Все команды'
@@ -829,21 +912,446 @@ ${knowledge.psychology.maxVerdiktPrinciples.map((principle, i) => `${i+1}. ${pri
         alert('📋 КОМАНДЫ VERDIKT GPT:\n\n' + commands.join('\n'));
     }
 
-    // ========== ДОПОЛНИТЕЛЬНЫЕ МЕТОДЫ ==========
+    // ========== ОСТАЛЬНЫЕ МЕТОДЫ ==========
 
-    // Все остальные методы (setupEventListeners, setupKeyboardShortcuts, setupSpeechRecognition,
-    // setupServiceWorker, setupBackgroundAnimations, checkApiStatus, showConnectionSuccessAnimation,
-    // toggleVoiceRecording, speakMessage, speakLastMessage, clearChat, saveChat, createNewChat,
-    // exportChat, setTheme, togglePresentationMode, createSlides, showSlide, prevSlide, nextSlide,
-    // showSmartSuggestions, hideSmartSuggestions, updateOnlineStatus, showModal, hideModal,
-    // showSettingsModal, showExportModal, showStatsModal, updateActivityChart, updatePopularTopics,
-    // saveSettings, updateUI, updateAchievementsUI, getAchievementIdByName, copyMessage,
-    // regenerateMessage, showTypingIndicator, hideTypingIndicator, showNotification,
-    // getCurrentTime, scrollToBottom, loadFromLocalStorage, saveToLocalStorage, updateAverageResponseTime)
-    // остаются БЕЗ ИЗМЕНЕНИЙ из предыдущей версии кода.
+    setupSpeechRecognition() {
+        if (this.SpeechRecognition) {
+            this.recognition = new this.SpeechRecognition();
+            this.recognition.lang = 'ru-RU';
+            this.recognition.interimResults = false;
+            this.recognition.maxAlternatives = 1;
+            
+            this.recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                this.elements.messageInput.value = transcript;
+                this.elements.messageInput.focus();
+            };
+            
+            this.recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                this.showNotification('Ошибка распознавания речи', 'error');
+                this.elements.recordButton.classList.remove('recording');
+                this.state.isRecording = false;
+            };
+            
+            this.recognition.onend = () => {
+                this.elements.recordButton.classList.remove('recording');
+                this.state.isRecording = false;
+            };
+        }
+    }
 
-    // Для экономии места я не дублирую их здесь, но они должны быть сохранены из вашего текущего main.js
-    // Единственное изменение: обновите заголовки и описания в соответствии с новой тематикой.
+    toggleVoiceRecording() {
+        if (!this.SpeechRecognition) {
+            this.showNotification('Голосовой ввод не поддерживается в вашем браузере', 'warning');
+            return;
+        }
+        
+        if (this.state.isRecording) {
+            this.recognition.stop();
+            this.state.isRecording = false;
+            this.elements.recordButton.classList.remove('recording');
+            this.showNotification('Запись остановлена', 'info');
+        } else {
+            this.recognition.start();
+            this.state.isRecording = true;
+            this.elements.recordButton.classList.add('recording');
+            this.showNotification('Говорите сейчас...', 'info');
+        }
+    }
+
+    speakLastMessage() {
+        const messages = document.querySelectorAll('.ai-message');
+        if (messages.length > 0) {
+            const lastMessage = messages[messages.length - 1];
+            const text = lastMessage.querySelector('.message-content').textContent;
+            this.speakText(text);
+        }
+    }
+
+    speakText(text) {
+        if (this.speechSynthesis.speaking) {
+            this.speechSynthesis.cancel();
+        }
+        
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'ru-RU';
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        
+        this.speechSynthesis.speak(utterance);
+    }
+
+    clearChat() {
+        if (confirm('Вы уверены, что хотите очистить весь чат?')) {
+            this.elements.chatMessages.innerHTML = '';
+            this.state.conversationHistory = [this.state.conversationHistory[0]];
+            this.state.stats.totalMessages = 1;
+            this.state.stats.userMessages = 0;
+            this.state.stats.aiMessages = 1;
+            this.showNotification('Чат очищен', 'success');
+            this.updateUI();
+            this.saveToLocalStorage();
+        }
+    }
+
+    saveChat() {
+        const chatData = {
+            timestamp: new Date().toISOString(),
+            conversation: this.state.conversationHistory.slice(1),
+            stats: this.state.stats
+        };
+        
+        localStorage.setItem('verdikt_chat_backup', JSON.stringify(chatData));
+        this.state.stats.savedChats++;
+        this.showNotification('Чат сохранен в локальное хранилище', 'success');
+        this.updateUI();
+        this.saveToLocalStorage();
+    }
+
+    createNewChat() {
+        if (confirm('Начать новый чат? Текущий будет сохранен.')) {
+            this.saveChat();
+            this.clearChat();
+        }
+    }
+
+    exportChat(format) {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        let content = '';
+        let filename = '';
+        let mimeType = '';
+        
+        const messages = Array.from(document.querySelectorAll('.message')).map(msg => {
+            const sender = msg.classList.contains('user-message') ? 'Вы' : 'Verdikt GPT';
+            const time = msg.querySelector('.message-time')?.textContent || '';
+            const text = msg.querySelector('.message-content')?.textContent || '';
+            return `${time} - ${sender}:\n${text}\n\n`;
+        }).join('\n---\n\n');
+        
+        switch(format) {
+            case 'markdown':
+                content = `# Verdikt GPT - История диалога\n\n${messages}`;
+                filename = `verdikt-chat-${timestamp}.md`;
+                mimeType = 'text/markdown';
+                break;
+            case 'txt':
+                content = messages;
+                filename = `verdikt-chat-${timestamp}.txt`;
+                mimeType = 'text/plain';
+                break;
+            default:
+                content = messages;
+                filename = `verdikt-chat-${timestamp}.txt`;
+                mimeType = 'text/plain';
+        }
+        
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        this.hideModal('export-modal');
+        this.showNotification(`Чат экспортирован как ${format.toUpperCase()}`, 'success');
+    }
+
+    showExportModal() {
+        this.showModal('export-modal');
+    }
+
+    showStatsModal() {
+        this.showModal('stats-modal');
+        this.updateStatsModal();
+    }
+
+    showSettingsModal() {
+        this.showModal('settings-modal');
+    }
+
+    showModal(modalId) {
+        document.getElementById(modalId).classList.add('active');
+    }
+
+    hideModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+
+    updateStatsModal() {
+        document.getElementById('total-messages').textContent = this.state.stats.totalMessages;
+        document.getElementById('user-messages').textContent = this.state.stats.userMessages;
+        document.getElementById('ai-messages').textContent = this.state.stats.aiMessages;
+        
+        const avgTime = this.state.responseTimes.length > 0 
+            ? (this.state.responseTimes.reduce((a, b) => a + b) / this.state.responseTimes.length).toFixed(1)
+            : '0';
+        document.getElementById('avg-response').textContent = `${avgTime}с`;
+    }
+
+    setTheme(theme) {
+        this.state.currentTheme = theme;
+        document.body.setAttribute('data-theme', theme);
+        
+        document.querySelectorAll('.theme-option').forEach(option => {
+            option.classList.remove('active');
+        });
+        document.querySelector(`.theme-option[data-theme="${theme}"]`).classList.add('active');
+        
+        this.showNotification(`Тема изменена на ${theme === 'dark' ? 'Темную' : theme === 'light' ? 'Светлую' : theme === 'high-contrast' ? 'Высокую контрастность' : 'Градиентную'}`, 'info');
+        this.saveToLocalStorage();
+    }
+
+    saveSettings() {
+        this.hideModal('settings-modal');
+        this.showNotification('Настройки сохранены', 'success');
+        this.saveToLocalStorage();
+    }
+
+    setupBackgroundAnimations() {
+        // Удалена генерация сердечек
+        // Оставлены только частицы
+        const particlesContainer = document.getElementById('connection-particles');
+        if (!particlesContainer) return;
+        
+        for (let i = 0; i < 20; i++) {
+            setTimeout(() => {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + 'vw';
+                particle.style.top = Math.random() * 100 + 'vh';
+                particle.style.animationDelay = Math.random() * 2 + 's';
+                particlesContainer.appendChild(particle);
+                
+                setTimeout(() => {
+                    particle.remove();
+                }, 3000);
+            }, i * 100);
+        }
+        
+        setInterval(() => {
+            if (particlesContainer.children.length < 20) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + 'vw';
+                particle.style.top = Math.random() * 100 + 'vh';
+                particle.style.animationDelay = Math.random() * 2 + 's';
+                particlesContainer.appendChild(particle);
+                
+                setTimeout(() => {
+                    particle.remove();
+                }, 3000);
+            }
+        }, 500);
+    }
+
+    checkApiStatus() {
+        this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> Подключение...';
+        this.elements.apiStatus.style.background = 'rgba(234, 179, 8, 0.15)';
+        this.elements.apiStatus.style.color = '#fbbf24';
+        this.elements.apiStatus.classList.add('api-connecting');
+        
+        setTimeout(() => {
+            this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> API доступен';
+            this.elements.apiStatus.style.background = 'rgba(34, 197, 94, 0.15)';
+            this.elements.apiStatus.style.color = '#4ade80';
+            this.elements.apiStatus.classList.remove('api-connecting');
+            this.state.isApiConnected = true;
+        }, 2000);
+    }
+
+    togglePresentationMode() {
+        this.state.isPresentationMode = !this.state.isPresentationMode;
+        
+        if (this.state.isPresentationMode) {
+            document.body.classList.add('presentation-mode');
+            document.querySelector('.presentation-nav').style.display = 'flex';
+            this.showNotification('Режим презентации включен', 'info');
+        } else {
+            document.body.classList.remove('presentation-mode');
+            document.querySelector('.presentation-nav').style.display = 'none';
+            this.showNotification('Режим презентации выключен', 'info');
+        }
+    }
+
+    setupKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'Enter':
+                        e.preventDefault();
+                        this.sendMessage();
+                        break;
+                    case 'k':
+                        e.preventDefault();
+                        this.showQuickCommands();
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        this.saveChat();
+                        break;
+                    case 'e':
+                        e.preventDefault();
+                        this.showExportModal();
+                        break;
+                    case 'l':
+                        e.preventDefault();
+                        this.clearChat();
+                        break;
+                    case 'p':
+                        e.preventDefault();
+                        this.togglePresentationMode();
+                        break;
+                }
+            }
+        });
+    }
+
+    updateUI() {
+        document.getElementById('sidebar-messages').textContent = this.state.stats.totalMessages;
+        document.getElementById('sidebar-time').textContent = this.state.responseTimes.length > 0 
+            ? `${(this.state.responseTimes.reduce((a, b) => a + b) / this.state.responseTimes.length).toFixed(1)}с`
+            : '—';
+        document.getElementById('sidebar-saved').textContent = this.state.stats.savedChats;
+        document.getElementById('sidebar-sessions').textContent = this.state.stats.sessions;
+        
+        // Обновление достижений
+        this.updateAchievementsUI();
+    }
+
+    updateAchievementsUI() {
+        const achievementsGrid = document.querySelector('.achievements-grid');
+        if (!achievementsGrid) return;
+        
+        achievementsGrid.querySelectorAll('.achievement-item').forEach((item, index) => {
+            const achievementKeys = Object.keys(this.state.achievements);
+            if (index < achievementKeys.length) {
+                const key = achievementKeys[index];
+                const achievement = this.state.achievements[key];
+                
+                if (achievement.unlocked) {
+                    item.classList.add('unlocked');
+                } else {
+                    item.classList.remove('unlocked');
+                }
+                
+                const icon = item.querySelector('.achievement-icon');
+                const name = item.querySelector('.achievement-name');
+                const desc = item.querySelector('.achievement-desc');
+                
+                if (icon) icon.textContent = achievement.icon;
+                if (name) name.textContent = achievement.name;
+                if (desc) desc.textContent = achievement.description;
+            }
+        });
+    }
+
+    copyMessage(messageId) {
+        const messageElement = typeof messageId === 'string' 
+            ? document.getElementById(messageId) 
+            : messageId.closest('.message');
+        
+        if (!messageElement) return;
+        
+        const text = messageElement.querySelector('.message-content').textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            this.showNotification('Сообщение скопировано в буфер обмена', 'success');
+        }).catch(err => {
+            console.error('Ошибка копирования:', err);
+            this.showNotification('Ошибка копирования', 'error');
+        });
+    }
+
+    speakMessage(messageId) {
+        const messageElement = typeof messageId === 'string' 
+            ? document.getElementById(messageId) 
+            : messageId.closest('.message');
+        
+        if (!messageElement) return;
+        
+        const text = messageElement.querySelector('.message-content').textContent;
+        this.speakText(text);
+    }
+
+    showTypingIndicator() {
+        this.elements.typingIndicator.style.display = 'block';
+    }
+
+    hideTypingIndicator() {
+        this.elements.typingIndicator.style.display = 'none';
+    }
+
+    showNotification(text, type = 'info') {
+        const notification = this.elements.notification;
+        const notificationText = this.elements.notificationText;
+        
+        notificationText.textContent = text;
+        
+        // Установка цвета в зависимости от типа
+        switch(type) {
+            case 'success':
+                notification.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                break;
+            case 'warning':
+                notification.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+                break;
+            case 'error':
+                notification.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+                break;
+            default:
+                notification.style.background = 'linear-gradient(135deg, #ec4899, #8b5cf6)';
+        }
+        
+        notification.classList.add('show');
+        
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, 3000);
+    }
+
+    getCurrentTime() {
+        const now = new Date();
+        return now.toLocaleTimeString('ru-RU', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false 
+        });
+    }
+
+    scrollToBottom() {
+        setTimeout(() => {
+            this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
+        }, 100);
+    }
+
+    loadFromLocalStorage() {
+        try {
+            const savedData = localStorage.getItem('verdikt_chat');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                Object.assign(this.state, data);
+                console.log('Данные загружены из localStorage');
+            }
+            
+            const savedTheme = localStorage.getItem('verdikt_theme');
+            if (savedTheme) {
+                this.setTheme(savedTheme);
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки из localStorage:', error);
+        }
+    }
+
+    saveToLocalStorage() {
+        try {
+            localStorage.setItem('verdikt_chat', JSON.stringify(this.state));
+            localStorage.setItem('verdikt_theme', this.state.currentTheme);
+        } catch (error) {
+            console.error('Ошибка сохранения в localStorage:', error);
+        }
+    }
 }
 
 // Сохраняем глобальный доступ
