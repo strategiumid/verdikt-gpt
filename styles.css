@@ -232,11 +232,13 @@ body {
 .mode-item:hover {
     background: rgba(255, 255, 255, 0.1);
     transform: translateX(5px);
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.3); /* Свечение */
 }
 
 .mode-item.active {
     background: rgba(236, 72, 153, 0.2);
     border-color: var(--primary);
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.4); /* Свечение */
 }
 
 .mode-icon {
@@ -281,6 +283,7 @@ body {
 .command-item:hover {
     background: rgba(139, 92, 246, 0.2);
     transform: translateY(-2px);
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.4); /* Свечение */
 }
 
 /* Достижения */
@@ -301,6 +304,10 @@ body {
 .achievement-item.unlocked {
     background: rgba(236, 72, 153, 0.1);
     border: 2px solid var(--primary);
+}
+
+.achievement-item:hover {
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.3); /* Свечение */
 }
 
 .achievement-icon {
@@ -332,6 +339,10 @@ body {
     padding: 15px;
     border-radius: var(--radius-md);
     text-align: center;
+}
+
+.stat-card:hover {
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.2); /* Свечение */
 }
 
 .stat-value {
@@ -383,7 +394,7 @@ body {
     font-weight: 500;
 }
 
-/* iOS-стиль кнопок */
+/* iOS-стиль кнопок с СВЕЧЕНИЕМ */
 .ios-button {
     background: var(--ios-blue);
     color: white;
@@ -407,6 +418,13 @@ body {
     -webkit-tap-highlight-color: transparent;
 }
 
+.ios-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 8px 15px rgba(236, 72, 153, 0.3),
+        0 0 20px rgba(236, 72, 153, 0.4); /* Свечение */
+}
+
 .ios-button:active {
     transform: scale(0.96);
     box-shadow: 
@@ -421,11 +439,21 @@ body {
     box-shadow: none;
 }
 
+.ios-button.secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2); /* Свечение */
+}
+
 .ios-button.tertiary {
     background: transparent;
     color: var(--ios-blue);
     box-shadow: none;
     padding: 10px 16px;
+}
+
+.ios-button.tertiary:hover {
+    background: rgba(236, 72, 153, 0.1);
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.3); /* Свечение */
 }
 
 .ios-button.small {
@@ -522,12 +550,20 @@ body {
     border-bottom-right-radius: 4px;
 }
 
+.user-message:hover {
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.4); /* Свечение */
+}
+
 .ai-message {
     align-self: flex-start;
     background: var(--bg-card-light);
     color: var(--text-primary);
     border-bottom-left-radius: 4px;
     border: 1px solid var(--border-color);
+}
+
+.ai-message:hover {
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.3); /* Свечение */
 }
 
 .message-sender {
@@ -599,6 +635,7 @@ body {
 .message-action:hover {
     background: rgba(255, 255, 255, 0.3);
     transform: scale(1.1);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.4); /* Свечение */
 }
 
 /* Голосовой интерфейс */
@@ -624,9 +661,17 @@ body {
     position: relative;
 }
 
+.voice-button:hover {
+    box-shadow: 0 0 20px rgba(236, 72, 153, 0.6); /* Свечение */
+}
+
 .voice-button.recording {
     animation: pulse 1.5s infinite;
     background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.voice-button.recording:hover {
+    box-shadow: 0 0 25px rgba(239, 68, 68, 0.7); /* Свечение */
 }
 
 .voice-button:active {
@@ -728,6 +773,10 @@ body {
     box-shadow: 0 0 0 4px rgba(236, 72, 153, 0.2);
 }
 
+#message-input:hover {
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.2); /* Свечение */
+}
+
 #message-input::placeholder {
     color: var(--text-tertiary);
 }
@@ -765,6 +814,7 @@ body {
 
 .suggestion-item:hover {
     background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 10px rgba(236, 72, 153, 0.2); /* Свечение */
 }
 
 /* Подвал */
@@ -802,6 +852,7 @@ footer {
 
 .footer-links a:hover {
     color: var(--primary-light);
+    text-shadow: 0 0 10px rgba(236, 72, 153, 0.5); /* Свечение */
 }
 
 /* Модальные окна */
@@ -867,6 +918,7 @@ footer {
 .modal-close:hover {
     background: rgba(255, 255, 255, 0.1);
     color: var(--text-primary);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3); /* Свечение */
 }
 
 /* Уведомления */
@@ -930,6 +982,7 @@ footer {
 
 .theme-option:hover {
     transform: scale(1.1);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3); /* Свечение */
 }
 
 .theme-option.active {
@@ -975,6 +1028,7 @@ footer {
     background: rgba(255, 255, 255, 0.1);
     border-color: var(--primary);
     transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(236, 72, 153, 0.3); /* Свечение */
 }
 
 .export-icon {
