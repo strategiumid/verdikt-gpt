@@ -12,13 +12,14 @@ document.addEventListener('DOMContentLoaded', function() {
 class VerdiktChatApp {
     constructor() {
         // Конфигурация API
-        this.API_CONFIG = {
-            url: 'https://openrouter.ai/api/v1/chat/completions',
-            model: 'tngtech/deepseek-r1t2-chimera:free',
-            apiKey: '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',
-            maxTokens: 2000,
-            temperature: 0.7
-        };
+        // Конфигурация API
+this.API_CONFIG = {
+url: 'https://openrouter.ai/api/v1/chat/completions',
+model: 'stepfun/step-3.5-flash:free',
+apiKey: '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',
+maxTokens: 2000,
+temperature: 0.7
+};
 
         // Состояние приложения
         this.state = {
@@ -1393,4 +1394,5 @@ class VerdiktChatApp {
 }
 
 // Создаем глобальный экземпляр для доступа из HTML
+
 window.VerdiktChat = new VerdiktChatApp();
