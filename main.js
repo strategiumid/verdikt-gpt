@@ -255,7 +255,7 @@ class VerdiktChatApp {
         // Футер ссылки
         document.getElementById('model-info').addEventListener('click', (e) => {
             e.preventDefault();
-            this.showNotification('Используется модель: deepseek-r1t2-chimera от OpenRouter', 'info');
+            this.showNotification('Используется модель: Verdikt GPT 0.01 dev', 'info');
         });
         
         document.getElementById('keyboard-shortcuts').addEventListener('click', (e) => {
