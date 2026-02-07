@@ -1,5 +1,4 @@
-// main.js 
-// Инициализация всех функций
+// main.js - Полная версия с системой истории чатов
 document.addEventListener('DOMContentLoaded', function() {
     hljs.highlightAll();
     
@@ -51,7 +50,8 @@ class VerdiktChatApp {
                 relationshipHelper: { unlocked: false, name: "Романтик", icon: "💕", description: "Помог в отношениях" },
                 nightOwl: { unlocked: false, name: "Сова", icon: "🦉", description: "Общались ночью" },
                 exporter: { unlocked: false, name: "Архивариус", icon: "📥", description: "Экспортировали чат" },
-                presenter: { unlocked: false, name: "Презентатор", icon: "📊", description: "Использовали режим презентации" }
+                presenter: { unlocked: false, name: "Презентатор", icon: "📊", description: "Использовали режим презентации" },
+                chatHistorian: { unlocked: false, name: "Историк", icon: "📚", description: "Создали 5 чатов" }
             },
             stats: {
                 totalMessages: 1,
@@ -63,7 +63,8 @@ class VerdiktChatApp {
                 relationshipAdvice: 0,
                 datingAdvice: 0,
                 activityByHour: new Array(24).fill(0),
-                popularTopics: {}
+                popularTopics: {},
+                totalChats: 1
             },
             currentTheme: 'dark',
             isPresentationMode: false,
@@ -84,7 +85,19 @@ class VerdiktChatApp {
             lockTimer: null
         };
 
+        // Система управления чатами
+        this.chatManager = {
+            chats: [],
+            currentChatId: null,
+            maxChats: 100,
+            nextChatId: 1,
+            autoSave: true,
+            autoSaveInterval: 30000,
+            autoSaveTimer: null
+        };
+
         this.elements = {
+            // Основные элементы
             chatMessages: document.getElementById('chat-messages'),
             messageInput: document.getElementById('message-input'),
             sendButton: document.getElementById('send-button'),
@@ -104,16 +117,45 @@ class VerdiktChatApp {
             smartSuggestions: document.getElementById('smart-suggestions'),
             typingIndicator: document.getElementById('typing-indicator'),
             achievementNotification: document.getElementById('achievement-notification'),
+            
+            // Навигация
             prevSlide: document.getElementById('prev-slide'),
             nextSlide: document.getElementById('next-slide'),
             exitPresentation: document.getElementById('exit-presentation'),
+            
+            // Модальные окна
             settingsClose: document.getElementById('settings-close'),
             exportClose: document.getElementById('export-close'),
             exportCancel: document.getElementById('export-cancel'),
             statsClose: document.getElementById('stats-close'),
             saveSettings: document.getElementById('save-settings'),
             temperatureSlider: document.getElementById('temperature-slider'),
-            temperatureValue: document.getElementById('temperature-value')
+            temperatureValue: document.getElementById('temperature-value'),
+            
+            // История чатов
+            toggleChatHistory: document.getElementById('toggle-chat-history'),
+            chatHistoryDropdown: document.getElementById('chat-history-dropdown'),
+            chatHistoryList: document.getElementById('chat-history-list'),
+            chatCount: document.getElementById('chat-count'),
+            importChatBtn: document.getElementById('import-chat-btn'),
+            exportChatBtn: document.getElementById('export-chat-btn'),
+            clearChatsBtn: document.getElementById('clear-chats-btn'),
+            
+            // Импорт/экспорт
+            importModal: document.getElementById('import-modal'),
+            importFileInput: document.getElementById('import-file-input'),
+            importDropzone: document.getElementById('import-dropzone'),
+            importPreview: document.getElementById('import-preview'),
+            importPreviewContent: document.getElementById('import-preview-content'),
+            importConfirm: document.getElementById('import-confirm'),
+            importCancel: document.getElementById('import-cancel'),
+            importModalClose: document.getElementById('import-modal-close'),
+            
+            exportChatModal: document.getElementById('export-chat-modal'),
+            exportChatConfirm: document.getElementById('export-chat-confirm'),
+            exportChatCancel: document.getElementById('export-chat-cancel'),
+            exportChatModalClose: document.getElementById('export-chat-modal-close'),
+            encryptionNote: document.getElementById('encryption-note')
         };
 
         this.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -133,16 +175,817 @@ class VerdiktChatApp {
         this.setupKeyboardShortcuts();
         this.setupServiceWorker();
         
+        // Загружаем историю чатов
+        await this.loadChats();
+        this.setupChatHistoryListeners();
+        
+        // Статистика
         const currentHour = new Date().getHours();
         this.state.stats.activityByHour[currentHour]++;
-        this.saveToLocalStorage();
         
+        // Шифрование
         setTimeout(async () => {
             await this.setupEncryption();
         }, 1000);
         
-        console.log('Verdikt GPT с шифрованием инициализирован');
+        // Автосохранение
+        this.startAutoSave();
+        
+        console.log('Verdikt GPT с историей чатов инициализирован');
     }
+
+    // ==================== СИСТЕМА УПРАВЛЕНИЯ ЧАТАМИ ====================
+
+    async loadChats() {
+        try {
+            let chatsData;
+            
+            if (this.encryptionState.enabled && !this.encryptionState.isLocked) {
+                const encryptedData = localStorage.getItem('verdikt_encrypted_data');
+                if (encryptedData) {
+                    const decryptedData = await this.crypto.decrypt(encryptedData, this.encryptionState.password);
+                    chatsData = decryptedData.chats || [];
+                }
+            } else {
+                const savedChats = localStorage.getItem('verdikt_chats');
+                if (savedChats) {
+                    chatsData = JSON.parse(savedChats);
+                }
+            }
+            
+            if (chatsData && Array.isArray(chatsData)) {
+                this.chatManager.chats = chatsData;
+                
+                // Восстанавливаем следующий ID
+                const maxId = Math.max(...this.chatManager.chats.map(chat => 
+                    parseInt(chat.id.replace('chat-', '')) || 0
+                ));
+                this.chatManager.nextChatId = maxId + 1;
+                
+                // Загружаем последний активный чат
+                const lastActiveId = localStorage.getItem('verdikt_last_active_chat');
+                if (lastActiveId) {
+                    const chat = this.chatManager.chats.find(c => c.id === lastActiveId);
+                    if (chat) {
+                        await this.loadChat(chat.id);
+                        return;
+                    }
+                }
+                
+                // Если есть сохраненные чаты, загружаем последний
+                if (this.chatManager.chats.length > 0) {
+                    const lastChat = this.chatManager.chats[this.chatManager.chats.length - 1];
+                    await this.loadChat(lastChat.id);
+                } else {
+                    this.createNewChat();
+                }
+            } else {
+                this.createNewChat();
+            }
+            
+            // Обновляем статистику
+            this.state.stats.totalChats = this.chatManager.chats.length;
+            
+        } catch (error) {
+            console.error('Error loading chats:', error);
+            this.createNewChat();
+        }
+    }
+
+    async saveChats() {
+        try {
+            // Сохраняем текущий чат
+            await this.saveCurrentChat();
+            
+            // Сохраняем список всех чатов
+            if (this.encryptionState.enabled && !this.encryptionState.isLocked) {
+                await this.saveEncryptedChats();
+            } else {
+                localStorage.setItem('verdikt_chats', JSON.stringify(this.chatManager.chats));
+            }
+            
+            // Сохраняем ID последнего активного чата
+            if (this.chatManager.currentChatId) {
+                localStorage.setItem('verdikt_last_active_chat', this.chatManager.currentChatId);
+            }
+            
+            this.updateChatHistoryUI();
+            
+        } catch (error) {
+            console.error('Error saving chats:', error);
+        }
+    }
+
+    async saveEncryptedChats() {
+        try {
+            const encryptedData = localStorage.getItem('verdikt_encrypted_data');
+            let decryptedData = {};
+            
+            if (encryptedData) {
+                decryptedData = await this.crypto.decrypt(encryptedData, this.encryptionState.password);
+            }
+            
+            decryptedData.chats = this.chatManager.chats;
+            
+            const reencryptedData = await this.crypto.encrypt(
+                decryptedData, 
+                this.encryptionState.password
+            );
+            
+            localStorage.setItem('verdikt_encrypted_data', reencryptedData);
+            
+        } catch (error) {
+            console.error('Error saving encrypted chats:', error);
+            throw error;
+        }
+    }
+
+    async saveCurrentChat() {
+        if (!this.chatManager.currentChatId) return;
+        
+        const chatData = {
+            id: this.chatManager.currentChatId,
+            title: this.generateChatTitle(),
+            messages: this.state.conversationHistory.filter(msg => msg.role !== 'system'),
+            timestamp: Date.now(),
+            mode: this.state.currentMode,
+            stats: {
+                totalMessages: this.state.stats.totalMessages,
+                userMessages: this.state.stats.userMessages,
+                aiMessages: this.state.stats.aiMessages,
+                savedChats: this.state.stats.savedChats
+            },
+            theme: this.state.currentTheme
+        };
+        
+        // Находим или создаем запись чата
+        const existingIndex = this.chatManager.chats.findIndex(chat => chat.id === chatData.id);
+        
+        if (existingIndex >= 0) {
+            this.chatManager.chats[existingIndex] = chatData;
+        } else {
+            this.chatManager.chats.push(chatData);
+            
+            // Ограничиваем количество сохраненных чатов
+            if (this.chatManager.chats.length > this.chatManager.maxChats) {
+                this.chatManager.chats = this.chatManager.chats.slice(-this.chatManager.maxChats);
+            }
+            
+            // Достижение за создание чатов
+            if (this.chatManager.chats.length >= 5 && !this.state.achievements.chatHistorian.unlocked) {
+                this.unlockAchievement('chatHistorian');
+            }
+        }
+    }
+
+    generateChatTitle() {
+        const userMessages = this.state.conversationHistory
+            .filter(msg => msg.role === 'user')
+            .map(msg => msg.content);
+        
+        let title = 'Новый чат';
+        
+        if (userMessages.length > 0) {
+            const firstMessage = userMessages[0];
+            
+            // Извлекаем первые слова как заголовок
+            const words = firstMessage.split(' ').slice(0, 5);
+            title = words.join(' ');
+            
+            if (title.length > 40) {
+                title = title.substring(0, 37) + '...';
+            }
+            
+            // Добавляем эмодзи в зависимости от темы
+            if (firstMessage.toLowerCase().includes('отношен') || firstMessage.toLowerCase().includes('любов')) {
+                title = '💕 ' + title;
+            } else if (firstMessage.toLowerCase().includes('знакомств') || firstMessage.toLowerCase().includes('свидан')) {
+                title = '👥 ' + title;
+            } else if (firstMessage.toLowerCase().includes('манипуляц') || firstMessage.toLowerCase().includes('токсичн')) {
+                title = '🛡️ ' + title;
+            }
+        }
+        
+        return title;
+    }
+
+    async createNewChat() {
+        const newChatId = 'chat-' + this.chatManager.nextChatId++;
+        
+        this.chatManager.currentChatId = newChatId;
+        
+        // Сбрасываем состояние
+        this.state.conversationHistory = [
+            {
+                role: "system",
+                content: `Ты - Verdikt GPT, эксперт по психологии отношений, знакомств и манипуляций.
+Отвечай на русском языке дружелюбно, но профессионально.
+Специализация:
+💕 Отношения - конфликты, общение, восстановление
+👥 Знакомства - советы по свиданиям, профилям
+🛡️ Манипуляции - распознавание, защита, границы
+
+Будь поддерживающим, давай практические советы, используй эмодзи умеренно.`
+            }
+        ];
+        
+        this.state.messageCount = 1;
+        this.state.stats.totalMessages = 1;
+        this.state.stats.userMessages = 0;
+        this.state.stats.aiMessages = 1;
+        this.state.retryCount = 0;
+        
+        // Очищаем чат
+        this.elements.chatMessages.innerHTML = `
+            <div class="message ai-message" style="opacity: 1; transform: translateY(0);">
+                <div class="message-actions">
+                    <button class="message-action" onclick="window.verdiktApp.copyMessage('msg-initial')">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                    <button class="message-action" onclick="window.verdiktApp.speakMessage('msg-initial')">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                </div>
+                <div class="message-sender"><i class="fas fa-heart"></i> Эксперт по отношениям</div>
+                <div class="message-content">Новый чат начат! Я готов помочь с вопросами об отношениях, знакомствах и манипуляциях. Расскажите, что вас беспокоит? 💕</div>
+                <div class="message-time">${this.getCurrentTime()}</div>
+            </div>
+        `;
+        
+        // Сохраняем новый чат
+        await this.saveChats();
+        
+        this.showNotification('Новый чат создан 💬', 'success');
+        this.updateUI();
+        
+        // Скрываем историю чатов
+        this.elements.chatHistoryDropdown.classList.remove('active');
+        
+        // Обновляем статистику
+        this.state.stats.totalChats = this.chatManager.chats.length;
+    }
+
+    async loadChat(chatId) {
+        const chat = this.chatManager.chats.find(c => c.id === chatId);
+        
+        if (!chat) {
+            this.showNotification('Чат не найден', 'error');
+            return;
+        }
+        
+        this.chatManager.currentChatId = chatId;
+        
+        // Восстанавливаем историю
+        this.state.conversationHistory = [
+            {
+                role: "system",
+                content: `Ты - Verdikt GPT, эксперт по психологии отношений, знакомств и манипуляций.
+Отвечай на русском языке дружелюбно, но профессионально.
+Специализация:
+💕 Отношения - конфликты, общение, восстановление
+👥 Знакомства - советы по свиданиям, профилям
+🛡️ Манипуляции - распознавание, защита, границы
+
+Будь поддерживающим, давай практические советы, используй эмодзи умеренно.`
+            },
+            ...chat.messages
+        ];
+        
+        // Восстанавливаем статистику
+        if (chat.stats) {
+            Object.assign(this.state.stats, chat.stats);
+        }
+        
+        this.state.messageCount = chat.messages.length + 1;
+        
+        // Восстанавливаем режим
+        if (chat.mode) {
+            this.setAIMode(chat.mode);
+        }
+        
+        // Восстанавливаем тему
+        if (chat.theme) {
+            this.setTheme(chat.theme);
+        }
+        
+        // Очищаем и перерисовываем сообщения
+        this.elements.chatMessages.innerHTML = '';
+        
+        chat.messages.forEach((msg, index) => {
+            const messageId = `msg-${chatId}-${index}`;
+            const messageElement = document.createElement('div');
+            messageElement.className = `message ${msg.role === 'user' ? 'user' : 'ai'}-message`;
+            messageElement.id = messageId;
+            messageElement.style.opacity = '1';
+            messageElement.style.transform = 'translateY(0)';
+            
+            const sender = msg.role === 'user' ? 'Вы' : 'Эксперт по отношениям';
+            const icon = msg.role === 'user' ? 'user' : 'heart';
+            
+            messageElement.innerHTML = `
+                <div class="message-actions">
+                    <button class="message-action" onclick="window.verdiktApp.copyMessage('${messageId}')">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                    <button class="message-action" onclick="window.verdiktApp.speakMessage('${messageId}')">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                </div>
+                <div class="message-sender">
+                    <i class="fas fa-${icon}"></i>
+                    ${sender}
+                </div>
+                <div class="message-content">${this.formatMessage(msg.content)}</div>
+                <div class="message-time">${this.formatTimestamp(chat.timestamp)}</div>
+            `;
+            
+            this.elements.chatMessages.appendChild(messageElement);
+        });
+        
+        this.showNotification(`Загружен чат: ${chat.title}`, 'success');
+        this.scrollToBottom();
+        this.updateUI();
+        this.elements.chatHistoryDropdown.classList.remove('active');
+    }
+
+    async deleteChat(chatId) {
+        if (this.chatManager.chats.length <= 1) {
+            this.showNotification('Нельзя удалить последний чат', 'warning');
+            return;
+        }
+        
+        const chat = this.chatManager.chats.find(c => c.id === chatId);
+        
+        if (!chat) return;
+        
+        if (confirm(`Удалить чат "${chat.title}"?`)) {
+            const index = this.chatManager.chats.findIndex(c => c.id === chatId);
+            
+            if (index >= 0) {
+                this.chatManager.chats.splice(index, 1);
+                
+                // Если удалили текущий чат, загружаем другой
+                if (chatId === this.chatManager.currentChatId) {
+                    if (this.chatManager.chats.length > 0) {
+                        await this.loadChat(this.chatManager.chats[0].id);
+                    } else {
+                        this.createNewChat();
+                    }
+                }
+                
+                await this.saveChats();
+                this.state.stats.totalChats = this.chatManager.chats.length;
+                this.showNotification('Чат удален 🗑️', 'info');
+            }
+        }
+    }
+
+    async clearAllChats() {
+        if (this.chatManager.chats.length === 0) {
+            return;
+        }
+        
+        if (confirm('Вы уверены, что хотите удалить ВСЕ чаты? Это действие нельзя отменить.')) {
+            this.chatManager.chats = [];
+            this.createNewChat();
+            
+            this.state.stats.totalChats = 1;
+            this.showNotification('Все чаты удалены 🗑️', 'info');
+        }
+    }
+
+    formatTimestamp(timestamp) {
+        const date = new Date(timestamp);
+        const now = new Date();
+        
+        // Сегодня
+        if (date.toDateString() === now.toDateString()) {
+            return `Сегодня ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+        }
+        
+        // Вчера
+        const yesterday = new Date(now);
+        yesterday.setDate(now.getDate() - 1);
+        if (date.toDateString() === yesterday.toDateString()) {
+            return `Вчера ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+        }
+        
+        // На этой неделе
+        const weekAgo = new Date(now);
+        weekAgo.setDate(now.getDate() - 7);
+        if (date > weekAgo) {
+            const days = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+            return `${days[date.getDay()]} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+        }
+        
+        // Старые сообщения
+        return `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear()}`;
+    }
+
+    updateChatHistoryUI() {
+        const chatList = this.elements.chatHistoryList;
+        const chatCount = this.elements.chatCount;
+        
+        if (!chatList) return;
+        
+        // Обновляем счетчик
+        chatCount.textContent = this.chatManager.chats.length;
+        
+        // Очищаем список
+        chatList.innerHTML = '';
+        
+        if (this.chatManager.chats.length === 0) {
+            chatList.innerHTML = '<div class="chat-history-empty">Нет сохраненных чатов</div>';
+            return;
+        }
+        
+        // Сортируем чаты по времени (новые сверху)
+        const sortedChats = [...this.chatManager.chats].sort((a, b) => b.timestamp - a.timestamp);
+        
+        // Добавляем каждый чат в список
+        sortedChats.forEach(chat => {
+            const chatItem = document.createElement('div');
+            chatItem.className = 'chat-history-item';
+            if (chat.id === this.chatManager.currentChatId) {
+                chatItem.classList.add('active');
+            }
+            
+            const messageCount = chat.messages ? chat.messages.length : 0;
+            const date = new Date(chat.timestamp);
+            const timeStr = date.toLocaleTimeString('ru-RU', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            const dateStr = date.toLocaleDateString('ru-RU', {
+                day: '2-digit',
+                month: '2-digit'
+            });
+            
+            chatItem.innerHTML = `
+                <div class="chat-history-title">${chat.title || 'Без названия'}</div>
+                <div class="chat-history-meta">
+                    <span>${dateStr} ${timeStr}</span>
+                    <span class="chat-history-count">${messageCount} сообщ.</span>
+                </div>
+            `;
+            
+            chatItem.addEventListener('click', () => {
+                this.loadChat(chat.id);
+            });
+            
+            // Контекстное меню для удаления
+            chatItem.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                this.deleteChat(chat.id);
+            });
+            
+            chatList.appendChild(chatItem);
+        });
+    }
+
+    setupChatHistoryListeners() {
+        // Кнопка переключения истории
+        this.elements.toggleChatHistory.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.elements.chatHistoryDropdown.classList.toggle('active');
+            this.updateChatHistoryUI();
+        });
+        
+        // Закрытие истории при клике вне ее
+        document.addEventListener('click', (e) => {
+            if (!this.elements.chatHistoryDropdown.contains(e.target) && 
+                !this.elements.toggleChatHistory.contains(e.target)) {
+                this.elements.chatHistoryDropdown.classList.remove('active');
+            }
+        });
+        
+        // Кнопки действий
+        this.elements.importChatBtn.addEventListener('click', () => {
+            this.elements.chatHistoryDropdown.classList.remove('active');
+            this.showImportModal();
+        });
+        
+        this.elements.exportChatBtn.addEventListener('click', () => {
+            this.elements.chatHistoryDropdown.classList.remove('active');
+            this.showExportChatModal();
+        });
+        
+        this.elements.clearChatsBtn.addEventListener('click', () => {
+            this.elements.chatHistoryDropdown.classList.remove('active');
+            this.clearAllChats();
+        });
+        
+        // Существующая кнопка "Новый чат"
+        this.elements.newChat.addEventListener('click', () => {
+            this.createNewChat();
+        });
+        
+        // Импорт/экспорт
+        this.setupImportListeners();
+        this.setupExportListeners();
+    }
+
+    setupImportListeners() {
+        // Открытие файлового диалога
+        this.elements.importDropzone.addEventListener('click', () => {
+            this.elements.importFileInput.click();
+        });
+        
+        // Drag & drop
+        this.elements.importDropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            this.elements.importDropzone.style.borderColor = 'var(--primary)';
+            this.elements.importDropzone.style.background = 'rgba(236, 72, 153, 0.1)';
+        });
+        
+        this.elements.importDropzone.addEventListener('dragleave', () => {
+            this.elements.importDropzone.style.borderColor = 'var(--border-color)';
+            this.elements.importDropzone.style.background = '';
+        });
+        
+        this.elements.importDropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            this.elements.importDropzone.style.borderColor = 'var(--border-color)';
+            this.elements.importDropzone.style.background = '';
+            
+            const file = e.dataTransfer.files[0];
+            if (file && file.type === 'application/json') {
+                this.handleImportFile(file);
+            } else {
+                this.showNotification('Пожалуйста, выберите файл JSON', 'error');
+            }
+        });
+        
+        // Выбор файла
+        this.elements.importFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                this.handleImportFile(file);
+            }
+        });
+        
+        // Кнопки
+        this.elements.importConfirm.addEventListener('click', () => {
+            this.importChat();
+        });
+        
+        this.elements.importCancel.addEventListener('click', () => {
+            this.hideModal('import-modal');
+        });
+        
+        this.elements.importModalClose.addEventListener('click', () => {
+            this.hideModal('import-modal');
+        });
+    }
+
+    setupExportListeners() {
+        // Выбор формата экспорта
+        document.querySelectorAll('#export-chat-modal .export-option[data-format]').forEach(option => {
+            option.addEventListener('click', (e) => {
+                document.querySelectorAll('#export-chat-modal .export-option').forEach(opt => {
+                    opt.classList.remove('active');
+                });
+                option.classList.add('active');
+                
+                // Показываем/скрываем заметку о шифровании
+                const format = option.dataset.format;
+                if (format === 'json-encrypted') {
+                    this.elements.encryptionNote.style.display = 'block';
+                } else {
+                    this.elements.encryptionNote.style.display = 'none';
+                }
+            });
+        });
+        
+        // Кнопки
+        this.elements.exportChatConfirm.addEventListener('click', () => {
+            const selectedFormat = document.querySelector('#export-chat-modal .export-option.active')?.dataset.format;
+            if (selectedFormat) {
+                this.exportChatToFile(selectedFormat);
+            }
+        });
+        
+        this.elements.exportChatCancel.addEventListener('click', () => {
+            this.hideModal('export-chat-modal');
+        });
+        
+        this.elements.exportChatModalClose.addEventListener('click', () => {
+            this.hideModal('export-chat-modal');
+        });
+    }
+
+    async handleImportFile(file) {
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+            
+            this.showImportPreview(data);
+            this.elements.importConfirm.disabled = false;
+            
+        } catch (error) {
+            console.error('Error reading import file:', error);
+            this.showNotification('Ошибка чтения файла. Проверьте формат.', 'error');
+        }
+    }
+
+    showImportPreview(data) {
+        this.elements.importPreview.style.display = 'block';
+        
+        let previewHTML = '';
+        
+        if (data.chats && Array.isArray(data.chats)) {
+            previewHTML = `<p>Найдено ${data.chats.length} чатов:</p><ul>`;
+            data.chats.forEach((chat, index) => {
+                previewHTML += `
+                    <li style="margin-bottom: 8px;">
+                        <strong>${chat.title || 'Без названия'}</strong><br>
+                        <small>${new Date(chat.timestamp).toLocaleString('ru-RU')}</small><br>
+                        <small>${chat.messages?.length || 0} сообщений</small>
+                    </li>
+                `;
+            });
+            previewHTML += '</ul>';
+        } else if (data.messages && Array.isArray(data.messages)) {
+            previewHTML = `
+                <p><strong>${data.title || 'Импортируемый чат'}</strong></p>
+                <p>Сообщений: ${data.messages.length}</p>
+                <p>Дата: ${new Date(data.timestamp || Date.now()).toLocaleString('ru-RU')}</p>
+            `;
+        } else {
+            previewHTML = '<p>Неизвестный формат данных</p>';
+        }
+        
+        this.elements.importPreviewContent.innerHTML = previewHTML;
+    }
+
+    async importChat() {
+        try {
+            const file = this.elements.importFileInput.files[0];
+            if (!file) return;
+            
+            const text = await file.text();
+            const data = JSON.parse(text);
+            
+            let importedChats = [];
+            
+            if (data.chats && Array.isArray(data.chats)) {
+                importedChats = data.chats;
+            } else if (data.messages) {
+                importedChats = [data];
+            } else {
+                throw new Error('Неверный формат файла');
+            }
+            
+            // Добавляем чаты с новыми ID
+            importedChats.forEach(chat => {
+                const newId = 'chat-' + this.chatManager.nextChatId++;
+                const newChat = {
+                    ...chat,
+                    id: newId,
+                    timestamp: chat.timestamp || Date.now()
+                };
+                
+                this.chatManager.chats.push(newChat);
+            });
+            
+            await this.saveChats();
+            
+            // Загружаем последний импортированный чат
+            if (importedChats.length > 0) {
+                const lastChat = this.chatManager.chats[this.chatManager.chats.length - 1];
+                await this.loadChat(lastChat.id);
+            }
+            
+            this.hideModal('import-modal');
+            this.state.stats.totalChats = this.chatManager.chats.length;
+            this.showNotification(`Импортировано ${importedChats.length} чатов ✅`, 'success');
+            
+        } catch (error) {
+            console.error('Import error:', error);
+            this.showNotification('Ошибка импорта: ' + error.message, 'error');
+        }
+    }
+
+    async exportChatToFile(format) {
+        try {
+            if (!this.chatManager.currentChatId) {
+                this.showNotification('Нет активного чата для экспорта', 'error');
+                return;
+            }
+            
+            const chat = this.chatManager.chats.find(c => c.id === this.chatManager.currentChatId);
+            
+            if (!chat) {
+                this.showNotification('Чат не найден', 'error');
+                return;
+            }
+            
+            let exportData;
+            let filename;
+            let mimeType = 'application/json';
+            
+            if (format === 'json-encrypted') {
+                const password = prompt('Введите пароль для шифрования (минимум 8 символов):');
+                if (!password || password.length < 8) {
+                    this.showNotification('Пароль должен быть не менее 8 символов', 'error');
+                    return;
+                }
+                
+                const confirmPassword = prompt('Подтвердите пароль:');
+                if (password !== confirmPassword) {
+                    this.showNotification('Пароли не совпадают', 'error');
+                    return;
+                }
+                
+                const encryptedData = await this.crypto.encrypt(chat, password);
+                
+                exportData = {
+                    version: '2.1',
+                    type: 'verdikt-chat-encrypted',
+                    timestamp: Date.now(),
+                    data: encryptedData,
+                    metadata: {
+                        title: chat.title,
+                        messageCount: chat.messages?.length || 0,
+                        encryption: 'AES-GCM-256'
+                    }
+                };
+                
+                filename = `verdikt-chat-encrypted-${Date.now()}.json`;
+                
+            } else {
+                exportData = chat;
+                filename = `verdikt-chat-${Date.now()}.json`;
+            }
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            this.hideModal('export-chat-modal');
+            this.showNotification('Чат экспортирован 📥', 'success');
+            
+        } catch (error) {
+            console.error('Export error:', error);
+            this.showNotification('Ошибка экспорта: ' + error.message, 'error');
+        }
+    }
+
+    showImportModal() {
+        this.elements.importFileInput.value = '';
+        this.elements.importPreview.style.display = 'none';
+        this.elements.importConfirm.disabled = true;
+        this.showModal('import-modal');
+    }
+
+    showExportChatModal() {
+        document.querySelectorAll('#export-chat-modal .export-option').forEach(opt => opt.classList.remove('active'));
+        const firstOption = document.querySelector('#export-chat-modal .export-option');
+        if (firstOption) {
+            firstOption.classList.add('active');
+            if (firstOption.dataset.format === 'json-encrypted') {
+                this.elements.encryptionNote.style.display = 'block';
+            }
+        }
+        this.showModal('export-chat-modal');
+    }
+
+    startAutoSave() {
+        if (!this.chatManager.autoSave) return;
+        
+        // Сохраняем каждые 30 секунд
+        this.chatManager.autoSaveTimer = setInterval(async () => {
+            if (this.chatManager.currentChatId && this.state.messageCount > 1) {
+                await this.saveChats();
+            }
+        }, this.chatManager.autoSaveInterval);
+        
+        // Сохраняем при закрытии страницы
+        window.addEventListener('beforeunload', () => {
+            if (this.chatManager.currentChatId && this.state.messageCount > 1) {
+                this.saveChatsSync();
+            }
+        });
+    }
+
+    saveChatsSync() {
+        try {
+            localStorage.setItem('verdikt_chats', JSON.stringify(this.chatManager.chats));
+            if (this.chatManager.currentChatId) {
+                localStorage.setItem('verdikt_last_active_chat', this.chatManager.currentChatId);
+            }
+        } catch (error) {
+            console.error('Sync save error:', error);
+        }
+    }
+
+    // ==================== ШИФРОВАНИЕ И БЕЗОПАСНОСТЬ ====================
 
     async setupEncryption() {
         if (!this.crypto.isSupported()) {
@@ -401,21 +1244,17 @@ class VerdiktChatApp {
 
     async encryptAllExistingData(password) {
         const dataToEncrypt = {
-            savedChats: JSON.parse(localStorage.getItem('verdikt_saved_chats') || '[]'),
-            stats: JSON.parse(localStorage.getItem('verdikt_stats') || '{}'),
-            achievements: JSON.parse(localStorage.getItem('verdikt_achievements') || '{}'),
+            chats: this.chatManager.chats,
+            stats: this.state.stats,
+            achievements: this.state.achievements,
             settings: {
-                theme: localStorage.getItem('verdikt_theme')
+                theme: this.state.currentTheme
             }
         };
         
         try {
             const encryptedData = await this.crypto.encrypt(dataToEncrypt, password);
             localStorage.setItem('verdikt_encrypted_data', encryptedData);
-            
-            localStorage.removeItem('verdikt_saved_chats');
-            localStorage.removeItem('verdikt_stats');
-            localStorage.removeItem('verdikt_achievements');
             
         } catch (error) {
             console.error('Error encrypting existing data:', error);
@@ -547,18 +1386,19 @@ class VerdiktChatApp {
             
             const decryptedData = await this.crypto.decrypt(encryptedData, password);
             
-            if (decryptedData.savedChats) {
-                localStorage.setItem('verdikt_saved_chats', JSON.stringify(decryptedData.savedChats));
-                this.state.stats.savedChats = decryptedData.savedChats.length;
+            // Загружаем чаты
+            if (decryptedData.chats) {
+                this.chatManager.chats = decryptedData.chats;
+                this.state.stats.totalChats = this.chatManager.chats.length;
             }
             
+            // Загружаем статистику
             if (decryptedData.stats) {
-                localStorage.setItem('verdikt_stats', JSON.stringify(decryptedData.stats));
                 Object.assign(this.state.stats, decryptedData.stats);
             }
             
+            // Загружаем достижения
             if (decryptedData.achievements) {
-                localStorage.setItem('verdikt_achievements', JSON.stringify(decryptedData.achievements));
                 Object.keys(decryptedData.achievements).forEach(key => {
                     if (this.state.achievements[key]) {
                         this.state.achievements[key].unlocked = decryptedData.achievements[key].unlocked;
@@ -566,6 +1406,7 @@ class VerdiktChatApp {
                 });
             }
             
+            // Загружаем настройки
             if (decryptedData.settings?.theme) {
                 this.setTheme(decryptedData.settings.theme);
             }
@@ -605,7 +1446,10 @@ class VerdiktChatApp {
         }
     }
 
+    // ==================== ОСНОВНЫЕ ФУНКЦИИ ЧАТА ====================
+
     setupEventListeners() {
+        // Отправка сообщений
         this.elements.sendButton.addEventListener('click', () => this.sendMessage());
         this.elements.messageInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.ctrlKey) {
@@ -614,10 +1458,12 @@ class VerdiktChatApp {
             }
         });
         
+        // Голосовые функции
         this.elements.recordButton.addEventListener('click', () => this.toggleVoiceRecording());
         this.elements.voiceInput.addEventListener('click', () => this.toggleVoiceRecording());
         this.elements.voiceOutput.addEventListener('click', () => this.speakLastMessage());
         
+        // Команды
         document.querySelectorAll('.command-item').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const command = e.target.dataset.command;
@@ -625,6 +1471,7 @@ class VerdiktChatApp {
             });
         });
         
+        // Режимы AI
         document.querySelectorAll('.mode-item').forEach(mode => {
             mode.addEventListener('click', (e) => {
                 const modeId = e.currentTarget.dataset.mode;
@@ -632,6 +1479,7 @@ class VerdiktChatApp {
             });
         });
         
+        // Примеры вопросов
         document.querySelectorAll('.example-button').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -641,20 +1489,22 @@ class VerdiktChatApp {
             });
         });
         
+        // Кнопки управления
         this.elements.clearChat.addEventListener('click', () => this.clearChat());
         this.elements.exportChat.addEventListener('click', () => this.showExportModal());
         this.elements.saveChat.addEventListener('click', () => this.saveChat());
-        this.elements.newChat.addEventListener('click', () => this.createNewChat());
         this.elements.settingsButton.addEventListener('click', () => this.showSettingsModal());
         this.elements.presentationMode.addEventListener('click', () => this.togglePresentationMode());
         this.elements.viewStats.addEventListener('click', () => this.showStatsModal());
         
+        // Настройки
         this.elements.temperatureSlider.addEventListener('input', (e) => {
             const value = e.target.value;
             this.elements.temperatureValue.textContent = value;
             this.API_CONFIG.temperature = parseFloat(value);
         });
         
+        // Темы
         document.querySelectorAll('.theme-option').forEach(theme => {
             theme.addEventListener('click', (e) => {
                 const themeName = e.currentTarget.dataset.theme;
@@ -662,33 +1512,40 @@ class VerdiktChatApp {
             });
         });
         
-        document.querySelectorAll('.export-option').forEach(option => {
+        // Экспорт
+        document.querySelectorAll('#export-modal .export-option').forEach(option => {
             option.addEventListener('click', (e) => {
                 const format = e.currentTarget.dataset.format;
                 this.exportChat(format);
             });
         });
         
+        // Модальные окна
         this.elements.settingsClose.addEventListener('click', () => this.hideModal('settings-modal'));
         this.elements.exportClose.addEventListener('click', () => this.hideModal('export-modal'));
         this.elements.exportCancel.addEventListener('click', () => this.hideModal('export-modal'));
         this.elements.statsClose.addEventListener('click', () => this.hideModal('stats-modal'));
         this.elements.saveSettings.addEventListener('click', () => this.saveSettings());
         
+        // Презентация
         this.elements.prevSlide.addEventListener('click', () => this.prevSlide());
         this.elements.nextSlide.addEventListener('click', () => this.nextSlide());
         this.elements.exitPresentation.addEventListener('click', () => this.togglePresentationMode());
         
+        // Автовысота текстового поля
         this.elements.messageInput.addEventListener('input', () => {
             this.elements.messageInput.style.height = 'auto';
             this.elements.messageInput.style.height = Math.min(this.elements.messageInput.scrollHeight, 200) + 'px';
         });
         
+        // Сетевое соединение
         window.addEventListener('online', () => this.updateOnlineStatus(true));
         window.addEventListener('offline', () => this.updateOnlineStatus(false));
         
+        // Сохранение при закрытии
         window.addEventListener('beforeunload', () => this.saveToLocalStorage());
         
+        // Футер ссылки
         document.getElementById('model-info').addEventListener('click', (e) => {
             e.preventDefault();
             this.showNotification('Модель: microsoft/DialoGPT-medium (Hugging Face)', 'info');
@@ -704,11 +1561,1189 @@ class VerdiktChatApp {
             this.showNotification('Используется Hugging Face API. Данные анонимизированы.', 'info');
         });
         
+        // Управление шифрованием
         document.getElementById('encryption-manager')?.addEventListener('click', () => {
             this.showEncryptionManager();
         });
     }
 
+    async sendMessage() {
+        const message = this.elements.messageInput.value.trim();
+        
+        if (!message) {
+            this.showNotification('Введите сообщение', 'warning');
+            return;
+        }
+        
+        if (message.startsWith('/')) {
+            if (this.handleCommand(message)) {
+                this.elements.messageInput.value = '';
+                return;
+            }
+        }
+        
+        if (!this.isTopicRelevant(message)) {
+            this.showNotification('Я специализируюсь только на отношениях, знакомствах и манипуляциях.', 'warning');
+            return;
+        }
+        
+        this.addMessage(message, 'user');
+        this.state.conversationHistory.push({ role: "user", content: message });
+        this.state.messageCount++;
+        this.state.stats.totalMessages++;
+        this.state.stats.userMessages++;
+        
+        this.updateTopicStats(message);
+        
+        const currentHour = new Date().getHours();
+        this.state.stats.activityByHour[currentHour]++;
+        
+        this.checkAchievements();
+        
+        this.elements.messageInput.value = '';
+        this.elements.messageInput.style.height = 'auto';
+        
+        this.showTypingIndicator();
+        if (this.state.messageCount <= 3) {
+            this.showNotification('Первые запросы могут занимать 20-40 секунд (загрузка модели)', 'info');
+        }
+        
+        try {
+            const startTime = Date.now();
+            const aiResponse = await this.getAIResponse(this.state.conversationHistory);
+            const responseTime = (Date.now() - startTime) / 1000;
+            
+            this.state.responseTimes.push(responseTime);
+            
+            this.hideTypingIndicator();
+            
+            this.addMessage(aiResponse, 'ai');
+            this.state.conversationHistory.push({ role: "assistant", content: aiResponse });
+            this.state.stats.totalMessages++;
+            this.state.stats.aiMessages++;
+            
+            if (this.state.conversationHistory.length > 20) {
+                this.state.conversationHistory = [
+                    this.state.conversationHistory[0],
+                    ...this.state.conversationHistory.slice(-18)
+                ];
+            }
+            
+            this.showNotification(`Ответ получен за ${responseTime.toFixed(1)}с ✅`, 'success');
+            this.updateUI();
+            await this.saveChats();
+            
+            this.state.retryCount = 0;
+            
+        } catch (error) {
+            this.hideTypingIndicator();
+            console.error('API Error details:', error);
+            
+            let errorMessage = "Извините, произошла ошибка при получении ответа. ";
+            let userMessage = error.message;
+            
+            if (error.message.includes('503') || error.message.includes('загружается')) {
+                if (this.state.retryCount < this.state.maxRetries) {
+                    this.state.retryCount++;
+                    errorMessage += `Попытка ${this.state.retryCount}/${this.state.maxRetries}. Подождите 30 секунд.`;
+                    userMessage = "Модель загружается, подождите 30 секунд и попробуйте снова...";
+                } else {
+                    errorMessage = "Сервер перегружен. Пожалуйста, попробуйте позже или используйте более короткий запрос.";
+                }
+            } else if (error.message.includes('429')) {
+                errorMessage = "Превышен лимит запросов. Бесплатный лимит: 30K токенов в месяц.";
+            } else if (error.message.includes('401')) {
+                errorMessage = "Ошибка аутентификации API. Проверьте API ключ.";
+            }
+            
+            this.addMessage(userMessage, 'ai');
+            this.showNotification(errorMessage, 'error');
+            
+            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API';
+            this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
+            this.elements.apiStatus.style.color = '#f87171';
+        }
+        
+        this.scrollToBottom();
+    }
+
+    async getAIResponse(messages) {
+        if (!this.state.isApiConnected) {
+            throw new Error('API не подключен');
+        }
+
+        try {
+            const userMessages = messages.filter(msg => msg.role === "user");
+            const lastUserMessage = userMessages[userMessages.length - 1]?.content || 
+                                   messages[messages.length - 1]?.content || 
+                                   "Привет";
+            
+            const prompt = `Ты - психолог Verdikt GPT, специалист по отношениям, знакомствам и манипуляциям.
+Пользователь: ${lastUserMessage}
+Психолог:`;
+
+            const response = await fetch(this.API_CONFIG.url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    inputs: prompt,
+                    parameters: {
+                        max_new_tokens: this.API_CONFIG.maxTokens,
+                        temperature: this.API_CONFIG.temperature,
+                        top_p: 0.95,
+                        repetition_penalty: 1.2,
+                        do_sample: true,
+                        return_full_text: false,
+                        num_return_sequences: 1
+                    },
+                    options: {
+                        use_cache: true,
+                        wait_for_model: true
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('HF API Error Response:', errorText);
+                
+                if (response.status === 503) {
+                    throw new Error('Модель загружается. Попробуйте через 20-30 секунд.');
+                } else if (response.status === 429) {
+                    throw new Error('Превышен лимит запросов (429). Попробуйте позже.');
+                } else if (response.status === 401) {
+                    throw new Error('Ошибка аутентификации API (401)');
+                } else {
+                    throw new Error(`HF API Error: ${response.status} - ${errorText.substring(0, 100)}`);
+                }
+            }
+
+            const data = await response.json();
+            
+            let generatedText;
+            if (Array.isArray(data)) {
+                generatedText = data[0]?.generated_text || '';
+            } else if (data.generated_text) {
+                generatedText = data.generated_text;
+            } else if (data[0]?.generated_text) {
+                generatedText = data[0].generated_text;
+            } else {
+                console.warn('Unexpected API response format:', data);
+                generatedText = JSON.stringify(data);
+            }
+            
+            let cleanResponse = generatedText.replace(prompt, '').trim();
+            cleanResponse = cleanResponse.replace(/Психолог:/g, '').trim();
+            
+            if (!cleanResponse || cleanResponse.length < 5) {
+                const fallbackResponses = [
+                    "Я понимаю вашу ситуацию. Важно обсудить это открыто и честно с партнером. 💬",
+                    "Это сложный вопрос. Рекомендую сосредоточиться на ваших чувствах и потребностях. 💕",
+                    "В подобных ситуациях важно сохранять спокойствие и действовать обдуманно. 🧘‍♀️",
+                    "Я бы посоветовал обратиться к профессиональному психологу для более детальной консультации. 👥"
+                ];
+                cleanResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+            }
+            
+            return cleanResponse;
+            
+        } catch (error) {
+            console.error('Error in getAIResponse:', error);
+            throw error;
+        }
+    }
+
+    // ==================== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ====================
+
+    isTopicRelevant(message) {
+        const messageLower = message.toLowerCase();
+        const relevantTopics = [
+            'отношени', 'любов', 'брак', 'семь', 'пар', 'встреча', 'расставан',
+            'ревност', 'довери', 'обид', 'ссор', 'конфликт', 'кризис',
+            'верност', 'измен', 'секс', 'интим', 'родител', 'дети',
+            'свекр', 'тещ', 'муж', 'жена', 'мужчин', 'женщин',
+            'знакомств', 'свидан', 'встреч', 'тинд', 'бад', 'приложен',
+            'профил', 'анкет', 'перв', 'втор', 'свидан', 'роман',
+            'флирт', 'симпати', 'нравит', 'влюблен', 'ухаживан',
+            'познаком', 'встрет', 'познаком',
+            'манипуляц', 'токсичн', 'абью', 'насил', 'давлен',
+            'шантаж', 'вина', 'обид', 'контрол', 'завис', 'унижен',
+            'оскорбл', 'газлайтинг', 'нарцис', 'психолог', 'границ',
+            'уважен', 'достоинств', 'самооцен', 'психологическ',
+            'психолог', 'эмоц', 'чувств', 'общен', 'коммуникац',
+            'довери', 'уважен', 'пониман', 'поддерж', 'совет',
+            'помощ', 'консультац', 'эксперт', 'специалист'
+        ];
+        
+        return relevantTopics.some(topic => messageLower.includes(topic));
+    }
+
+    updateTopicStats(message) {
+        const messageLower = message.toLowerCase();
+        
+        if (messageLower.includes('манипуляц') || messageLower.includes('токсичн') || messageLower.includes('абью')) {
+            this.state.stats.manipulationRequests++;
+            if (this.state.stats.manipulationRequests === 5) {
+                this.unlockAchievement('manipulationExpert');
+            }
+        }
+        
+        if (messageLower.includes('отношени') || messageLower.includes('любов') || messageLower.includes('брак')) {
+            this.state.stats.relationshipAdvice++;
+            if (this.state.stats.relationshipAdvice === 3) {
+                this.unlockAchievement('relationshipHelper');
+            }
+        }
+        
+        if (messageLower.includes('знакомств') || messageLower.includes('свидан') || messageLower.includes('тинд')) {
+            this.state.stats.datingAdvice++;
+        }
+    }
+
+    addMessage(content, sender) {
+        const messageId = 'msg-' + Date.now();
+        const time = this.getCurrentTime();
+        
+        const messageElement = document.createElement('div');
+        messageElement.className = `message ${sender}-message`;
+        messageElement.id = messageId;
+        messageElement.style.opacity = '0';
+        messageElement.style.transform = 'translateY(20px)';
+        
+        messageElement.innerHTML = `
+            <div class="message-actions">
+                <button class="message-action" onclick="window.verdiktApp.copyMessage('${messageId}')">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <button class="message-action" onclick="window.verdiktApp.speakMessage('${messageId}')">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+                <button class="message-action" onclick="window.verdiktApp.regenerateMessage('${messageId}')">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+            <div class="message-sender">
+                <i class="fas fa-${sender === 'user' ? 'user' : 'heart'}"></i>
+                ${sender === 'user' ? 'Вы' : 'Эксперт по отношениям'}
+            </div>
+            <div class="message-content">${this.formatMessage(content)}</div>
+            <div class="message-time">${time}</div>
+        `;
+        
+        this.elements.chatMessages.appendChild(messageElement);
+        
+        setTimeout(() => {
+            messageElement.style.animation = 'messageAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+        }, 10);
+        
+        setTimeout(() => {
+            hljs.highlightAll();
+        }, 100);
+        
+        this.scrollToBottom();
+    }
+
+    formatMessage(text) {
+        return text
+            .replace(/\n/g, '<br>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/`{3}([\s\S]*?)`{3}/g, '<pre><code>$1</code></pre>')
+            .replace(/`([^`]+)`/g, '<code>$1</code>');
+    }
+
+    handleCommand(command) {
+        const parts = command.split(' ');
+        const cmd = parts[0];
+        
+        switch(cmd) {
+            case '/clear':
+                this.clearChat();
+                break;
+            case '/save':
+                this.saveChat();
+                break;
+            case '/export':
+                this.showExportModal();
+                break;
+            case '/history':
+                this.elements.chatHistoryDropdown.classList.toggle('active');
+                this.updateChatHistoryUI();
+                break;
+            case '/import':
+                this.showImportModal();
+                break;
+            case '/advice':
+                this.setAIMode('balanced');
+                this.elements.messageInput.value = 'Нужен совет по отношениям...';
+                this.elements.messageInput.focus();
+                break;
+            case '/manipulation':
+                this.setAIMode('protective');
+                this.elements.messageInput.value = 'Как понять, что мной манипулируют?';
+                this.elements.messageInput.focus();
+                break;
+            case '/stats':
+                this.showStatsModal();
+                break;
+            case '/presentation':
+                this.togglePresentationMode();
+                break;
+            case '/help':
+                this.showQuickCommands();
+                break;
+            default:
+                return false;
+        }
+        return true;
+    }
+
+    clearChat() {
+        if (confirm('Очистить текущий чат? Сообщения будут удалены.')) {
+            this.state.conversationHistory = [
+                {
+                    role: "system",
+                    content: `Ты - Verdikt GPT, эксперт по психологии отношений, знакомств и манипуляций.
+Отвечай на русском языке дружелюбно, но профессионально.
+Специализация:
+💕 Отношения - конфликты, общение, восстановление
+👥 Знакомства - советы по свиданиям, профилям
+🛡️ Манипуляции - распознавание, защита, границы
+
+Будь поддерживающим, давай практические советы, используй эмодзи умеренно.`
+                }
+            ];
+            
+            this.elements.chatMessages.innerHTML = `
+                <div class="message ai-message" style="opacity: 1; transform: translateY(0);">
+                    <div class="message-actions">
+                        <button class="message-action" onclick="window.verdiktApp.copyMessage('msg-initial')">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <button class="message-action" onclick="window.verdiktApp.speakMessage('msg-initial')">
+                            <i class="fas fa-volume-up"></i>
+                        </button>
+                    </div>
+                    <div class="message-sender"><i class="fas fa-heart"></i> Эксперт по отношениям</div>
+                    <div class="message-content">Чат очищен! Я готов помочь с вопросами об отношениях, знакомствах и манипуляциях. Расскажите, что вас беспокоит? 💕</div>
+                    <div class="message-time">${this.getCurrentTime()}</div>
+                </div>
+            `;
+            
+            this.saveChats();
+            this.showNotification('Чат очищен 🗑️', 'info');
+        }
+    }
+
+    saveChat() {
+        this.saveChats();
+        this.showNotification('Чат сохранен 💾', 'success');
+    }
+
+    setAIMode(modeId) {
+        if (!this.state.aiModes[modeId]) return;
+        
+        this.state.currentMode = modeId;
+        
+        document.querySelectorAll('.mode-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        const activeMode = document.querySelector(`.mode-item[data-mode="${modeId}"]`);
+        if (activeMode) {
+            activeMode.classList.add('active');
+        }
+        
+        this.API_CONFIG.temperature = this.state.aiModes[modeId].temperature;
+        
+        this.showNotification(`Режим изменен на: ${this.state.aiModes[modeId].name}`, 'info');
+    }
+
+    togglePresentationMode() {
+        this.state.isPresentationMode = !this.state.isPresentationMode;
+        
+        if (this.state.isPresentationMode) {
+            document.body.classList.add('presentation-mode');
+            document.querySelector('.presentation-nav').style.display = 'flex';
+            this.createSlides();
+            this.showSlide(0);
+            this.unlockAchievement('presenter');
+            this.showNotification('Режим презентации активирован 📊', 'info');
+        } else {
+            document.body.classList.remove('presentation-mode');
+            document.querySelector('.presentation-nav').style.display = 'none';
+            this.showNotification('Режим презентации выключен', 'info');
+        }
+    }
+
+    setTheme(theme) {
+        this.state.currentTheme = theme;
+        document.body.setAttribute('data-theme', theme);
+        document.querySelectorAll('.theme-option').forEach(opt => opt.classList.remove('active'));
+        const activeTheme = document.querySelector(`.theme-option[data-theme="${theme}"]`);
+        if (activeTheme) {
+            activeTheme.classList.add('active');
+        }
+        
+        this.saveChats();
+        this.showNotification(`Тема изменена: ${theme}`, 'info');
+    }
+
+    // ==================== СИСТЕМА УВЕДОМЛЕНИЙ ====================
+
+    showNotification(text, type = 'info') {
+        this.elements.notificationText.textContent = text;
+        
+        switch(type) {
+            case 'success':
+                this.elements.notification.style.background = 'linear-gradient(135deg, #ec4899, #db2777)';
+                break;
+            case 'error':
+                this.elements.notification.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+                break;
+            case 'warning':
+                this.elements.notification.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+                break;
+            default:
+                this.elements.notification.style.background = 'var(--gradient)';
+        }
+        
+        this.elements.notification.classList.add('show');
+        
+        setTimeout(() => {
+            this.elements.notification.classList.remove('show');
+        }, 3000);
+    }
+
+    unlockAchievement(achievementId) {
+        if (!this.state.achievements[achievementId] || this.state.achievements[achievementId].unlocked) return;
+        
+        this.state.achievements[achievementId].unlocked = true;
+        
+        const achievement = this.state.achievements[achievementId];
+        document.getElementById('achievement-icon').textContent = achievement.icon;
+        document.getElementById('achievement-title').textContent = achievement.name;
+        document.getElementById('achievement-desc').textContent = achievement.description;
+        
+        const notification = document.getElementById('achievement-notification');
+        notification.style.display = 'flex';
+        notification.style.animation = 'none';
+        
+        setTimeout(() => {
+            notification.style.animation = 'achievementSlide 3s ease';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }, 10);
+        
+        this.updateAchievementsUI();
+        this.saveChats();
+    }
+
+    checkAchievements() {
+        if (this.state.stats.userMessages >= 10 && !this.state.achievements.activeUser.unlocked) {
+            this.unlockAchievement('activeUser');
+        }
+        
+        const currentHour = new Date().getHours();
+        if ((currentHour >= 23 || currentHour <= 5) && !this.state.achievements.nightOwl.unlocked) {
+            this.unlockAchievement('nightOwl');
+        }
+    }
+
+    // ==================== ЛОКАЛЬНОЕ ХРАНИЛИЩЕ ====================
+
+    loadFromLocalStorage() {
+        const encryptionSetup = localStorage.getItem('verdikt_encryption_setup');
+        
+        if (encryptionSetup === 'enabled') {
+            this.encryptionState.enabled = true;
+            this.encryptionState.isLocked = true;
+        } else {
+            const savedTheme = localStorage.getItem('verdikt_theme');
+            if (savedTheme) {
+                this.setTheme(savedTheme);
+            }
+        }
+    }
+
+    async saveToLocalStorage() {
+        await this.saveChats();
+    }
+
+    // ==================== ПОЛЕЗНЫЕ ФУНКЦИИ ====================
+
+    getCurrentTime() {
+        const now = new Date();
+        return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    }
+
+    scrollToBottom() {
+        setTimeout(() => {
+            this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
+        }, 100);
+    }
+
+    showTypingIndicator() {
+        this.elements.typingIndicator.style.display = 'block';
+        this.scrollToBottom();
+    }
+
+    hideTypingIndicator() {
+        this.elements.typingIndicator.style.display = 'none';
+    }
+
+    updateUI() {
+        document.getElementById('sidebar-messages').textContent = this.state.stats.totalMessages;
+        document.getElementById('sidebar-time').textContent = 
+            this.state.responseTimes.length > 0 
+            ? (this.state.responseTimes.reduce((a, b) => a + b, 0) / this.state.responseTimes.length).toFixed(1) + 'с'
+            : '—';
+        document.getElementById('sidebar-saved').textContent = this.state.stats.savedChats;
+        document.getElementById('sidebar-sessions').textContent = this.state.stats.sessions;
+        
+        this.updateAchievementsUI();
+    }
+
+    updateAchievementsUI() {
+        document.querySelectorAll('.achievement-item').forEach(item => {
+            const achievementName = item.querySelector('.achievement-name').textContent;
+            const achievementId = this.getAchievementIdByName(achievementName);
+            
+            if (achievementId && this.state.achievements[achievementId]?.unlocked) {
+                item.classList.add('unlocked');
+            } else {
+                item.classList.remove('unlocked');
+            }
+        });
+    }
+
+    getAchievementIdByName(name) {
+        for (const [id, achievement] of Object.entries(this.state.achievements)) {
+            if (achievement.name === name) return id;
+        }
+        return null;
+    }
+
+    copyMessage(messageId) {
+        const messageElement = document.getElementById(messageId);
+        if (!messageElement) return;
+        
+        const messageText = messageElement.querySelector('.message-content').textContent;
+        navigator.clipboard.writeText(messageText).then(() => {
+            this.showNotification('Сообщение скопировано 📋', 'success');
+        }).catch(() => {
+            const textArea = document.createElement('textarea');
+            textArea.value = messageText;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            this.showNotification('Сообщение скопировано 📋', 'success');
+        });
+    }
+
+    regenerateMessage(messageId) {
+        const messageElement = document.getElementById(messageId);
+        if (!messageElement) return;
+        
+        const messageIndex = Array.from(this.elements.chatMessages.children).indexOf(messageElement);
+        if (messageIndex > 0) {
+            const prevMessage = this.elements.chatMessages.children[messageIndex - 1];
+            const userMessage = prevMessage.querySelector('.message-content').textContent;
+            
+            messageElement.remove();
+            this.state.conversationHistory.pop();
+            
+            this.elements.messageInput.value = userMessage;
+            this.sendMessage();
+        }
+    }
+
+    toggleVoiceRecording() {
+        if (!this.recognition) {
+            this.showNotification('Голосовой ввод не поддерживается в вашем браузере', 'error');
+            return;
+        }
+        
+        if (!this.state.isRecording) {
+            this.state.isRecording = true;
+            this.elements.recordButton.classList.add('recording');
+            this.elements.recordButton.innerHTML = '<i class="fas fa-stop"></i>';
+            this.recognition.start();
+            this.showNotification('Запись началась... 🎤', 'info');
+        } else {
+            this.state.isRecording = false;
+            this.elements.recordButton.classList.remove('recording');
+            this.elements.recordButton.innerHTML = '<i class="fas fa-microphone"></i>';
+            this.recognition.stop();
+            this.showNotification('Запись остановлена', 'info');
+        }
+    }
+
+    speakMessage(messageId) {
+        if (this.state.isSpeaking) {
+            this.speechSynthesis.cancel();
+            this.state.isSpeaking = false;
+            this.showNotification('Озвучивание остановлено', 'info');
+            return;
+        }
+        
+        const messageElement = document.getElementById(messageId);
+        if (!messageElement) return;
+        
+        const messageText = messageElement.querySelector('.message-content').textContent;
+        
+        const utterance = new SpeechSynthesisUtterance(messageText);
+        utterance.lang = 'ru-RU';
+        utterance.rate = 1;
+        utterance.pitch = 1;
+        
+        utterance.onstart = () => {
+            this.state.isSpeaking = true;
+            this.showNotification('Озвучивание началось... 🔊', 'info');
+        };
+        
+        utterance.onend = () => {
+            this.state.isSpeaking = false;
+        };
+        
+        utterance.onerror = () => {
+            this.state.isSpeaking = false;
+            this.showNotification('Ошибка озвучивания', 'error');
+        };
+        
+        this.speechSynthesis.speak(utterance);
+    }
+
+    speakLastMessage() {
+        const messages = this.elements.chatMessages.querySelectorAll('.ai-message');
+        if (messages.length > 0) {
+            const lastMessage = messages[messages.length - 1];
+            this.speakMessage(lastMessage.id);
+        } else {
+            this.showNotification('Нет сообщений для озвучивания', 'warning');
+        }
+    }
+
+    // ==================== МОДАЛЬНЫЕ ОКНА ====================
+
+    showModal(modalId) {
+        document.getElementById(modalId).classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    hideModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    showSettingsModal() {
+        document.getElementById('temperature-slider').value = this.API_CONFIG.temperature;
+        document.getElementById('temperature-value').textContent = this.API_CONFIG.temperature;
+        this.showModal('settings-modal');
+    }
+
+    showExportModal() {
+        this.showModal('export-modal');
+    }
+
+    showStatsModal() {
+        document.getElementById('total-messages').textContent = this.state.stats.totalMessages;
+        document.getElementById('avg-response').textContent = 
+            this.state.responseTimes.length > 0 
+            ? (this.state.responseTimes.reduce((a, b) => a + b, 0) / this.state.responseTimes.length).toFixed(1) + 'с'
+            : '0с';
+        document.getElementById('user-messages').textContent = this.state.stats.userMessages;
+        document.getElementById('ai-messages').textContent = this.state.stats.aiMessages;
+        
+        this.updateActivityChart();
+        this.updatePopularTopics();
+        
+        this.showModal('stats-modal');
+    }
+
+    // ==================== ПРОЧИЕ ФУНКЦИИ ====================
+
+    setupSpeechRecognition() {
+        if (this.SpeechRecognition) {
+            this.recognition = new this.SpeechRecognition();
+            this.recognition.lang = 'ru-RU';
+            this.recognition.continuous = false;
+            this.recognition.interimResults = false;
+            
+            this.recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                this.elements.messageInput.value = transcript;
+                this.showNotification('Речь распознана: ' + transcript.substring(0, 50) + '...');
+            };
+            
+            this.recognition.onerror = (event) => {
+                console.error('Speech recognition error', event.error);
+                this.showNotification('Ошибка распознавания речи', 'error');
+            };
+            
+            this.recognition.onend = () => {
+                if (this.state.isRecording) {
+                    this.toggleVoiceRecording();
+                }
+            };
+        }
+    }
+
+    setupBackgroundAnimations() {
+        const heartsContainer = document.getElementById('floating-hearts');
+        for (let i = 0; i < 15; i++) {
+            const heart = document.createElement('div');
+            heart.className = 'heart';
+            heart.innerHTML = '❤';
+            heart.style.left = `${Math.random() * 100}%`;
+            heart.style.animationDelay = `${Math.random() * 15}s`;
+            heart.style.fontSize = `${10 + Math.random() * 20}px`;
+            heartsContainer.appendChild(heart);
+        }
+
+        const particlesContainer = document.getElementById('connection-particles');
+        for (let i = 0; i < 30; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = `${Math.random() * 100}%`;
+            particle.style.top = `${Math.random() * 100}%`;
+            particle.style.animationDelay = `${Math.random() * 3}s`;
+            particlesContainer.appendChild(particle);
+        }
+    }
+
+    async checkApiStatus() {
+        this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> Подключение к Hugging Face...';
+        this.elements.apiStatus.classList.add('api-connecting');
+        this.elements.apiStatus.classList.remove('api-error');
+        
+        this.state.isApiConnected = true;
+        
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Таймаут подключения')), 5000)
+        );
+        
+        try {
+            const response = await Promise.race([
+                fetch('https://api-inference.huggingface.co/status', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
+                    }
+                }),
+                timeoutPromise
+            ]);
+            
+            if (response.ok) {
+                this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> HF API доступен';
+                this.elements.apiStatus.style.background = 'rgba(34, 197, 94, 0.15)';
+                this.elements.apiStatus.style.color = '#4ade80';
+                this.elements.apiStatus.classList.remove('api-connecting');
+                this.showConnectionSuccessAnimation();
+                this.showNotification('Hugging Face API подключен ✅', 'success');
+            } else {
+                throw new Error(`HTTP ${response.status}`);
+            }
+        } catch (error) {
+            console.log('API check error:', error);
+            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Проверьте соединение';
+            this.elements.apiStatus.classList.remove('api-connecting');
+            this.showNotification('API проверка не удалась, но можно попробовать отправить сообщение', 'warning');
+        }
+    }
+
+    setupServiceWorker() {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(registration => {
+                    console.log('Service Worker зарегистрирован:', registration);
+                })
+                .catch(error => {
+                    console.log('Ошибка регистрации Service Worker:', error);
+                });
+        }
+    }
+
+    setupKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key.toLowerCase()) {
+                    case 'enter':
+                        e.preventDefault();
+                        this.sendMessage();
+                        break;
+                    case 'n':
+                        e.preventDefault();
+                        this.createNewChat();
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        this.saveChats();
+                        break;
+                    case 'e':
+                        e.preventDefault();
+                        this.showExportModal();
+                        break;
+                    case 'h':
+                        e.preventDefault();
+                        this.elements.chatHistoryDropdown.classList.toggle('active');
+                        this.updateChatHistoryUI();
+                        break;
+                    case 'l':
+                        e.preventDefault();
+                        this.clearChat();
+                        break;
+                    case 'p':
+                        e.preventDefault();
+                        this.togglePresentationMode();
+                        break;
+                }
+            }
+            
+            if (this.state.isPresentationMode) {
+                switch(e.key) {
+                    case 'ArrowLeft':
+                        this.prevSlide();
+                        break;
+                    case 'ArrowRight':
+                        this.nextSlide();
+                        break;
+                    case 'Escape':
+                        this.togglePresentationMode();
+                        break;
+                }
+            }
+        });
+    }
+
+    setupCookieNotification() {
+        const notification = document.getElementById('cookie-notification');
+        const acceptBtn = document.getElementById('cookie-accept');
+        const rejectBtn = document.getElementById('cookie-reject');
+        const policyLink = document.getElementById('cookie-policy-link');
+        
+        const cookieConsent = localStorage.getItem('verdikt_cookie_consent');
+        if (cookieConsent) {
+            notification.style.display = 'none';
+            return;
+        }
+        
+        setTimeout(() => {
+            notification.style.display = 'flex';
+        }, 1000);
+        
+        acceptBtn.addEventListener('click', () => {
+            this.handleCookieAccept();
+        });
+        
+        rejectBtn.addEventListener('click', () => {
+            this.handleCookieReject();
+        });
+        
+        policyLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.showCookiePolicy();
+        });
+    }
+
+    handleCookieAccept() {
+        const notification = document.getElementById('cookie-notification');
+        
+        localStorage.setItem('verdikt_cookie_consent', 'accepted');
+        localStorage.setItem('verdikt_cookie_date', new Date().toISOString());
+        
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateY(100%)';
+        
+        setTimeout(() => {
+            notification.style.display = 'none';
+        }, 300);
+        
+        this.showNotification('Настройки cookie сохранены ✅', 'success');
+    }
+
+    handleCookieReject() {
+        const notification = document.getElementById('cookie-notification');
+        
+        localStorage.setItem('verdikt_cookie_consent', 'rejected');
+        
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateY(100%)';
+        
+        setTimeout(() => {
+            notification.style.display = 'none';
+        }, 300);
+        
+        this.showNotification('Файлы cookie отключены', 'info');
+    }
+
+    showCookiePolicy() {
+        alert(`Политика использования файлов cookie в Verdikt GPT:
+
+1. Обязательные cookie:
+   - Сохранение истории чатов
+   - Сохранение настроек темы
+   - Сохранение достижений
+   - Сохранение статистики
+
+2. Данные хранятся только локально:
+   - Все данные сохраняются в вашем браузере
+   - Никакая информация не отправляется на сервер
+   - Вы можете очистить данные в настройках браузера
+
+3. Для чего мы используем cookie:
+   - Улучшение пользовательского опыта
+   - Сохранение ваших предпочтений
+   - Анализ использования (анонимный)
+   - Работа в офлайн-режиме
+
+4. Ваши права:
+   - Вы можете отключить cookie в любое время
+   - Вы можете очистить все сохраненные данные
+   - Все данные хранятся локально на вашем устройстве
+
+Все данные обрабатываются анонимно и используются только для улучшения работы приложения.`);
+    }
+
+    updateActivityChart() {
+        const ctx = document.getElementById('activity-chart').getContext('2d');
+        
+        if (this.activityChart) {
+            this.activityChart.destroy();
+        }
+        
+        this.activityChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 24}, (_, i) => i + ':00'),
+                datasets: [{
+                    label: 'Активность по часам',
+                    data: this.state.stats.activityByHour,
+                    borderColor: '#ec4899',
+                    backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: 'var(--text-secondary)'
+                        },
+                        grid: {
+                            color: 'var(--border-color)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: 'var(--text-secondary)',
+                            maxRotation: 45
+                        },
+                        grid: {
+                            color: 'var(--border-color)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    updatePopularTopics() {
+        const topicsElement = document.getElementById('popular-topics');
+        let topicsHTML = '';
+        
+        if (this.state.stats.manipulationRequests > 0) {
+            topicsHTML += `<div style="margin-bottom: 10px;">🛡️ Манипуляции: ${this.state.stats.manipulationRequests} запросов</div>`;
+        }
+        
+        if (this.state.stats.relationshipAdvice > 0) {
+            topicsHTML += `<div style="margin-bottom: 10px;">💕 Отношения: ${this.state.stats.relationshipAdvice} советов</div>`;
+        }
+        
+        if (this.state.stats.datingAdvice > 0) {
+            topicsHTML += `<div style="margin-bottom: 10px;">👥 Знакомства: ${this.state.stats.datingAdvice} консультаций</div>`;
+        }
+        
+        if (!topicsHTML) {
+            topicsHTML = 'Пока нет данных о популярных темах';
+        }
+        
+        topicsElement.innerHTML = topicsHTML;
+    }
+
+    saveSettings() {
+        const temperature = parseFloat(document.getElementById('temperature-slider').value);
+        this.API_CONFIG.temperature = temperature;
+        
+        this.saveChats();
+        
+        this.hideModal('settings-modal');
+        this.showNotification('Настройки сохранены ✅', 'success');
+    }
+
+    updateOnlineStatus(isOnline) {
+        const statusElement = document.getElementById('offline-status');
+        if (isOnline) {
+            statusElement.innerHTML = '<i class="fas fa-wifi"></i> Онлайн';
+            statusElement.style.color = '#4ade80';
+            this.showNotification('Подключение восстановлено', 'success');
+        } else {
+            statusElement.innerHTML = '<i class="fas fa-wifi-slash"></i> Офлайн';
+            statusElement.style.color = '#f87171';
+            this.showNotification('Нет подключения к интернету', 'warning');
+        }
+    }
+
+    createSlides() {
+        this.state.slides = [];
+        const messages = this.elements.chatMessages.querySelectorAll('.message');
+        
+        messages.forEach((msg, index) => {
+            this.state.slides.push({
+                content: msg.outerHTML,
+                index: index
+            });
+        });
+        
+        this.state.currentSlide = 0;
+    }
+
+    showSlide(index) {
+        if (index >= 0 && index < this.state.slides.length) {
+            this.state.currentSlide = index;
+            this.elements.chatMessages.innerHTML = this.state.slides[index].content;
+            this.elements.chatMessages.scrollTop = 0;
+        }
+    }
+
+    prevSlide() {
+        this.showSlide(this.state.currentSlide - 1);
+    }
+
+    nextSlide() {
+        this.showSlide(this.state.currentSlide + 1);
+    }
+
+    exportChat(format) {
+        const chatContent = this.state.conversationHistory
+            .filter(msg => msg.role !== 'system')
+            .map(msg => `${msg.role === 'user' ? 'Вы' : 'Эксперт'}: ${msg.content}`)
+            .join('\n\n');
+        
+        let content, mimeType, extension;
+        
+        switch(format) {
+            case 'pdf':
+                window.print();
+                return;
+            case 'markdown':
+                content = `# Консультация по отношениям - Verdikt GPT\n\n${chatContent}`;
+                mimeType = 'text/markdown';
+                extension = 'md';
+                break;
+            case 'html':
+                content = `
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Консультация по отношениям - Verdikt GPT</title>
+        <style>
+            body { font-family: Arial, sans-serif; padding: 20px; background: #fdf2f8; }
+            .message { margin: 10px 0; padding: 10px; border-radius: 5px; }
+            .user { background: #ec4899; color: white; }
+            .ai { background: #fce7f3; }
+        </style>
+    </head>
+    <body>
+        <h1 style="color: #ec4899;">Консультация по отношениям - Verdikt GPT</h1>
+        <p>Экспортировано: ${new Date().toLocaleString()}</p>
+        <div>${chatContent.replace(/\n/g, '<br>')}</div>
+    </body>
+</html>`;
+                mimeType = 'text/html';
+                extension = 'html';
+                break;
+            case 'json':
+                content = JSON.stringify({
+                    chat: this.state.conversationHistory.filter(msg => msg.role !== 'system'),
+                    metadata: {
+                        exported: new Date().toISOString(),
+                        totalMessages: this.state.stats.totalMessages,
+                        model: 'microsoft/DialoGPT-medium',
+                        topics: {
+                            manipulations: this.state.stats.manipulationRequests,
+                            relationships: this.state.stats.relationshipAdvice,
+                            dating: this.state.stats.datingAdvice
+                        }
+                    }
+                }, null, 2);
+                mimeType = 'application/json';
+                extension = 'json';
+                break;
+        }
+        
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `verdikt-консультация-${new Date().toISOString().split('T')[0]}.${extension}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        this.hideModal('export-modal');
+        this.showNotification(`Консультация экспортирована в ${format.toUpperCase()} 📥`, 'success');
+    }
+
+    showQuickCommands() {
+        const commands = [
+            '/clear - Очистить текущий чат',
+            '/save - Сохранить все чаты',
+            '/export - Экспорт в разные форматы',
+            '/history - Показать историю чатов',
+            '/import - Импорт чатов из файла',
+            '/advice - Совет по отношениям',
+            '/manipulation - Распознавание манипуляций',
+            '/stats - Статистика',
+            '/presentation - Режим презентации',
+            '/help - Помощь по командам'
+        ];
+        
+        alert('Доступные команды:\n\n' + commands.join('\n'));
+    }
+
+    showConnectionSuccessAnimation() {
+        const particlesContainer = document.getElementById('connection-particles');
+        for (let i = 0; i < 10; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = '50%';
+            particle.style.top = '50%';
+            particle.style.background = '#4ade80';
+            particle.style.width = '6px';
+            particle.style.height = '6px';
+            particle.style.animation = 'particleFlow 1.5s ease-out forwards';
+            particlesContainer.appendChild(particle);
+            
+            setTimeout(() => particle.remove(), 1500);
+        }
+    }
+
+    // Методы управления шифрованием (сокращенные)
     showEncryptionManager() {
         const modalHTML = `
         <div class="modal" id="encryption-manager-modal">
@@ -832,8 +2867,8 @@ class VerdiktChatApp {
             });
             
             document.getElementById('change-password').addEventListener('click', () => {
-                this.showChangePasswordModal();
                 modal.remove();
+                this.showChangePasswordModal();
             });
             
             document.getElementById('export-backup').addEventListener('click', () => {
@@ -858,6 +2893,10 @@ class VerdiktChatApp {
         });
     }
 
+    showChangePasswordModal() {
+        this.showNotification('Функция изменения пароля в разработке', 'info');
+    }
+
     async exportEncryptedBackup() {
         try {
             const encryptedData = localStorage.getItem('verdikt_encrypted_data');
@@ -868,12 +2907,13 @@ class VerdiktChatApp {
             }
             
             const backupData = {
-                version: '2.0',
+                version: '2.1',
                 timestamp: new Date().toISOString(),
                 data: encryptedData,
                 metadata: {
                     model: 'microsoft/DialoGPT-medium',
-                    encryption: 'AES-GCM-256'
+                    encryption: 'AES-GCM-256',
+                    chatCount: this.chatManager.chats.length
                 }
             };
             
@@ -914,10 +2954,27 @@ class VerdiktChatApp {
             const encryptedData = localStorage.getItem('verdikt_encrypted_data');
             const decryptedData = await this.crypto.decrypt(encryptedData, password);
             
-            localStorage.setItem('verdikt_saved_chats', JSON.stringify(decryptedData.savedChats || []));
-            localStorage.setItem('verdikt_stats', JSON.stringify(decryptedData.stats || {}));
-            localStorage.setItem('verdikt_achievements', JSON.stringify(decryptedData.achievements || {}));
+            // Сохраняем данные без шифрования
+            if (decryptedData.chats) {
+                localStorage.setItem('verdikt_chats', JSON.stringify(decryptedData.chats));
+                this.chatManager.chats = decryptedData.chats;
+            }
             
+            if (decryptedData.stats) {
+                localStorage.setItem('verdikt_stats', JSON.stringify(decryptedData.stats));
+                Object.assign(this.state.stats, decryptedData.stats);
+            }
+            
+            if (decryptedData.achievements) {
+                localStorage.setItem('verdikt_achievements', JSON.stringify(decryptedData.achievements));
+                Object.keys(decryptedData.achievements).forEach(key => {
+                    if (this.state.achievements[key]) {
+                        this.state.achievements[key].unlocked = decryptedData.achievements[key].unlocked;
+                    }
+                });
+            }
+            
+            // Очищаем зашифрованные данные
             localStorage.removeItem('verdikt_encrypted_data');
             localStorage.removeItem('verdikt_password_hash');
             localStorage.setItem('verdikt_encryption_setup', 'skipped');
@@ -992,1241 +3049,5 @@ class VerdiktChatApp {
                 }
             });
         });
-    }
-
-    async saveToLocalStorage() {
-        if (this.encryptionState.enabled && !this.encryptionState.isLocked) {
-            await this.saveEncryptedData();
-        } else {
-            localStorage.setItem('verdikt_theme', this.state.currentTheme);
-            localStorage.setItem('verdikt_stats', JSON.stringify(this.state.stats));
-            
-            const achievementsData = {};
-            Object.keys(this.state.achievements).forEach(key => {
-                achievementsData[key] = {
-                    unlocked: this.state.achievements[key].unlocked
-                };
-            });
-            localStorage.setItem('verdikt_achievements', JSON.stringify(achievementsData));
-        }
-    }
-
-    async saveEncryptedData() {
-        try {
-            const dataToEncrypt = {
-                savedChats: JSON.parse(localStorage.getItem('verdikt_saved_chats') || '[]'),
-                stats: JSON.parse(localStorage.getItem('verdikt_stats') || '{}'),
-                achievements: JSON.parse(localStorage.getItem('verdikt_achievements') || '{}'),
-                settings: {
-                    theme: this.state.currentTheme
-                }
-            };
-            
-            dataToEncrypt.stats = this.state.stats;
-            
-            const achievementsData = {};
-            Object.keys(this.state.achievements).forEach(key => {
-                achievementsData[key] = {
-                    unlocked: this.state.achievements[key].unlocked
-                };
-            });
-            dataToEncrypt.achievements = achievementsData;
-            
-            const encryptedData = await this.crypto.encrypt(
-                dataToEncrypt, 
-                this.encryptionState.password
-            );
-            
-            localStorage.setItem('verdikt_encrypted_data', encryptedData);
-            
-        } catch (error) {
-            console.error('Error saving encrypted data:', error);
-            this.showNotification('Ошибка сохранения данных', 'error');
-        }
-    }
-
-    loadFromLocalStorage() {
-        const encryptionSetup = localStorage.getItem('verdikt_encryption_setup');
-        
-        if (encryptionSetup === 'enabled') {
-            this.encryptionState.enabled = true;
-            this.encryptionState.isLocked = true;
-        } else {
-            const savedTheme = localStorage.getItem('verdikt_theme');
-            if (savedTheme) {
-                this.setTheme(savedTheme);
-            }
-            
-            const savedChats = JSON.parse(localStorage.getItem('verdikt_saved_chats') || '[]');
-            this.state.stats.savedChats = savedChats.length;
-            
-            const savedStats = JSON.parse(localStorage.getItem('verdikt_stats') || '{}');
-            if (savedStats.totalMessages) {
-                Object.assign(this.state.stats, savedStats);
-            }
-            
-            const savedAchievements = JSON.parse(localStorage.getItem('verdikt_achievements') || '{}');
-            Object.keys(savedAchievements).forEach(key => {
-                if (this.state.achievements[key]) {
-                    this.state.achievements[key].unlocked = savedAchievements[key].unlocked;
-                }
-            });
-        }
-    }
-
-    // Остальные методы (sendMessage, getAIResponse, addMessage и т.д.) остаются без изменений
-    // ... [вставьте все оригинальные методы из предыдущей версии main.js здесь] ...
-
-    setupKeyboardShortcuts() {
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                switch(e.key) {
-                    case 'Enter':
-                        e.preventDefault();
-                        this.sendMessage();
-                        break;
-                    case 'k':
-                        e.preventDefault();
-                        this.showQuickCommands();
-                        break;
-                    case 's':
-                        e.preventDefault();
-                        this.saveChat();
-                        break;
-                    case 'e':
-                        e.preventDefault();
-                        this.showExportModal();
-                        break;
-                    case 'l':
-                        e.preventDefault();
-                        this.clearChat();
-                        break;
-                    case 'p':
-                        e.preventDefault();
-                        this.togglePresentationMode();
-                        break;
-                }
-            }
-            
-            if (this.state.isPresentationMode) {
-                switch(e.key) {
-                    case 'ArrowLeft':
-                        this.prevSlide();
-                        break;
-                    case 'ArrowRight':
-                        this.nextSlide();
-                        break;
-                    case 'Escape':
-                        this.togglePresentationMode();
-                        break;
-                }
-            }
-        });
-    }
-
-    setupSpeechRecognition() {
-        if (this.SpeechRecognition) {
-            this.recognition = new this.SpeechRecognition();
-            this.recognition.lang = 'ru-RU';
-            this.recognition.continuous = false;
-            this.recognition.interimResults = false;
-            
-            this.recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                this.elements.messageInput.value = transcript;
-                this.showNotification('Речь распознана: ' + transcript.substring(0, 50) + '...');
-            };
-            
-            this.recognition.onerror = (event) => {
-                console.error('Speech recognition error', event.error);
-                this.showNotification('Ошибка распознавания речи', 'error');
-            };
-            
-            this.recognition.onend = () => {
-                if (this.state.isRecording) {
-                    this.toggleVoiceRecording();
-                }
-            };
-        }
-    }
-
-    setupServiceWorker() {
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('service-worker.js')
-                .then(registration => {
-                    console.log('Service Worker зарегистрирован:', registration);
-                })
-                .catch(error => {
-                    console.log('Ошибка регистрации Service Worker:', error);
-                });
-        }
-    }
-
-    setupBackgroundAnimations() {
-        const heartsContainer = document.getElementById('floating-hearts');
-        for (let i = 0; i < 15; i++) {
-            const heart = document.createElement('div');
-            heart.className = 'heart';
-            heart.innerHTML = '❤';
-            heart.style.left = `${Math.random() * 100}%`;
-            heart.style.animationDelay = `${Math.random() * 15}s`;
-            heart.style.fontSize = `${10 + Math.random() * 20}px`;
-            heartsContainer.appendChild(heart);
-        }
-
-        const particlesContainer = document.getElementById('connection-particles');
-        for (let i = 0; i < 30; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'particle';
-            particle.style.left = `${Math.random() * 100}%`;
-            particle.style.top = `${Math.random() * 100}%`;
-            particle.style.animationDelay = `${Math.random() * 3}s`;
-            particlesContainer.appendChild(particle);
-        }
-    }
-
-    async checkApiStatus() {
-        this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> Подключение к Hugging Face...';
-        this.elements.apiStatus.classList.add('api-connecting');
-        this.elements.apiStatus.classList.remove('api-error');
-        
-        this.state.isApiConnected = true;
-        
-        const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Таймаут подключения')), 5000)
-        );
-        
-        try {
-            const response = await Promise.race([
-                fetch('https://api-inference.huggingface.co/status', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
-                    }
-                }),
-                timeoutPromise
-            ]);
-            
-            if (response.ok) {
-                this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> HF API доступен';
-                this.elements.apiStatus.style.background = 'rgba(34, 197, 94, 0.15)';
-                this.elements.apiStatus.style.color = '#4ade80';
-                this.elements.apiStatus.classList.remove('api-connecting');
-                this.showConnectionSuccessAnimation();
-                this.showNotification('Hugging Face API подключен ✅', 'success');
-            } else {
-                throw new Error(`HTTP ${response.status}`);
-            }
-        } catch (error) {
-            console.log('API check error:', error);
-            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Проверьте соединение';
-            this.elements.apiStatus.classList.remove('api-connecting');
-            this.showNotification('API проверка не удалась, но можно попробовать отправить сообщение', 'warning');
-        }
-    }
-
-    showConnectionSuccessAnimation() {
-        const particlesContainer = document.getElementById('connection-particles');
-        for (let i = 0; i < 10; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'particle';
-            particle.style.left = '50%';
-            particle.style.top = '50%';
-            particle.style.background = '#4ade80';
-            particle.style.width = '6px';
-            particle.style.height = '6px';
-            particle.style.animation = 'particleFlow 1.5s ease-out forwards';
-            particlesContainer.appendChild(particle);
-            
-            setTimeout(() => particle.remove(), 1500);
-        }
-    }
-
-    async sendMessage() {
-        const message = this.elements.messageInput.value.trim();
-        
-        if (!message) {
-            this.showNotification('Введите сообщение', 'warning');
-            return;
-        }
-        
-        if (message.startsWith('/')) {
-            if (this.handleCommand(message)) {
-                this.elements.messageInput.value = '';
-                return;
-            }
-        }
-        
-        if (!this.isTopicRelevant(message)) {
-            this.showNotification('Я специализируюсь только на отношениях, знакомствах и манипуляциях.', 'warning');
-            return;
-        }
-        
-        this.addMessage(message, 'user');
-        this.state.conversationHistory.push({ role: "user", content: message });
-        this.state.messageCount++;
-        this.state.stats.totalMessages++;
-        this.state.stats.userMessages++;
-        
-        this.updateTopicStats(message);
-        
-        const currentHour = new Date().getHours();
-        this.state.stats.activityByHour[currentHour]++;
-        
-        this.checkAchievements();
-        
-        this.elements.messageInput.value = '';
-        this.elements.messageInput.style.height = 'auto';
-        
-        this.showTypingIndicator();
-        if (this.state.messageCount <= 3) {
-            this.showNotification('Первые запросы могут занимать 20-40 секунд (загрузка модели)', 'info');
-        }
-        
-        try {
-            const startTime = Date.now();
-            const aiResponse = await this.getAIResponse(this.state.conversationHistory);
-            const responseTime = (Date.now() - startTime) / 1000;
-            
-            this.state.responseTimes.push(responseTime);
-            
-            this.hideTypingIndicator();
-            
-            this.addMessage(aiResponse, 'ai');
-            this.state.conversationHistory.push({ role: "assistant", content: aiResponse });
-            this.state.stats.totalMessages++;
-            this.state.stats.aiMessages++;
-            
-            if (this.state.conversationHistory.length > 20) {
-                this.state.conversationHistory = [
-                    this.state.conversationHistory[0],
-                    ...this.state.conversationHistory.slice(-18)
-                ];
-            }
-            
-            this.showNotification(`Ответ получен за ${responseTime.toFixed(1)}с ✅`, 'success');
-            this.updateUI();
-            this.saveToLocalStorage();
-            
-            this.state.retryCount = 0;
-            
-        } catch (error) {
-            this.hideTypingIndicator();
-            console.error('API Error details:', error);
-            
-            let errorMessage = "Извините, произошла ошибка при получении ответа. ";
-            let userMessage = error.message;
-            
-            if (error.message.includes('503') || error.message.includes('загружается')) {
-                if (this.state.retryCount < this.state.maxRetries) {
-                    this.state.retryCount++;
-                    errorMessage += `Попытка ${this.state.retryCount}/${this.state.maxRetries}. Попробуйте через 30 секунд.`;
-                    userMessage = "Модель загружается, подождите 30 секунд и попробуйте снова...";
-                } else {
-                    errorMessage = "Сервер перегружен. Пожалуйста, попробуйте позже или используйте более короткий запрос.";
-                }
-            } else if (error.message.includes('429')) {
-                errorMessage = "Превышен лимит запросов. Бесплатный лимит: 30K токенов в месяц.";
-            } else if (error.message.includes('401')) {
-                errorMessage = "Ошибка аутентификации API. Проверьте API ключ.";
-            }
-            
-            this.addMessage(userMessage, 'ai');
-            this.showNotification(errorMessage, 'error');
-            
-            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API';
-            this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
-            this.elements.apiStatus.style.color = '#f87171';
-        }
-        
-        this.scrollToBottom();
-    }
-
-    isTopicRelevant(message) {
-        const messageLower = message.toLowerCase();
-        const relevantTopics = [
-            'отношени', 'любов', 'брак', 'семь', 'пар', 'встреча', 'расставан',
-            'ревност', 'довери', 'обид', 'ссор', 'конфликт', 'кризис',
-            'верност', 'измен', 'секс', 'интим', 'родител', 'дети',
-            'свекр', 'тещ', 'муж', 'жена', 'мужчин', 'женщин',
-            'знакомств', 'свидан', 'встреч', 'тинд', 'бад', 'приложен',
-            'профил', 'анкет', 'перв', 'втор', 'свидан', 'роман',
-            'флирт', 'симпати', 'нравит', 'влюблен', 'ухаживан',
-            'познаком', 'встрет', 'познаком',
-            'манипуляц', 'токсичн', 'абью', 'насил', 'давлен',
-            'шантаж', 'вина', 'обид', 'контрол', 'завис', 'унижен',
-            'оскорбл', 'газлайтинг', 'нарцис', 'психолог', 'границ',
-            'уважен', 'достоинств', 'самооцен', 'психологическ',
-            'психолог', 'эмоц', 'чувств', 'общен', 'коммуникац',
-            'довери', 'уважен', 'пониман', 'поддерж', 'совет',
-            'помощ', 'консультац', 'эксперт', 'специалист'
-        ];
-        
-        return relevantTopics.some(topic => messageLower.includes(topic));
-    }
-
-    updateTopicStats(message) {
-        const messageLower = message.toLowerCase();
-        
-        if (messageLower.includes('манипуляц') || messageLower.includes('токсичн') || messageLower.includes('абью')) {
-            this.state.stats.manipulationRequests++;
-            if (this.state.stats.manipulationRequests === 5) {
-                this.unlockAchievement('manipulationExpert');
-            }
-        }
-        
-        if (messageLower.includes('отношени') || messageLower.includes('любов') || messageLower.includes('брак')) {
-            this.state.stats.relationshipAdvice++;
-            if (this.state.stats.relationshipAdvice === 3) {
-                this.unlockAchievement('relationshipHelper');
-            }
-        }
-        
-        if (messageLower.includes('знакомств') || messageLower.includes('свидан') || messageLower.includes('тинд')) {
-            this.state.stats.datingAdvice++;
-        }
-    }
-
-    async getAIResponse(messages) {
-        if (!this.state.isApiConnected) {
-            throw new Error('API не подключен');
-        }
-
-        try {
-            const userMessages = messages.filter(msg => msg.role === "user");
-            const lastUserMessage = userMessages[userMessages.length - 1]?.content || 
-                                   messages[messages.length - 1]?.content || 
-                                   "Привет";
-            
-            const prompt = `Ты - психолог Verdikt GPT, специалист по отношениям, знакомствам и манипуляциям.
-Пользователь: ${lastUserMessage}
-Психолог:`;
-
-            const response = await fetch(this.API_CONFIG.url, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    inputs: prompt,
-                    parameters: {
-                        max_new_tokens: this.API_CONFIG.maxTokens,
-                        temperature: this.API_CONFIG.temperature,
-                        top_p: 0.95,
-                        repetition_penalty: 1.2,
-                        do_sample: true,
-                        return_full_text: false,
-                        num_return_sequences: 1
-                    },
-                    options: {
-                        use_cache: true,
-                        wait_for_model: true
-                    }
-                })
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('HF API Error Response:', errorText);
-                
-                if (response.status === 503) {
-                    throw new Error('Модель загружается. Попробуйте через 20-30 секунд.');
-                } else if (response.status === 429) {
-                    throw new Error('Превышен лимит запросов (429). Попробуйте позже.');
-                } else if (response.status === 401) {
-                    throw new Error('Ошибка аутентификации API (401)');
-                } else {
-                    throw new Error(`HF API Error: ${response.status} - ${errorText.substring(0, 100)}`);
-                }
-            }
-
-            const data = await response.json();
-            
-            let generatedText;
-            if (Array.isArray(data)) {
-                generatedText = data[0]?.generated_text || '';
-            } else if (data.generated_text) {
-                generatedText = data.generated_text;
-            } else if (data[0]?.generated_text) {
-                generatedText = data[0].generated_text;
-            } else {
-                console.warn('Unexpected API response format:', data);
-                generatedText = JSON.stringify(data);
-            }
-            
-            let cleanResponse = generatedText.replace(prompt, '').trim();
-            cleanResponse = cleanResponse.replace(/Психолог:/g, '').trim();
-            
-            if (!cleanResponse || cleanResponse.length < 5) {
-                const fallbackResponses = [
-                    "Я понимаю вашу ситуацию. Важно обсудить это открыто и честно с партнером. 💬",
-                    "Это сложный вопрос. Рекомендую сосредоточиться на ваших чувствах и потребностях. 💕",
-                    "В подобных ситуациях важно сохранять спокойствие и действовать обдуманно. 🧘‍♀️",
-                    "Я бы посоветовал обратиться к профессиональному психологу для более детальной консультации. 👥"
-                ];
-                cleanResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
-            }
-            
-            return cleanResponse;
-            
-        } catch (error) {
-            console.error('Error in getAIResponse:', error);
-            throw error;
-        }
-    }
-
-    addMessage(content, sender) {
-        const messageId = 'msg-' + Date.now();
-        const time = this.getCurrentTime();
-        
-        const messageElement = document.createElement('div');
-        messageElement.className = `message ${sender}-message`;
-        messageElement.id = messageId;
-        messageElement.style.opacity = '0';
-        messageElement.style.transform = 'translateY(20px)';
-        
-        messageElement.innerHTML = `
-            <div class="message-actions">
-                <button class="message-action" onclick="window.verdiktApp.copyMessage('${messageId}')">
-                    <i class="fas fa-copy"></i>
-                </button>
-                <button class="message-action" onclick="window.verdiktApp.speakMessage('${messageId}')">
-                    <i class="fas fa-volume-up"></i>
-                </button>
-                <button class="message-action" onclick="window.verdiktApp.regenerateMessage('${messageId}')">
-                    <i class="fas fa-redo"></i>
-                </button>
-            </div>
-            <div class="message-sender">
-                <i class="fas fa-${sender === 'user' ? 'user' : 'heart'}"></i>
-                ${sender === 'user' ? 'Вы' : 'Эксперт по отношениям'}
-            </div>
-            <div class="message-content">${this.formatMessage(content)}</div>
-            <div class="message-time">${time}</div>
-        `;
-        
-        this.elements.chatMessages.appendChild(messageElement);
-        
-        setTimeout(() => {
-            messageElement.style.animation = 'messageAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards';
-        }, 10);
-        
-        setTimeout(() => {
-            hljs.highlightAll();
-        }, 100);
-        
-        this.scrollToBottom();
-    }
-
-    formatMessage(text) {
-        return text
-            .replace(/\n/g, '<br>')
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/`{3}([\s\S]*?)`{3}/g, '<pre><code>$1</code></pre>')
-            .replace(/`([^`]+)`/g, '<code>$1</code>');
-    }
-
-    toggleVoiceRecording() {
-        if (!this.recognition) {
-            this.showNotification('Голосовой ввод не поддерживается в вашем браузере', 'error');
-            return;
-        }
-        
-        if (!this.state.isRecording) {
-            this.state.isRecording = true;
-            this.elements.recordButton.classList.add('recording');
-            this.elements.recordButton.innerHTML = '<i class="fas fa-stop"></i>';
-            this.recognition.start();
-            this.showNotification('Запись началась... 🎤', 'info');
-        } else {
-            this.state.isRecording = false;
-            this.elements.recordButton.classList.remove('recording');
-            this.elements.recordButton.innerHTML = '<i class="fas fa-microphone"></i>';
-            this.recognition.stop();
-            this.showNotification('Запись остановлена', 'info');
-        }
-    }
-
-    speakMessage(messageId) {
-        if (this.state.isSpeaking) {
-            this.speechSynthesis.cancel();
-            this.state.isSpeaking = false;
-            this.showNotification('Озвучивание остановлено', 'info');
-            return;
-        }
-        
-        const messageElement = document.getElementById(messageId);
-        if (!messageElement) return;
-        
-        const messageText = messageElement.querySelector('.message-content').textContent;
-        
-        const utterance = new SpeechSynthesisUtterance(messageText);
-        utterance.lang = 'ru-RU';
-        utterance.rate = 1;
-        utterance.pitch = 1;
-        
-        utterance.onstart = () => {
-            this.state.isSpeaking = true;
-            this.showNotification('Озвучивание началось... 🔊', 'info');
-        };
-        
-        utterance.onend = () => {
-            this.state.isSpeaking = false;
-        };
-        
-        utterance.onerror = () => {
-            this.state.isSpeaking = false;
-            this.showNotification('Ошибка озвучивания', 'error');
-        };
-        
-        this.speechSynthesis.speak(utterance);
-    }
-
-    speakLastMessage() {
-        const messages = this.elements.chatMessages.querySelectorAll('.ai-message');
-        if (messages.length > 0) {
-            const lastMessage = messages[messages.length - 1];
-            this.speakMessage(lastMessage.id);
-        } else {
-            this.showNotification('Нет сообщений для озвучивания', 'warning');
-        }
-    }
-
-    handleCommand(command) {
-        const parts = command.split(' ');
-        const cmd = parts[0];
-        
-        switch(cmd) {
-            case '/clear':
-                this.clearChat();
-                break;
-            case '/save':
-                this.saveChat();
-                break;
-            case '/export':
-                this.showExportModal();
-                break;
-            case '/advice':
-                this.setAIMode('balanced');
-                this.elements.messageInput.value = 'Нужен совет по отношениям...';
-                this.elements.messageInput.focus();
-                break;
-            case '/manipulation':
-                this.setAIMode('protective');
-                this.elements.messageInput.value = 'Как понять, что мной манипулируют?';
-                this.elements.messageInput.focus();
-                break;
-            case '/stats':
-                this.showStatsModal();
-                break;
-            case '/presentation':
-                this.togglePresentationMode();
-                break;
-            case '/help':
-                this.showQuickCommands();
-                break;
-            default:
-                return false;
-        }
-        return true;
-    }
-
-    setAIMode(modeId) {
-        if (!this.state.aiModes[modeId]) return;
-        
-        this.state.currentMode = modeId;
-        
-        document.querySelectorAll('.mode-item').forEach(item => {
-            item.classList.remove('active');
-        });
-        const activeMode = document.querySelector(`.mode-item[data-mode="${modeId}"]`);
-        if (activeMode) {
-            activeMode.classList.add('active');
-        }
-        
-        this.API_CONFIG.temperature = this.state.aiModes[modeId].temperature;
-        
-        this.showNotification(`Режим изменен на: ${this.state.aiModes[modeId].name}`, 'info');
-    }
-
-    clearChat() {
-        if (confirm('Очистить всю историю диалога? Это действие нельзя отменить.')) {
-            this.state.conversationHistory = [
-                {
-                    role: "system",
-                    content: `Ты - Verdikt GPT, эксперт по психологии отношений, знакомств и манипуляций.
-Отвечай на русском языке дружелюбно, но профессионально.
-Специализация:
-💕 Отношения - конфликты, общение, восстановление
-👥 Знакомства - советы по свиданиям, профилям
-🛡️ Манипуляции - распознавание, защита, границы
-
-Будь поддерживающим, давай практические советы, используй эмодзи умеренно.`
-                }
-            ];
-            this.state.messageCount = 1;
-            this.state.stats.totalMessages = 1;
-            this.state.stats.userMessages = 0;
-            this.state.stats.aiMessages = 1;
-            this.state.retryCount = 0;
-            
-            this.elements.chatMessages.innerHTML = `
-                <div class="message ai-message" style="opacity: 1; transform: translateY(0);">
-                    <div class="message-actions">
-                        <button class="message-action" onclick="window.verdiktApp.copyMessage('msg-initial')">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                        <button class="message-action" onclick="window.verdiktApp.speakMessage('msg-initial')">
-                            <i class="fas fa-volume-up"></i>
-                        </button>
-                    </div>
-                    <div class="message-sender"><i class="fas fa-heart"></i> Эксперт по отношениям</div>
-                    <div class="message-content">Чат очищен! Я готов помочь с вопросами об отношениях, знакомствах и манипуляциях. Расскажите, что вас беспокоит? 💕</div>
-                    <div class="message-time">${this.getCurrentTime()}</div>
-                </div>
-            `;
-            
-            this.showNotification('Чат очищен 🗑️', 'info');
-            this.updateUI();
-            this.saveToLocalStorage();
-        }
-    }
-
-    saveChat() {
-        const chatData = {
-            id: 'chat-' + Date.now(),
-            title: 'Консультация от ' + new Date().toLocaleString(),
-            messages: this.state.conversationHistory.filter(msg => msg.role !== 'system'),
-            timestamp: Date.now(),
-            stats: { ...this.state.stats }
-        };
-        
-        const savedChats = JSON.parse(localStorage.getItem('verdikt_saved_chats') || '[]');
-        savedChats.push(chatData);
-        localStorage.setItem('verdikt_saved_chats', JSON.stringify(savedChats));
-        
-        this.state.stats.savedChats++;
-        this.unlockAchievement('exporter');
-        this.showNotification('Консультация сохранена 📁', 'success');
-        this.updateUI();
-    }
-
-    createNewChat() {
-        this.clearChat();
-        this.showNotification('Новая консультация начата', 'info');
-    }
-
-    exportChat(format) {
-        const chatContent = this.state.conversationHistory
-            .filter(msg => msg.role !== 'system')
-            .map(msg => `${msg.role === 'user' ? 'Вы' : 'Эксперт'}: ${msg.content}`)
-            .join('\n\n');
-        
-        let content, mimeType, extension;
-        
-        switch(format) {
-            case 'pdf':
-                window.print();
-                return;
-            case 'markdown':
-                content = `# Консультация по отношениям - Verdikt GPT\n\n${chatContent}`;
-                mimeType = 'text/markdown';
-                extension = 'md';
-                break;
-            case 'html':
-                content = `
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Консультация по отношениям - Verdikt GPT</title>
-        <style>
-            body { font-family: Arial, sans-serif; padding: 20px; background: #fdf2f8; }
-            .message { margin: 10px 0; padding: 10px; border-radius: 5px; }
-            .user { background: #ec4899; color: white; }
-            .ai { background: #fce7f3; }
-        </style>
-    </head>
-    <body>
-        <h1 style="color: #ec4899;">Консультация по отношениям - Verdikt GPT</h1>
-        <p>Экспортировано: ${new Date().toLocaleString()}</p>
-        <div>${chatContent.replace(/\n/g, '<br>')}</div>
-    </body>
-</html>`;
-                mimeType = 'text/html';
-                extension = 'html';
-                break;
-            case 'json':
-                content = JSON.stringify({
-                    chat: this.state.conversationHistory.filter(msg => msg.role !== 'system'),
-                    metadata: {
-                        exported: new Date().toISOString(),
-                        totalMessages: this.state.stats.totalMessages,
-                        model: 'microsoft/DialoGPT-medium',
-                        topics: {
-                            manipulations: this.state.stats.manipulationRequests,
-                            relationships: this.state.stats.relationshipAdvice,
-                            dating: this.state.stats.datingAdvice
-                        }
-                    }
-                }, null, 2);
-                mimeType = 'application/json';
-                extension = 'json';
-                break;
-        }
-        
-        const blob = new Blob([content], { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `verdikt-консультация-${new Date().toISOString().split('T')[0]}.${extension}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        this.hideModal('export-modal');
-        this.showNotification(`Консультация экспортирована в ${format.toUpperCase()} 📥`, 'success');
-    }
-
-    setTheme(theme) {
-        this.state.currentTheme = theme;
-        document.body.setAttribute('data-theme', theme);
-        document.querySelectorAll('.theme-option').forEach(opt => opt.classList.remove('active'));
-        const activeTheme = document.querySelector(`.theme-option[data-theme="${theme}"]`);
-        if (activeTheme) {
-            activeTheme.classList.add('active');
-        }
-        localStorage.setItem('verdikt_theme', theme);
-        this.showNotification(`Тема изменена: ${theme}`, 'info');
-    }
-
-    togglePresentationMode() {
-        this.state.isPresentationMode = !this.state.isPresentationMode;
-        
-        if (this.state.isPresentationMode) {
-            document.body.classList.add('presentation-mode');
-            document.querySelector('.presentation-nav').style.display = 'flex';
-            this.createSlides();
-            this.showSlide(0);
-            this.unlockAchievement('presenter');
-            this.showNotification('Режим презентации активирован 📊', 'info');
-        } else {
-            document.body.classList.remove('presentation-mode');
-            document.querySelector('.presentation-nav').style.display = 'none';
-            this.showNotification('Режим презентации выключен', 'info');
-        }
-    }
-
-    createSlides() {
-        this.state.slides = [];
-        const messages = this.elements.chatMessages.querySelectorAll('.message');
-        
-        messages.forEach((msg, index) => {
-            this.state.slides.push({
-                content: msg.outerHTML,
-                index: index
-            });
-        });
-        
-        this.state.currentSlide = 0;
-    }
-
-    showSlide(index) {
-        if (index >= 0 && index < this.state.slides.length) {
-            this.state.currentSlide = index;
-            this.elements.chatMessages.innerHTML = this.state.slides[index].content;
-            this.elements.chatMessages.scrollTop = 0;
-        }
-    }
-
-    prevSlide() {
-        this.showSlide(this.state.currentSlide - 1);
-    }
-
-    nextSlide() {
-        this.showSlide(this.state.currentSlide + 1);
-    }
-
-    setupCookieNotification() {
-        const notification = document.getElementById('cookie-notification');
-        const acceptBtn = document.getElementById('cookie-accept');
-        const rejectBtn = document.getElementById('cookie-reject');
-        const policyLink = document.getElementById('cookie-policy-link');
-        
-        const cookieConsent = localStorage.getItem('verdikt_cookie_consent');
-        if (cookieConsent) {
-            notification.style.display = 'none';
-            return;
-        }
-        
-        setTimeout(() => {
-            notification.style.display = 'flex';
-        }, 1000);
-        
-        acceptBtn.addEventListener('click', () => {
-            this.handleCookieAccept();
-        });
-        
-        rejectBtn.addEventListener('click', () => {
-            this.handleCookieReject();
-        });
-        
-        policyLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            this.showCookiePolicy();
-        });
-    }
-
-    handleCookieAccept() {
-        const notification = document.getElementById('cookie-notification');
-        
-        localStorage.setItem('verdikt_cookie_consent', 'accepted');
-        localStorage.setItem('verdikt_cookie_date', new Date().toISOString());
-        
-        notification.style.opacity = '0';
-        notification.style.transform = 'translateY(100%)';
-        
-        setTimeout(() => {
-            notification.style.display = 'none';
-        }, 300);
-        
-        this.showNotification('Настройки cookie сохранены ✅', 'success');
-    }
-
-    handleCookieReject() {
-        const notification = document.getElementById('cookie-notification');
-        
-        localStorage.setItem('verdikt_cookie_consent', 'rejected');
-        
-        notification.style.opacity = '0';
-        notification.style.transform = 'translateY(100%)';
-        
-        setTimeout(() => {
-            notification.style.display = 'none';
-        }, 300);
-        
-        this.showNotification('Файлы cookie отключены', 'info');
-    }
-
-    showCookiePolicy() {
-        alert(`Политика использования файлов cookie в Verdikt GPT:
-
-1. Обязательные cookie:
-   - Сохранение настроек темы
-   - Сохранение истории чатов
-   - Сохранение достижений
-   - Сохранение статистики
-
-2. Данные хранятся только локально:
-   - Все данные сохраняются в вашем браузере
-   - Никакая информация не отправляется на сервер
-   - Вы можете очистить данные в настройках браузера
-
-3. Для чего мы используем cookie:
-   - Улучшение пользовательского опыта
-   - Сохранение ваших предпочтений
-   - Анализ использования (анонимный)
-   - Работа в офлайн-режиме
-
-4. Ваши права:
-   - Вы можете отключить cookie в любое время
-   - Вы можете очистить все сохраненные данные
-   - Все данные хранятся локально на вашем устройстве
-
-Все данные обрабатываются анонимно и используются только для улучшения работы приложения.`);
-    }
-
-    checkAchievements() {
-        if (this.state.stats.userMessages >= 10 && !this.state.achievements.activeUser.unlocked) {
-            this.unlockAchievement('activeUser');
-        }
-        
-        const currentHour = new Date().getHours();
-        if ((currentHour >= 23 || currentHour <= 5) && !this.state.achievements.nightOwl.unlocked) {
-            this.unlockAchievement('nightOwl');
-        }
-    }
-
-    unlockAchievement(achievementId) {
-        if (!this.state.achievements[achievementId] || this.state.achievements[achievementId].unlocked) return;
-        
-        this.state.achievements[achievementId].unlocked = true;
-        
-        const achievement = this.state.achievements[achievementId];
-        document.getElementById('achievement-icon').textContent = achievement.icon;
-        document.getElementById('achievement-title').textContent = achievement.name;
-        document.getElementById('achievement-desc').textContent = achievement.description;
-        
-        const notification = document.getElementById('achievement-notification');
-        notification.style.display = 'flex';
-        notification.style.animation = 'none';
-        
-        setTimeout(() => {
-            notification.style.animation = 'achievementSlide 3s ease';
-            setTimeout(() => {
-                notification.style.display = 'none';
-            }, 3000);
-        }, 10);
-        
-        this.updateAchievementsUI();
-        this.saveToLocalStorage();
-    }
-
-    updateOnlineStatus(isOnline) {
-        const statusElement = document.getElementById('offline-status');
-        if (isOnline) {
-            statusElement.innerHTML = '<i class="fas fa-wifi"></i> Онлайн';
-            statusElement.style.color = '#4ade80';
-            this.showNotification('Подключение восстановлено', 'success');
-        } else {
-            statusElement.innerHTML = '<i class="fas fa-wifi-slash"></i> Офлайн';
-            statusElement.style.color = '#f87171';
-            this.showNotification('Нет подключения к интернету', 'warning');
-        }
-    }
-
-    showModal(modalId) {
-        document.getElementById(modalId).classList.add('active');
-        document.body.style.overflow = 'hidden';
-    }
-
-    hideModal(modalId) {
-        document.getElementById(modalId).classList.remove('active');
-        document.body.style.overflow = '';
-    }
-
-    showSettingsModal() {
-        document.getElementById('temperature-slider').value = this.API_CONFIG.temperature;
-        document.getElementById('temperature-value').textContent = this.API_CONFIG.temperature;
-        this.showModal('settings-modal');
-    }
-
-    showExportModal() {
-        this.showModal('export-modal');
-    }
-
-    showStatsModal() {
-        document.getElementById('total-messages').textContent = this.state.stats.totalMessages;
-        document.getElementById('avg-response').textContent = 
-            this.state.responseTimes.length > 0 
-            ? (this.state.responseTimes.reduce((a, b) => a + b, 0) / this.state.responseTimes.length).toFixed(1) + 'с'
-            : '0с';
-        document.getElementById('user-messages').textContent = this.state.stats.userMessages;
-        document.getElementById('ai-messages').textContent = this.state.stats.aiMessages;
-        
-        this.updateActivityChart();
-        this.updatePopularTopics();
-        
-        this.showModal('stats-modal');
-    }
-
-    updateActivityChart() {
-        const ctx = document.getElementById('activity-chart').getContext('2d');
-        
-        if (this.activityChart) {
-            this.activityChart.destroy();
-        }
-        
-        this.activityChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: Array.from({length: 24}, (_, i) => i + ':00'),
-                datasets: [{
-                    label: 'Активность по часам',
-                    data: this.state.stats.activityByHour,
-                    borderColor: '#ec4899',
-                    backgroundColor: 'rgba(236, 72, 153, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            color: 'var(--text-secondary)'
-                        },
-                        grid: {
-                            color: 'var(--border-color)'
-                        }
-                    },
-                    x: {
-                        ticks: {
-                            color: 'var(--text-secondary)',
-                            maxRotation: 45
-                        },
-                        grid: {
-                            color: 'var(--border-color)'
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    updatePopularTopics() {
-        const topicsElement = document.getElementById('popular-topics');
-        let topicsHTML = '';
-        
-        if (this.state.stats.manipulationRequests > 0) {
-            topicsHTML += `<div style="margin-bottom: 10px;">🛡️ Манипуляции: ${this.state.stats.manipulationRequests} запросов</div>`;
-        }
-        
-        if (this.state.stats.relationshipAdvice > 0) {
-            topicsHTML += `<div style="margin-bottom: 10px;">💕 Отношения: ${this.state.stats.relationshipAdvice} советов</div>`;
-        }
-        
-        if (this.state.stats.datingAdvice > 0) {
-            topicsHTML += `<div style="margin-bottom: 10px;">👥 Знакомства: ${this.state.stats.datingAdvice} консультаций</div>`;
-        }
-        
-        if (!topicsHTML) {
-            topicsHTML = 'Пока нет данных о популярных темах';
-        }
-        
-        topicsElement.innerHTML = topicsHTML;
-    }
-
-    saveSettings() {
-        const temperature = parseFloat(document.getElementById('temperature-slider').value);
-        this.API_CONFIG.temperature = temperature;
-        this.hideModal('settings-modal');
-        this.showNotification('Настройки сохранены ✅', 'success');
-    }
-
-    updateUI() {
-        document.getElementById('sidebar-messages').textContent = this.state.stats.totalMessages;
-        document.getElementById('sidebar-time').textContent = 
-            this.state.responseTimes.length > 0 
-            ? (this.state.responseTimes.reduce((a, b) => a + b, 0) / this.state.responseTimes.length).toFixed(1) + 'с'
-            : '—';
-        document.getElementById('sidebar-saved').textContent = this.state.stats.savedChats;
-        document.getElementById('sidebar-sessions').textContent = this.state.stats.sessions;
-        
-        this.updateAchievementsUI();
-    }
-
-    updateAchievementsUI() {
-        document.querySelectorAll('.achievement-item').forEach(item => {
-            const achievementName = item.querySelector('.achievement-name').textContent;
-            const achievementId = this.getAchievementIdByName(achievementName);
-            
-            if (achievementId && this.state.achievements[achievementId]?.unlocked) {
-                item.classList.add('unlocked');
-            } else {
-                item.classList.remove('unlocked');
-            }
-        });
-    }
-
-    getAchievementIdByName(name) {
-        for (const [id, achievement] of Object.entries(this.state.achievements)) {
-            if (achievement.name === name) return id;
-        }
-        return null;
-    }
-
-    copyMessage(messageId) {
-        const messageElement = document.getElementById(messageId);
-        if (!messageElement) return;
-        
-        const messageText = messageElement.querySelector('.message-content').textContent;
-        navigator.clipboard.writeText(messageText).then(() => {
-            this.showNotification('Сообщение скопировано 📋', 'success');
-        }).catch(() => {
-            const textArea = document.createElement('textarea');
-            textArea.value = messageText;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-            this.showNotification('Сообщение скопировано 📋', 'success');
-        });
-    }
-
-    regenerateMessage(messageId) {
-        const messageElement = document.getElementById(messageId);
-        if (!messageElement) return;
-        
-        const messageIndex = Array.from(this.elements.chatMessages.children).indexOf(messageElement);
-        if (messageIndex > 0) {
-            const prevMessage = this.elements.chatMessages.children[messageIndex - 1];
-            const userMessage = prevMessage.querySelector('.message-content').textContent;
-            
-            messageElement.remove();
-            this.state.conversationHistory.pop();
-            
-            this.elements.messageInput.value = userMessage;
-            this.sendMessage();
-        }
-    }
-
-    showTypingIndicator() {
-        this.elements.typingIndicator.style.display = 'block';
-        this.scrollToBottom();
-    }
-
-    hideTypingIndicator() {
-        this.elements.typingIndicator.style.display = 'none';
-    }
-
-    showNotification(text, type = 'info') {
-        this.elements.notificationText.textContent = text;
-        
-        switch(type) {
-            case 'success':
-                this.elements.notification.style.background = 'linear-gradient(135deg, #ec4899, #db2777)';
-                break;
-            case 'error':
-                this.elements.notification.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
-                break;
-            case 'warning':
-                this.elements.notification.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
-                break;
-            default:
-                this.elements.notification.style.background = 'var(--gradient)';
-        }
-        
-        this.elements.notification.classList.add('show');
-        
-        setTimeout(() => {
-            this.elements.notification.classList.remove('show');
-        }, 3000);
-    }
-
-    getCurrentTime() {
-        const now = new Date();
-        return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-    }
-
-    scrollToBottom() {
-        setTimeout(() => {
-            this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
-        }, 100);
-    }
-
-    showQuickCommands() {
-        const commands = [
-            '/clear - Очистить чат',
-            '/save - Сохранить чат',
-            '/export - Экспорт в разные форматы',
-            '/advice - Совет по отношениям',
-            '/manipulation - Распознавание манипуляций',
-            '/stats - Статистика',
-            '/presentation - Режим презентации',
-            '/help - Помощь по командам'
-        ];
-        
-        alert('Доступные команды:\n\n' + commands.join('\n'));
     }
 }
