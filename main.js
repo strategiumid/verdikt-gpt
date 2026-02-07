@@ -1,4 +1,4 @@
-// main.js - Полная версия с системой истории чатов
+// main.js - Полная версия с OpenRouter API
 document.addEventListener('DOMContentLoaded', function() {
     hljs.highlightAll();
     
@@ -10,10 +10,11 @@ document.addEventListener('DOMContentLoaded', function() {
 class VerdiktChatApp {
     constructor() {
         this.API_CONFIG = {
-            url: 'https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium',
-            apiKey: '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',
-            maxTokens: 400,
-            temperature: 0.7
+            url: 'https://openrouter.ai/api/v1/chat/completions',
+            model: 'google/gemini-2.0-flash-exp:free', // Бесплатная модель по умолчанию
+            maxTokens: 1000,
+            temperature: 0.7,
+            apiKey: null // Будет загружено из localStorage
         };
 
         this.state = {
@@ -27,7 +28,8 @@ class VerdiktChatApp {
 👥 Знакомства - советы по свиданиям, профилям
 🛡️ Манипуляции - распознавание, защита, границы
 
-Будь поддерживающим, давай практические советы, используй эмодзи умеренно.`
+Будь поддерживающим, давай практические советы, используй эмодзи умеренно.
+Отвечай всегда на русском языке.`
                 }
             ],
             currentMode: 'balanced',
@@ -162,16 +164,28 @@ class VerdiktChatApp {
         this.speechSynthesis = window.speechSynthesis;
         this.recognition = null;
         this.activityChart = null;
+        
+        // Список доступных моделей OpenRouter
+        this.availableModels = [
+            { id: 'google/gemini-2.0-flash-exp:free', name: 'Gemini 2.0 Flash (Бесплатно)', free: true },
+            { id: 'meta-llama/llama-3.2-3b-instruct:free', name: 'Llama 3.2 3B (Бесплатно)', free: true },
+            { id: 'google/gemini-2.0-flash-thinking-exp:free', name: 'Gemini 2.0 Thinking (Бесплатно)', free: true },
+            { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', free: false },
+            { id: 'openai/gpt-4o', name: 'GPT-4o', free: false },
+            { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', free: false },
+            { id: 'google/gemini-2.0-flash', name: 'Gemini 2.0 Flash', free: false }
+        ];
     }
 
     async init() {
         this.setupCookieNotification();
+        this.loadApiKey(); // Загружаем API ключ
         this.setupEventListeners();
         this.loadFromLocalStorage();
         this.setupSpeechRecognition();
         this.setupBackgroundAnimations();
         this.updateUI();
-        this.checkApiStatus();
+        this.checkApiStatus(); // Проверяем статус API
         this.setupKeyboardShortcuts();
         this.setupServiceWorker();
         
@@ -191,7 +205,359 @@ class VerdiktChatApp {
         // Автосохранение
         this.startAutoSave();
         
-        console.log('Verdikt GPT с историей чатов инициализирован');
+        console.log('Verdikt GPT с OpenRouter API инициализирован');
+    }
+
+    // ==================== OPENROTER API ФУНКЦИИ ====================
+
+    loadApiKey() {
+        const savedApiKey = localStorage.getItem('verdikt_openrouter_api_key');
+        if (savedApiKey) {
+            this.API_CONFIG.apiKey = savedApiKey;
+        } else {
+            this.API_CONFIG.apiKey = null;
+        }
+        
+        const savedModel = localStorage.getItem('verdikt_openrouter_model');
+        if (savedModel) {
+            this.API_CONFIG.model = savedModel;
+        }
+    }
+
+    saveApiKey(apiKey, model = null) {
+        if (apiKey) {
+            localStorage.setItem('verdikt_openrouter_api_key', apiKey);
+            this.API_CONFIG.apiKey = apiKey;
+        }
+        
+        if (model) {
+            localStorage.setItem('verdikt_openrouter_model', model);
+            this.API_CONFIG.model = model;
+        }
+        
+        this.showNotification('Настройки API сохранены ✅', 'success');
+        this.checkApiStatus();
+    }
+
+    async getAIResponse(messages) {
+        if (!this.API_CONFIG.apiKey) {
+            throw new Error('API ключ не настроен. Пожалуйста, добавьте ключ OpenRouter в настройках.');
+        }
+
+        try {
+            const response = await fetch(this.API_CONFIG.url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': 'https://verdikt-gpt.local',
+                    'X-Title': 'Verdikt GPT'
+                },
+                body: JSON.stringify({
+                    model: this.API_CONFIG.model,
+                    messages: messages,
+                    max_tokens: this.API_CONFIG.maxTokens,
+                    temperature: this.API_CONFIG.temperature,
+                    stream: false
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('OpenRouter API Error:', errorData);
+                
+                let errorMessage = "Ошибка API: ";
+                if (errorData.error?.message) {
+                    errorMessage += errorData.error.message;
+                } else if (response.status === 401) {
+                    errorMessage = "Неверный API ключ. Проверьте ключ в настройках.";
+                } else if (response.status === 429) {
+                    errorMessage = "Превышен лимит запросов. Попробуйте позже.";
+                } else if (response.status === 402) {
+                    errorMessage = "Недостаточно средств на балансе. Пополните счёт на OpenRouter.";
+                } else {
+                    errorMessage += `HTTP ${response.status}`;
+                }
+                
+                throw new Error(errorMessage);
+            }
+
+            const data = await response.json();
+            
+            if (!data.choices || !data.choices[0]?.message?.content) {
+                throw new Error('Неверный формат ответа от API');
+            }
+            
+            return data.choices[0].message.content.trim();
+            
+        } catch (error) {
+            console.error('Error in getAIResponse:', error);
+            
+            if (error.message.includes('API ключ') || error.message.includes('401')) {
+                throw new Error('Пожалуйста, настройте API ключ OpenRouter в настройках приложения.');
+            }
+            
+            throw error;
+        }
+    }
+
+    async checkApiStatus() {
+        if (!this.API_CONFIG.apiKey) {
+            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> API ключ не настроен';
+            this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
+            this.elements.apiStatus.style.color = '#f87171';
+            this.showNotification('Добавьте API ключ OpenRouter в настройках', 'warning');
+            this.state.isApiConnected = false;
+            return;
+        }
+
+        this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> Проверка API ключа...';
+        this.elements.apiStatus.classList.add('api-connecting');
+        
+        try {
+            const response = await fetch('https://openrouter.ai/api/v1/auth/key', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${this.API_CONFIG.apiKey}`
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const selectedModel = this.availableModels.find(m => m.id === this.API_CONFIG.model);
+                const modelName = selectedModel ? selectedModel.name : this.API_CONFIG.model;
+                
+                this.elements.apiStatus.innerHTML = `<i class="fas fa-circle"></i> ${modelName}`;
+                this.elements.apiStatus.style.background = 'rgba(34, 197, 94, 0.15)';
+                this.elements.apiStatus.style.color = '#4ade80';
+                this.elements.apiStatus.classList.remove('api-connecting');
+                this.state.isApiConnected = true;
+                
+                if (data.data?.credits) {
+                    const credits = data.data.credits;
+                    this.showNotification(`API ключ активен. Баланс: $${credits.toFixed(2)}`, 'success');
+                    
+                    if (credits < 0.5 && !selectedModel.free) {
+                        this.elements.apiStatus.classList.add('balance-warning');
+                    }
+                } else {
+                    this.showNotification('API ключ проверен и активен ✅', 'success');
+                }
+            } else {
+                throw new Error(`HTTP ${response.status}`);
+            }
+        } catch (error) {
+            console.error('API check error:', error);
+            
+            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API ключа';
+            this.elements.apiStatus.classList.remove('api-connecting');
+            this.elements.apiStatus.classList.add('api-error');
+            this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
+            this.elements.apiStatus.style.color = '#f87171';
+            
+            this.state.isApiConnected = false;
+            this.showNotification('Не удалось проверить API ключ. Проверьте его правильность.', 'error');
+        }
+    }
+
+    setupApiSettingsListeners() {
+        const apiSettingsBtn = document.createElement('button');
+        apiSettingsBtn.className = 'ios-button secondary';
+        apiSettingsBtn.id = 'api-settings-btn';
+        apiSettingsBtn.innerHTML = '<i class="fas fa-key"></i> Настройки API';
+        apiSettingsBtn.style.width = '100%';
+        apiSettingsBtn.style.marginTop = '15px';
+        
+        const settingsModal = document.getElementById('settings-modal');
+        const saveSettingsBtn = settingsModal.querySelector('#save-settings');
+        saveSettingsBtn.parentNode.insertBefore(apiSettingsBtn, saveSettingsBtn);
+        
+        apiSettingsBtn.addEventListener('click', () => {
+            this.showApiSettingsModal();
+        });
+    }
+
+    showApiSettingsModal() {
+        const modalHTML = `
+        <div class="modal" id="api-settings-modal">
+            <div class="modal-content" style="max-width: 500px;">
+                <button class="modal-close" id="api-settings-close">
+                    <i class="fas fa-times"></i>
+                </button>
+                
+                <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-key"></i> Настройки OpenRouter API
+                </h2>
+                
+                <div class="modal-section">
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">
+                            API ключ OpenRouter:
+                        </label>
+                        <input type="password" id="api-key-input" 
+                               placeholder="sk-or-v1-..." 
+                               value="${this.API_CONFIG.apiKey || ''}"
+                               style="width: 100%; padding: 12px; border-radius: 8px; 
+                                      background: var(--bg-card); border: 1px solid var(--border-color);
+                                      color: var(--text-primary); margin-bottom: 5px;">
+                        <div style="font-size: 0.85rem; color: var(--text-tertiary); margin-bottom: 15px;">
+                            Получите ключ на <a href="https://openrouter.ai/keys" target="_blank" style="color: var(--ios-blue);">openrouter.ai/keys</a>
+                        </div>
+                        
+                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">
+                            Модель:
+                        </label>
+                        <select id="api-model-select" style="
+                            width: 100%; padding: 12px; border-radius: 8px;
+                            background: var(--bg-card); border: 1px solid var(--border-color);
+                            color: var(--text-primary); font-family: inherit;
+                            margin-bottom: 20px;
+                        ">
+                            ${this.availableModels.map(model => `
+                                <option value="${model.id}" 
+                                        ${model.id === this.API_CONFIG.model ? 'selected' : ''}
+                                        data-free="${model.free}">
+                                    ${model.name} ${model.free ? '🆓' : '💳'}
+                                </option>
+                            `).join('')}
+                        </select>
+                        
+                        <div style="
+                            background: rgba(236, 72, 153, 0.1);
+                            border-left: 3px solid var(--primary);
+                            padding: 12px;
+                            border-radius: var(--radius-sm);
+                            margin-top: 15px;
+                        ">
+                            <p style="font-size: 0.9rem;">
+                                <i class="fas fa-info-circle"></i> 
+                                Бесплатные модели (🆓) имеют ограничения. 
+                                Для платных моделей (💳) необходим баланс на OpenRouter.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div id="api-test-result" style="
+                        display: none;
+                        padding: 12px;
+                        border-radius: var(--radius-sm);
+                        margin-bottom: 15px;
+                        font-size: 0.9rem;
+                    "></div>
+                </div>
+                
+                <div class="modal-buttons" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="ios-button secondary" id="test-api-key" style="flex: 1;">
+                        <i class="fas fa-vial"></i> Проверить
+                    </button>
+                    <button class="ios-button" id="save-api-settings" style="flex: 1;">
+                        <i class="fas fa-save"></i> Сохранить
+                    </button>
+                    <button class="ios-button tertiary" id="api-settings-cancel" style="width: 100%;">
+                        <i class="fas fa-times"></i> Отмена
+                    </button>
+                </div>
+            </div>
+        </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        const modal = document.getElementById('api-settings-modal');
+        modal.classList.add('active');
+        
+        const apiKeyInput = document.getElementById('api-key-input');
+        const modelSelect = document.getElementById('api-model-select');
+        const testResult = document.getElementById('api-test-result');
+        
+        document.getElementById('test-api-key').addEventListener('click', async () => {
+            const apiKey = apiKeyInput.value.trim();
+            const modelId = modelSelect.value;
+            
+            if (!apiKey) {
+                testResult.innerHTML = '<span style="color: #ef4444;">Введите API ключ</span>';
+                testResult.style.display = 'block';
+                testResult.style.background = 'rgba(239, 68, 68, 0.1)';
+                return;
+            }
+            
+            const testBtn = document.getElementById('test-api-key');
+            const originalText = testBtn.innerHTML;
+            testBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Проверка...';
+            testBtn.disabled = true;
+            
+            try {
+                const response = await fetch('https://openrouter.ai/api/v1/auth/key', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const selectedModel = this.availableModels.find(m => m.id === modelId);
+                    const modelName = selectedModel ? selectedModel.name : modelId;
+                    
+                    let resultHTML = `<span style="color: #10b981;">✅ Ключ активен</span><br>`;
+                    resultHTML += `<small>Модель: ${modelName}</small><br>`;
+                    
+                    if (data.data?.credits !== undefined) {
+                        resultHTML += `<small>Баланс: $${data.data.credits.toFixed(2)}</small>`;
+                        
+                        if (data.data.credits < 1 && !selectedModel.free) {
+                            resultHTML += `<br><small style="color: #f59e0b;">⚠️ Низкий баланс для платных моделей</small>`;
+                        }
+                    }
+                    
+                    testResult.innerHTML = resultHTML;
+                    testResult.style.display = 'block';
+                    testResult.style.background = 'rgba(16, 185, 129, 0.1)';
+                    
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                testResult.innerHTML = `<span style="color: #ef4444;">❌ Ошибка: ${error.message}</span>`;
+                testResult.style.display = 'block';
+                testResult.style.background = 'rgba(239, 68, 68, 0.1)';
+            } finally {
+                testBtn.innerHTML = originalText;
+                testBtn.disabled = false;
+            }
+        });
+        
+        document.getElementById('save-api-settings').addEventListener('click', () => {
+            const apiKey = apiKeyInput.value.trim();
+            const modelId = modelSelect.value;
+            
+            if (!apiKey) {
+                testResult.innerHTML = '<span style="color: #ef4444;">Введите API ключ</span>';
+                testResult.style.display = 'block';
+                testResult.style.background = 'rgba(239, 68, 68, 0.1)';
+                return;
+            }
+            
+            this.saveApiKey(apiKey, modelId);
+            modal.remove();
+            this.hideModal('settings-modal');
+        });
+        
+        document.getElementById('api-settings-cancel').addEventListener('click', () => {
+            modal.remove();
+        });
+        
+        document.getElementById('api-settings-close').addEventListener('click', () => {
+            modal.remove();
+        });
+        
+        apiKeyInput.addEventListener('click', () => {
+            if (apiKeyInput.type === 'password') {
+                apiKeyInput.type = 'text';
+                setTimeout(() => {
+                    apiKeyInput.type = 'password';
+                }, 2000);
+            }
+        });
     }
 
     // ==================== СИСТЕМА УПРАВЛЕНИЯ ЧАТАМИ ====================
@@ -216,13 +582,11 @@ class VerdiktChatApp {
             if (chatsData && Array.isArray(chatsData)) {
                 this.chatManager.chats = chatsData;
                 
-                // Восстанавливаем следующий ID
                 const maxId = Math.max(...this.chatManager.chats.map(chat => 
                     parseInt(chat.id.replace('chat-', '')) || 0
                 ));
                 this.chatManager.nextChatId = maxId + 1;
                 
-                // Загружаем последний активный чат
                 const lastActiveId = localStorage.getItem('verdikt_last_active_chat');
                 if (lastActiveId) {
                     const chat = this.chatManager.chats.find(c => c.id === lastActiveId);
@@ -232,7 +596,6 @@ class VerdiktChatApp {
                     }
                 }
                 
-                // Если есть сохраненные чаты, загружаем последний
                 if (this.chatManager.chats.length > 0) {
                     const lastChat = this.chatManager.chats[this.chatManager.chats.length - 1];
                     await this.loadChat(lastChat.id);
@@ -243,7 +606,6 @@ class VerdiktChatApp {
                 this.createNewChat();
             }
             
-            // Обновляем статистику
             this.state.stats.totalChats = this.chatManager.chats.length;
             
         } catch (error) {
@@ -254,17 +616,14 @@ class VerdiktChatApp {
 
     async saveChats() {
         try {
-            // Сохраняем текущий чат
             await this.saveCurrentChat();
             
-            // Сохраняем список всех чатов
             if (this.encryptionState.enabled && !this.encryptionState.isLocked) {
                 await this.saveEncryptedChats();
             } else {
                 localStorage.setItem('verdikt_chats', JSON.stringify(this.chatManager.chats));
             }
             
-            // Сохраняем ID последнего активного чата
             if (this.chatManager.currentChatId) {
                 localStorage.setItem('verdikt_last_active_chat', this.chatManager.currentChatId);
             }
@@ -318,7 +677,6 @@ class VerdiktChatApp {
             theme: this.state.currentTheme
         };
         
-        // Находим или создаем запись чата
         const existingIndex = this.chatManager.chats.findIndex(chat => chat.id === chatData.id);
         
         if (existingIndex >= 0) {
@@ -326,12 +684,10 @@ class VerdiktChatApp {
         } else {
             this.chatManager.chats.push(chatData);
             
-            // Ограничиваем количество сохраненных чатов
             if (this.chatManager.chats.length > this.chatManager.maxChats) {
                 this.chatManager.chats = this.chatManager.chats.slice(-this.chatManager.maxChats);
             }
             
-            // Достижение за создание чатов
             if (this.chatManager.chats.length >= 5 && !this.state.achievements.chatHistorian.unlocked) {
                 this.unlockAchievement('chatHistorian');
             }
@@ -347,8 +703,6 @@ class VerdiktChatApp {
         
         if (userMessages.length > 0) {
             const firstMessage = userMessages[0];
-            
-            // Извлекаем первые слова как заголовок
             const words = firstMessage.split(' ').slice(0, 5);
             title = words.join(' ');
             
@@ -356,7 +710,6 @@ class VerdiktChatApp {
                 title = title.substring(0, 37) + '...';
             }
             
-            // Добавляем эмодзи в зависимости от темы
             if (firstMessage.toLowerCase().includes('отношен') || firstMessage.toLowerCase().includes('любов')) {
                 title = '💕 ' + title;
             } else if (firstMessage.toLowerCase().includes('знакомств') || firstMessage.toLowerCase().includes('свидан')) {
@@ -374,7 +727,6 @@ class VerdiktChatApp {
         
         this.chatManager.currentChatId = newChatId;
         
-        // Сбрасываем состояние
         this.state.conversationHistory = [
             {
                 role: "system",
@@ -395,7 +747,6 @@ class VerdiktChatApp {
         this.state.stats.aiMessages = 1;
         this.state.retryCount = 0;
         
-        // Очищаем чат
         this.elements.chatMessages.innerHTML = `
             <div class="message ai-message" style="opacity: 1; transform: translateY(0);">
                 <div class="message-actions">
@@ -412,16 +763,13 @@ class VerdiktChatApp {
             </div>
         `;
         
-        // Сохраняем новый чат
         await this.saveChats();
         
         this.showNotification('Новый чат создан 💬', 'success');
         this.updateUI();
         
-        // Скрываем историю чатов
         this.elements.chatHistoryDropdown.classList.remove('active');
         
-        // Обновляем статистику
         this.state.stats.totalChats = this.chatManager.chats.length;
     }
 
@@ -435,7 +783,6 @@ class VerdiktChatApp {
         
         this.chatManager.currentChatId = chatId;
         
-        // Восстанавливаем историю
         this.state.conversationHistory = [
             {
                 role: "system",
@@ -451,24 +798,20 @@ class VerdiktChatApp {
             ...chat.messages
         ];
         
-        // Восстанавливаем статистику
         if (chat.stats) {
             Object.assign(this.state.stats, chat.stats);
         }
         
         this.state.messageCount = chat.messages.length + 1;
         
-        // Восстанавливаем режим
         if (chat.mode) {
             this.setAIMode(chat.mode);
         }
         
-        // Восстанавливаем тему
         if (chat.theme) {
             this.setTheme(chat.theme);
         }
         
-        // Очищаем и перерисовываем сообщения
         this.elements.chatMessages.innerHTML = '';
         
         chat.messages.forEach((msg, index) => {
@@ -524,7 +867,6 @@ class VerdiktChatApp {
             if (index >= 0) {
                 this.chatManager.chats.splice(index, 1);
                 
-                // Если удалили текущий чат, загружаем другой
                 if (chatId === this.chatManager.currentChatId) {
                     if (this.chatManager.chats.length > 0) {
                         await this.loadChat(this.chatManager.chats[0].id);
@@ -558,19 +900,16 @@ class VerdiktChatApp {
         const date = new Date(timestamp);
         const now = new Date();
         
-        // Сегодня
         if (date.toDateString() === now.toDateString()) {
             return `Сегодня ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
         }
         
-        // Вчера
         const yesterday = new Date(now);
         yesterday.setDate(now.getDate() - 1);
         if (date.toDateString() === yesterday.toDateString()) {
             return `Вчера ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
         }
         
-        // На этой неделе
         const weekAgo = new Date(now);
         weekAgo.setDate(now.getDate() - 7);
         if (date > weekAgo) {
@@ -578,7 +917,6 @@ class VerdiktChatApp {
             return `${days[date.getDay()]} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
         }
         
-        // Старые сообщения
         return `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear()}`;
     }
 
@@ -588,10 +926,8 @@ class VerdiktChatApp {
         
         if (!chatList) return;
         
-        // Обновляем счетчик
         chatCount.textContent = this.chatManager.chats.length;
         
-        // Очищаем список
         chatList.innerHTML = '';
         
         if (this.chatManager.chats.length === 0) {
@@ -599,10 +935,8 @@ class VerdiktChatApp {
             return;
         }
         
-        // Сортируем чаты по времени (новые сверху)
         const sortedChats = [...this.chatManager.chats].sort((a, b) => b.timestamp - a.timestamp);
         
-        // Добавляем каждый чат в список
         sortedChats.forEach(chat => {
             const chatItem = document.createElement('div');
             chatItem.className = 'chat-history-item';
@@ -633,7 +967,6 @@ class VerdiktChatApp {
                 this.loadChat(chat.id);
             });
             
-            // Контекстное меню для удаления
             chatItem.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 this.deleteChat(chat.id);
@@ -644,14 +977,12 @@ class VerdiktChatApp {
     }
 
     setupChatHistoryListeners() {
-        // Кнопка переключения истории
         this.elements.toggleChatHistory.addEventListener('click', (e) => {
             e.stopPropagation();
             this.elements.chatHistoryDropdown.classList.toggle('active');
             this.updateChatHistoryUI();
         });
         
-        // Закрытие истории при клике вне ее
         document.addEventListener('click', (e) => {
             if (!this.elements.chatHistoryDropdown.contains(e.target) && 
                 !this.elements.toggleChatHistory.contains(e.target)) {
@@ -659,7 +990,6 @@ class VerdiktChatApp {
             }
         });
         
-        // Кнопки действий
         this.elements.importChatBtn.addEventListener('click', () => {
             this.elements.chatHistoryDropdown.classList.remove('active');
             this.showImportModal();
@@ -675,23 +1005,19 @@ class VerdiktChatApp {
             this.clearAllChats();
         });
         
-        // Существующая кнопка "Новый чат"
         this.elements.newChat.addEventListener('click', () => {
             this.createNewChat();
         });
         
-        // Импорт/экспорт
         this.setupImportListeners();
         this.setupExportListeners();
     }
 
     setupImportListeners() {
-        // Открытие файлового диалога
         this.elements.importDropzone.addEventListener('click', () => {
             this.elements.importFileInput.click();
         });
         
-        // Drag & drop
         this.elements.importDropzone.addEventListener('dragover', (e) => {
             e.preventDefault();
             this.elements.importDropzone.style.borderColor = 'var(--primary)';
@@ -716,7 +1042,6 @@ class VerdiktChatApp {
             }
         });
         
-        // Выбор файла
         this.elements.importFileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
@@ -724,7 +1049,6 @@ class VerdiktChatApp {
             }
         });
         
-        // Кнопки
         this.elements.importConfirm.addEventListener('click', () => {
             this.importChat();
         });
@@ -739,7 +1063,6 @@ class VerdiktChatApp {
     }
 
     setupExportListeners() {
-        // Выбор формата экспорта
         document.querySelectorAll('#export-chat-modal .export-option[data-format]').forEach(option => {
             option.addEventListener('click', (e) => {
                 document.querySelectorAll('#export-chat-modal .export-option').forEach(opt => {
@@ -747,7 +1070,6 @@ class VerdiktChatApp {
                 });
                 option.classList.add('active');
                 
-                // Показываем/скрываем заметку о шифровании
                 const format = option.dataset.format;
                 if (format === 'json-encrypted') {
                     this.elements.encryptionNote.style.display = 'block';
@@ -757,7 +1079,6 @@ class VerdiktChatApp {
             });
         });
         
-        // Кнопки
         this.elements.exportChatConfirm.addEventListener('click', () => {
             const selectedFormat = document.querySelector('#export-chat-modal .export-option.active')?.dataset.format;
             if (selectedFormat) {
@@ -836,7 +1157,6 @@ class VerdiktChatApp {
                 throw new Error('Неверный формат файла');
             }
             
-            // Добавляем чаты с новыми ID
             importedChats.forEach(chat => {
                 const newId = 'chat-' + this.chatManager.nextChatId++;
                 const newChat = {
@@ -850,7 +1170,6 @@ class VerdiktChatApp {
             
             await this.saveChats();
             
-            // Загружаем последний импортированный чат
             if (importedChats.length > 0) {
                 const lastChat = this.chatManager.chats[this.chatManager.chats.length - 1];
                 await this.loadChat(lastChat.id);
@@ -959,14 +1278,12 @@ class VerdiktChatApp {
     startAutoSave() {
         if (!this.chatManager.autoSave) return;
         
-        // Сохраняем каждые 30 секунд
         this.chatManager.autoSaveTimer = setInterval(async () => {
             if (this.chatManager.currentChatId && this.state.messageCount > 1) {
                 await this.saveChats();
             }
         }, this.chatManager.autoSaveInterval);
         
-        // Сохраняем при закрытии страницы
         window.addEventListener('beforeunload', () => {
             if (this.chatManager.currentChatId && this.state.messageCount > 1) {
                 this.saveChatsSync();
@@ -1386,18 +1703,15 @@ class VerdiktChatApp {
             
             const decryptedData = await this.crypto.decrypt(encryptedData, password);
             
-            // Загружаем чаты
             if (decryptedData.chats) {
                 this.chatManager.chats = decryptedData.chats;
                 this.state.stats.totalChats = this.chatManager.chats.length;
             }
             
-            // Загружаем статистику
             if (decryptedData.stats) {
                 Object.assign(this.state.stats, decryptedData.stats);
             }
             
-            // Загружаем достижения
             if (decryptedData.achievements) {
                 Object.keys(decryptedData.achievements).forEach(key => {
                     if (this.state.achievements[key]) {
@@ -1406,7 +1720,6 @@ class VerdiktChatApp {
                 });
             }
             
-            // Загружаем настройки
             if (decryptedData.settings?.theme) {
                 this.setTheme(decryptedData.settings.theme);
             }
@@ -1548,7 +1861,7 @@ class VerdiktChatApp {
         // Футер ссылки
         document.getElementById('model-info').addEventListener('click', (e) => {
             e.preventDefault();
-            this.showNotification('Модель: microsoft/DialoGPT-medium (Hugging Face)', 'info');
+            this.showNotification('Используется OpenRouter API с различными моделями', 'info');
         });
         
         document.getElementById('keyboard-shortcuts').addEventListener('click', (e) => {
@@ -1558,13 +1871,16 @@ class VerdiktChatApp {
         
         document.getElementById('privacy-policy').addEventListener('click', (e) => {
             e.preventDefault();
-            this.showNotification('Используется Hugging Face API. Данные анонимизированы.', 'info');
+            this.showNotification('Данные чатов хранятся локально в вашем браузере', 'info');
         });
         
         // Управление шифрованием
         document.getElementById('encryption-manager')?.addEventListener('click', () => {
             this.showEncryptionManager();
         });
+        
+        // Настройки API
+        this.setupApiSettingsListeners();
     }
 
     async sendMessage() {
@@ -1587,6 +1903,19 @@ class VerdiktChatApp {
             return;
         }
         
+        // Проверяем наличие API ключа
+        if (!this.API_CONFIG.apiKey) {
+            this.showNotification('Пожалуйста, настройте API ключ OpenRouter в настройках', 'error');
+            this.showApiSettingsModal();
+            return;
+        }
+        
+        if (!this.state.isApiConnected) {
+            this.showNotification('API не подключен. Проверьте настройки.', 'error');
+            this.checkApiStatus();
+            return;
+        }
+        
         this.addMessage(message, 'user');
         this.state.conversationHistory.push({ role: "user", content: message });
         this.state.messageCount++;
@@ -1604,9 +1933,6 @@ class VerdiktChatApp {
         this.elements.messageInput.style.height = 'auto';
         
         this.showTypingIndicator();
-        if (this.state.messageCount <= 3) {
-            this.showNotification('Первые запросы могут занимать 20-40 секунд (загрузка модели)', 'info');
-        }
         
         try {
             const startTime = Date.now();
@@ -1637,126 +1963,26 @@ class VerdiktChatApp {
             
         } catch (error) {
             this.hideTypingIndicator();
-            console.error('API Error details:', error);
+            console.error('API Error:', error);
             
-            let errorMessage = "Извините, произошла ошибка при получении ответа. ";
-            let userMessage = error.message;
+            let errorMessage = error.message || "Ошибка при получении ответа";
             
-            if (error.message.includes('503') || error.message.includes('загружается')) {
-                if (this.state.retryCount < this.state.maxRetries) {
-                    this.state.retryCount++;
-                    errorMessage += `Попытка ${this.state.retryCount}/${this.state.maxRetries}. Подождите 30 секунд.`;
-                    userMessage = "Модель загружается, подождите 30 секунд и попробуйте снова...";
-                } else {
-                    errorMessage = "Сервер перегружен. Пожалуйста, попробуйте позже или используйте более короткий запрос.";
-                }
-            } else if (error.message.includes('429')) {
-                errorMessage = "Превышен лимит запросов. Бесплатный лимит: 30K токенов в месяц.";
-            } else if (error.message.includes('401')) {
-                errorMessage = "Ошибка аутентификации API. Проверьте API ключ.";
-            }
-            
-            this.addMessage(userMessage, 'ai');
+            this.addMessage(`Ошибка: ${errorMessage}`, 'ai');
             this.showNotification(errorMessage, 'error');
             
             this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API';
             this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
             this.elements.apiStatus.style.color = '#f87171';
+            
+            if (errorMessage.includes('API ключ') || errorMessage.includes('401')) {
+                setTimeout(() => {
+                    this.showApiSettingsModal();
+                }, 1000);
+            }
         }
         
         this.scrollToBottom();
     }
-
-    async getAIResponse(messages) {
-        if (!this.state.isApiConnected) {
-            throw new Error('API не подключен');
-        }
-
-        try {
-            const userMessages = messages.filter(msg => msg.role === "user");
-            const lastUserMessage = userMessages[userMessages.length - 1]?.content || 
-                                   messages[messages.length - 1]?.content || 
-                                   "Привет";
-            
-            const prompt = `Ты - психолог Verdikt GPT, специалист по отношениям, знакомствам и манипуляциям.
-Пользователь: ${lastUserMessage}
-Психолог:`;
-
-            const response = await fetch(this.API_CONFIG.url, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    inputs: prompt,
-                    parameters: {
-                        max_new_tokens: this.API_CONFIG.maxTokens,
-                        temperature: this.API_CONFIG.temperature,
-                        top_p: 0.95,
-                        repetition_penalty: 1.2,
-                        do_sample: true,
-                        return_full_text: false,
-                        num_return_sequences: 1
-                    },
-                    options: {
-                        use_cache: true,
-                        wait_for_model: true
-                    }
-                })
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('HF API Error Response:', errorText);
-                
-                if (response.status === 503) {
-                    throw new Error('Модель загружается. Попробуйте через 20-30 секунд.');
-                } else if (response.status === 429) {
-                    throw new Error('Превышен лимит запросов (429). Попробуйте позже.');
-                } else if (response.status === 401) {
-                    throw new Error('Ошибка аутентификации API (401)');
-                } else {
-                    throw new Error(`HF API Error: ${response.status} - ${errorText.substring(0, 100)}`);
-                }
-            }
-
-            const data = await response.json();
-            
-            let generatedText;
-            if (Array.isArray(data)) {
-                generatedText = data[0]?.generated_text || '';
-            } else if (data.generated_text) {
-                generatedText = data.generated_text;
-            } else if (data[0]?.generated_text) {
-                generatedText = data[0].generated_text;
-            } else {
-                console.warn('Unexpected API response format:', data);
-                generatedText = JSON.stringify(data);
-            }
-            
-            let cleanResponse = generatedText.replace(prompt, '').trim();
-            cleanResponse = cleanResponse.replace(/Психолог:/g, '').trim();
-            
-            if (!cleanResponse || cleanResponse.length < 5) {
-                const fallbackResponses = [
-                    "Я понимаю вашу ситуацию. Важно обсудить это открыто и честно с партнером. 💬",
-                    "Это сложный вопрос. Рекомендую сосредоточиться на ваших чувствах и потребностях. 💕",
-                    "В подобных ситуациях важно сохранять спокойствие и действовать обдуманно. 🧘‍♀️",
-                    "Я бы посоветовал обратиться к профессиональному психологу для более детальной консультации. 👥"
-                ];
-                cleanResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
-            }
-            
-            return cleanResponse;
-            
-        } catch (error) {
-            console.error('Error in getAIResponse:', error);
-            throw error;
-        }
-    }
-
-    // ==================== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ====================
 
     isTopicRelevant(message) {
         const messageLower = message.toLowerCase();
@@ -2316,46 +2542,6 @@ class VerdiktChatApp {
         }
     }
 
-    async checkApiStatus() {
-        this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> Подключение к Hugging Face...';
-        this.elements.apiStatus.classList.add('api-connecting');
-        this.elements.apiStatus.classList.remove('api-error');
-        
-        this.state.isApiConnected = true;
-        
-        const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Таймаут подключения')), 5000)
-        );
-        
-        try {
-            const response = await Promise.race([
-                fetch('https://api-inference.huggingface.co/status', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
-                    }
-                }),
-                timeoutPromise
-            ]);
-            
-            if (response.ok) {
-                this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> HF API доступен';
-                this.elements.apiStatus.style.background = 'rgba(34, 197, 94, 0.15)';
-                this.elements.apiStatus.style.color = '#4ade80';
-                this.elements.apiStatus.classList.remove('api-connecting');
-                this.showConnectionSuccessAnimation();
-                this.showNotification('Hugging Face API подключен ✅', 'success');
-            } else {
-                throw new Error(`HTTP ${response.status}`);
-            }
-        } catch (error) {
-            console.log('API check error:', error);
-            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Проверьте соединение';
-            this.elements.apiStatus.classList.remove('api-connecting');
-            this.showNotification('API проверка не удалась, но можно попробовать отправить сообщение', 'warning');
-        }
-    }
-
     setupServiceWorker() {
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('service-worker.js')
@@ -2682,7 +2868,8 @@ class VerdiktChatApp {
                     metadata: {
                         exported: new Date().toISOString(),
                         totalMessages: this.state.stats.totalMessages,
-                        model: 'microsoft/DialoGPT-medium',
+                        model: this.API_CONFIG.model,
+                        api: 'OpenRouter',
                         topics: {
                             manipulations: this.state.stats.manipulationRequests,
                             relationships: this.state.stats.relationshipAdvice,
@@ -2911,7 +3098,8 @@ class VerdiktChatApp {
                 timestamp: new Date().toISOString(),
                 data: encryptedData,
                 metadata: {
-                    model: 'microsoft/DialoGPT-medium',
+                    model: 'OpenRouter API',
+                    apiModel: this.API_CONFIG.model,
                     encryption: 'AES-GCM-256',
                     chatCount: this.chatManager.chats.length
                 }
@@ -2954,7 +3142,6 @@ class VerdiktChatApp {
             const encryptedData = localStorage.getItem('verdikt_encrypted_data');
             const decryptedData = await this.crypto.decrypt(encryptedData, password);
             
-            // Сохраняем данные без шифрования
             if (decryptedData.chats) {
                 localStorage.setItem('verdikt_chats', JSON.stringify(decryptedData.chats));
                 this.chatManager.chats = decryptedData.chats;
@@ -2974,7 +3161,6 @@ class VerdiktChatApp {
                 });
             }
             
-            // Очищаем зашифрованные данные
             localStorage.removeItem('verdikt_encrypted_data');
             localStorage.removeItem('verdikt_password_hash');
             localStorage.setItem('verdikt_encryption_setup', 'skipped');

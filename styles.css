@@ -2352,3 +2352,67 @@ footer {
         min-height: 40px;
     }
 }
+/* Стили для кнопки статуса API */
+#api-status-btn {
+    position: relative;
+}
+
+#api-status-btn::after {
+    content: '';
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ef4444;
+    transition: background 0.3s ease;
+}
+
+#api-status-btn.connected::after {
+    background: #10b981;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+#api-status-btn.testing::after {
+    background: #f59e0b;
+    animation: pulse 1.5s infinite;
+}
+
+/* Индикатор низкого баланса */
+.balance-warning {
+    color: #f59e0b !important;
+    animation: pulse 2s infinite;
+}
+
+.balance-critical {
+    color: #ef4444 !important;
+    animation: pulse 1s infinite;
+}
+
+/* Стили для выбора моделей в настройках */
+.model-option {
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.model-option:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.model-option.selected {
+    background: rgba(236, 72, 153, 0.1);
+    border-color: var(--primary);
+}
+
+.model-option.free {
+    border-left: 3px solid #10b981;
+}
+
+.model-option.paid {
+    border-left: 3px solid #8b5cf6;
+}
