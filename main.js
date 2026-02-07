@@ -119,6 +119,7 @@ class VerdiktChatApp {
     }
 
     init() {
+        this.setupCookieNotification();
         this.setupEventListeners();
         this.loadFromLocalStorage();
         this.setupSpeechRecognition();
@@ -1068,7 +1069,101 @@ class VerdiktChatApp {
     nextSlide() {
         this.showSlide(this.state.currentSlide + 1);
     }
+setupCookieNotification() {
+    const notification = document.getElementById('cookie-notification');
+    const acceptBtn = document.getElementById('cookie-accept');
+    const rejectBtn = document.getElementById('cookie-reject');
+    const policyLink = document.getElementById('cookie-policy-link');
+    
+    // Проверить, было ли уже принято/отклонено
+    const cookieConsent = localStorage.getItem('verdikt_cookie_consent');
+    if (cookieConsent) {
+        notification.style.display = 'none';
+        return;
+    }
+    
+    // Показать уведомление через 1 секунду
+    setTimeout(() => {
+        notification.style.display = 'flex';
+    }, 1000);
+    
+    // Обработчики событий
+    acceptBtn.addEventListener('click', () => {
+        this.handleCookieAccept();
+    });
+    
+    rejectBtn.addEventListener('click', () => {
+        this.handleCookieReject();
+    });
+    
+    policyLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.showCookiePolicy();
+    });
+}
 
+handleCookieAccept() {
+    const notification = document.getElementById('cookie-notification');
+    
+    // Сохранить согласие
+    localStorage.setItem('verdikt_cookie_consent', 'accepted');
+    localStorage.setItem('verdikt_cookie_date', new Date().toISOString());
+    
+    // Анимация скрытия
+    notification.style.opacity = '0';
+    notification.style.transform = 'translateY(100%)';
+    
+    setTimeout(() => {
+        notification.style.display = 'none';
+    }, 300);
+    
+    this.showNotification('Настройки cookie сохранены ✅', 'success');
+}
+
+handleCookieReject() {
+    const notification = document.getElementById('cookie-notification');
+    
+    // Сохранить отказ
+    localStorage.setItem('verdikt_cookie_consent', 'rejected');
+    
+    // Анимация скрытия
+    notification.style.opacity = '0';
+    notification.style.transform = 'translateY(100%)';
+    
+    setTimeout(() => {
+        notification.style.display = 'none';
+    }, 300);
+    
+    this.showNotification('Файлы cookie отключены', 'info');
+}
+
+showCookiePolicy() {
+    alert(`Политика использования файлов cookie в Verdikt GPT:
+
+1. Обязательные cookie:
+   - Сохранение настроек темы
+   - Сохранение истории чатов
+   - Сохранение достижений
+   - Сохранение статистики
+
+2. Данные хранятся только локально:
+   - Все данные сохраняются в вашем браузере
+   - Никакая информация не отправляется на сервер
+   - Вы можете очистить данные в настройках браузера
+
+3. Для чего мы используем cookie:
+   - Улучшение пользовательского опыта
+   - Сохранение ваших предпочтений
+   - Анализ использования (анонимный)
+   - Работа в офлайн-режиме
+
+4. Ваши права:
+   - Вы можете отключить cookie в любое время
+   - Вы можете очистить все сохраненные данные
+   - Все данные хранятся локально на вашем устройстве
+
+Все данные обрабатываются анонимно и используются только для улучшения работы приложения.`);
+}
     checkAchievements() {
         // Проверка активного пользователя
         if (this.state.stats.userMessages >= 10 && !this.state.achievements.activeUser.unlocked) {
