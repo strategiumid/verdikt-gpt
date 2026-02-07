@@ -1793,3 +1793,562 @@ footer {
 .chat-history-item:hover::after {
     opacity: 1;
 }
+/* Секция разработчиков с кастомными значками */
+.developers-section {
+    margin-top: 25px;
+    padding-top: 25px;
+    border-top: 1px solid var(--border-color);
+}
+
+.developers-section h4 {
+    font-size: 1rem;
+    margin-bottom: 20px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 700;
+    background: var(--gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    padding: 5px 0;
+}
+
+.developers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.developer-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.05), 
+        rgba(255, 255, 255, 0.02));
+    border-radius: var(--radius-lg);
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+}
+
+.developer-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--gradient);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 0;
+}
+
+.developer-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 
+        0 10px 25px rgba(0, 0, 0, 0.3),
+        0 0 25px rgba(236, 72, 153, 0.2);
+    border-color: var(--primary);
+}
+
+.developer-item:hover::before {
+    opacity: 0.1;
+}
+
+.developer-item > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* Значки разработчиков */
+.dev-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: white;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.developer-item:hover .dev-avatar {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.brain-badge {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    animation: brainPulse 3s infinite;
+}
+
+.code-badge {
+    background: linear-gradient(135deg, #10b981, #059669);
+    animation: codeGlow 3s infinite 0.5s;
+}
+
+.test-badge {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    animation: testFloat 3s infinite 1s;
+}
+
+@keyframes brainPulse {
+    0%, 100% { 
+        transform: scale(1); 
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+    }
+    50% { 
+        transform: scale(1.05); 
+        box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
+    }
+}
+
+@keyframes codeGlow {
+    0%, 100% { 
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+    50% { 
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.7);
+    }
+}
+
+@keyframes testFloat {
+    0%, 100% { 
+        transform: translateY(0); 
+    }
+    50% { 
+        transform: translateY(-3px); 
+    }
+}
+
+.dev-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.dev-name {
+    font-weight: 700;
+    font-size: 1.05rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dev-name::after {
+    content: '';
+    width: 4px;
+    height: 4px;
+    background: var(--text-tertiary);
+    border-radius: 50%;
+    opacity: 0.7;
+}
+
+.dev-role {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.dev-skill {
+    font-size: 0.8rem;
+    color: var(--text-tertiary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dev-skill::before {
+    content: '•';
+    color: var(--primary);
+}
+
+/* Статусные значки */
+.dev-status {
+    font-size: 20px;
+    transition: all 0.3s ease;
+    padding: 8px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.developer-item:hover .dev-status {
+    transform: scale(1.2);
+}
+
+.master-dev {
+    color: #f59e0b;
+    text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+}
+
+.verified-dev {
+    color: #10b981;
+    text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+.qa-dev {
+    color: #ec4899;
+    text-shadow: 0 0 10px rgba(236, 72, 153, 0.5);
+}
+
+/* Индикатор клика */
+.developers-connect {
+    text-align: center;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color);
+}
+
+.developers-connect p {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    animation: pulseSoft 2s infinite;
+}
+
+@keyframes pulseSoft {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .developers-list {
+        gap: 12px;
+    }
+    
+    .developer-item {
+        padding: 12px;
+    }
+    
+    .dev-avatar {
+        width: 44px;
+        height: 44px;
+        font-size: 18px;
+    }
+    
+    .dev-name {
+        font-size: 1rem;
+    }
+    
+    .dev-status {
+        font-size: 18px;
+        padding: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .developers-section {
+        margin-top: 20px;
+        padding-top: 20px;
+    }
+    
+    .developer-item {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    
+    .dev-info {
+        flex: 1 1 150px;
+    }
+    
+    .dev-status {
+        margin-left: auto;
+    }
+}
+
+/* Индикатор телеграма в углу */
+.developer-item::after {
+    content: '↗';
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 0.8rem;
+    color: var(--text-tertiary);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.developer-item:hover::after {
+    opacity: 1;
+    animation: teleport 0.6s ease;
+}
+
+@keyframes teleport {
+    0% { transform: translate(0, 0); opacity: 0; }
+    50% { transform: translate(5px, -5px); opacity: 0.5; }
+    100% { transform: translate(0, 0); opacity: 1; }
+}
+/* Выпадающее меню разработчиков в шапке */
+.developers-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+#developers-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dev-label {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .dev-label {
+        display: none;
+    }
+    
+    #developers-btn {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 10px;
+    }
+}
+
+/* Выпадающее меню */
+.developers-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 320px;
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+    z-index: 1000;
+    margin-top: 10px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.developers-dropdown:hover .developers-dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dev-dropdown-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.dev-dropdown-header h4 {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--text-primary);
+}
+
+.dev-dropdown-header p {
+    font-size: 0.85rem;
+    color: var(--text-tertiary);
+}
+
+/* Список разработчиков в выпадающем меню */
+.dev-dropdown-list {
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.dev-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.dev-dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--primary);
+    transform: translateX(5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Аватарки в выпадающем меню */
+.dev-dropdown-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: white;
+    flex-shrink: 0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.brain-avatar {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.code-avatar {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.bug-avatar {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.dev-dropdown-item:hover .brain-avatar {
+    animation: brainPulse 0.8s infinite;
+}
+
+.dev-dropdown-item:hover .code-avatar {
+    animation: codeGlow 0.8s infinite;
+}
+
+.dev-dropdown-item:hover .bug-avatar {
+    animation: bugCrawl 0.8s infinite;
+}
+
+@keyframes brainPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+@keyframes codeGlow {
+    0%, 100% { box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4); }
+    50% { box-shadow: 0 4px 12px rgba(16, 185, 129, 0.8); }
+}
+
+@keyframes bugCrawl {
+    0%, 100% { transform: rotate(0); }
+    25% { transform: rotate(-5deg); }
+    75% { transform: rotate(5deg); }
+}
+
+.dev-dropdown-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.dev-dropdown-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dev-dropdown-role {
+    font-size: 0.8rem;
+    color: var(--text-tertiary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dev-dropdown-telegram {
+    color: #0088cc;
+    font-size: 18px;
+    opacity: 0.7;
+    transition: all 0.3s ease;
+    padding: 6px;
+    border-radius: 6px;
+    background: rgba(0, 136, 204, 0.1);
+}
+
+.dev-dropdown-item:hover .dev-dropdown-telegram {
+    opacity: 1;
+    transform: scale(1.1);
+    background: rgba(0, 136, 204, 0.2);
+}
+
+/* Подвал выпадающего меню */
+.dev-dropdown-footer {
+    padding: 15px 20px;
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.dev-version {
+    font-size: 0.85rem;
+    color: var(--text-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.dev-version i {
+    color: var(--primary);
+}
+
+/* Адаптивность выпадающего меню */
+@media (max-width: 768px) {
+    .developers-dropdown-menu {
+        position: fixed;
+        top: 70px;
+        right: 10px;
+        left: 10px;
+        width: auto;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+    
+    .dev-dropdown-list {
+        padding: 10px;
+    }
+    
+    .dev-dropdown-item {
+        padding: 10px;
+    }
+    
+    .dev-dropdown-avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+    }
+    
+    .dev-dropdown-name {
+        font-size: 0.9rem;
+    }
+    
+    .dev-dropdown-role {
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .developers-dropdown-menu {
+        top: 60px;
+    }
+    
+    #developers-btn {
+        min-width: 40px;
+        min-height: 40px;
+    }
+}
