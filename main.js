@@ -1,4 +1,4 @@
-// main.js - Полная версия с OpenRouter API
+// main.js - Полная версия с системой истории чатов
 document.addEventListener('DOMContentLoaded', function() {
     hljs.highlightAll();
     
@@ -28,8 +28,7 @@ class VerdiktChatApp {
 👥 Знакомства - советы по свиданиям, профилям
 🛡️ Манипуляции - распознавание, защита, границы
 
-Будь поддерживающим, давай практические советы, используй эмодзи умеренно.
-Отвечай всегда на русском языке.`
+Будь поддерживающим, давай практические советы, используй эмодзи умеренно.`
                 }
             ],
             currentMode: 'balanced',
@@ -103,16 +102,11 @@ class VerdiktChatApp {
             chatMessages: document.getElementById('chat-messages'),
             messageInput: document.getElementById('message-input'),
             sendButton: document.getElementById('send-button'),
-            recordButton: document.getElementById('record-button'),
             voiceInput: document.getElementById('voice-input'),
             voiceOutput: document.getElementById('voice-output'),
-            clearChat: document.getElementById('clear-chat'),
-            exportChat: document.getElementById('export-chat'),
-            saveChat: document.getElementById('save-chat'),
             newChat: document.getElementById('new-chat'),
             settingsButton: document.getElementById('settings-button'),
             presentationMode: document.getElementById('presentation-mode'),
-            viewStats: document.getElementById('view-stats'),
             notification: document.getElementById('notification'),
             notificationText: document.getElementById('notification-text'),
             apiStatus: document.getElementById('api-status'),
@@ -136,12 +130,9 @@ class VerdiktChatApp {
             
             // История чатов
             toggleChatHistory: document.getElementById('toggle-chat-history'),
-            chatHistoryDropdown: document.getElementById('chat-history-dropdown'),
-            chatHistoryList: document.getElementById('chat-history-list'),
-            chatCount: document.getElementById('chat-count'),
-            importChatBtn: document.getElementById('import-chat-btn'),
-            exportChatBtn: document.getElementById('export-chat-btn'),
-            clearChatsBtn: document.getElementById('clear-chats-btn'),
+            importChatBtn: null,
+            exportChatBtn: null,
+            clearChatsBtn: null,
             
             // Импорт/экспорт
             importModal: document.getElementById('import-modal'),
@@ -164,7 +155,7 @@ class VerdiktChatApp {
         this.speechSynthesis = window.speechSynthesis;
         this.recognition = null;
         this.activityChart = null;
-        
+
         // Список доступных моделей OpenRouter
         this.availableModels = [
             { id: 'google/gemini-2.0-flash-exp:free', name: 'Gemini 2.0 Flash (Бесплатно)', free: true },
@@ -175,23 +166,26 @@ class VerdiktChatApp {
             { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', free: false },
             { id: 'google/gemini-2.0-flash', name: 'Gemini 2.0 Flash', free: false }
         ];
+        
+        // Элементы для вкладок настроек
+        this.settingsTabs = null;
+        this.settingsTabContents = null;
     }
 
     async init() {
         this.setupCookieNotification();
-        this.loadApiKey(); // Загружаем API ключ
         this.setupEventListeners();
         this.loadFromLocalStorage();
         this.setupSpeechRecognition();
         this.setupBackgroundAnimations();
         this.updateUI();
-        this.checkApiStatus(); // Проверяем статус API
+        this.checkApiStatus();
         this.setupKeyboardShortcuts();
         this.setupServiceWorker();
+        this.setupSettingsTabs();
         
         // Загружаем историю чатов
         await this.loadChats();
-        this.setupChatHistoryListeners();
         
         // Статистика
         const currentHour = new Date().getHours();
@@ -205,10 +199,10 @@ class VerdiktChatApp {
         // Автосохранение
         this.startAutoSave();
         
-        console.log('Verdikt GPT с OpenRouter API инициализирован');
+        console.log('Verdikt GPT с обновленным интерфейсом инициализирован');
     }
 
-    // ==================== OPENROTER API ФУНКЦИИ ====================
+        // ==================== OPENROTER API ФУНКЦИИ ====================
 
     loadApiKey() {
         const savedApiKey = localStorage.getItem('verdikt_openrouter_api_key');
@@ -560,6 +554,90 @@ class VerdiktChatApp {
         });
     }
 
+    // ==================== НАСТРОЙКА ВКЛАДОК НАСТРОЕК ====================
+
+    setupSettingsTabs() {
+        this.settingsTabs = document.querySelectorAll('.settings-tab');
+        this.settingsTabContents = document.querySelectorAll('.settings-tab-content');
+        
+        if (!this.settingsTabs.length) return;
+        
+        this.settingsTabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const tabId = e.currentTarget.dataset.tab;
+                this.switchSettingsTab(tabId);
+            });
+        });
+        
+        // Загружаем статистику в настройки
+        this.updateSettingsStats();
+        this.updateSettingsAchievements();
+    }
+
+    switchSettingsTab(tabId) {
+        // Убираем активный класс со всех вкладок и содержимого
+        this.settingsTabs.forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        this.settingsTabContents.forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        // Добавляем активный класс выбранной вкладке и содержимому
+        const activeTab = document.querySelector(`.settings-tab[data-tab="${tabId}"]`);
+        const activeContent = document.getElementById(`${tabId}-tab`);
+        
+        if (activeTab) activeTab.classList.add('active');
+        if (activeContent) activeContent.classList.add('active');
+        
+        // Обновляем данные при переключении на определенные вкладки
+        if (tabId === 'stats') {
+            this.updateSettingsStats();
+        } else if (tabId === 'achievements') {
+            this.updateSettingsAchievements();
+        }
+    }
+
+    updateSettingsStats() {
+        // Обновляем статистику в настройках
+        const statsElements = {
+            'stats-total-messages': this.state.stats.totalMessages,
+            'stats-user-messages': this.state.stats.userMessages,
+            'stats-ai-messages': this.state.stats.aiMessages,
+            'stats-total-chats': this.state.stats.totalChats,
+            'stats-avg-response': this.state.responseTimes.length > 0 
+                ? (this.state.responseTimes.reduce((a, b) => a + b, 0) / this.state.responseTimes.length).toFixed(1) + 'с'
+                : '0с',
+            'stats-consultations': this.state.stats.totalMessages - 1,
+            'stats-saved-chats': this.state.stats.savedChats,
+            'stats-sessions': this.state.stats.sessions
+        };
+        
+        Object.entries(statsElements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+            }
+        });
+    }
+
+    updateSettingsAchievements() {
+        // Обновляем достижения в настройках
+        const achievementItems = document.querySelectorAll('.achievement-item-settings');
+        
+        achievementItems.forEach(item => {
+            const achievementName = item.querySelector('.achievement-name-settings').textContent;
+            const achievementId = this.getAchievementIdByName(achievementName);
+            
+            if (achievementId && this.state.achievements[achievementId]?.unlocked) {
+                item.classList.add('unlocked');
+            } else {
+                item.classList.remove('unlocked');
+            }
+        });
+    }
+
     // ==================== СИСТЕМА УПРАВЛЕНИЯ ЧАТАМИ ====================
 
     async loadChats() {
@@ -582,11 +660,13 @@ class VerdiktChatApp {
             if (chatsData && Array.isArray(chatsData)) {
                 this.chatManager.chats = chatsData;
                 
+                // Восстанавливаем следующий ID
                 const maxId = Math.max(...this.chatManager.chats.map(chat => 
                     parseInt(chat.id.replace('chat-', '')) || 0
                 ));
                 this.chatManager.nextChatId = maxId + 1;
                 
+                // Загружаем последний активный чат
                 const lastActiveId = localStorage.getItem('verdikt_last_active_chat');
                 if (lastActiveId) {
                     const chat = this.chatManager.chats.find(c => c.id === lastActiveId);
@@ -596,6 +676,7 @@ class VerdiktChatApp {
                     }
                 }
                 
+                // Если есть сохраненные чаты, загружаем последний
                 if (this.chatManager.chats.length > 0) {
                     const lastChat = this.chatManager.chats[this.chatManager.chats.length - 1];
                     await this.loadChat(lastChat.id);
@@ -606,6 +687,7 @@ class VerdiktChatApp {
                 this.createNewChat();
             }
             
+            // Обновляем статистику
             this.state.stats.totalChats = this.chatManager.chats.length;
             
         } catch (error) {
@@ -616,19 +698,23 @@ class VerdiktChatApp {
 
     async saveChats() {
         try {
+            // Сохраняем текущий чат
             await this.saveCurrentChat();
             
+            // Сохраняем список всех чатов
             if (this.encryptionState.enabled && !this.encryptionState.isLocked) {
                 await this.saveEncryptedChats();
             } else {
                 localStorage.setItem('verdikt_chats', JSON.stringify(this.chatManager.chats));
             }
             
+            // Сохраняем ID последнего активного чата
             if (this.chatManager.currentChatId) {
                 localStorage.setItem('verdikt_last_active_chat', this.chatManager.currentChatId);
             }
             
-            this.updateChatHistoryUI();
+            // Обновляем статистику в настройках
+            this.updateSettingsStats();
             
         } catch (error) {
             console.error('Error saving chats:', error);
@@ -677,6 +763,7 @@ class VerdiktChatApp {
             theme: this.state.currentTheme
         };
         
+        // Находим или создаем запись чата
         const existingIndex = this.chatManager.chats.findIndex(chat => chat.id === chatData.id);
         
         if (existingIndex >= 0) {
@@ -684,10 +771,12 @@ class VerdiktChatApp {
         } else {
             this.chatManager.chats.push(chatData);
             
+            // Ограничиваем количество сохраненных чатов
             if (this.chatManager.chats.length > this.chatManager.maxChats) {
                 this.chatManager.chats = this.chatManager.chats.slice(-this.chatManager.maxChats);
             }
             
+            // Достижение за создание чатов
             if (this.chatManager.chats.length >= 5 && !this.state.achievements.chatHistorian.unlocked) {
                 this.unlockAchievement('chatHistorian');
             }
@@ -703,6 +792,8 @@ class VerdiktChatApp {
         
         if (userMessages.length > 0) {
             const firstMessage = userMessages[0];
+            
+            // Извлекаем первые слова как заголовок
             const words = firstMessage.split(' ').slice(0, 5);
             title = words.join(' ');
             
@@ -710,6 +801,7 @@ class VerdiktChatApp {
                 title = title.substring(0, 37) + '...';
             }
             
+            // Добавляем эмодзи в зависимости от темы
             if (firstMessage.toLowerCase().includes('отношен') || firstMessage.toLowerCase().includes('любов')) {
                 title = '💕 ' + title;
             } else if (firstMessage.toLowerCase().includes('знакомств') || firstMessage.toLowerCase().includes('свидан')) {
@@ -727,6 +819,7 @@ class VerdiktChatApp {
         
         this.chatManager.currentChatId = newChatId;
         
+        // Сбрасываем состояние
         this.state.conversationHistory = [
             {
                 role: "system",
@@ -747,6 +840,7 @@ class VerdiktChatApp {
         this.state.stats.aiMessages = 1;
         this.state.retryCount = 0;
         
+        // Очищаем чат
         this.elements.chatMessages.innerHTML = `
             <div class="message ai-message" style="opacity: 1; transform: translateY(0);">
                 <div class="message-actions">
@@ -763,14 +857,12 @@ class VerdiktChatApp {
             </div>
         `;
         
+        // Сохраняем новый чат
         await this.saveChats();
         
         this.showNotification('Новый чат создан 💬', 'success');
         this.updateUI();
-        
-        this.elements.chatHistoryDropdown.classList.remove('active');
-        
-        this.state.stats.totalChats = this.chatManager.chats.length;
+        this.updateSettingsStats();
     }
 
     async loadChat(chatId) {
@@ -783,6 +875,7 @@ class VerdiktChatApp {
         
         this.chatManager.currentChatId = chatId;
         
+        // Восстанавливаем историю
         this.state.conversationHistory = [
             {
                 role: "system",
@@ -798,20 +891,24 @@ class VerdiktChatApp {
             ...chat.messages
         ];
         
+        // Восстанавливаем статистику
         if (chat.stats) {
             Object.assign(this.state.stats, chat.stats);
         }
         
         this.state.messageCount = chat.messages.length + 1;
         
+        // Восстанавливаем режим
         if (chat.mode) {
             this.setAIMode(chat.mode);
         }
         
+        // Восстанавливаем тему
         if (chat.theme) {
             this.setTheme(chat.theme);
         }
         
+        // Очищаем и перерисовываем сообщения
         this.elements.chatMessages.innerHTML = '';
         
         chat.messages.forEach((msg, index) => {
@@ -848,7 +945,7 @@ class VerdiktChatApp {
         this.showNotification(`Загружен чат: ${chat.title}`, 'success');
         this.scrollToBottom();
         this.updateUI();
-        this.elements.chatHistoryDropdown.classList.remove('active');
+        this.updateSettingsStats();
     }
 
     async deleteChat(chatId) {
@@ -867,6 +964,7 @@ class VerdiktChatApp {
             if (index >= 0) {
                 this.chatManager.chats.splice(index, 1);
                 
+                // Если удалили текущий чат, загружаем другой
                 if (chatId === this.chatManager.currentChatId) {
                     if (this.chatManager.chats.length > 0) {
                         await this.loadChat(this.chatManager.chats[0].id);
@@ -877,6 +975,7 @@ class VerdiktChatApp {
                 
                 await this.saveChats();
                 this.state.stats.totalChats = this.chatManager.chats.length;
+                this.updateSettingsStats();
                 this.showNotification('Чат удален 🗑️', 'info');
             }
         }
@@ -892,6 +991,7 @@ class VerdiktChatApp {
             this.createNewChat();
             
             this.state.stats.totalChats = 1;
+            this.updateSettingsStats();
             this.showNotification('Все чаты удалены 🗑️', 'info');
         }
     }
@@ -900,16 +1000,19 @@ class VerdiktChatApp {
         const date = new Date(timestamp);
         const now = new Date();
         
+        // Сегодня
         if (date.toDateString() === now.toDateString()) {
             return `Сегодня ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
         }
         
+        // Вчера
         const yesterday = new Date(now);
         yesterday.setDate(now.getDate() - 1);
         if (date.toDateString() === yesterday.toDateString()) {
             return `Вчера ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
         }
         
+        // На этой неделе
         const weekAgo = new Date(now);
         weekAgo.setDate(now.getDate() - 7);
         if (date > weekAgo) {
@@ -917,389 +1020,8 @@ class VerdiktChatApp {
             return `${days[date.getDay()]} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
         }
         
+        // Старые сообщения
         return `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear()}`;
-    }
-
-    updateChatHistoryUI() {
-        const chatList = this.elements.chatHistoryList;
-        const chatCount = this.elements.chatCount;
-        
-        if (!chatList) return;
-        
-        chatCount.textContent = this.chatManager.chats.length;
-        
-        chatList.innerHTML = '';
-        
-        if (this.chatManager.chats.length === 0) {
-            chatList.innerHTML = '<div class="chat-history-empty">Нет сохраненных чатов</div>';
-            return;
-        }
-        
-        const sortedChats = [...this.chatManager.chats].sort((a, b) => b.timestamp - a.timestamp);
-        
-        sortedChats.forEach(chat => {
-            const chatItem = document.createElement('div');
-            chatItem.className = 'chat-history-item';
-            if (chat.id === this.chatManager.currentChatId) {
-                chatItem.classList.add('active');
-            }
-            
-            const messageCount = chat.messages ? chat.messages.length : 0;
-            const date = new Date(chat.timestamp);
-            const timeStr = date.toLocaleTimeString('ru-RU', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
-            const dateStr = date.toLocaleDateString('ru-RU', {
-                day: '2-digit',
-                month: '2-digit'
-            });
-            
-            chatItem.innerHTML = `
-                <div class="chat-history-title">${chat.title || 'Без названия'}</div>
-                <div class="chat-history-meta">
-                    <span>${dateStr} ${timeStr}</span>
-                    <span class="chat-history-count">${messageCount} сообщ.</span>
-                </div>
-            `;
-            
-            chatItem.addEventListener('click', () => {
-                this.loadChat(chat.id);
-            });
-            
-            chatItem.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                this.deleteChat(chat.id);
-            });
-            
-            chatList.appendChild(chatItem);
-        });
-    }
-
-    setupChatHistoryListeners() {
-        this.elements.toggleChatHistory.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.elements.chatHistoryDropdown.classList.toggle('active');
-            this.updateChatHistoryUI();
-        });
-        
-        document.addEventListener('click', (e) => {
-            if (!this.elements.chatHistoryDropdown.contains(e.target) && 
-                !this.elements.toggleChatHistory.contains(e.target)) {
-                this.elements.chatHistoryDropdown.classList.remove('active');
-            }
-        });
-        
-        this.elements.importChatBtn.addEventListener('click', () => {
-            this.elements.chatHistoryDropdown.classList.remove('active');
-            this.showImportModal();
-        });
-        
-        this.elements.exportChatBtn.addEventListener('click', () => {
-            this.elements.chatHistoryDropdown.classList.remove('active');
-            this.showExportChatModal();
-        });
-        
-        this.elements.clearChatsBtn.addEventListener('click', () => {
-            this.elements.chatHistoryDropdown.classList.remove('active');
-            this.clearAllChats();
-        });
-        
-        this.elements.newChat.addEventListener('click', () => {
-            this.createNewChat();
-        });
-        
-        this.setupImportListeners();
-        this.setupExportListeners();
-    }
-
-    setupImportListeners() {
-        this.elements.importDropzone.addEventListener('click', () => {
-            this.elements.importFileInput.click();
-        });
-        
-        this.elements.importDropzone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            this.elements.importDropzone.style.borderColor = 'var(--primary)';
-            this.elements.importDropzone.style.background = 'rgba(236, 72, 153, 0.1)';
-        });
-        
-        this.elements.importDropzone.addEventListener('dragleave', () => {
-            this.elements.importDropzone.style.borderColor = 'var(--border-color)';
-            this.elements.importDropzone.style.background = '';
-        });
-        
-        this.elements.importDropzone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            this.elements.importDropzone.style.borderColor = 'var(--border-color)';
-            this.elements.importDropzone.style.background = '';
-            
-            const file = e.dataTransfer.files[0];
-            if (file && file.type === 'application/json') {
-                this.handleImportFile(file);
-            } else {
-                this.showNotification('Пожалуйста, выберите файл JSON', 'error');
-            }
-        });
-        
-        this.elements.importFileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                this.handleImportFile(file);
-            }
-        });
-        
-        this.elements.importConfirm.addEventListener('click', () => {
-            this.importChat();
-        });
-        
-        this.elements.importCancel.addEventListener('click', () => {
-            this.hideModal('import-modal');
-        });
-        
-        this.elements.importModalClose.addEventListener('click', () => {
-            this.hideModal('import-modal');
-        });
-    }
-
-    setupExportListeners() {
-        document.querySelectorAll('#export-chat-modal .export-option[data-format]').forEach(option => {
-            option.addEventListener('click', (e) => {
-                document.querySelectorAll('#export-chat-modal .export-option').forEach(opt => {
-                    opt.classList.remove('active');
-                });
-                option.classList.add('active');
-                
-                const format = option.dataset.format;
-                if (format === 'json-encrypted') {
-                    this.elements.encryptionNote.style.display = 'block';
-                } else {
-                    this.elements.encryptionNote.style.display = 'none';
-                }
-            });
-        });
-        
-        this.elements.exportChatConfirm.addEventListener('click', () => {
-            const selectedFormat = document.querySelector('#export-chat-modal .export-option.active')?.dataset.format;
-            if (selectedFormat) {
-                this.exportChatToFile(selectedFormat);
-            }
-        });
-        
-        this.elements.exportChatCancel.addEventListener('click', () => {
-            this.hideModal('export-chat-modal');
-        });
-        
-        this.elements.exportChatModalClose.addEventListener('click', () => {
-            this.hideModal('export-chat-modal');
-        });
-    }
-
-    async handleImportFile(file) {
-        try {
-            const text = await file.text();
-            const data = JSON.parse(text);
-            
-            this.showImportPreview(data);
-            this.elements.importConfirm.disabled = false;
-            
-        } catch (error) {
-            console.error('Error reading import file:', error);
-            this.showNotification('Ошибка чтения файла. Проверьте формат.', 'error');
-        }
-    }
-
-    showImportPreview(data) {
-        this.elements.importPreview.style.display = 'block';
-        
-        let previewHTML = '';
-        
-        if (data.chats && Array.isArray(data.chats)) {
-            previewHTML = `<p>Найдено ${data.chats.length} чатов:</p><ul>`;
-            data.chats.forEach((chat, index) => {
-                previewHTML += `
-                    <li style="margin-bottom: 8px;">
-                        <strong>${chat.title || 'Без названия'}</strong><br>
-                        <small>${new Date(chat.timestamp).toLocaleString('ru-RU')}</small><br>
-                        <small>${chat.messages?.length || 0} сообщений</small>
-                    </li>
-                `;
-            });
-            previewHTML += '</ul>';
-        } else if (data.messages && Array.isArray(data.messages)) {
-            previewHTML = `
-                <p><strong>${data.title || 'Импортируемый чат'}</strong></p>
-                <p>Сообщений: ${data.messages.length}</p>
-                <p>Дата: ${new Date(data.timestamp || Date.now()).toLocaleString('ru-RU')}</p>
-            `;
-        } else {
-            previewHTML = '<p>Неизвестный формат данных</p>';
-        }
-        
-        this.elements.importPreviewContent.innerHTML = previewHTML;
-    }
-
-    async importChat() {
-        try {
-            const file = this.elements.importFileInput.files[0];
-            if (!file) return;
-            
-            const text = await file.text();
-            const data = JSON.parse(text);
-            
-            let importedChats = [];
-            
-            if (data.chats && Array.isArray(data.chats)) {
-                importedChats = data.chats;
-            } else if (data.messages) {
-                importedChats = [data];
-            } else {
-                throw new Error('Неверный формат файла');
-            }
-            
-            importedChats.forEach(chat => {
-                const newId = 'chat-' + this.chatManager.nextChatId++;
-                const newChat = {
-                    ...chat,
-                    id: newId,
-                    timestamp: chat.timestamp || Date.now()
-                };
-                
-                this.chatManager.chats.push(newChat);
-            });
-            
-            await this.saveChats();
-            
-            if (importedChats.length > 0) {
-                const lastChat = this.chatManager.chats[this.chatManager.chats.length - 1];
-                await this.loadChat(lastChat.id);
-            }
-            
-            this.hideModal('import-modal');
-            this.state.stats.totalChats = this.chatManager.chats.length;
-            this.showNotification(`Импортировано ${importedChats.length} чатов ✅`, 'success');
-            
-        } catch (error) {
-            console.error('Import error:', error);
-            this.showNotification('Ошибка импорта: ' + error.message, 'error');
-        }
-    }
-
-    async exportChatToFile(format) {
-        try {
-            if (!this.chatManager.currentChatId) {
-                this.showNotification('Нет активного чата для экспорта', 'error');
-                return;
-            }
-            
-            const chat = this.chatManager.chats.find(c => c.id === this.chatManager.currentChatId);
-            
-            if (!chat) {
-                this.showNotification('Чат не найден', 'error');
-                return;
-            }
-            
-            let exportData;
-            let filename;
-            let mimeType = 'application/json';
-            
-            if (format === 'json-encrypted') {
-                const password = prompt('Введите пароль для шифрования (минимум 8 символов):');
-                if (!password || password.length < 8) {
-                    this.showNotification('Пароль должен быть не менее 8 символов', 'error');
-                    return;
-                }
-                
-                const confirmPassword = prompt('Подтвердите пароль:');
-                if (password !== confirmPassword) {
-                    this.showNotification('Пароли не совпадают', 'error');
-                    return;
-                }
-                
-                const encryptedData = await this.crypto.encrypt(chat, password);
-                
-                exportData = {
-                    version: '2.1',
-                    type: 'verdikt-chat-encrypted',
-                    timestamp: Date.now(),
-                    data: encryptedData,
-                    metadata: {
-                        title: chat.title,
-                        messageCount: chat.messages?.length || 0,
-                        encryption: 'AES-GCM-256'
-                    }
-                };
-                
-                filename = `verdikt-chat-encrypted-${Date.now()}.json`;
-                
-            } else {
-                exportData = chat;
-                filename = `verdikt-chat-${Date.now()}.json`;
-            }
-            
-            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: mimeType });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            this.hideModal('export-chat-modal');
-            this.showNotification('Чат экспортирован 📥', 'success');
-            
-        } catch (error) {
-            console.error('Export error:', error);
-            this.showNotification('Ошибка экспорта: ' + error.message, 'error');
-        }
-    }
-
-    showImportModal() {
-        this.elements.importFileInput.value = '';
-        this.elements.importPreview.style.display = 'none';
-        this.elements.importConfirm.disabled = true;
-        this.showModal('import-modal');
-    }
-
-    showExportChatModal() {
-        document.querySelectorAll('#export-chat-modal .export-option').forEach(opt => opt.classList.remove('active'));
-        const firstOption = document.querySelector('#export-chat-modal .export-option');
-        if (firstOption) {
-            firstOption.classList.add('active');
-            if (firstOption.dataset.format === 'json-encrypted') {
-                this.elements.encryptionNote.style.display = 'block';
-            }
-        }
-        this.showModal('export-chat-modal');
-    }
-
-    startAutoSave() {
-        if (!this.chatManager.autoSave) return;
-        
-        this.chatManager.autoSaveTimer = setInterval(async () => {
-            if (this.chatManager.currentChatId && this.state.messageCount > 1) {
-                await this.saveChats();
-            }
-        }, this.chatManager.autoSaveInterval);
-        
-        window.addEventListener('beforeunload', () => {
-            if (this.chatManager.currentChatId && this.state.messageCount > 1) {
-                this.saveChatsSync();
-            }
-        });
-    }
-
-    saveChatsSync() {
-        try {
-            localStorage.setItem('verdikt_chats', JSON.stringify(this.chatManager.chats));
-            if (this.chatManager.currentChatId) {
-                localStorage.setItem('verdikt_last_active_chat', this.chatManager.currentChatId);
-            }
-        } catch (error) {
-            console.error('Sync save error:', error);
-        }
     }
 
     // ==================== ШИФРОВАНИЕ И БЕЗОПАСНОСТЬ ====================
@@ -1703,15 +1425,18 @@ class VerdiktChatApp {
             
             const decryptedData = await this.crypto.decrypt(encryptedData, password);
             
+            // Загружаем чаты
             if (decryptedData.chats) {
                 this.chatManager.chats = decryptedData.chats;
                 this.state.stats.totalChats = this.chatManager.chats.length;
             }
             
+            // Загружаем статистику
             if (decryptedData.stats) {
                 Object.assign(this.state.stats, decryptedData.stats);
             }
             
+            // Загружаем достижения
             if (decryptedData.achievements) {
                 Object.keys(decryptedData.achievements).forEach(key => {
                     if (this.state.achievements[key]) {
@@ -1720,6 +1445,7 @@ class VerdiktChatApp {
                 });
             }
             
+            // Загружаем настройки
             if (decryptedData.settings?.theme) {
                 this.setTheme(decryptedData.settings.theme);
             }
@@ -1772,23 +1498,20 @@ class VerdiktChatApp {
         });
         
         // Голосовые функции
-        this.elements.recordButton.addEventListener('click', () => this.toggleVoiceRecording());
         this.elements.voiceInput.addEventListener('click', () => this.toggleVoiceRecording());
         this.elements.voiceOutput.addEventListener('click', () => this.speakLastMessage());
         
-        // Команды
-        document.querySelectorAll('.command-item').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const command = e.target.dataset.command;
-                this.handleCommand(command);
-            });
-        });
-        
-        // Режимы AI
-        document.querySelectorAll('.mode-item').forEach(mode => {
+        // Режимы AI в настройках
+        document.querySelectorAll('.mode-item-settings').forEach(mode => {
             mode.addEventListener('click', (e) => {
                 const modeId = e.currentTarget.dataset.mode;
                 this.setAIMode(modeId);
+                
+                // Обновляем активный класс
+                document.querySelectorAll('.mode-item-settings').forEach(item => {
+                    item.classList.remove('active');
+                });
+                mode.classList.add('active');
             });
         });
         
@@ -1803,12 +1526,14 @@ class VerdiktChatApp {
         });
         
         // Кнопки управления
-        this.elements.clearChat.addEventListener('click', () => this.clearChat());
-        this.elements.exportChat.addEventListener('click', () => this.showExportModal());
-        this.elements.saveChat.addEventListener('click', () => this.saveChat());
+        this.elements.newChat.addEventListener('click', () => this.createNewChat());
         this.elements.settingsButton.addEventListener('click', () => this.showSettingsModal());
         this.elements.presentationMode.addEventListener('click', () => this.togglePresentationMode());
-        this.elements.viewStats.addEventListener('click', () => this.showStatsModal());
+        
+        // История чатов
+        this.elements.toggleChatHistory.addEventListener('click', () => {
+            this.showChatHistoryModal();
+        });
         
         // Настройки
         this.elements.temperatureSlider.addEventListener('input', (e) => {
@@ -1822,6 +1547,10 @@ class VerdiktChatApp {
             theme.addEventListener('click', (e) => {
                 const themeName = e.currentTarget.dataset.theme;
                 this.setTheme(themeName);
+                
+                // Обновляем активный класс
+                document.querySelectorAll('.theme-option').forEach(opt => opt.classList.remove('active'));
+                theme.classList.add('active');
             });
         });
         
@@ -1861,26 +1590,25 @@ class VerdiktChatApp {
         // Футер ссылки
         document.getElementById('model-info').addEventListener('click', (e) => {
             e.preventDefault();
-            this.showNotification('Используется OpenRouter API с различными моделями', 'info');
-        });
-        
-        document.getElementById('keyboard-shortcuts').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.showQuickCommands();
+            this.showNotification('Модель: microsoft/DialoGPT-medium (Hugging Face)', 'info');
         });
         
         document.getElementById('privacy-policy').addEventListener('click', (e) => {
             e.preventDefault();
-            this.showNotification('Данные чатов хранятся локально в вашем браузере', 'info');
+            this.showNotification('Используется Hugging Face API. Данные анонимизированы.', 'info');
         });
         
         // Управление шифрованием
         document.getElementById('encryption-manager')?.addEventListener('click', () => {
             this.showEncryptionManager();
         });
-        
+
         // Настройки API
         this.setupApiSettingsListeners();
+        
+        // Импорт/экспорт
+        this.setupImportListeners();
+        this.setupExportListeners();
     }
 
     async sendMessage() {
@@ -1902,7 +1630,7 @@ class VerdiktChatApp {
             this.showNotification('Я специализируюсь только на отношениях, знакомствах и манипуляциях.', 'warning');
             return;
         }
-        
+
         // Проверяем наличие API ключа
         if (!this.API_CONFIG.apiKey) {
             this.showNotification('Пожалуйста, настройте API ключ OpenRouter в настройках', 'error');
@@ -1933,6 +1661,9 @@ class VerdiktChatApp {
         this.elements.messageInput.style.height = 'auto';
         
         this.showTypingIndicator();
+        if (this.state.messageCount <= 3) {
+            this.showNotification('Первые запросы могут занимать 20-40 секунд (загрузка модели)', 'info');
+        }
         
         try {
             const startTime = Date.now();
@@ -1957,32 +1688,133 @@ class VerdiktChatApp {
             
             this.showNotification(`Ответ получен за ${responseTime.toFixed(1)}с ✅`, 'success');
             this.updateUI();
+            this.updateSettingsStats();
             await this.saveChats();
             
             this.state.retryCount = 0;
             
         } catch (error) {
             this.hideTypingIndicator();
-            console.error('API Error:', error);
+            console.error('API Error details:', error);
             
-            let errorMessage = error.message || "Ошибка при получении ответа";
+            let errorMessage = "Извините, произошла ошибка при получении ответа. ";
+            let userMessage = error.message;
             
-            this.addMessage(`Ошибка: ${errorMessage}`, 'ai');
+            if (error.message.includes('503') || error.message.includes('загружается')) {
+                if (this.state.retryCount < this.state.maxRetries) {
+                    this.state.retryCount++;
+                    errorMessage += `Попытка ${this.state.retryCount}/${this.state.maxRetries}. Подождите 30 секунд.`;
+                    userMessage = "Модель загружается, подождите 30 секунд и попробуйте снова...";
+                } else {
+                    errorMessage = "Сервер перегружен. Пожалуйста, попробуйте позже или используйте более короткий запрос.";
+                }
+            } else if (error.message.includes('429')) {
+                errorMessage = "Превышен лимит запросов. Бесплатный лимит: 30K токенов в месяц.";
+            } else if (error.message.includes('401')) {
+                errorMessage = "Ошибка аутентификации API. Проверьте API ключ.";
+            }
+            
+            this.addMessage(userMessage, 'ai');
             this.showNotification(errorMessage, 'error');
             
             this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API';
             this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
             this.elements.apiStatus.style.color = '#f87171';
-            
-            if (errorMessage.includes('API ключ') || errorMessage.includes('401')) {
-                setTimeout(() => {
-                    this.showApiSettingsModal();
-                }, 1000);
-            }
         }
         
         this.scrollToBottom();
     }
+
+    async getAIResponse(messages) {
+        if (!this.state.isApiConnected) {
+            throw new Error('API не подключен');
+        }
+
+        try {
+            const userMessages = messages.filter(msg => msg.role === "user");
+            const lastUserMessage = userMessages[userMessages.length - 1]?.content || 
+                                   messages[messages.length - 1]?.content || 
+                                   "Привет";
+            
+            const prompt = `Ты - психолог Verdikt GPT, специалист по отношениям, знакомствам и манипуляциям.
+Пользователь: ${lastUserMessage}
+Психолог:`;
+
+            const response = await fetch(this.API_CONFIG.url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    inputs: prompt,
+                    parameters: {
+                        max_new_tokens: this.API_CONFIG.maxTokens,
+                        temperature: this.API_CONFIG.temperature,
+                        top_p: 0.95,
+                        repetition_penalty: 1.2,
+                        do_sample: true,
+                        return_full_text: false,
+                        num_return_sequences: 1
+                    },
+                    options: {
+                        use_cache: true,
+                        wait_for_model: true
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('HF API Error Response:', errorText);
+                
+                if (response.status === 503) {
+                    throw new Error('Модель загружается. Попробуйте через 20-30 секунд.');
+                } else if (response.status === 429) {
+                    throw new Error('Превышен лимит запросов (429). Попробуйте позже.');
+                } else if (response.status === 401) {
+                    throw new Error('Ошибка аутентификации API (401)');
+                } else {
+                    throw new Error(`HF API Error: ${response.status} - ${errorText.substring(0, 100)}`);
+                }
+            }
+
+            const data = await response.json();
+            
+            let generatedText;
+            if (Array.isArray(data)) {
+                generatedText = data[0]?.generated_text || '';
+            } else if (data.generated_text) {
+                generatedText = data.generated_text;
+            } else if (data[0]?.generated_text) {
+                generatedText = data[0].generated_text;
+            } else {
+                console.warn('Unexpected API response format:', data);
+                generatedText = JSON.stringify(data);
+            }
+            
+            let cleanResponse = generatedText.replace(prompt, '').trim();
+            cleanResponse = cleanResponse.replace(/Психолог:/g, '').trim();
+            
+            if (!cleanResponse || cleanResponse.length < 5) {
+                const fallbackResponses = [
+                    "Я понимаю вашу ситуацию. Важно обсудить это открыто и честно с партнером. 💬",
+                    "Это сложный вопрос. Рекомендую сосредоточиться на ваших чувствах и потребностях. 💕",
+                    "В подобных ситуациях важно сохранять спокойствие и действовать обдуманно. 🧘‍♀️",
+                    "Я бы посоветовал обратиться к профессиональному психологу для более детальной консультации. 👥"
+                ];
+                cleanResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+            }
+            
+            return cleanResponse;
+            
+        } catch (error) {
+            console.error('Error in getAIResponse:', error);
+            throw error;
+        }
+    }
+
+    // ==================== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ====================
 
     isTopicRelevant(message) {
         const messageLower = message.toLowerCase();
@@ -2090,14 +1922,13 @@ class VerdiktChatApp {
                 this.clearChat();
                 break;
             case '/save':
-                this.saveChat();
+                this.saveChats();
                 break;
             case '/export':
                 this.showExportModal();
                 break;
             case '/history':
-                this.elements.chatHistoryDropdown.classList.toggle('active');
-                this.updateChatHistoryUI();
+                this.showChatHistoryModal();
                 break;
             case '/import':
                 this.showImportModal();
@@ -2164,25 +1995,20 @@ class VerdiktChatApp {
         }
     }
 
-    saveChat() {
-        this.saveChats();
-        this.showNotification('Чат сохранен 💾', 'success');
-    }
-
     setAIMode(modeId) {
         if (!this.state.aiModes[modeId]) return;
         
         this.state.currentMode = modeId;
+        this.API_CONFIG.temperature = this.state.aiModes[modeId].temperature;
         
-        document.querySelectorAll('.mode-item').forEach(item => {
+        // Обновляем активный класс в настройках
+        document.querySelectorAll('.mode-item-settings').forEach(item => {
             item.classList.remove('active');
         });
-        const activeMode = document.querySelector(`.mode-item[data-mode="${modeId}"]`);
+        const activeMode = document.querySelector(`.mode-item-settings[data-mode="${modeId}"]`);
         if (activeMode) {
             activeMode.classList.add('active');
         }
-        
-        this.API_CONFIG.temperature = this.state.aiModes[modeId].temperature;
         
         this.showNotification(`Режим изменен на: ${this.state.aiModes[modeId].name}`, 'info');
     }
@@ -2207,6 +2033,8 @@ class VerdiktChatApp {
     setTheme(theme) {
         this.state.currentTheme = theme;
         document.body.setAttribute('data-theme', theme);
+        
+        // Обновляем активный класс
         document.querySelectorAll('.theme-option').forEach(opt => opt.classList.remove('active'));
         const activeTheme = document.querySelector(`.theme-option[data-theme="${theme}"]`);
         if (activeTheme) {
@@ -2264,7 +2092,7 @@ class VerdiktChatApp {
             }, 3000);
         }, 10);
         
-        this.updateAchievementsUI();
+        this.updateSettingsAchievements();
         this.saveChats();
     }
 
@@ -2322,28 +2150,7 @@ class VerdiktChatApp {
     }
 
     updateUI() {
-        document.getElementById('sidebar-messages').textContent = this.state.stats.totalMessages;
-        document.getElementById('sidebar-time').textContent = 
-            this.state.responseTimes.length > 0 
-            ? (this.state.responseTimes.reduce((a, b) => a + b, 0) / this.state.responseTimes.length).toFixed(1) + 'с'
-            : '—';
-        document.getElementById('sidebar-saved').textContent = this.state.stats.savedChats;
-        document.getElementById('sidebar-sessions').textContent = this.state.stats.sessions;
-        
-        this.updateAchievementsUI();
-    }
-
-    updateAchievementsUI() {
-        document.querySelectorAll('.achievement-item').forEach(item => {
-            const achievementName = item.querySelector('.achievement-name').textContent;
-            const achievementId = this.getAchievementIdByName(achievementName);
-            
-            if (achievementId && this.state.achievements[achievementId]?.unlocked) {
-                item.classList.add('unlocked');
-            } else {
-                item.classList.remove('unlocked');
-            }
-        });
+        this.updateSettingsStats();
     }
 
     getAchievementIdByName(name) {
@@ -2396,14 +2203,14 @@ class VerdiktChatApp {
         
         if (!this.state.isRecording) {
             this.state.isRecording = true;
-            this.elements.recordButton.classList.add('recording');
-            this.elements.recordButton.innerHTML = '<i class="fas fa-stop"></i>';
+            this.elements.voiceInput.classList.add('recording');
+            this.elements.voiceInput.innerHTML = '<i class="fas fa-stop"></i>';
             this.recognition.start();
             this.showNotification('Запись началась... 🎤', 'info');
         } else {
             this.state.isRecording = false;
-            this.elements.recordButton.classList.remove('recording');
-            this.elements.recordButton.innerHTML = '<i class="fas fa-microphone"></i>';
+            this.elements.voiceInput.classList.remove('recording');
+            this.elements.voiceInput.innerHTML = '<i class="fas fa-microphone"></i>';
             this.recognition.stop();
             this.showNotification('Запись остановлена', 'info');
         }
@@ -2469,6 +2276,7 @@ class VerdiktChatApp {
     showSettingsModal() {
         document.getElementById('temperature-slider').value = this.API_CONFIG.temperature;
         document.getElementById('temperature-value').textContent = this.API_CONFIG.temperature;
+        this.switchSettingsTab('themes');
         this.showModal('settings-modal');
     }
 
@@ -2489,6 +2297,152 @@ class VerdiktChatApp {
         this.updatePopularTopics();
         
         this.showModal('stats-modal');
+    }
+
+    showChatHistoryModal() {
+        this.showHistoryModal();
+    }
+
+    showHistoryModal() {
+        const modalHTML = `
+        <div class="modal" id="chat-history-modal">
+            <div class="modal-content" style="max-width: 500px;">
+                <button class="modal-close" id="chat-history-modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+                
+                <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-history"></i> История чатов
+                </h2>
+                
+                <div class="modal-section">
+                    <div id="chat-history-list" style="max-height: 300px; overflow-y: auto;">
+                        <div class="chat-history-empty" style="text-align: center; padding: 30px; color: var(--text-tertiary);">
+                            Нет сохраненных чатов
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-buttons" style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="ios-button tertiary" id="import-chat-btn" style="flex: 1;">
+                        <i class="fas fa-upload"></i> Импорт
+                    </button>
+                    <button class="ios-button tertiary" id="export-all-chats-btn" style="flex: 1;">
+                        <i class="fas fa-download"></i> Экспорт всех
+                    </button>
+                    <button class="ios-button secondary" id="clear-all-chats-btn" style="flex: 1;">
+                        <i class="fas fa-trash"></i> Очистить
+                    </button>
+                </div>
+            </div>
+        </div>
+        `;
+        
+        const existingModal = document.getElementById('chat-history-modal');
+        if (existingModal) existingModal.remove();
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        const modal = document.getElementById('chat-history-modal');
+        this.showModal('chat-history-modal');
+        
+        this.updateHistoryModalContent();
+        
+        document.getElementById('chat-history-modal-close').addEventListener('click', () => {
+            this.hideModal('chat-history-modal');
+        });
+        
+        document.getElementById('import-chat-btn').addEventListener('click', () => {
+            this.hideModal('chat-history-modal');
+            this.showImportModal();
+        });
+        
+        document.getElementById('export-all-chats-btn').addEventListener('click', () => {
+            this.exportAllChats();
+        });
+        
+        document.getElementById('clear-all-chats-btn').addEventListener('click', () => {
+            this.clearAllChats();
+            this.hideModal('chat-history-modal');
+        });
+    }
+
+    updateHistoryModalContent() {
+        const historyList = document.getElementById('chat-history-list');
+        if (!historyList) return;
+        
+        historyList.innerHTML = '';
+        
+        if (this.chatManager.chats.length === 0) {
+            historyList.innerHTML = `
+                <div class="chat-history-empty" style="text-align: center; padding: 30px; color: var(--text-tertiary);">
+                    Нет сохраненных чатов
+                </div>
+            `;
+            return;
+        }
+        
+        // Сортируем чаты по времени (новые сверху)
+        const sortedChats = [...this.chatManager.chats].sort((a, b) => b.timestamp - a.timestamp);
+        
+        sortedChats.forEach(chat => {
+            const chatItem = document.createElement('div');
+            chatItem.className = 'chat-history-item';
+            chatItem.style.cssText = `
+                padding: 12px 15px;
+                border-radius: var(--radius-md);
+                margin-bottom: 8px;
+                cursor: pointer;
+                transition: var(--transition);
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+                background: rgba(255, 255, 255, 0.05);
+                border-left: 3px solid transparent;
+                position: relative;
+            `;
+            
+            if (chat.id === this.chatManager.currentChatId) {
+                chatItem.style.background = 'rgba(236, 72, 153, 0.1)';
+                chatItem.style.borderLeftColor = 'var(--primary)';
+            }
+            
+            const messageCount = chat.messages ? chat.messages.length : 0;
+            const date = new Date(chat.timestamp);
+            const timeStr = date.toLocaleTimeString('ru-RU', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            const dateStr = date.toLocaleDateString('ru-RU', {
+                day: '2-digit',
+                month: '2-digit'
+            });
+            
+            chatItem.innerHTML = `
+                <div style="font-weight: 500; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 20px;">
+                    ${chat.title || 'Без названия'}
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-tertiary);">
+                    <span>${dateStr} ${timeStr}</span>
+                    <span style="background: var(--primary); color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem;">
+                        ${messageCount} сообщ.
+                    </span>
+                </div>
+            `;
+            
+            chatItem.addEventListener('click', () => {
+                this.loadChat(chat.id);
+                this.hideModal('chat-history-modal');
+            });
+            
+            // Контекстное меню для удаления
+            chatItem.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                this.deleteChat(chat.id);
+                this.updateHistoryModalContent();
+            });
+            
+            historyList.appendChild(chatItem);
+        });
     }
 
     // ==================== ПРОЧИЕ ФУНКЦИИ ====================
@@ -2542,6 +2496,46 @@ class VerdiktChatApp {
         }
     }
 
+    async checkApiStatus() {
+        this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> Подключение к Hugging Face...';
+        this.elements.apiStatus.classList.add('api-connecting');
+        this.elements.apiStatus.classList.remove('api-error');
+        
+        this.state.isApiConnected = true;
+        
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Таймаут подключения')), 5000)
+        );
+        
+        try {
+            const response = await Promise.race([
+                fetch('https://api-inference.huggingface.co/status', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
+                    }
+                }),
+                timeoutPromise
+            ]);
+            
+            if (response.ok) {
+                this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> HF API доступен';
+                this.elements.apiStatus.style.background = 'rgba(34, 197, 94, 0.15)';
+                this.elements.apiStatus.style.color = '#4ade80';
+                this.elements.apiStatus.classList.remove('api-connecting');
+                this.showConnectionSuccessAnimation();
+                this.showNotification('Hugging Face API подключен ✅', 'success');
+            } else {
+                throw new Error(`HTTP ${response.status}`);
+            }
+        } catch (error) {
+            console.log('API check error:', error);
+            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Проверьте соединение';
+            this.elements.apiStatus.classList.remove('api-connecting');
+            this.showNotification('API проверка не удалась, но можно попробовать отправить сообщение', 'warning');
+        }
+    }
+
     setupServiceWorker() {
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('service-worker.js')
@@ -2576,8 +2570,7 @@ class VerdiktChatApp {
                         break;
                     case 'h':
                         e.preventDefault();
-                        this.elements.chatHistoryDropdown.classList.toggle('active');
-                        this.updateChatHistoryUI();
+                        this.showHistoryModal();
                         break;
                     case 'l':
                         e.preventDefault();
@@ -2868,8 +2861,7 @@ class VerdiktChatApp {
                     metadata: {
                         exported: new Date().toISOString(),
                         totalMessages: this.state.stats.totalMessages,
-                        model: this.API_CONFIG.model,
-                        api: 'OpenRouter',
+                        model: 'microsoft/DialoGPT-medium',
                         topics: {
                             manipulations: this.state.stats.manipulationRequests,
                             relationships: this.state.stats.relationshipAdvice,
@@ -2894,6 +2886,32 @@ class VerdiktChatApp {
         
         this.hideModal('export-modal');
         this.showNotification(`Консультация экспортирована в ${format.toUpperCase()} 📥`, 'success');
+    }
+
+    exportAllChats() {
+        const allChatsData = {
+            version: '2.1',
+            timestamp: new Date().toISOString(),
+            chats: this.chatManager.chats,
+            metadata: {
+                totalChats: this.chatManager.chats.length,
+                totalMessages: this.state.stats.totalMessages,
+                model: 'microsoft/DialoGPT-medium'
+            }
+        };
+        
+        const content = JSON.stringify(allChatsData, null, 2);
+        const blob = new Blob([content], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `verdikt-all-chats-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        this.showNotification('Все чаты экспортированы 📥', 'success');
     }
 
     showQuickCommands() {
@@ -2927,6 +2945,309 @@ class VerdiktChatApp {
             particlesContainer.appendChild(particle);
             
             setTimeout(() => particle.remove(), 1500);
+        }
+    }
+
+    // ==================== ИМПОРТ/ЭКСПОРТ ====================
+
+    setupImportListeners() {
+        // Открытие файлового диалога
+        this.elements.importDropzone.addEventListener('click', () => {
+            this.elements.importFileInput.click();
+        });
+        
+        // Drag & drop
+        this.elements.importDropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            this.elements.importDropzone.style.borderColor = 'var(--primary)';
+            this.elements.importDropzone.style.background = 'rgba(236, 72, 153, 0.1)';
+        });
+        
+        this.elements.importDropzone.addEventListener('dragleave', () => {
+            this.elements.importDropzone.style.borderColor = 'var(--border-color)';
+            this.elements.importDropzone.style.background = '';
+        });
+        
+        this.elements.importDropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            this.elements.importDropzone.style.borderColor = 'var(--border-color)';
+            this.elements.importDropzone.style.background = '';
+            
+            const file = e.dataTransfer.files[0];
+            if (file && file.type === 'application/json') {
+                this.handleImportFile(file);
+            } else {
+                this.showNotification('Пожалуйста, выберите файл JSON', 'error');
+            }
+        });
+        
+        // Выбор файла
+        this.elements.importFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                this.handleImportFile(file);
+            }
+        });
+        
+        // Кнопки
+        this.elements.importConfirm.addEventListener('click', () => {
+            this.importChat();
+        });
+        
+        this.elements.importCancel.addEventListener('click', () => {
+            this.hideModal('import-modal');
+        });
+        
+        this.elements.importModalClose.addEventListener('click', () => {
+            this.hideModal('import-modal');
+        });
+    }
+
+    setupExportListeners() {
+        // Выбор формата экспорта
+        document.querySelectorAll('#export-chat-modal .export-option[data-format]').forEach(option => {
+            option.addEventListener('click', (e) => {
+                document.querySelectorAll('#export-chat-modal .export-option').forEach(opt => {
+                    opt.classList.remove('active');
+                });
+                option.classList.add('active');
+                
+                // Показываем/скрываем заметку о шифровании
+                const format = option.dataset.format;
+                if (format === 'json-encrypted') {
+                    this.elements.encryptionNote.style.display = 'block';
+                } else {
+                    this.elements.encryptionNote.style.display = 'none';
+                }
+            });
+        });
+        
+        // Кнопки
+        this.elements.exportChatConfirm.addEventListener('click', () => {
+            const selectedFormat = document.querySelector('#export-chat-modal .export-option.active')?.dataset.format;
+            if (selectedFormat) {
+                this.exportChatToFile(selectedFormat);
+            }
+        });
+        
+        this.elements.exportChatCancel.addEventListener('click', () => {
+            this.hideModal('export-chat-modal');
+        });
+        
+        this.elements.exportChatModalClose.addEventListener('click', () => {
+            this.hideModal('export-chat-modal');
+        });
+    }
+
+    async handleImportFile(file) {
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+            
+            this.showImportPreview(data);
+            this.elements.importConfirm.disabled = false;
+            
+        } catch (error) {
+            console.error('Error reading import file:', error);
+            this.showNotification('Ошибка чтения файла. Проверьте формат.', 'error');
+        }
+    }
+
+    showImportPreview(data) {
+        this.elements.importPreview.style.display = 'block';
+        
+        let previewHTML = '';
+        
+        if (data.chats && Array.isArray(data.chats)) {
+            previewHTML = `<p>Найдено ${data.chats.length} чатов:</p><ul>`;
+            data.chats.forEach((chat, index) => {
+                previewHTML += `
+                    <li style="margin-bottom: 8px;">
+                        <strong>${chat.title || 'Без названия'}</strong><br>
+                        <small>${new Date(chat.timestamp).toLocaleString('ru-RU')}</small><br>
+                        <small>${chat.messages?.length || 0} сообщений</small>
+                    </li>
+                `;
+            });
+            previewHTML += '</ul>';
+        } else if (data.messages && Array.isArray(data.messages)) {
+            previewHTML = `
+                <p><strong>${data.title || 'Импортируемый чат'}</strong></p>
+                <p>Сообщений: ${data.messages.length}</p>
+                <p>Дата: ${new Date(data.timestamp || Date.now()).toLocaleString('ru-RU')}</p>
+            `;
+        } else {
+            previewHTML = '<p>Неизвестный формат данных</p>';
+        }
+        
+        this.elements.importPreviewContent.innerHTML = previewHTML;
+    }
+
+    async importChat() {
+        try {
+            const file = this.elements.importFileInput.files[0];
+            if (!file) return;
+            
+            const text = await file.text();
+            const data = JSON.parse(text);
+            
+            let importedChats = [];
+            
+            if (data.chats && Array.isArray(data.chats)) {
+                importedChats = data.chats;
+            } else if (data.messages) {
+                importedChats = [data];
+            } else {
+                throw new Error('Неверный формат файла');
+            }
+            
+            // Добавляем чаты с новыми ID
+            importedChats.forEach(chat => {
+                const newId = 'chat-' + this.chatManager.nextChatId++;
+                const newChat = {
+                    ...chat,
+                    id: newId,
+                    timestamp: chat.timestamp || Date.now()
+                };
+                
+                this.chatManager.chats.push(newChat);
+            });
+            
+            await this.saveChats();
+            
+            // Загружаем последний импортированный чат
+            if (importedChats.length > 0) {
+                const lastChat = this.chatManager.chats[this.chatManager.chats.length - 1];
+                await this.loadChat(lastChat.id);
+            }
+            
+            this.hideModal('import-modal');
+            this.state.stats.totalChats = this.chatManager.chats.length;
+            this.updateSettingsStats();
+            this.showNotification(`Импортировано ${importedChats.length} чатов ✅`, 'success');
+            
+        } catch (error) {
+            console.error('Import error:', error);
+            this.showNotification('Ошибка импорта: ' + error.message, 'error');
+        }
+    }
+
+    async exportChatToFile(format) {
+        try {
+            if (!this.chatManager.currentChatId) {
+                this.showNotification('Нет активного чата для экспорта', 'error');
+                return;
+            }
+            
+            const chat = this.chatManager.chats.find(c => c.id === this.chatManager.currentChatId);
+            
+            if (!chat) {
+                this.showNotification('Чат не найден', 'error');
+                return;
+            }
+            
+            let exportData;
+            let filename;
+            let mimeType = 'application/json';
+            
+            if (format === 'json-encrypted') {
+                const password = prompt('Введите пароль для шифрования (минимум 8 символов):');
+                if (!password || password.length < 8) {
+                    this.showNotification('Пароль должен быть не менее 8 символов', 'error');
+                    return;
+                }
+                
+                const confirmPassword = prompt('Подтвердите пароль:');
+                if (password !== confirmPassword) {
+                    this.showNotification('Пароли не совпадают', 'error');
+                    return;
+                }
+                
+                const encryptedData = await this.crypto.encrypt(chat, password);
+                
+                exportData = {
+                    version: '2.1',
+                    type: 'verdikt-chat-encrypted',
+                    timestamp: Date.now(),
+                    data: encryptedData,
+                    metadata: {
+                        title: chat.title,
+                        messageCount: chat.messages?.length || 0,
+                        encryption: 'AES-GCM-256'
+                    }
+                };
+                
+                filename = `verdikt-chat-encrypted-${Date.now()}.json`;
+                
+            } else {
+                exportData = chat;
+                filename = `verdikt-chat-${Date.now()}.json`;
+            }
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            this.hideModal('export-chat-modal');
+            this.showNotification('Чат экспортирован 📥', 'success');
+            
+        } catch (error) {
+            console.error('Export error:', error);
+            this.showNotification('Ошибка экспорта: ' + error.message, 'error');
+        }
+    }
+
+    showImportModal() {
+        this.elements.importFileInput.value = '';
+        this.elements.importPreview.style.display = 'none';
+        this.elements.importConfirm.disabled = true;
+        this.showModal('import-modal');
+    }
+
+    showExportChatModal() {
+        document.querySelectorAll('#export-chat-modal .export-option').forEach(opt => opt.classList.remove('active'));
+        const firstOption = document.querySelector('#export-chat-modal .export-option');
+        if (firstOption) {
+            firstOption.classList.add('active');
+            if (firstOption.dataset.format === 'json-encrypted') {
+                this.elements.encryptionNote.style.display = 'block';
+            }
+        }
+        this.showModal('export-chat-modal');
+    }
+
+    startAutoSave() {
+        if (!this.chatManager.autoSave) return;
+        
+        // Сохраняем каждые 30 секунд
+        this.chatManager.autoSaveTimer = setInterval(async () => {
+            if (this.chatManager.currentChatId && this.state.messageCount > 1) {
+                await this.saveChats();
+            }
+        }, this.chatManager.autoSaveInterval);
+        
+        // Сохраняем при закрытии страницы
+        window.addEventListener('beforeunload', () => {
+            if (this.chatManager.currentChatId && this.state.messageCount > 1) {
+                this.saveChatsSync();
+            }
+        });
+    }
+
+    saveChatsSync() {
+        try {
+            localStorage.setItem('verdikt_chats', JSON.stringify(this.chatManager.chats));
+            if (this.chatManager.currentChatId) {
+                localStorage.setItem('verdikt_last_active_chat', this.chatManager.currentChatId);
+            }
+        } catch (error) {
+            console.error('Sync save error:', error);
         }
     }
 
@@ -3098,8 +3419,7 @@ class VerdiktChatApp {
                 timestamp: new Date().toISOString(),
                 data: encryptedData,
                 metadata: {
-                    model: 'OpenRouter API',
-                    apiModel: this.API_CONFIG.model,
+                    model: 'microsoft/DialoGPT-medium',
                     encryption: 'AES-GCM-256',
                     chatCount: this.chatManager.chats.length
                 }
@@ -3142,6 +3462,7 @@ class VerdiktChatApp {
             const encryptedData = localStorage.getItem('verdikt_encrypted_data');
             const decryptedData = await this.crypto.decrypt(encryptedData, password);
             
+            // Сохраняем данные без шифрования
             if (decryptedData.chats) {
                 localStorage.setItem('verdikt_chats', JSON.stringify(decryptedData.chats));
                 this.chatManager.chats = decryptedData.chats;
@@ -3161,6 +3482,7 @@ class VerdiktChatApp {
                 });
             }
             
+            // Очищаем зашифрованные данные
             localStorage.removeItem('verdikt_encrypted_data');
             localStorage.removeItem('verdikt_password_hash');
             localStorage.setItem('verdikt_encryption_setup', 'skipped');
