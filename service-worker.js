@@ -1,11 +1,12 @@
 // Service Worker для офлайн работы
-const CACHE_NAME = 'verdikt-gpt-v2.0';
+const CACHE_NAME = 'verdikt-gpt-v2.1';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
     '/styles.css',
     '/themes.css',
     '/main.js',
+    '/crypto.js',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
     'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400&display=swap',
     'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css',
@@ -36,6 +37,11 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+    // Пропускаем запросы к API
+    if (event.request.url.includes('api-inference.huggingface.co')) {
+        return;
+    }
+    
     event.respondWith(
         caches.match(event.request)
             .then(response => {
@@ -57,10 +63,22 @@ self.addEventListener('fetch', event => {
                     return response;
                 });
             }).catch(() => {
-                // Если нет в кэше и нет сети, можно показать офлайн-страницу
+                // Офлайн режим
                 if (event.request.mode === 'navigate') {
                     return caches.match('/index.html');
                 }
             })
     );
 });
+
+// Фоновая синхронизация
+self.addEventListener('sync', event => {
+    if (event.tag === 'sync-chats') {
+        event.waitUntil(syncChats());
+    }
+});
+
+async function syncChats() {
+    // Здесь можно реализовать синхронизацию с облаком
+    console.log('Background sync for chats');
+}

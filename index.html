@@ -12,6 +12,217 @@
     <link rel="stylesheet" href="themes.css">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💕</text></svg>">
+    
+    <!-- Стили для истории чатов -->
+    <style>
+    .chat-history-panel {
+        position: fixed;
+        left: 20px;
+        bottom: 80px;
+        z-index: 100;
+    }
+
+    .chat-history-btn {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--gradient);
+        border: none;
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+        box-shadow: var(--shadow);
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .chat-history-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 0 25px rgba(236, 72, 153, 0.6);
+    }
+
+    .chat-history-dropdown {
+        position: absolute;
+        bottom: 60px;
+        left: 0;
+        width: 300px;
+        background: var(--bg-card);
+        backdrop-filter: blur(20px);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow);
+        display: none;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .chat-history-dropdown.active {
+        display: block;
+        animation: slideInUp 0.3s ease;
+    }
+
+    .chat-history-header {
+        padding: 15px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        background: var(--bg-card);
+        z-index: 1;
+    }
+
+    .chat-history-header h3 {
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .badge {
+        background: var(--primary);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .chat-history-list {
+        padding: 10px;
+    }
+
+    .chat-history-item {
+        padding: 12px 15px;
+        border-radius: var(--radius-md);
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: var(--transition);
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        background: rgba(255, 255, 255, 0.05);
+        border-left: 3px solid transparent;
+        position: relative;
+    }
+
+    .chat-history-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateX(5px);
+    }
+
+    .chat-history-item.active {
+        background: rgba(236, 72, 153, 0.1);
+        border-left-color: var(--primary);
+    }
+
+    .chat-history-title {
+        font-weight: 500;
+        font-size: 0.95rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding-right: 20px;
+    }
+
+    .chat-history-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        color: var(--text-tertiary);
+    }
+
+    .chat-history-count {
+        background: var(--primary);
+        color: white;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.7rem;
+    }
+
+    .chat-history-empty {
+        text-align: center;
+        padding: 30px;
+        color: var(--text-tertiary);
+        font-size: 0.9rem;
+    }
+
+    .chat-history-actions {
+        padding: 15px;
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        gap: 10px;
+        position: sticky;
+        bottom: 0;
+        background: var(--bg-card);
+    }
+
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Модальные окна импорта/экспорта */
+    #import-dropzone {
+        border: 2px dashed var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 40px 20px;
+        text-align: center;
+        margin-bottom: 20px;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    #import-dropzone:hover {
+        border-color: var(--primary);
+        background: rgba(236, 72, 153, 0.05);
+    }
+
+    #import-preview {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: var(--radius-md);
+        padding: 15px;
+        margin-top: 20px;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        .chat-history-panel {
+            left: 10px;
+            bottom: 70px;
+        }
+        
+        .chat-history-dropdown {
+            width: calc(100vw - 40px);
+            left: 0;
+            right: 0;
+            margin: 0 auto;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .chat-history-btn {
+            width: 44px;
+            height: 44px;
+            font-size: 18px;
+        }
+        
+        .chat-history-dropdown {
+            width: calc(100vw - 20px);
+        }
+    }
+    </style>
 </head>
 <!-- Куки-уведомление -->
 <div class="cookie-notification" id="cookie-notification">
@@ -58,11 +269,11 @@
     <!-- Модальное окно настроек -->
     <div class="modal" id="settings-modal">
         <div class="modal-section" style="margin-top: 25px;">
-    <h3><i class="fas fa-user-shield"></i> Безопасность</h3>
-    <button class="ios-button tertiary" id="encryption-manager" style="width: 100%; margin-top: 15px;">
-        <i class="fas fa-lock"></i> Управление шифрованием
-    </button>
-</div>
+            <h3><i class="fas fa-user-shield"></i> Безопасность</h3>
+            <button class="ios-button tertiary" id="encryption-manager" style="width: 100%; margin-top: 15px;">
+                <i class="fas fa-lock"></i> Управление шифрованием
+            </button>
+        </div>
         <div class="modal-content">
             <button class="modal-close" id="settings-close">
                 <i class="fas fa-times"></i>
@@ -95,9 +306,10 @@
                 <h3><i class="fas fa-keyboard"></i> Горячие клавиши</h3>
                 <div style="margin-top: 15px; color: var(--text-secondary); font-size: 0.9rem;">
                     <p><strong>Ctrl+Enter</strong> - Отправить сообщение</p>
-                    <p><strong>Ctrl+K</strong> - Быстрые команды</p>
+                    <p><strong>Ctrl+N</strong> - Новый чат</p>
                     <p><strong>Ctrl+S</strong> - Сохранить чат</p>
                     <p><strong>Ctrl+E</strong> - Экспорт</p>
+                    <p><strong>Ctrl+H</strong> - История чатов</p>
                     <p><strong>Ctrl+L</strong> - Очистить чат</p>
                     <p><strong>Ctrl+P</strong> - Режим презентации</p>
                 </div>
@@ -209,6 +421,122 @@
         </div>
     </div>
 
+    <!-- Модальное окно экспорта чата с шифрованием -->
+    <div class="modal" id="export-chat-modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <button class="modal-close" id="export-chat-modal-close">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-download"></i> Экспорт чата
+            </h2>
+            
+            <div class="modal-section">
+                <p style="margin-bottom: 20px; color: var(--text-secondary);">
+                    Выберите формат для экспорта текущего чата:
+                </p>
+                
+                <div class="export-options" style="margin-bottom: 20px;">
+                    <div class="export-option active" data-format="json-encrypted">
+                        <div class="export-icon">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                        <div style="font-weight: 600;">Зашифрованный JSON</div>
+                        <div style="font-size: 0.8rem; color: var(--text-tertiary);">Рекомендуется для резервного копирования</div>
+                    </div>
+                    
+                    <div class="export-option" data-format="json">
+                        <div class="export-icon">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <div style="font-weight: 600;">JSON</div>
+                        <div style="font-size: 0.8rem; color: var(--text-tertiary);">Стандартный формат</div>
+                    </div>
+                </div>
+                
+                <div id="encryption-note" style="
+                    background: rgba(16, 185, 129, 0.1);
+                    border-left: 3px solid #10b981;
+                    padding: 12px;
+                    border-radius: var(--radius-sm);
+                    margin-top: 15px;
+                    display: block;
+                ">
+                    <p style="font-size: 0.9rem;">
+                        <i class="fas fa-shield-alt"></i> Чат будет экспортирован с шифрованием AES-GCM.
+                        Для импорта потребуется пароль.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="modal-buttons" style="display: flex; gap: 10px;">
+                <button class="ios-button secondary" id="export-chat-cancel">
+                    Отмена
+                </button>
+                <button class="ios-button" id="export-chat-confirm">
+                    <i class="fas fa-download"></i> Экспортировать
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно импорта -->
+    <div class="modal" id="import-modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <button class="modal-close" id="import-modal-close">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-upload"></i> Импорт чата
+            </h2>
+            
+            <div class="modal-section">
+                <p style="margin-bottom: 20px; color: var(--text-secondary);">
+                    Загрузите файл чата в формате JSON для восстановления истории.
+                </p>
+                
+                <div style="
+                    border: 2px dashed var(--border-color);
+                    border-radius: var(--radius-md);
+                    padding: 40px 20px;
+                    text-align: center;
+                    margin-bottom: 20px;
+                    cursor: pointer;
+                    transition: var(--transition);
+                " id="import-dropzone">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; margin-bottom: 15px; color: var(--text-tertiary);"></i>
+                    <h4 style="margin-bottom: 10px;">Перетащите файл сюда</h4>
+                    <p style="color: var(--text-tertiary); margin-bottom: 15px;">или нажмите для выбора файла</p>
+                    <div class="ios-button secondary">Выбрать файл</div>
+                    <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                </div>
+                
+                <div id="import-preview" style="display: none;">
+                    <h4 style="margin-bottom: 10px;">Предпросмотр:</h4>
+                    <div style="
+                        background: rgba(255, 255, 255, 0.05);
+                        border-radius: var(--radius-md);
+                        padding: 15px;
+                        max-height: 200px;
+                        overflow-y: auto;
+                    " id="import-preview-content">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-buttons" style="display: flex; gap: 10px;">
+                <button class="ios-button secondary" id="import-cancel">
+                    Отмена
+                </button>
+                <button class="ios-button" id="import-confirm" disabled>
+                    <i class="fas fa-upload"></i> Импортировать
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Навигация презентации -->
     <div class="presentation-nav" style="display: none;">
         <button class="ios-button small" id="prev-slide">
@@ -220,6 +548,36 @@
         <button class="ios-button small secondary" id="exit-presentation">
             <i class="fas fa-times"></i>
         </button>
+    </div>
+
+    <!-- Панель истории чатов -->
+    <div class="chat-history-panel">
+        <button class="chat-history-btn" id="toggle-chat-history">
+            <i class="fas fa-history"></i>
+        </button>
+        
+        <div class="chat-history-dropdown" id="chat-history-dropdown">
+            <div class="chat-history-header">
+                <h3><i class="fas fa-comments"></i> История чатов</h3>
+                <span class="badge" id="chat-count">0</span>
+            </div>
+            
+            <div class="chat-history-list" id="chat-history-list">
+                <div class="chat-history-empty">Нет сохраненных чатов</div>
+            </div>
+            
+            <div class="chat-history-actions">
+                <button class="ios-button tertiary small" id="import-chat-btn">
+                    <i class="fas fa-upload"></i> Импорт
+                </button>
+                <button class="ios-button tertiary small" id="export-chat-btn">
+                    <i class="fas fa-download"></i> Экспорт
+                </button>
+                <button class="ios-button secondary small" id="clear-chats-btn">
+                    <i class="fas fa-trash"></i> Очистить
+                </button>
+            </div>
+        </div>
     </div>
 
     <div class="container">
@@ -316,6 +674,8 @@
                         <div class="command-item" data-command="/clear">/clear</div>
                         <div class="command-item" data-command="/save">/save</div>
                         <div class="command-item" data-command="/export">/export</div>
+                        <div class="command-item" data-command="/history">/history</div>
+                        <div class="command-item" data-command="/import">/import</div>
                         <div class="command-item" data-command="/advice">/advice</div>
                         <div class="command-item" data-command="/manipulation">/manipulation</div>
                         <div class="command-item" data-command="/stats">/stats</div>
@@ -515,7 +875,7 @@
         <footer>
             <div class="footer-content">
                 <div class="copyright">
-                    &copy; 2026 Verdikt GPT - Эксперт по отношениям | Версия 2.0 | 
+                    &copy; 2026 Verdikt GPT - Эксперт по отношениям | Версия 2.1 | 
                     <span id="offline-status" style="margin-left: 10px;">
                         <i class="fas fa-wifi"></i> Онлайн
                     </span>
