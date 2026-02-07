@@ -1,9 +1,8 @@
+// main.js 
 // Инициализация всех функций
 document.addEventListener('DOMContentLoaded', function() {
-    // Инициализация подсветки синтаксиса
     hljs.highlightAll();
     
-    // Создание экземпляра приложения
     window.verdiktApp = new VerdiktChatApp();
     window.verdiktApp.init();
 });
@@ -11,7 +10,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // Основной класс приложения
 class VerdiktChatApp {
     constructor() {
-        // Конфигурация API для Hugging Face DialoGPT-medium
         this.API_CONFIG = {
             url: 'https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium',
             apiKey: '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',
@@ -19,7 +17,6 @@ class VerdiktChatApp {
             temperature: 0.7
         };
 
-        // Состояние приложения
         this.state = {
             conversationHistory: [
                 {
@@ -76,7 +73,17 @@ class VerdiktChatApp {
             maxRetries: 3
         };
 
-        // DOM элементы
+        this.crypto = new VerdiktCrypto();
+        
+        this.encryptionState = {
+            enabled: false,
+            password: null,
+            passwordHash: null,
+            isLocked: true,
+            autoLockTimeout: 15 * 60 * 1000,
+            lockTimer: null
+        };
+
         this.elements = {
             chatMessages: document.getElementById('chat-messages'),
             messageInput: document.getElementById('message-input'),
@@ -109,16 +116,13 @@ class VerdiktChatApp {
             temperatureValue: document.getElementById('temperature-value')
         };
 
-        // Инициализация Web Speech API
         this.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         this.speechSynthesis = window.speechSynthesis;
         this.recognition = null;
-        
-        // Инициализация Chart.js
         this.activityChart = null;
     }
 
-    init() {
+    async init() {
         this.setupCookieNotification();
         this.setupEventListeners();
         this.loadFromLocalStorage();
@@ -129,16 +133,479 @@ class VerdiktChatApp {
         this.setupKeyboardShortcuts();
         this.setupServiceWorker();
         
-        // Отметить активность текущего часа
         const currentHour = new Date().getHours();
         this.state.stats.activityByHour[currentHour]++;
         this.saveToLocalStorage();
         
-        console.log('Verdikt GPT с Hugging Face DialoGPT-medium инициализирован');
+        setTimeout(async () => {
+            await this.setupEncryption();
+        }, 1000);
+        
+        console.log('Verdikt GPT с шифрованием инициализирован');
+    }
+
+    async setupEncryption() {
+        if (!this.crypto.isSupported()) {
+            this.showNotification('Ваш браузер не поддерживает шифрование', 'warning');
+            return false;
+        }
+        
+        const hasEncryptionSetup = localStorage.getItem('verdikt_encryption_setup');
+        
+        if (!hasEncryptionSetup) {
+            setTimeout(() => this.showEncryptionSetupWizard(), 2000);
+            return false;
+        }
+        
+        if (hasEncryptionSetup === 'enabled') {
+            this.encryptionState.enabled = true;
+            this.encryptionState.isLocked = true;
+            setTimeout(() => this.showLockScreen(), 500);
+        }
+        
+        return this.encryptionState.enabled;
+    }
+
+    async showEncryptionSetupWizard() {
+        const modalHTML = `
+        <div class="modal" id="encryption-setup-modal">
+            <div class="modal-content" style="max-width: 500px;">
+                <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-lock"></i> Настройка шифрования
+                </h2>
+                
+                <div class="modal-section">
+                    <p style="margin-bottom: 20px; color: var(--text-secondary);">
+                        Для максимальной конфиденциальности включите шифрование данных. 
+                        Все ваши чаты и данные будут защищены паролем.
+                    </p>
+                    
+                    <div class="encryption-options">
+                        <div class="encryption-option active" data-option="enable">
+                            <div class="option-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div>
+                                <h4>Включить шифрование</h4>
+                                <p style="font-size: 0.9rem; color: var(--text-tertiary);">
+                                    Рекомендуется. Ваши данные будут защищены.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="encryption-option" data-option="skip">
+                            <div class="option-icon">
+                                <i class="fas fa-unlock"></i>
+                            </div>
+                            <div>
+                                <h4>Пропустить</h4>
+                                <p style="font-size: 0.9rem; color: var(--text-tertiary);">
+                                    Данные будут храниться без шифрования
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="password-section" style="margin-top: 25px; display: block;">
+                        <h4 style="margin-bottom: 15px;">Установите пароль</h4>
+                        
+                        <div style="margin-bottom: 15px;">
+                            <input type="password" id="encryption-password" 
+                                   placeholder="Введите пароль" 
+                                   style="width: 100%; padding: 12px; border-radius: 8px; 
+                                          background: var(--bg-card); border: 1px solid var(--border-color);
+                                          color: var(--text-primary); margin-bottom: 10px;">
+                            <div class="password-strength" style="height: 4px; background: var(--border-color); 
+                                                                  border-radius: 2px; margin-bottom: 5px;">
+                                <div id="strength-bar" style="height: 100%; width: 0%; background: #ef4444; 
+                                                             border-radius: 2px; transition: width 0.3s;"></div>
+                            </div>
+                            <div id="strength-text" style="font-size: 0.85rem; color: var(--text-tertiary);">
+                                Сложность пароля: слабый
+                            </div>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <input type="password" id="confirm-password" 
+                                   placeholder="Подтвердите пароль" 
+                                   style="width: 100%; padding: 12px; border-radius: 8px; 
+                                          background: var(--bg-card); border: 1px solid var(--border-color);
+                                          color: var(--text-primary);">
+                        </div>
+                        
+                        <button id="generate-password" class="ios-button tertiary small" 
+                                style="margin-bottom: 15px;">
+                            <i class="fas fa-key"></i> Сгенерировать надежный пароль
+                        </button>
+                        
+                        <div style="background: rgba(236, 72, 153, 0.1); padding: 12px; border-radius: 8px; 
+                                     margin-bottom: 20px; border-left: 3px solid var(--primary);">
+                            <p style="font-size: 0.9rem; margin-bottom: 5px;">
+                                <i class="fas fa-info-circle"></i> Важная информация:
+                            </p>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                                • Пароль не хранится на серверах<br>
+                                • Если вы забудете пароль, данные восстановить невозможно<br>
+                                • Запишите пароль в безопасном месте
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-buttons" style="display: flex; gap: 10px;">
+                    <button class="ios-button secondary" id="cancel-encryption">
+                        Отмена
+                    </button>
+                    <button class="ios-button" id="confirm-encryption" disabled>
+                        Продолжить
+                    </button>
+                </div>
+            </div>
+        </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        const modal = document.getElementById('encryption-setup-modal');
+        modal.classList.add('active');
+        
+        let selectedOption = 'enable';
+        document.querySelectorAll('.encryption-option').forEach(option => {
+            option.addEventListener('click', () => {
+                document.querySelectorAll('.encryption-option').forEach(o => o.classList.remove('active'));
+                option.classList.add('active');
+                selectedOption = option.dataset.option;
+                
+                const passwordSection = document.getElementById('password-section');
+                if (selectedOption === 'enable') {
+                    passwordSection.style.display = 'block';
+                    this.validatePasswordInputs();
+                } else {
+                    passwordSection.style.display = 'none';
+                    document.getElementById('confirm-encryption').disabled = false;
+                }
+            });
+        });
+        
+        const passwordInput = document.getElementById('encryption-password');
+        const confirmInput = document.getElementById('confirm-password');
+        
+        const validateInputs = () => this.validatePasswordInputs();
+        passwordInput.addEventListener('input', validateInputs);
+        confirmInput.addEventListener('input', validateInputs);
+        
+        document.getElementById('generate-password').addEventListener('click', () => {
+            const strongPassword = this.crypto.generateStrongPassword();
+            passwordInput.value = strongPassword;
+            confirmInput.value = strongPassword;
+            validateInputs();
+            
+            passwordInput.type = 'text';
+            confirmInput.type = 'text';
+            setTimeout(() => {
+                passwordInput.type = 'password';
+                confirmInput.type = 'password';
+            }, 2000);
+        });
+        
+        document.getElementById('confirm-encryption').addEventListener('click', async () => {
+            if (selectedOption === 'enable') {
+                const password = passwordInput.value;
+                const confirmPassword = confirmInput.value;
+                
+                if (password !== confirmPassword) {
+                    this.showNotification('Пароли не совпадают', 'error');
+                    return;
+                }
+                
+                if (password.length < 8) {
+                    this.showNotification('Пароль должен быть не менее 8 символов', 'error');
+                    return;
+                }
+                
+                await this.saveEncryptionSettings(password);
+                this.showNotification('Шифрование настроено ✅', 'success');
+            } else {
+                localStorage.setItem('verdikt_encryption_setup', 'skipped');
+                this.showNotification('Шифрование отключено', 'info');
+            }
+            
+            modal.remove();
+        });
+        
+        document.getElementById('cancel-encryption').addEventListener('click', () => {
+            modal.remove();
+            localStorage.setItem('verdikt_encryption_setup', 'skipped');
+        });
+    }
+
+    validatePasswordInputs() {
+        const password = document.getElementById('encryption-password')?.value || '';
+        const confirm = document.getElementById('confirm-password')?.value || '';
+        const button = document.getElementById('confirm-encryption');
+        
+        if (!button) return;
+        
+        if (!password || !confirm) {
+            button.disabled = true;
+            return;
+        }
+        
+        let strength = 0;
+        const strengthBar = document.getElementById('strength-bar');
+        const strengthText = document.getElementById('strength-text');
+        
+        if (password.length >= 8) strength += 25;
+        if (/[A-Z]/.test(password)) strength += 25;
+        if (/[0-9]/.test(password)) strength += 25;
+        if (/[^A-Za-z0-9]/.test(password)) strength += 25;
+        
+        if (strengthBar) {
+            strengthBar.style.width = strength + '%';
+            strengthBar.style.background = 
+                strength < 50 ? '#ef4444' : 
+                strength < 75 ? '#f59e0b' : 
+                '#10b981';
+        }
+        
+        if (strengthText) {
+            strengthText.textContent = 
+                strength < 50 ? 'Сложность пароля: слабый' : 
+                strength < 75 ? 'Сложность пароля: средний' : 
+                'Сложность пароля: надежный';
+        }
+        
+        button.disabled = password !== confirm || strength < 50;
+    }
+
+    async saveEncryptionSettings(password) {
+        try {
+            const passwordHash = await this.crypto.hashPassword(password);
+            
+            localStorage.setItem('verdikt_encryption_setup', 'enabled');
+            localStorage.setItem('verdikt_password_hash', passwordHash);
+            
+            await this.encryptAllExistingData(password);
+            
+            this.encryptionState.enabled = true;
+            this.encryptionState.password = password;
+            this.encryptionState.passwordHash = passwordHash;
+            this.encryptionState.isLocked = false;
+            
+            this.startAutoLockTimer();
+            
+        } catch (error) {
+            console.error('Error saving encryption settings:', error);
+            this.showNotification('Ошибка настройки шифрования', 'error');
+        }
+    }
+
+    async encryptAllExistingData(password) {
+        const dataToEncrypt = {
+            savedChats: JSON.parse(localStorage.getItem('verdikt_saved_chats') || '[]'),
+            stats: JSON.parse(localStorage.getItem('verdikt_stats') || '{}'),
+            achievements: JSON.parse(localStorage.getItem('verdikt_achievements') || '{}'),
+            settings: {
+                theme: localStorage.getItem('verdikt_theme')
+            }
+        };
+        
+        try {
+            const encryptedData = await this.crypto.encrypt(dataToEncrypt, password);
+            localStorage.setItem('verdikt_encrypted_data', encryptedData);
+            
+            localStorage.removeItem('verdikt_saved_chats');
+            localStorage.removeItem('verdikt_stats');
+            localStorage.removeItem('verdikt_achievements');
+            
+        } catch (error) {
+            console.error('Error encrypting existing data:', error);
+            throw error;
+        }
+    }
+
+    showLockScreen() {
+        const lockScreenHTML = `
+        <div class="lock-screen" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-gradient);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        ">
+            <div style="text-align: center;">
+                <div style="
+                    width: 80px;
+                    height: 80px;
+                    background: var(--gradient);
+                    border-radius: 20px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 32px;
+                    margin: 0 auto 20px;
+                    animation: pulse 2s infinite;
+                ">
+                    <i class="fas fa-lock"></i>
+                </div>
+                
+                <h2 style="margin-bottom: 10px; font-size: 1.8rem;">
+                    Приложение заблокировано
+                </h2>
+                
+                <p style="color: var(--text-secondary); margin-bottom: 30px;">
+                    Для продолжения работы введите пароль
+                </p>
+                
+                <div style="max-width: 300px; width: 100%;">
+                    <input type="password" id="lock-password" 
+                           placeholder="Введите пароль" 
+                           style="width: 100%; padding: 15px; border-radius: 12px; 
+                                  background: var(--bg-card); border: 2px solid var(--border-color);
+                                  color: var(--text-primary); margin-bottom: 15px;
+                                  font-size: 16px; text-align: center;">
+                    
+                    <button class="ios-button" id="unlock-app" 
+                            style="width: 100%;">
+                        <i class="fas fa-unlock"></i> Разблокировать
+                    </button>
+                    
+                    <div style="margin-top: 20px; color: var(--text-tertiary); font-size: 0.9rem;">
+                        <p><i class="fas fa-info-circle"></i> 
+                        Приложение автоматически блокируется через 15 минут бездействия</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+        
+        const existingLockScreen = document.querySelector('.lock-screen');
+        if (existingLockScreen) existingLockScreen.remove();
+        
+        document.body.insertAdjacentHTML('beforeend', lockScreenHTML);
+        
+        const passwordInput = document.getElementById('lock-password');
+        const unlockButton = document.getElementById('unlock-app');
+        
+        unlockButton.addEventListener('click', async () => {
+            await this.attemptUnlock(passwordInput.value);
+        });
+        
+        passwordInput.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                await this.attemptUnlock(passwordInput.value);
+            }
+        });
+        
+        passwordInput.focus();
+    }
+
+    async attemptUnlock(password) {
+        try {
+            const storedHash = localStorage.getItem('verdikt_password_hash');
+            const inputHash = await this.crypto.hashPassword(password);
+            
+            if (storedHash !== inputHash) {
+                this.showNotification('Неверный пароль', 'error');
+                
+                const lockScreen = document.querySelector('.lock-screen');
+                lockScreen.style.animation = 'shake 0.5s';
+                setTimeout(() => lockScreen.style.animation = '', 500);
+                
+                return;
+            }
+            
+            await this.loadEncryptedData(password);
+            
+            this.encryptionState.password = password;
+            this.encryptionState.isLocked = false;
+            
+            document.querySelector('.lock-screen').remove();
+            
+            this.startAutoLockTimer();
+            this.showNotification('Разблокировано ✅', 'success');
+            
+        } catch (error) {
+            console.error('Unlock error:', error);
+            this.showNotification('Ошибка разблокировки', 'error');
+        }
+    }
+
+    async loadEncryptedData(password) {
+        try {
+            const encryptedData = localStorage.getItem('verdikt_encrypted_data');
+            
+            if (!encryptedData) {
+                return;
+            }
+            
+            const decryptedData = await this.crypto.decrypt(encryptedData, password);
+            
+            if (decryptedData.savedChats) {
+                localStorage.setItem('verdikt_saved_chats', JSON.stringify(decryptedData.savedChats));
+                this.state.stats.savedChats = decryptedData.savedChats.length;
+            }
+            
+            if (decryptedData.stats) {
+                localStorage.setItem('verdikt_stats', JSON.stringify(decryptedData.stats));
+                Object.assign(this.state.stats, decryptedData.stats);
+            }
+            
+            if (decryptedData.achievements) {
+                localStorage.setItem('verdikt_achievements', JSON.stringify(decryptedData.achievements));
+                Object.keys(decryptedData.achievements).forEach(key => {
+                    if (this.state.achievements[key]) {
+                        this.state.achievements[key].unlocked = decryptedData.achievements[key].unlocked;
+                    }
+                });
+            }
+            
+            if (decryptedData.settings?.theme) {
+                this.setTheme(decryptedData.settings.theme);
+            }
+            
+        } catch (error) {
+            console.error('Error loading encrypted data:', error);
+            throw error;
+        }
+    }
+
+    startAutoLockTimer() {
+        if (this.encryptionState.lockTimer) {
+            clearTimeout(this.encryptionState.lockTimer);
+        }
+        
+        if (this.encryptionState.autoLockTimeout > 0) {
+            this.encryptionState.lockTimer = setTimeout(() => {
+                this.lockApp();
+            }, this.encryptionState.autoLockTimeout);
+        }
+    }
+
+    lockApp() {
+        if (this.encryptionState.enabled && !this.encryptionState.isLocked) {
+            this.encryptionState.isLocked = true;
+            this.encryptionState.password = null;
+            
+            this.state.conversationHistory = [
+                {
+                    role: "system",
+                    content: `Ты - Verdikt GPT, эксперт по психологии отношений...`
+                }
+            ];
+            
+            this.showNotification('Приложение заблокировано 🔒', 'info');
+            this.showLockScreen();
+        }
     }
 
     setupEventListeners() {
-        // Отправка сообщения
         this.elements.sendButton.addEventListener('click', () => this.sendMessage());
         this.elements.messageInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.ctrlKey) {
@@ -147,12 +614,10 @@ class VerdiktChatApp {
             }
         });
         
-        // Голосовой ввод
         this.elements.recordButton.addEventListener('click', () => this.toggleVoiceRecording());
         this.elements.voiceInput.addEventListener('click', () => this.toggleVoiceRecording());
         this.elements.voiceOutput.addEventListener('click', () => this.speakLastMessage());
         
-        // Быстрые команды
         document.querySelectorAll('.command-item').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const command = e.target.dataset.command;
@@ -160,7 +625,6 @@ class VerdiktChatApp {
             });
         });
         
-        // Режимы AI
         document.querySelectorAll('.mode-item').forEach(mode => {
             mode.addEventListener('click', (e) => {
                 const modeId = e.currentTarget.dataset.mode;
@@ -168,7 +632,6 @@ class VerdiktChatApp {
             });
         });
         
-        // Примеры вопросов
         document.querySelectorAll('.example-button').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -178,7 +641,6 @@ class VerdiktChatApp {
             });
         });
         
-        // Управление чатом
         this.elements.clearChat.addEventListener('click', () => this.clearChat());
         this.elements.exportChat.addEventListener('click', () => this.showExportModal());
         this.elements.saveChat.addEventListener('click', () => this.saveChat());
@@ -187,14 +649,12 @@ class VerdiktChatApp {
         this.elements.presentationMode.addEventListener('click', () => this.togglePresentationMode());
         this.elements.viewStats.addEventListener('click', () => this.showStatsModal());
         
-        // Температура модели
         this.elements.temperatureSlider.addEventListener('input', (e) => {
             const value = e.target.value;
             this.elements.temperatureValue.textContent = value;
             this.API_CONFIG.temperature = parseFloat(value);
         });
         
-        // Тема оформления
         document.querySelectorAll('.theme-option').forEach(theme => {
             theme.addEventListener('click', (e) => {
                 const themeName = e.currentTarget.dataset.theme;
@@ -202,7 +662,6 @@ class VerdiktChatApp {
             });
         });
         
-        // Экспорт
         document.querySelectorAll('.export-option').forEach(option => {
             option.addEventListener('click', (e) => {
                 const format = e.currentTarget.dataset.format;
@@ -210,32 +669,26 @@ class VerdiktChatApp {
             });
         });
         
-        // Модальные окна
         this.elements.settingsClose.addEventListener('click', () => this.hideModal('settings-modal'));
         this.elements.exportClose.addEventListener('click', () => this.hideModal('export-modal'));
         this.elements.exportCancel.addEventListener('click', () => this.hideModal('export-modal'));
         this.elements.statsClose.addEventListener('click', () => this.hideModal('stats-modal'));
         this.elements.saveSettings.addEventListener('click', () => this.saveSettings());
         
-        // Навигация презентации
         this.elements.prevSlide.addEventListener('click', () => this.prevSlide());
         this.elements.nextSlide.addEventListener('click', () => this.nextSlide());
         this.elements.exitPresentation.addEventListener('click', () => this.togglePresentationMode());
         
-        // Обработка ввода текста
         this.elements.messageInput.addEventListener('input', () => {
             this.elements.messageInput.style.height = 'auto';
             this.elements.messageInput.style.height = Math.min(this.elements.messageInput.scrollHeight, 200) + 'px';
         });
         
-        // Слежение за онлайн статусом
         window.addEventListener('online', () => this.updateOnlineStatus(true));
         window.addEventListener('offline', () => this.updateOnlineStatus(false));
         
-        // Сохранение перед закрытием
         window.addEventListener('beforeunload', () => this.saveToLocalStorage());
         
-        // Футер ссылки
         document.getElementById('model-info').addEventListener('click', (e) => {
             e.preventDefault();
             this.showNotification('Модель: microsoft/DialoGPT-medium (Hugging Face)', 'info');
@@ -250,7 +703,379 @@ class VerdiktChatApp {
             e.preventDefault();
             this.showNotification('Используется Hugging Face API. Данные анонимизированы.', 'info');
         });
+        
+        document.getElementById('encryption-manager')?.addEventListener('click', () => {
+            this.showEncryptionManager();
+        });
     }
+
+    showEncryptionManager() {
+        const modalHTML = `
+        <div class="modal" id="encryption-manager-modal">
+            <div class="modal-content" style="max-width: 500px;">
+                <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-user-shield"></i> Управление шифрованием
+                </h2>
+                
+                <div class="modal-section">
+                    <h3><i class="fas fa-lock"></i> Статус шифрования</h3>
+                    <div style="display: flex; align-items: center; gap: 15px; margin: 20px 0;">
+                        <div style="
+                            width: 50px;
+                            height: 50px;
+                            border-radius: 12px;
+                            background: ${this.encryptionState.enabled ? 
+                                'linear-gradient(135deg, #10b981, #059669)' : 
+                                'linear-gradient(135deg, #ef4444, #dc2626)'};
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 24px;
+                        ">
+                            <i class="fas fa-${this.encryptionState.enabled ? 'shield-alt' : 'unlock'}"></i>
+                        </div>
+                        <div>
+                            <h4 style="margin-bottom: 5px;">
+                                ${this.encryptionState.enabled ? 'Шифрование включено' : 'Шифрование отключено'}
+                            </h4>
+                            <p style="font-size: 0.9rem; color: var(--text-tertiary);">
+                                ${this.encryptionState.enabled ? 
+                                    'Ваши данные защищены паролем' : 
+                                    'Данные хранятся без шифрования'}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                ${this.encryptionState.enabled ? `
+                <div class="modal-section" style="margin-top: 25px;">
+                    <h3><i class="fas fa-cog"></i> Настройки безопасности</h3>
+                    
+                    <div style="margin-top: 15px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">
+                            Время автоблокировки:
+                        </label>
+                        <select id="auto-lock-time" style="
+                            width: 100%; padding: 12px; border-radius: 8px;
+                            background: var(--bg-card); border: 1px solid var(--border-color);
+                            color: var(--text-primary); font-family: inherit;
+                        ">
+                            <option value="5" ${this.encryptionState.autoLockTimeout === 5*60*1000 ? 'selected' : ''}>
+                                5 минут бездействия
+                            </option>
+                            <option value="15" ${this.encryptionState.autoLockTimeout === 15*60*1000 ? 'selected' : ''}>
+                                15 минут бездействия
+                            </option>
+                            <option value="30" ${this.encryptionState.autoLockTimeout === 30*60*1000 ? 'selected' : ''}>
+                                30 минут бездействия
+                            </option>
+                            <option value="60" ${this.encryptionState.autoLockTimeout === 60*60*1000 ? 'selected' : ''}>
+                                1 час бездействия
+                            </option>
+                            <option value="0">Никогда не блокировать</option>
+                        </select>
+                    </div>
+                    
+                    <button class="ios-button secondary" id="change-password" 
+                            style="width: 100%; margin-top: 15px;">
+                        <i class="fas fa-key"></i> Изменить пароль
+                    </button>
+                    
+                    <button class="ios-button tertiary" id="export-backup" 
+                            style="width: 100%; margin-top: 10px;">
+                        <i class="fas fa-download"></i> Экспорт резервной копии
+                    </button>
+                    
+                    <button class="ios-button" id="disable-encryption" 
+                            style="width: 100%; margin-top: 10px; background: linear-gradient(135deg, #ef4444, #dc2626);">
+                        <i class="fas fa-unlock"></i> Отключить шифрование
+                    </button>
+                </div>
+                ` : `
+                <div class="modal-section" style="margin-top: 25px;">
+                    <h3><i class="fas fa-shield-alt"></i> Включить шифрование</h3>
+                    <p style="margin: 15px 0; color: var(--text-secondary);">
+                        Защитите ваши конфиденциальные беседы с помощью шифрования.
+                        После включения потребуется пароль для доступа к данным.
+                    </p>
+                    <button class="ios-button" id="enable-encryption" style="width: 100%;">
+                        <i class="fas fa-lock"></i> Включить шифрование
+                    </button>
+                </div>
+                `}
+                
+                <div class="modal-buttons" style="display: flex; gap: 10px; margin-top: 30px;">
+                    <button class="ios-button secondary" id="close-encryption-manager">
+                        Закрыть
+                    </button>
+                </div>
+            </div>
+        </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        const modal = document.getElementById('encryption-manager-modal');
+        modal.classList.add('active');
+        
+        if (this.encryptionState.enabled) {
+            document.getElementById('auto-lock-time').addEventListener('change', (e) => {
+                const minutes = parseInt(e.target.value);
+                this.encryptionState.autoLockTimeout = minutes * 60 * 1000;
+                
+                if (minutes === 0) {
+                    clearTimeout(this.encryptionState.lockTimer);
+                } else {
+                    this.startAutoLockTimer();
+                }
+                
+                this.showNotification('Настройки сохранены', 'success');
+            });
+            
+            document.getElementById('change-password').addEventListener('click', () => {
+                this.showChangePasswordModal();
+                modal.remove();
+            });
+            
+            document.getElementById('export-backup').addEventListener('click', () => {
+                this.exportEncryptedBackup();
+            });
+            
+            document.getElementById('disable-encryption').addEventListener('click', () => {
+                if (confirm('Вы уверены? После отключения шифрования данные будут храниться в открытом виде.')) {
+                    this.disableEncryption();
+                    modal.remove();
+                }
+            });
+        } else {
+            document.getElementById('enable-encryption').addEventListener('click', () => {
+                modal.remove();
+                this.showEncryptionSetupWizard();
+            });
+        }
+        
+        document.getElementById('close-encryption-manager').addEventListener('click', () => {
+            modal.remove();
+        });
+    }
+
+    async exportEncryptedBackup() {
+        try {
+            const encryptedData = localStorage.getItem('verdikt_encrypted_data');
+            
+            if (!encryptedData) {
+                this.showNotification('Нет данных для экспорта', 'warning');
+                return;
+            }
+            
+            const backupData = {
+                version: '2.0',
+                timestamp: new Date().toISOString(),
+                data: encryptedData,
+                metadata: {
+                    model: 'microsoft/DialoGPT-medium',
+                    encryption: 'AES-GCM-256'
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(backupData, null, 2)], {
+                type: 'application/json'
+            });
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `verdikt-backup-${new Date().toISOString().split('T')[0]}.encrypted.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            this.showNotification('Резервная копия экспортирована 🔐', 'success');
+            
+        } catch (error) {
+            console.error('Export backup error:', error);
+            this.showNotification('Ошибка экспорта', 'error');
+        }
+    }
+
+    async disableEncryption() {
+        try {
+            const password = await this.showPasswordPrompt();
+            if (!password) return;
+            
+            const storedHash = localStorage.getItem('verdikt_password_hash');
+            const inputHash = await this.crypto.hashPassword(password);
+            
+            if (storedHash !== inputHash) {
+                this.showNotification('Неверный пароль', 'error');
+                return;
+            }
+            
+            const encryptedData = localStorage.getItem('verdikt_encrypted_data');
+            const decryptedData = await this.crypto.decrypt(encryptedData, password);
+            
+            localStorage.setItem('verdikt_saved_chats', JSON.stringify(decryptedData.savedChats || []));
+            localStorage.setItem('verdikt_stats', JSON.stringify(decryptedData.stats || {}));
+            localStorage.setItem('verdikt_achievements', JSON.stringify(decryptedData.achievements || {}));
+            
+            localStorage.removeItem('verdikt_encrypted_data');
+            localStorage.removeItem('verdikt_password_hash');
+            localStorage.setItem('verdikt_encryption_setup', 'skipped');
+            
+            this.encryptionState.enabled = false;
+            this.encryptionState.password = null;
+            this.encryptionState.passwordHash = null;
+            this.encryptionState.isLocked = false;
+            
+            clearTimeout(this.encryptionState.lockTimer);
+            
+            this.showNotification('Шифрование отключено', 'success');
+            
+        } catch (error) {
+            console.error('Disable encryption error:', error);
+            this.showNotification('Ошибка отключения шифрования', 'error');
+        }
+    }
+
+    async showPasswordPrompt() {
+        return new Promise((resolve) => {
+            const modalHTML = `
+            <div class="modal" id="password-prompt-modal">
+                <div class="modal-content" style="max-width: 400px;">
+                    <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-lock"></i> Требуется пароль
+                    </h2>
+                    
+                    <p style="margin-bottom: 20px; color: var(--text-secondary);">
+                        Введите пароль для доступа к зашифрованным данным
+                    </p>
+                    
+                    <input type="password" id="unlock-password" 
+                           placeholder="Пароль" 
+                           style="width: 100%; padding: 12px; border-radius: 8px; 
+                                  background: var(--bg-card); border: 1px solid var(--border-color);
+                                  color: var(--text-primary); margin-bottom: 20px;">
+                    
+                    <div class="modal-buttons" style="display: flex; gap: 10px;">
+                        <button class="ios-button secondary" id="cancel-unlock">
+                            Отмена
+                        </button>
+                        <button class="ios-button" id="confirm-unlock">
+                            Разблокировать
+                        </button>
+                    </div>
+                </div>
+            </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            const modal = document.getElementById('password-prompt-modal');
+            modal.classList.add('active');
+            
+            const passwordInput = document.getElementById('unlock-password');
+            passwordInput.focus();
+            
+            document.getElementById('confirm-unlock').addEventListener('click', () => {
+                const password = passwordInput.value;
+                modal.remove();
+                resolve(password);
+            });
+            
+            document.getElementById('cancel-unlock').addEventListener('click', () => {
+                modal.remove();
+                resolve(null);
+            });
+            
+            passwordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    document.getElementById('confirm-unlock').click();
+                }
+            });
+        });
+    }
+
+    async saveToLocalStorage() {
+        if (this.encryptionState.enabled && !this.encryptionState.isLocked) {
+            await this.saveEncryptedData();
+        } else {
+            localStorage.setItem('verdikt_theme', this.state.currentTheme);
+            localStorage.setItem('verdikt_stats', JSON.stringify(this.state.stats));
+            
+            const achievementsData = {};
+            Object.keys(this.state.achievements).forEach(key => {
+                achievementsData[key] = {
+                    unlocked: this.state.achievements[key].unlocked
+                };
+            });
+            localStorage.setItem('verdikt_achievements', JSON.stringify(achievementsData));
+        }
+    }
+
+    async saveEncryptedData() {
+        try {
+            const dataToEncrypt = {
+                savedChats: JSON.parse(localStorage.getItem('verdikt_saved_chats') || '[]'),
+                stats: JSON.parse(localStorage.getItem('verdikt_stats') || '{}'),
+                achievements: JSON.parse(localStorage.getItem('verdikt_achievements') || '{}'),
+                settings: {
+                    theme: this.state.currentTheme
+                }
+            };
+            
+            dataToEncrypt.stats = this.state.stats;
+            
+            const achievementsData = {};
+            Object.keys(this.state.achievements).forEach(key => {
+                achievementsData[key] = {
+                    unlocked: this.state.achievements[key].unlocked
+                };
+            });
+            dataToEncrypt.achievements = achievementsData;
+            
+            const encryptedData = await this.crypto.encrypt(
+                dataToEncrypt, 
+                this.encryptionState.password
+            );
+            
+            localStorage.setItem('verdikt_encrypted_data', encryptedData);
+            
+        } catch (error) {
+            console.error('Error saving encrypted data:', error);
+            this.showNotification('Ошибка сохранения данных', 'error');
+        }
+    }
+
+    loadFromLocalStorage() {
+        const encryptionSetup = localStorage.getItem('verdikt_encryption_setup');
+        
+        if (encryptionSetup === 'enabled') {
+            this.encryptionState.enabled = true;
+            this.encryptionState.isLocked = true;
+        } else {
+            const savedTheme = localStorage.getItem('verdikt_theme');
+            if (savedTheme) {
+                this.setTheme(savedTheme);
+            }
+            
+            const savedChats = JSON.parse(localStorage.getItem('verdikt_saved_chats') || '[]');
+            this.state.stats.savedChats = savedChats.length;
+            
+            const savedStats = JSON.parse(localStorage.getItem('verdikt_stats') || '{}');
+            if (savedStats.totalMessages) {
+                Object.assign(this.state.stats, savedStats);
+            }
+            
+            const savedAchievements = JSON.parse(localStorage.getItem('verdikt_achievements') || '{}');
+            Object.keys(savedAchievements).forEach(key => {
+                if (this.state.achievements[key]) {
+                    this.state.achievements[key].unlocked = savedAchievements[key].unlocked;
+                }
+            });
+        }
+    }
+
+    // Остальные методы (sendMessage, getAIResponse, addMessage и т.д.) остаются без изменений
+    // ... [вставьте все оригинальные методы из предыдущей версии main.js здесь] ...
 
     setupKeyboardShortcuts() {
         document.addEventListener('keydown', (e) => {
@@ -283,7 +1108,6 @@ class VerdiktChatApp {
                 }
             }
             
-            // Навигация в режиме презентации
             if (this.state.isPresentationMode) {
                 switch(e.key) {
                     case 'ArrowLeft':
@@ -339,7 +1163,6 @@ class VerdiktChatApp {
     }
 
     setupBackgroundAnimations() {
-        // Создаем плавающие сердечки
         const heartsContainer = document.getElementById('floating-hearts');
         for (let i = 0; i < 15; i++) {
             const heart = document.createElement('div');
@@ -351,7 +1174,6 @@ class VerdiktChatApp {
             heartsContainer.appendChild(heart);
         }
 
-        // Создаем частицы подключения
         const particlesContainer = document.getElementById('connection-particles');
         for (let i = 0; i < 30; i++) {
             const particle = document.createElement('div');
@@ -364,15 +1186,12 @@ class VerdiktChatApp {
     }
 
     async checkApiStatus() {
-        // Показать анимацию подключения
         this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> Подключение к Hugging Face...';
         this.elements.apiStatus.classList.add('api-connecting');
         this.elements.apiStatus.classList.remove('api-error');
         
-        // Устанавливаем флаг подключения
         this.state.isApiConnected = true;
         
-        // Проверка доступности API с таймаутом
         const timeoutPromise = new Promise((_, reject) => 
             setTimeout(() => reject(new Error('Таймаут подключения')), 5000)
         );
@@ -400,7 +1219,6 @@ class VerdiktChatApp {
             }
         } catch (error) {
             console.log('API check error:', error);
-            // Не блокируем работу, но показываем предупреждение
             this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Проверьте соединение';
             this.elements.apiStatus.classList.remove('api-connecting');
             this.showNotification('API проверка не удалась, но можно попробовать отправить сообщение', 'warning');
@@ -432,7 +1250,6 @@ class VerdiktChatApp {
             return;
         }
         
-        // Проверка команд
         if (message.startsWith('/')) {
             if (this.handleCommand(message)) {
                 this.elements.messageInput.value = '';
@@ -440,61 +1257,46 @@ class VerdiktChatApp {
             }
         }
         
-        // Проверка темы сообщения
         if (!this.isTopicRelevant(message)) {
             this.showNotification('Я специализируюсь только на отношениях, знакомствах и манипуляциях.', 'warning');
             return;
         }
         
-        // Добавление сообщения пользователя
         this.addMessage(message, 'user');
-        
-        // Сохранение в историю
         this.state.conversationHistory.push({ role: "user", content: message });
         this.state.messageCount++;
         this.state.stats.totalMessages++;
         this.state.stats.userMessages++;
         
-        // Обновление статистики по темам
         this.updateTopicStats(message);
         
-        // Отметить активность текущего часа
         const currentHour = new Date().getHours();
         this.state.stats.activityByHour[currentHour]++;
         
-        // Проверка достижений
         this.checkAchievements();
         
-        // Очистка поля ввода
         this.elements.messageInput.value = '';
         this.elements.messageInput.style.height = 'auto';
         
-        // Показать индикатор набора с предупреждением о возможной задержке
         this.showTypingIndicator();
         if (this.state.messageCount <= 3) {
             this.showNotification('Первые запросы могут занимать 20-40 секунд (загрузка модели)', 'info');
         }
         
         try {
-            // Получение ответа от AI
             const startTime = Date.now();
             const aiResponse = await this.getAIResponse(this.state.conversationHistory);
             const responseTime = (Date.now() - startTime) / 1000;
             
             this.state.responseTimes.push(responseTime);
             
-            // Скрыть индикатор
             this.hideTypingIndicator();
             
-            // Добавление ответа AI
             this.addMessage(aiResponse, 'ai');
-            
-            // Сохранение в историю
             this.state.conversationHistory.push({ role: "assistant", content: aiResponse });
             this.state.stats.totalMessages++;
             this.state.stats.aiMessages++;
             
-            // Ограничение истории
             if (this.state.conversationHistory.length > 20) {
                 this.state.conversationHistory = [
                     this.state.conversationHistory[0],
@@ -506,14 +1308,12 @@ class VerdiktChatApp {
             this.updateUI();
             this.saveToLocalStorage();
             
-            // Сброс счетчика повторных попыток при успехе
             this.state.retryCount = 0;
             
         } catch (error) {
             this.hideTypingIndicator();
             console.error('API Error details:', error);
             
-            // Обработка ошибок Hugging Face
             let errorMessage = "Извините, произошла ошибка при получении ответа. ";
             let userMessage = error.message;
             
@@ -545,25 +1345,18 @@ class VerdiktChatApp {
     isTopicRelevant(message) {
         const messageLower = message.toLowerCase();
         const relevantTopics = [
-            // Отношения
             'отношени', 'любов', 'брак', 'семь', 'пар', 'встреча', 'расставан',
             'ревност', 'довери', 'обид', 'ссор', 'конфликт', 'кризис',
             'верност', 'измен', 'секс', 'интим', 'родител', 'дети',
             'свекр', 'тещ', 'муж', 'жена', 'мужчин', 'женщин',
-            
-            // Знакомства
             'знакомств', 'свидан', 'встреч', 'тинд', 'бад', 'приложен',
             'профил', 'анкет', 'перв', 'втор', 'свидан', 'роман',
             'флирт', 'симпати', 'нравит', 'влюблен', 'ухаживан',
             'познаком', 'встрет', 'познаком',
-            
-            // Манипуляции
             'манипуляц', 'токсичн', 'абью', 'насил', 'давлен',
             'шантаж', 'вина', 'обид', 'контрол', 'завис', 'унижен',
             'оскорбл', 'газлайтинг', 'нарцис', 'психолог', 'границ',
             'уважен', 'достоинств', 'самооцен', 'психологическ',
-            
-            // Общие психологические термины
             'психолог', 'эмоц', 'чувств', 'общен', 'коммуникац',
             'довери', 'уважен', 'пониман', 'поддерж', 'совет',
             'помощ', 'консультац', 'эксперт', 'специалист'
@@ -600,13 +1393,11 @@ class VerdiktChatApp {
         }
 
         try {
-            // Получаем последнее сообщение пользователя и немного контекста
             const userMessages = messages.filter(msg => msg.role === "user");
             const lastUserMessage = userMessages[userMessages.length - 1]?.content || 
                                    messages[messages.length - 1]?.content || 
                                    "Привет";
             
-            // Формируем промпт для DialoGPT
             const prompt = `Ты - психолог Verdikt GPT, специалист по отношениям, знакомствам и манипуляциям.
 Пользователь: ${lastUserMessage}
 Психолог:`;
@@ -652,7 +1443,6 @@ class VerdiktChatApp {
 
             const data = await response.json();
             
-            // Обработка ответа от Hugging Face API
             let generatedText;
             if (Array.isArray(data)) {
                 generatedText = data[0]?.generated_text || '';
@@ -665,15 +1455,10 @@ class VerdiktChatApp {
                 generatedText = JSON.stringify(data);
             }
             
-            // Убираем промпт из ответа и очищаем
             let cleanResponse = generatedText.replace(prompt, '').trim();
-            
-            // Удаляем повторяющиеся фразы
             cleanResponse = cleanResponse.replace(/Психолог:/g, '').trim();
             
-            // Проверяем, не пустой ли ответ
             if (!cleanResponse || cleanResponse.length < 5) {
-                // Фолбэк ответы
                 const fallbackResponses = [
                     "Я понимаю вашу ситуацию. Важно обсудить это открыто и честно с партнером. 💬",
                     "Это сложный вопрос. Рекомендую сосредоточиться на ваших чувствах и потребностях. 💕",
@@ -723,12 +1508,10 @@ class VerdiktChatApp {
         
         this.elements.chatMessages.appendChild(messageElement);
         
-        // Анимация
         setTimeout(() => {
             messageElement.style.animation = 'messageAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards';
         }, 10);
         
-        // Подсветка синтаксиса
         setTimeout(() => {
             hljs.highlightAll();
         }, 100);
@@ -855,7 +1638,6 @@ class VerdiktChatApp {
         
         this.state.currentMode = modeId;
         
-        // Обновление UI
         document.querySelectorAll('.mode-item').forEach(item => {
             item.classList.remove('active');
         });
@@ -864,7 +1646,6 @@ class VerdiktChatApp {
             activeMode.classList.add('active');
         }
         
-        // Обновление настроек API
         this.API_CONFIG.temperature = this.state.aiModes[modeId].temperature;
         
         this.showNotification(`Режим изменен на: ${this.state.aiModes[modeId].name}`, 'info');
@@ -947,7 +1728,6 @@ class VerdiktChatApp {
         
         switch(format) {
             case 'pdf':
-                // Для PDF используем window.print()
                 window.print();
                 return;
             case 'markdown':
@@ -1069,76 +1849,70 @@ class VerdiktChatApp {
     nextSlide() {
         this.showSlide(this.state.currentSlide + 1);
     }
-setupCookieNotification() {
-    const notification = document.getElementById('cookie-notification');
-    const acceptBtn = document.getElementById('cookie-accept');
-    const rejectBtn = document.getElementById('cookie-reject');
-    const policyLink = document.getElementById('cookie-policy-link');
-    
-    // Проверить, было ли уже принято/отклонено
-    const cookieConsent = localStorage.getItem('verdikt_cookie_consent');
-    if (cookieConsent) {
-        notification.style.display = 'none';
-        return;
+
+    setupCookieNotification() {
+        const notification = document.getElementById('cookie-notification');
+        const acceptBtn = document.getElementById('cookie-accept');
+        const rejectBtn = document.getElementById('cookie-reject');
+        const policyLink = document.getElementById('cookie-policy-link');
+        
+        const cookieConsent = localStorage.getItem('verdikt_cookie_consent');
+        if (cookieConsent) {
+            notification.style.display = 'none';
+            return;
+        }
+        
+        setTimeout(() => {
+            notification.style.display = 'flex';
+        }, 1000);
+        
+        acceptBtn.addEventListener('click', () => {
+            this.handleCookieAccept();
+        });
+        
+        rejectBtn.addEventListener('click', () => {
+            this.handleCookieReject();
+        });
+        
+        policyLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.showCookiePolicy();
+        });
     }
-    
-    // Показать уведомление через 1 секунду
-    setTimeout(() => {
-        notification.style.display = 'flex';
-    }, 1000);
-    
-    // Обработчики событий
-    acceptBtn.addEventListener('click', () => {
-        this.handleCookieAccept();
-    });
-    
-    rejectBtn.addEventListener('click', () => {
-        this.handleCookieReject();
-    });
-    
-    policyLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        this.showCookiePolicy();
-    });
-}
 
-handleCookieAccept() {
-    const notification = document.getElementById('cookie-notification');
-    
-    // Сохранить согласие
-    localStorage.setItem('verdikt_cookie_consent', 'accepted');
-    localStorage.setItem('verdikt_cookie_date', new Date().toISOString());
-    
-    // Анимация скрытия
-    notification.style.opacity = '0';
-    notification.style.transform = 'translateY(100%)';
-    
-    setTimeout(() => {
-        notification.style.display = 'none';
-    }, 300);
-    
-    this.showNotification('Настройки cookie сохранены ✅', 'success');
-}
+    handleCookieAccept() {
+        const notification = document.getElementById('cookie-notification');
+        
+        localStorage.setItem('verdikt_cookie_consent', 'accepted');
+        localStorage.setItem('verdikt_cookie_date', new Date().toISOString());
+        
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateY(100%)';
+        
+        setTimeout(() => {
+            notification.style.display = 'none';
+        }, 300);
+        
+        this.showNotification('Настройки cookie сохранены ✅', 'success');
+    }
 
-handleCookieReject() {
-    const notification = document.getElementById('cookie-notification');
-    
-    // Сохранить отказ
-    localStorage.setItem('verdikt_cookie_consent', 'rejected');
-    
-    // Анимация скрытия
-    notification.style.opacity = '0';
-    notification.style.transform = 'translateY(100%)';
-    
-    setTimeout(() => {
-        notification.style.display = 'none';
-    }, 300);
-    
-    this.showNotification('Файлы cookie отключены', 'info');
-}
+    handleCookieReject() {
+        const notification = document.getElementById('cookie-notification');
+        
+        localStorage.setItem('verdikt_cookie_consent', 'rejected');
+        
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateY(100%)';
+        
+        setTimeout(() => {
+            notification.style.display = 'none';
+        }, 300);
+        
+        this.showNotification('Файлы cookie отключены', 'info');
+    }
 
-showCookiePolicy() {
-    alert(`Политика использования файлов cookie в Verdikt GPT:
+    showCookiePolicy() {
+        alert(`Политика использования файлов cookie в Verdikt GPT:
 
 1. Обязательные cookie:
    - Сохранение настроек темы
@@ -1163,14 +1937,13 @@ showCookiePolicy() {
    - Все данные хранятся локально на вашем устройстве
 
 Все данные обрабатываются анонимно и используются только для улучшения работы приложения.`);
-}
+    }
+
     checkAchievements() {
-        // Проверка активного пользователя
         if (this.state.stats.userMessages >= 10 && !this.state.achievements.activeUser.unlocked) {
             this.unlockAchievement('activeUser');
         }
         
-        // Проверка совы
         const currentHour = new Date().getHours();
         if ((currentHour >= 23 || currentHour <= 5) && !this.state.achievements.nightOwl.unlocked) {
             this.unlockAchievement('nightOwl');
@@ -1182,7 +1955,6 @@ showCookiePolicy() {
         
         this.state.achievements[achievementId].unlocked = true;
         
-        // Показать уведомление
         const achievement = this.state.achievements[achievementId];
         document.getElementById('achievement-icon').textContent = achievement.icon;
         document.getElementById('achievement-title').textContent = achievement.name;
@@ -1192,7 +1964,6 @@ showCookiePolicy() {
         notification.style.display = 'flex';
         notification.style.animation = 'none';
         
-        // Сбросить анимацию
         setTimeout(() => {
             notification.style.animation = 'achievementSlide 3s ease';
             setTimeout(() => {
@@ -1200,7 +1971,6 @@ showCookiePolicy() {
             }, 3000);
         }, 10);
         
-        // Обновить UI
         this.updateAchievementsUI();
         this.saveToLocalStorage();
     }
@@ -1239,7 +2009,6 @@ showCookiePolicy() {
     }
 
     showStatsModal() {
-        // Обновить данные
         document.getElementById('total-messages').textContent = this.state.stats.totalMessages;
         document.getElementById('avg-response').textContent = 
             this.state.responseTimes.length > 0 
@@ -1248,10 +2017,7 @@ showCookiePolicy() {
         document.getElementById('user-messages').textContent = this.state.stats.userMessages;
         document.getElementById('ai-messages').textContent = this.state.stats.aiMessages;
         
-        // Обновить график
         this.updateActivityChart();
-        
-        // Обновить популярные темы
         this.updatePopularTopics();
         
         this.showModal('stats-modal');
@@ -1339,7 +2105,6 @@ showCookiePolicy() {
     }
 
     updateUI() {
-        // Обновить счетчики
         document.getElementById('sidebar-messages').textContent = this.state.stats.totalMessages;
         document.getElementById('sidebar-time').textContent = 
             this.state.responseTimes.length > 0 
@@ -1348,7 +2113,6 @@ showCookiePolicy() {
         document.getElementById('sidebar-saved').textContent = this.state.stats.savedChats;
         document.getElementById('sidebar-sessions').textContent = this.state.stats.sessions;
         
-        // Обновить достижения
         this.updateAchievementsUI();
     }
 
@@ -1380,7 +2144,6 @@ showCookiePolicy() {
         navigator.clipboard.writeText(messageText).then(() => {
             this.showNotification('Сообщение скопировано 📋', 'success');
         }).catch(() => {
-            // Fallback для старых браузеров
             const textArea = document.createElement('textarea');
             textArea.value = messageText;
             document.body.appendChild(textArea);
@@ -1400,7 +2163,6 @@ showCookiePolicy() {
             const prevMessage = this.elements.chatMessages.children[messageIndex - 1];
             const userMessage = prevMessage.querySelector('.message-content').textContent;
             
-            // Удалить старый ответ и сгенерировать новый
             messageElement.remove();
             this.state.conversationHistory.pop();
             
@@ -1466,44 +2228,5 @@ showCookiePolicy() {
         ];
         
         alert('Доступные команды:\n\n' + commands.join('\n'));
-    }
-
-    loadFromLocalStorage() {
-        // Загрузка темы
-        const savedTheme = localStorage.getItem('verdikt_theme');
-        if (savedTheme) {
-            this.setTheme(savedTheme);
-        }
-        
-        // Загрузка сохраненных чатов
-        const savedChats = JSON.parse(localStorage.getItem('verdikt_saved_chats') || '[]');
-        this.state.stats.savedChats = savedChats.length;
-        
-        // Загрузка статистики
-        const savedStats = JSON.parse(localStorage.getItem('verdikt_stats') || '{}');
-        if (savedStats.totalMessages) {
-            Object.assign(this.state.stats, savedStats);
-        }
-        
-        // Загрузка достижений
-        const savedAchievements = JSON.parse(localStorage.getItem('verdikt_achievements') || '{}');
-        Object.keys(savedAchievements).forEach(key => {
-            if (this.state.achievements[key]) {
-                this.state.achievements[key].unlocked = savedAchievements[key].unlocked;
-            }
-        });
-    }
-
-    saveToLocalStorage() {
-        localStorage.setItem('verdikt_theme', this.state.currentTheme);
-        localStorage.setItem('verdikt_stats', JSON.stringify(this.state.stats));
-        
-        const achievementsData = {};
-        Object.keys(this.state.achievements).forEach(key => {
-            achievementsData[key] = {
-                unlocked: this.state.achievements[key].unlocked
-            };
-        });
-        localStorage.setItem('verdikt_achievements', JSON.stringify(achievementsData));
     }
 }
