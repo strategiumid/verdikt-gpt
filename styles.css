@@ -1471,3 +1471,115 @@ footer {
         width: 100%;
     }
 }
+/* Куки-уведомление */
+.cookie-notification {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+    z-index: 10000;
+    display: none;
+    padding: 20px;
+    animation: cookieSlide 0.5s ease;
+    max-width: 800px;
+    margin: 0 auto;
+    transition: all 0.3s ease;
+}
+
+.cookie-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.cookie-text {
+    flex: 1;
+}
+
+.cookie-text h3 {
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cookie-text p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.cookie-text a {
+    color: var(--ios-blue);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.cookie-text a:hover {
+    text-decoration: underline;
+    text-shadow: 0 0 10px rgba(236, 72, 153, 0.3);
+}
+
+.cookie-buttons {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+@keyframes cookieSlide {
+    from {
+        opacity: 0;
+        transform: translateY(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Адаптивность для куки-уведомления */
+@media (max-width: 768px) {
+    .cookie-notification {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        padding: 15px;
+    }
+    
+    .cookie-content {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .cookie-buttons {
+        width: 100%;
+    }
+    
+    .cookie-buttons button {
+        flex: 1;
+    }
+}
+
+@media (max-width: 480px) {
+    .cookie-notification {
+        left: 8px;
+        right: 8px;
+        bottom: 8px;
+        padding: 12px;
+    }
+    
+    .cookie-text h3 {
+        font-size: 1rem;
+    }
+    
+    .cookie-text p {
+        font-size: 0.85rem;
+    }
+}
