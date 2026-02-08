@@ -173,34 +173,35 @@ class VerdiktChatApp {
     }
 
     async init() {
-        this.setupCookieNotification();
-        this.setupEventListeners();
-        this.loadFromLocalStorage();
-        this.setupSpeechRecognition();
-        this.setupBackgroundAnimations();
-        this.updateUI();
-        this.checkApiStatus();
-        this.setupKeyboardShortcuts();
-        this.setupServiceWorker();
-        this.setupSettingsTabs();
-        
-        // Загружаем историю чатов
-        await this.loadChats();
-        
-        // Статистика
-        const currentHour = new Date().getHours();
-        this.state.stats.activityByHour[currentHour]++;
-        
-        // Шифрование
-        setTimeout(async () => {
-            await this.setupEncryption();
-        }, 1000);
-        
-        // Автосохранение
-        this.startAutoSave();
-        
-        console.log('Verdikt GPT с обновленным интерфейсом инициализирован');
-    }
+    this.setupCookieNotification();
+    this.loadApiKey(); // ← ДОБАВЬТЕ ЭТУ СТРОЧКУ!
+    this.setupEventListeners();
+    this.loadFromLocalStorage();
+    this.setupSpeechRecognition();
+    this.setupBackgroundAnimations();
+    this.updateUI();
+    this.checkApiStatus(); // ← Проверка API должна быть после loadApiKey
+    this.setupKeyboardShortcuts();
+    this.setupServiceWorker();
+    this.setupSettingsTabs();
+    
+    // Загружаем историю чатов
+    await this.loadChats();
+    
+    // Статистика
+    const currentHour = new Date().getHours();
+    this.state.stats.activityByHour[currentHour]++;
+    
+    // Шифрование
+    setTimeout(async () => {
+        await this.setupEncryption();
+    }, 1000);
+    
+    // Автосохранение
+    this.startAutoSave();
+    
+    console.log('Verdikt GPT с обновленным интерфейсом инициализирован');
+}
 
         // ==================== OPENROTER API ФУНКЦИИ ====================
 
@@ -234,125 +235,125 @@ class VerdiktChatApp {
     }
 
     async getAIResponse(messages) {
-        if (!this.API_CONFIG.apiKey) {
-            throw new Error('API ключ не настроен. Пожалуйста, добавьте ключ OpenRouter в настройках.');
-        }
-
-        try {
-            const response = await fetch(this.API_CONFIG.url, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer': 'https://verdikt-gpt.local',
-                    'X-Title': 'Verdikt GPT'
-                },
-                body: JSON.stringify({
-                    model: this.API_CONFIG.model,
-                    messages: messages,
-                    max_tokens: this.API_CONFIG.maxTokens,
-                    temperature: this.API_CONFIG.temperature,
-                    stream: false
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                console.error('OpenRouter API Error:', errorData);
-                
-                let errorMessage = "Ошибка API: ";
-                if (errorData.error?.message) {
-                    errorMessage += errorData.error.message;
-                } else if (response.status === 401) {
-                    errorMessage = "Неверный API ключ. Проверьте ключ в настройках.";
-                } else if (response.status === 429) {
-                    errorMessage = "Превышен лимит запросов. Попробуйте позже.";
-                } else if (response.status === 402) {
-                    errorMessage = "Недостаточно средств на балансе. Пополните счёт на OpenRouter.";
-                } else {
-                    errorMessage += `HTTP ${response.status}`;
-                }
-                
-                throw new Error(errorMessage);
-            }
-
-            const data = await response.json();
-            
-            if (!data.choices || !data.choices[0]?.message?.content) {
-                throw new Error('Неверный формат ответа от API');
-            }
-            
-            return data.choices[0].message.content.trim();
-            
-        } catch (error) {
-            console.error('Error in getAIResponse:', error);
-            
-            if (error.message.includes('API ключ') || error.message.includes('401')) {
-                throw new Error('Пожалуйста, настройте API ключ OpenRouter в настройках приложения.');
-            }
-            
-            throw error;
-        }
+    if (!this.API_CONFIG.apiKey) {
+        throw new Error('API ключ не настроен. Пожалуйста, добавьте ключ OpenRouter в настройках.');
     }
 
-    async checkApiStatus() {
-        if (!this.API_CONFIG.apiKey) {
-            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> API ключ не настроен';
-            this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
-            this.elements.apiStatus.style.color = '#f87171';
-            this.showNotification('Добавьте API ключ OpenRouter в настройках', 'warning');
-            this.state.isApiConnected = false;
-            return;
+    try {
+        const response = await fetch(this.API_CONFIG.url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://verdikt-gpt.local',
+                'X-Title': 'Verdikt GPT'
+            },
+            body: JSON.stringify({
+                model: this.API_CONFIG.model,
+                messages: messages,
+                max_tokens: this.API_CONFIG.maxTokens,
+                temperature: this.API_CONFIG.temperature,
+                stream: false
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('OpenRouter API Error:', errorData);
+            
+            let errorMessage = "Ошибка API: ";
+            if (errorData.error?.message) {
+                errorMessage += errorData.error.message;
+            } else if (response.status === 401) {
+                errorMessage = "Неверный API ключ. Проверьте ключ в настройках.";
+            } else if (response.status === 429) {
+                errorMessage = "Превышен лимит запросов. Попробуйте позже.";
+            } else if (response.status === 402) {
+                errorMessage = "Недостаточно средств на балансе. Пополните счёт на OpenRouter.";
+            } else {
+                errorMessage += `HTTP ${response.status}`;
+            }
+            
+            throw new Error(errorMessage);
         }
 
-        this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> Проверка API ключа...';
-        this.elements.apiStatus.classList.add('api-connecting');
+        const data = await response.json();
         
-        try {
-            const response = await fetch('https://openrouter.ai/api/v1/auth/key', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${this.API_CONFIG.apiKey}`
-                }
-            });
+        if (!data.choices || !data.choices[0]?.message?.content) {
+            throw new Error('Неверный формат ответа от API');
+        }
+        
+        return data.choices[0].message.content.trim();
+        
+    } catch (error) {
+        console.error('Error in getAIResponse:', error);
+        
+        if (error.message.includes('API ключ') || error.message.includes('401')) {
+            throw new Error('Пожалуйста, настройте API ключ OpenRouter в настройках приложения.');
+        }
+        
+        throw error;
+    }
+}
 
-            if (response.ok) {
-                const data = await response.json();
-                const selectedModel = this.availableModels.find(m => m.id === this.API_CONFIG.model);
-                const modelName = selectedModel ? selectedModel.name : this.API_CONFIG.model;
+     async checkApiStatus() {
+    if (!this.API_CONFIG.apiKey) {
+        this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> API ключ не настроен';
+        this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
+        this.elements.apiStatus.style.color = '#f87171';
+        this.showNotification('Добавьте API ключ OpenRouter в настройках', 'warning');
+        this.state.isApiConnected = false;
+        return;
+    }
+
+    this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> Проверка API ключа...';
+    this.elements.apiStatus.classList.add('api-connecting');
+    
+    try {
+        const response = await fetch('https://openrouter.ai/api/v1/auth/key', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${this.API_CONFIG.apiKey}`
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const selectedModel = this.availableModels.find(m => m.id === this.API_CONFIG.model);
+            const modelName = selectedModel ? selectedModel.name : this.API_CONFIG.model;
+            
+            this.elements.apiStatus.innerHTML = `<i class="fas fa-circle"></i> ${modelName}`;
+            this.elements.apiStatus.style.background = 'rgba(34, 197, 94, 0.15)';
+            this.elements.apiStatus.style.color = '#4ade80';
+            this.elements.apiStatus.classList.remove('api-connecting');
+            this.state.isApiConnected = true;
+            
+            if (data.data?.credits) {
+                const credits = data.data.credits;
+                this.showNotification(`API ключ активен. Баланс: $${credits.toFixed(2)}`, 'success');
                 
-                this.elements.apiStatus.innerHTML = `<i class="fas fa-circle"></i> ${modelName}`;
-                this.elements.apiStatus.style.background = 'rgba(34, 197, 94, 0.15)';
-                this.elements.apiStatus.style.color = '#4ade80';
-                this.elements.apiStatus.classList.remove('api-connecting');
-                this.state.isApiConnected = true;
-                
-                if (data.data?.credits) {
-                    const credits = data.data.credits;
-                    this.showNotification(`API ключ активен. Баланс: $${credits.toFixed(2)}`, 'success');
-                    
-                    if (credits < 0.5 && !selectedModel.free) {
-                        this.elements.apiStatus.classList.add('balance-warning');
-                    }
-                } else {
-                    this.showNotification('API ключ проверен и активен ✅', 'success');
+                if (credits < 0.5 && !selectedModel.free) {
+                    this.elements.apiStatus.classList.add('balance-warning');
                 }
             } else {
-                throw new Error(`HTTP ${response.status}`);
+                this.showNotification('API ключ проверен и активен ✅', 'success');
             }
-        } catch (error) {
-            console.error('API check error:', error);
-            
-            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API ключа';
-            this.elements.apiStatus.classList.remove('api-connecting');
-            this.elements.apiStatus.classList.add('api-error');
-            this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
-            this.elements.apiStatus.style.color = '#f87171';
-            
-            this.state.isApiConnected = false;
-            this.showNotification('Не удалось проверить API ключ. Проверьте его правильность.', 'error');
+        } else {
+            throw new Error(`HTTP ${response.status}`);
         }
+    } catch (error) {
+        console.error('API check error:', error);
+        
+        this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API ключа';
+        this.elements.apiStatus.classList.remove('api-connecting');
+        this.elements.apiStatus.classList.add('api-error');
+        this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
+        this.elements.apiStatus.style.color = '#f87171';
+        
+        this.state.isApiConnected = false;
+        this.showNotification('Не удалось проверить API ключ. Проверьте его правильность.', 'error');
     }
+}
 
     setupApiSettingsListeners() {
         const apiSettingsBtn = document.createElement('button');
