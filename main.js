@@ -1,4 +1,4 @@
-// main.js - Полная версия с системой истории чатов
+// main.js - Полная версия с системой истории чатов и OpenRouter API
 document.addEventListener('DOMContentLoaded', function() {
     hljs.highlightAll();
     
@@ -173,37 +173,37 @@ class VerdiktChatApp {
     }
 
     async init() {
-    this.setupCookieNotification();
-    this.loadApiKey(); // ← ДОБАВЬТЕ ЭТУ СТРОЧКУ!
-    this.setupEventListeners();
-    this.loadFromLocalStorage();
-    this.setupSpeechRecognition();
-    this.setupBackgroundAnimations();
-    this.updateUI();
-    this.checkApiStatus(); // ← Проверка API должна быть после loadApiKey
-    this.setupKeyboardShortcuts();
-    this.setupServiceWorker();
-    this.setupSettingsTabs();
-    
-    // Загружаем историю чатов
-    await this.loadChats();
-    
-    // Статистика
-    const currentHour = new Date().getHours();
-    this.state.stats.activityByHour[currentHour]++;
-    
-    // Шифрование
-    setTimeout(async () => {
-        await this.setupEncryption();
-    }, 1000);
-    
-    // Автосохранение
-    this.startAutoSave();
-    
-    console.log('Verdikt GPT с обновленным интерфейсом инициализирован');
-}
+        this.setupCookieNotification();
+        this.loadApiKey(); // Загружаем API ключ
+        this.setupEventListeners();
+        this.loadFromLocalStorage();
+        this.setupSpeechRecognition();
+        this.setupBackgroundAnimations();
+        this.updateUI();
+        this.checkApiStatus(); // Проверяем статус API
+        this.setupKeyboardShortcuts();
+        this.setupServiceWorker();
+        this.setupSettingsTabs();
+        
+        // Загружаем историю чатов
+        await this.loadChats();
+        
+        // Статистика
+        const currentHour = new Date().getHours();
+        this.state.stats.activityByHour[currentHour]++;
+        
+        // Шифрование
+        setTimeout(async () => {
+            await this.setupEncryption();
+        }, 1000);
+        
+        // Автосохранение
+        this.startAutoSave();
+        
+        console.log('Verdikt GPT с OpenRouter API и обновленным интерфейсом инициализирован');
+    }
 
-        // ==================== OPENROTER API ФУНКЦИИ ====================
+    // ==================== OPENROTER API ФУНКЦИИ ====================
 
     loadApiKey() {
         const savedApiKey = localStorage.getItem('verdikt_openrouter_api_key');
@@ -235,125 +235,125 @@ class VerdiktChatApp {
     }
 
     async getAIResponse(messages) {
-    if (!this.API_CONFIG.apiKey) {
-        throw new Error('API ключ не настроен. Пожалуйста, добавьте ключ OpenRouter в настройках.');
-    }
-
-    try {
-        const response = await fetch(this.API_CONFIG.url, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
-                'Content-Type': 'application/json',
-                'HTTP-Referer': 'https://verdikt-gpt.local',
-                'X-Title': 'Verdikt GPT'
-            },
-            body: JSON.stringify({
-                model: this.API_CONFIG.model,
-                messages: messages,
-                max_tokens: this.API_CONFIG.maxTokens,
-                temperature: this.API_CONFIG.temperature,
-                stream: false
-            })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error('OpenRouter API Error:', errorData);
-            
-            let errorMessage = "Ошибка API: ";
-            if (errorData.error?.message) {
-                errorMessage += errorData.error.message;
-            } else if (response.status === 401) {
-                errorMessage = "Неверный API ключ. Проверьте ключ в настройках.";
-            } else if (response.status === 429) {
-                errorMessage = "Превышен лимит запросов. Попробуйте позже.";
-            } else if (response.status === 402) {
-                errorMessage = "Недостаточно средств на балансе. Пополните счёт на OpenRouter.";
-            } else {
-                errorMessage += `HTTP ${response.status}`;
-            }
-            
-            throw new Error(errorMessage);
+        if (!this.API_CONFIG.apiKey) {
+            throw new Error('API ключ не настроен. Пожалуйста, добавьте ключ OpenRouter в настройках.');
         }
 
-        const data = await response.json();
-        
-        if (!data.choices || !data.choices[0]?.message?.content) {
-            throw new Error('Неверный формат ответа от API');
-        }
-        
-        return data.choices[0].message.content.trim();
-        
-    } catch (error) {
-        console.error('Error in getAIResponse:', error);
-        
-        if (error.message.includes('API ключ') || error.message.includes('401')) {
-            throw new Error('Пожалуйста, настройте API ключ OpenRouter в настройках приложения.');
-        }
-        
-        throw error;
-    }
-}
+        try {
+            const response = await fetch(this.API_CONFIG.url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': 'https://verdikt-gpt.local',
+                    'X-Title': 'Verdikt GPT'
+                },
+                body: JSON.stringify({
+                    model: this.API_CONFIG.model,
+                    messages: messages,
+                    max_tokens: this.API_CONFIG.maxTokens,
+                    temperature: this.API_CONFIG.temperature,
+                    stream: false
+                })
+            });
 
-     async checkApiStatus() {
-    if (!this.API_CONFIG.apiKey) {
-        this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> API ключ не настроен';
-        this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
-        this.elements.apiStatus.style.color = '#f87171';
-        this.showNotification('Добавьте API ключ OpenRouter в настройках', 'warning');
-        this.state.isApiConnected = false;
-        return;
-    }
-
-    this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> Проверка API ключа...';
-    this.elements.apiStatus.classList.add('api-connecting');
-    
-    try {
-        const response = await fetch('https://openrouter.ai/api/v1/auth/key', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${this.API_CONFIG.apiKey}`
-            }
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            const selectedModel = this.availableModels.find(m => m.id === this.API_CONFIG.model);
-            const modelName = selectedModel ? selectedModel.name : this.API_CONFIG.model;
-            
-            this.elements.apiStatus.innerHTML = `<i class="fas fa-circle"></i> ${modelName}`;
-            this.elements.apiStatus.style.background = 'rgba(34, 197, 94, 0.15)';
-            this.elements.apiStatus.style.color = '#4ade80';
-            this.elements.apiStatus.classList.remove('api-connecting');
-            this.state.isApiConnected = true;
-            
-            if (data.data?.credits) {
-                const credits = data.data.credits;
-                this.showNotification(`API ключ активен. Баланс: $${credits.toFixed(2)}`, 'success');
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('OpenRouter API Error:', errorData);
                 
-                if (credits < 0.5 && !selectedModel.free) {
-                    this.elements.apiStatus.classList.add('balance-warning');
+                let errorMessage = "Ошибка API: ";
+                if (errorData.error?.message) {
+                    errorMessage += errorData.error.message;
+                } else if (response.status === 401) {
+                    errorMessage = "Неверный API ключ. Проверьте ключ в настройках.";
+                } else if (response.status === 429) {
+                    errorMessage = "Превышен лимит запросов. Попробуйте позже.";
+                } else if (response.status === 402) {
+                    errorMessage = "Недостаточно средств на балансе. Пополните счёт на OpenRouter.";
+                } else {
+                    errorMessage += `HTTP ${response.status}`;
+                }
+                
+                throw new Error(errorMessage);
+            }
+
+            const data = await response.json();
+            
+            if (!data.choices || !data.choices[0]?.message?.content) {
+                throw new Error('Неверный формат ответа от API');
+            }
+            
+            return data.choices[0].message.content.trim();
+            
+        } catch (error) {
+            console.error('Error in getAIResponse:', error);
+            
+            if (error.message.includes('API ключ') || error.message.includes('401')) {
+                throw new Error('Пожалуйста, настройте API ключ OpenRouter в настройках приложения.');
+            }
+            
+            throw error;
+        }
+    }
+
+    async checkApiStatus() {
+        if (!this.API_CONFIG.apiKey) {
+            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> API ключ не настроен';
+            this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
+            this.elements.apiStatus.style.color = '#f87171';
+            this.showNotification('Добавьте API ключ OpenRouter в настройках', 'warning');
+            this.state.isApiConnected = false;
+            return;
+        }
+
+        this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> Проверка API ключа...';
+        this.elements.apiStatus.classList.add('api-connecting');
+        
+        try {
+            const response = await fetch('https://openrouter.ai/api/v1/auth/key', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${this.API_CONFIG.apiKey}`
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const selectedModel = this.availableModels.find(m => m.id === this.API_CONFIG.model);
+                const modelName = selectedModel ? selectedModel.name : this.API_CONFIG.model;
+                
+                this.elements.apiStatus.innerHTML = `<i class="fas fa-circle"></i> ${modelName}`;
+                this.elements.apiStatus.style.background = 'rgba(34, 197, 94, 0.15)';
+                this.elements.apiStatus.style.color = '#4ade80';
+                this.elements.apiStatus.classList.remove('api-connecting');
+                this.state.isApiConnected = true;
+                
+                if (data.data?.credits) {
+                    const credits = data.data.credits;
+                    this.showNotification(`API ключ активен. Баланс: $${credits.toFixed(2)}`, 'success');
+                    
+                    if (credits < 0.5 && !selectedModel.free) {
+                        this.elements.apiStatus.classList.add('balance-warning');
+                    }
+                } else {
+                    this.showNotification('API ключ проверен и активен ✅', 'success');
                 }
             } else {
-                this.showNotification('API ключ проверен и активен ✅', 'success');
+                throw new Error(`HTTP ${response.status}`);
             }
-        } else {
-            throw new Error(`HTTP ${response.status}`);
+        } catch (error) {
+            console.error('API check error:', error);
+            
+            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API ключа';
+            this.elements.apiStatus.classList.remove('api-connecting');
+            this.elements.apiStatus.classList.add('api-error');
+            this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
+            this.elements.apiStatus.style.color = '#f87171';
+            
+            this.state.isApiConnected = false;
+            this.showNotification('Не удалось проверить API ключ. Проверьте его правильность.', 'error');
         }
-    } catch (error) {
-        console.error('API check error:', error);
-        
-        this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API ключа';
-        this.elements.apiStatus.classList.remove('api-connecting');
-        this.elements.apiStatus.classList.add('api-error');
-        this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
-        this.elements.apiStatus.style.color = '#f87171';
-        
-        this.state.isApiConnected = false;
-        this.showNotification('Не удалось проверить API ключ. Проверьте его правильность.', 'error');
     }
-}
 
     setupApiSettingsListeners() {
         const apiSettingsBtn = document.createElement('button');
@@ -1591,12 +1591,14 @@ class VerdiktChatApp {
         // Футер ссылки
         document.getElementById('model-info').addEventListener('click', (e) => {
             e.preventDefault();
-            this.showNotification('Модель: microsoft/DialoGPT-medium (Hugging Face)', 'info');
+            const selectedModel = this.availableModels.find(m => m.id === this.API_CONFIG.model);
+            const modelName = selectedModel ? selectedModel.name : this.API_CONFIG.model;
+            this.showNotification(`Используется: ${modelName} через OpenRouter API`, 'info');
         });
         
         document.getElementById('privacy-policy').addEventListener('click', (e) => {
             e.preventDefault();
-            this.showNotification('Используется Hugging Face API. Данные анонимизированы.', 'info');
+            this.showNotification('Данные чатов хранятся локально в вашем браузере', 'info');
         });
         
         // Управление шифрованием
@@ -1662,9 +1664,6 @@ class VerdiktChatApp {
         this.elements.messageInput.style.height = 'auto';
         
         this.showTypingIndicator();
-        if (this.state.messageCount <= 3) {
-            this.showNotification('Первые запросы могут занимать 20-40 секунд (загрузка модели)', 'info');
-        }
         
         try {
             const startTime = Date.now();
@@ -1696,126 +1695,26 @@ class VerdiktChatApp {
             
         } catch (error) {
             this.hideTypingIndicator();
-            console.error('API Error details:', error);
+            console.error('API Error:', error);
             
-            let errorMessage = "Извините, произошла ошибка при получении ответа. ";
-            let userMessage = error.message;
+            let errorMessage = error.message || "Ошибка при получении ответа";
             
-            if (error.message.includes('503') || error.message.includes('загружается')) {
-                if (this.state.retryCount < this.state.maxRetries) {
-                    this.state.retryCount++;
-                    errorMessage += `Попытка ${this.state.retryCount}/${this.state.maxRetries}. Подождите 30 секунд.`;
-                    userMessage = "Модель загружается, подождите 30 секунд и попробуйте снова...";
-                } else {
-                    errorMessage = "Сервер перегружен. Пожалуйста, попробуйте позже или используйте более короткий запрос.";
-                }
-            } else if (error.message.includes('429')) {
-                errorMessage = "Превышен лимит запросов. Бесплатный лимит: 30K токенов в месяц.";
-            } else if (error.message.includes('401')) {
-                errorMessage = "Ошибка аутентификации API. Проверьте API ключ.";
-            }
-            
-            this.addMessage(userMessage, 'ai');
+            this.addMessage(`Ошибка: ${errorMessage}`, 'ai');
             this.showNotification(errorMessage, 'error');
             
             this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API';
             this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
             this.elements.apiStatus.style.color = '#f87171';
+            
+            if (errorMessage.includes('API ключ') || errorMessage.includes('401')) {
+                setTimeout(() => {
+                    this.showApiSettingsModal();
+                }, 1000);
+            }
         }
         
         this.scrollToBottom();
     }
-
-    async getAIResponse(messages) {
-        if (!this.state.isApiConnected) {
-            throw new Error('API не подключен');
-        }
-
-        try {
-            const userMessages = messages.filter(msg => msg.role === "user");
-            const lastUserMessage = userMessages[userMessages.length - 1]?.content || 
-                                   messages[messages.length - 1]?.content || 
-                                   "Привет";
-            
-            const prompt = `Ты - психолог Verdikt GPT, специалист по отношениям, знакомствам и манипуляциям.
-Пользователь: ${lastUserMessage}
-Психолог:`;
-
-            const response = await fetch(this.API_CONFIG.url, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    inputs: prompt,
-                    parameters: {
-                        max_new_tokens: this.API_CONFIG.maxTokens,
-                        temperature: this.API_CONFIG.temperature,
-                        top_p: 0.95,
-                        repetition_penalty: 1.2,
-                        do_sample: true,
-                        return_full_text: false,
-                        num_return_sequences: 1
-                    },
-                    options: {
-                        use_cache: true,
-                        wait_for_model: true
-                    }
-                })
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('HF API Error Response:', errorText);
-                
-                if (response.status === 503) {
-                    throw new Error('Модель загружается. Попробуйте через 20-30 секунд.');
-                } else if (response.status === 429) {
-                    throw new Error('Превышен лимит запросов (429). Попробуйте позже.');
-                } else if (response.status === 401) {
-                    throw new Error('Ошибка аутентификации API (401)');
-                } else {
-                    throw new Error(`HF API Error: ${response.status} - ${errorText.substring(0, 100)}`);
-                }
-            }
-
-            const data = await response.json();
-            
-            let generatedText;
-            if (Array.isArray(data)) {
-                generatedText = data[0]?.generated_text || '';
-            } else if (data.generated_text) {
-                generatedText = data.generated_text;
-            } else if (data[0]?.generated_text) {
-                generatedText = data[0].generated_text;
-            } else {
-                console.warn('Unexpected API response format:', data);
-                generatedText = JSON.stringify(data);
-            }
-            
-            let cleanResponse = generatedText.replace(prompt, '').trim();
-            cleanResponse = cleanResponse.replace(/Психолог:/g, '').trim();
-            
-            if (!cleanResponse || cleanResponse.length < 5) {
-                const fallbackResponses = [
-                    "Я понимаю вашу ситуацию. Важно обсудить это открыто и честно с партнером. 💬",
-                    "Это сложный вопрос. Рекомендую сосредоточиться на ваших чувствах и потребностях. 💕",
-                    "В подобных ситуациях важно сохранять спокойствие и действовать обдуманно. 🧘‍♀️",
-                    "Я бы посоветовал обратиться к профессиональному психологу для более детальной консультации. 👥"
-                ];
-                cleanResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
-            }
-            
-            return cleanResponse;
-            
-        } catch (error) {
-            console.error('Error in getAIResponse:', error);
-            throw error;
-        }
-    }
-
-    // ==================== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ====================
 
     isTopicRelevant(message) {
         const messageLower = message.toLowerCase();
@@ -2497,46 +2396,6 @@ class VerdiktChatApp {
         }
     }
 
-    async checkApiStatus() {
-        this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> Подключение к Hugging Face...';
-        this.elements.apiStatus.classList.add('api-connecting');
-        this.elements.apiStatus.classList.remove('api-error');
-        
-        this.state.isApiConnected = true;
-        
-        const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Таймаут подключения')), 5000)
-        );
-        
-        try {
-            const response = await Promise.race([
-                fetch('https://api-inference.huggingface.co/status', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
-                    }
-                }),
-                timeoutPromise
-            ]);
-            
-            if (response.ok) {
-                this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> HF API доступен';
-                this.elements.apiStatus.style.background = 'rgba(34, 197, 94, 0.15)';
-                this.elements.apiStatus.style.color = '#4ade80';
-                this.elements.apiStatus.classList.remove('api-connecting');
-                this.showConnectionSuccessAnimation();
-                this.showNotification('Hugging Face API подключен ✅', 'success');
-            } else {
-                throw new Error(`HTTP ${response.status}`);
-            }
-        } catch (error) {
-            console.log('API check error:', error);
-            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Проверьте соединение';
-            this.elements.apiStatus.classList.remove('api-connecting');
-            this.showNotification('API проверка не удалась, но можно попробовать отправить сообщение', 'warning');
-        }
-    }
-
     setupServiceWorker() {
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('service-worker.js')
@@ -2857,12 +2716,16 @@ class VerdiktChatApp {
                 extension = 'html';
                 break;
             case 'json':
+                const selectedModel = this.availableModels.find(m => m.id === this.API_CONFIG.model);
+                const modelName = selectedModel ? selectedModel.name : this.API_CONFIG.model;
+                
                 content = JSON.stringify({
                     chat: this.state.conversationHistory.filter(msg => msg.role !== 'system'),
                     metadata: {
                         exported: new Date().toISOString(),
                         totalMessages: this.state.stats.totalMessages,
-                        model: 'microsoft/DialoGPT-medium',
+                        model: modelName,
+                        api: 'OpenRouter',
                         topics: {
                             manipulations: this.state.stats.manipulationRequests,
                             relationships: this.state.stats.relationshipAdvice,
@@ -2890,6 +2753,9 @@ class VerdiktChatApp {
     }
 
     exportAllChats() {
+        const selectedModel = this.availableModels.find(m => m.id === this.API_CONFIG.model);
+        const modelName = selectedModel ? selectedModel.name : this.API_CONFIG.model;
+        
         const allChatsData = {
             version: '2.1',
             timestamp: new Date().toISOString(),
@@ -2897,7 +2763,8 @@ class VerdiktChatApp {
             metadata: {
                 totalChats: this.chatManager.chats.length,
                 totalMessages: this.state.stats.totalMessages,
-                model: 'microsoft/DialoGPT-medium'
+                model: modelName,
+                api: 'OpenRouter'
             }
         };
         
@@ -3420,7 +3287,8 @@ class VerdiktChatApp {
                 timestamp: new Date().toISOString(),
                 data: encryptedData,
                 metadata: {
-                    model: 'microsoft/DialoGPT-medium',
+                    model: this.API_CONFIG.model,
+                    apiModel: this.API_CONFIG.model,
                     encryption: 'AES-GCM-256',
                     chatCount: this.chatManager.chats.length
                 }
