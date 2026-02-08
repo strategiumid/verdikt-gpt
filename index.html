@@ -615,11 +615,15 @@
                 <div class="settings-section">
                     <h4><i class="fas fa-palette"></i> Тема оформления</h4>
                     <div class="theme-selector">
-                        <div class="theme-option theme-dark active" data-theme="dark"></div>
-                        <div class="theme-option theme-light" data-theme="light"></div>
-                        <div class="theme-option theme-high-contrast" data-theme="high-contrast"></div>
-                        <div class="theme-option theme-gradient" data-theme="gradient"></div>
-                    </div>
+    <div class="theme-option theme-dark active" data-theme="dark">
+        <i class="fas fa-moon"></i>
+        <span>Тёмная</span>
+    </div>
+    <div class="theme-option theme-deepseek" data-theme="deepseek">
+        <i class="fas fa-sun"></i>
+        <span>DeepSeek</span>
+    </div>
+</div>
                 </div>
             </div>
 
@@ -1281,8 +1285,8 @@
                     <!-- Панель ввода -->
                     <div class="input-container-extended">
                         <div class="input-actions-left">
-                            <button class="input-icon-button" id="voice-input" title="Голосовой ввод">
-                                <i class="fas fa-microphone"></i>
+                            <button class="input-icon-button" id="attach-button" title="Прикрепить файл">
+                                <i class="fas fa-paperclip"></i>
                             </button>
                             <button class="input-icon-button" id="toggle-chat-history" title="История чатов">
                                 <i class="fas fa-history"></i>
@@ -1294,8 +1298,8 @@
                         </div>
                         
                         <div class="input-actions-right">
-                            <button class="input-icon-button" id="attach-button" title="Прикрепить файл">
-                                <i class="fas fa-paperclip"></i>
+                            <button class="input-icon-button" id="voice-input" title="Голосовой ввод">
+                                <i class="fas fa-microphone"></i>
                             </button>
                             <button class="input-icon-button primary" id="send-button" title="Отправить сообщение">
                                 <i class="fas fa-paper-plane"></i>

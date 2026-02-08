@@ -323,9 +323,8 @@ class VerdiktChatApp {
                 const modelName = selectedModel ? selectedModel.name : this.API_CONFIG.model;
                 
                 this.elements.apiStatus.innerHTML = `<i class="fas fa-circle"></i> ${modelName}`;
-                this.elements.apiStatus.style.background = 'rgba(34, 197, 94, 0.15)';
-                this.elements.apiStatus.style.color = '#4ade80';
                 this.elements.apiStatus.classList.remove('api-connecting');
+                this.elements.apiStatus.classList.add('api-connected')
                 this.state.isApiConnected = true;
                 
                 if (data.data?.credits) {
@@ -345,10 +344,8 @@ class VerdiktChatApp {
             console.error('API check error:', error);
             
             this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API ключа';
-            this.elements.apiStatus.classList.remove('api-connecting');
-            this.elements.apiStatus.classList.add('api-error');
-            this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
-            this.elements.apiStatus.style.color = '#f87171';
+this.elements.apiStatus.classList.remove('api-connecting');
+this.elements.apiStatus.classList.add('api-error');
             
             this.state.isApiConnected = false;
             this.showNotification('Не удалось проверить API ключ. Проверьте его правильность.', 'error');
@@ -1949,27 +1946,22 @@ class VerdiktChatApp {
 
     showNotification(text, type = 'info') {
         this.elements.notificationText.textContent = text;
-        
-        switch(type) {
-            case 'success':
-                this.elements.notification.style.background = 'linear-gradient(135deg, #ec4899, #db2777)';
-                break;
-            case 'error':
-                this.elements.notification.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
-                break;
-            case 'warning':
-                this.elements.notification.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
-                break;
-            default:
-                this.elements.notification.style.background = 'var(--gradient)';
-        }
-        
-        this.elements.notification.classList.add('show');
-        
-        setTimeout(() => {
-            this.elements.notification.classList.remove('show');
-        }, 3000);
-    }
+    
+    // Убираем inline-стили
+    const notification = this.elements.notification;
+    notification.style.background = '';
+    notification.style.color = '';
+    
+    // Добавляем только класс
+    notification.className = 'notification';
+    notification.classList.add(type);
+    
+    notification.classList.add('show');
+    
+    setTimeout(() => {
+        notification.classList.remove('show');
+    }, 3000);
+}
 
     unlockAchievement(achievementId) {
         if (!this.state.achievements[achievementId] || this.state.achievements[achievementId].unlocked) return;

@@ -1,36 +1,614 @@
-/* Светлая тема */
-[data-theme="light"] {
-    --bg-gradient: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
-    --bg-card: rgba(255, 255, 255, 0.9);
-    --bg-card-light: rgba(255, 255, 255, 0.95);
-    --text-primary: #1e293b;
-    --text-secondary: #475569;
-    --text-tertiary: #64748b;
-    --border-color: rgba(0, 0, 0, 0.1);
-    --shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+/* DeepSeek тема (белая, как у DeepSeek) */
+[data-theme="deepseek"] {
+    /* Основные цвета DeepSeek - синие оттенки */
+    --primary: #2d8cff;
+    --primary-dark: #1c7df6;
+    --primary-light: #5a9eff;
+    --secondary: #22d3ee;
+    --gradient: linear-gradient(135deg, var(--primary), var(--secondary));
+    
+    /* БЕЛЫЕ ФОНЫ как у DeepSeek */
+    --bg-gradient: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    --bg-card: rgba(255, 255, 255, 0.95);
+    --bg-card-light: rgba(255, 255, 255, 0.98);
+    
+    /* Текст - темный на белом фоне */
+    --text-primary: #1a1a1a;
+    --text-secondary: #4a5568;
+    --text-tertiary: #718096;
+    
+    /* Границы - светлые */
+    --border-color: rgba(45, 140, 255, 0.15);
+    --shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
     --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.05);
-    --glow: 0 0 20px rgba(236, 72, 153, 0.2);
+    --glow: 0 0 20px rgba(45, 140, 255, 0.2);
+    
+    /* iOS элементы */
+    --ios-blue: var(--primary);
+    --ios-card: rgba(255, 255, 255, 0.9);
 }
 
-/* Высокая контрастность */
-[data-theme="high-contrast"] {
-    --bg-gradient: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
-    --bg-card: rgba(0, 0, 0, 0.9);
-    --bg-card-light: rgba(0, 0, 0, 0.95);
-    --text-primary: #ffffff;
-    --text-secondary: #cccccc;
-    --text-tertiary: #999999;
-    --border-color: rgba(255, 255, 255, 0.3);
-    --glow: 0 0 20px rgba(255, 255, 255, 0.5);
+/* Дополнительные элементы стиля для DeepSeek темы */
+[data-theme="deepseek"] .grid-pattern {
+    background-image: 
+        linear-gradient(rgba(45, 140, 255, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(45, 140, 255, 0.1) 1px, transparent 1px);
 }
 
-/* Градиентная тема */
-[data-theme="gradient"] {
-    --bg-gradient: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
-    --bg-card: rgba(255, 255, 255, 0.1);
-    --bg-card-light: rgba(255, 255, 255, 0.15);
-    --text-primary: #ffffff;
-    --text-secondary: rgba(255, 255, 255, 0.9);
-    --text-tertiary: rgba(255, 255, 255, 0.7);
-    --border-color: rgba(255, 255, 255, 0.2);
+[data-theme="deepseek"] .heart {
+    color: var(--primary);
+    opacity: 0.15;
+}
+
+[data-theme="deepseek"] .particle {
+    background: var(--secondary);
+}
+
+[data-theme="deepseek"] .message.ai-message {
+    background: white;
+    border: 1px solid rgba(45, 140, 255, 0.1);
+    border-left: 3px solid var(--secondary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="deepseek"] .message.user-message {
+    background: var(--primary);
+    color: white;
+    border-right: 3px solid var(--primary-light);
+    box-shadow: 0 2px 8px rgba(45, 140, 255, 0.2);
+}
+
+[data-theme="deepseek"] .message.user-message:hover {
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.3);
+}
+
+[data-theme="deepseek"] .message.ai-message:hover {
+    box-shadow: 0 0 15px rgba(34, 211, 238, 0.2);
+}
+
+[data-theme="deepseek"] .logo-icon,
+[data-theme="deepseek"] .ai-avatar {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    box-shadow: 0 0 20px rgba(45, 140, 255, 0.3);
+}
+
+[data-theme="deepseek"] .typing-dots span {
+    background: var(--secondary);
+}
+
+[data-theme="deepseek"] .notification,
+[data-theme="deepseek"] .achievement-notification {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+}
+
+[data-theme="deepseek"] .chat-container,
+[data-theme="deepseek"] .settings-section,
+[data-theme="deepseek"] .modal-content {
+    border: 1px solid rgba(45, 140, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="deepseek"] .ios-button.secondary {
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="deepseek"] .ios-button.secondary:hover {
+    background: white;
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.15);
+}
+
+[data-theme="deepseek"] .input-icon-button {
+    background: white;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="deepseek"] #message-input {
+    background: white;
+    border: 2px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="deepseek"] #message-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(45, 140, 255, 0.15);
+}
+
+[data-theme="deepseek"] #message-input:hover {
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.1);
+}
+
+[data-theme="deepseek"] .example-button {
+    background: rgba(45, 140, 255, 0.08);
+    color: var(--primary);
+    border: 1px solid rgba(45, 140, 255, 0.2);
+}
+
+[data-theme="deepseek"] .example-button:hover {
+    background: rgba(45, 140, 255, 0.12);
+    box-shadow: 0 5px 15px rgba(45, 140, 255, 0.15);
+}
+
+[data-theme="deepseek"] .settings-tab {
+    color: var(--text-secondary);
+}
+
+[data-theme="deepseek"] .settings-tab:hover {
+    background: rgba(45, 140, 255, 0.08);
+    color: var(--text-primary);
+}
+
+[data-theme="deepseek"] .settings-tab.active {
+    background: rgba(45, 140, 255, 0.15);
+    color: var(--primary);
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.1);
+}
+
+[data-theme="deepseek"] .mode-item-settings,
+[data-theme="deepseek"] .achievement-item-settings,
+[data-theme="deepseek"] .stat-card-settings,
+[data-theme="deepseek"] .shortcut-item,
+[data-theme="deepseek"] .export-option {
+    background: white;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="deepseek"] .mode-item-settings.active {
+    background: rgba(45, 140, 255, 0.1);
+    border-color: var(--primary);
+}
+
+[data-theme="deepseek"] .achievement-item-settings.unlocked {
+    background: rgba(45, 140, 255, 0.1);
+    border-color: var(--primary);
+}
+
+/* Индикатор статуса API */
+[data-theme="deepseek"] .status-indicator {
+    background: rgba(34, 197, 94, 0.08);
+    color: #16a34a;
+}
+
+[data-theme="deepseek"] .status-indicator:hover {
+    box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
+}
+
+/* Дополнительные стили для DeepSeek темы - переопределение свечений */
+[data-theme="deepseek"] .chat-action-button:hover {
+    background: rgba(45, 140, 255, 0.1);
+    border-color: var(--primary);
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.3);
+}
+
+[data-theme="deepseek"] .input-icon-button:hover {
+    background: rgba(45, 140, 255, 0.1);
+    border-color: var(--primary);
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.2);
+}
+
+[data-theme="deepseek"] .input-icon-button.primary:hover {
+    background: var(--primary-dark);
+    box-shadow: 0 0 20px rgba(45, 140, 255, 0.4);
+}
+
+[data-theme="deepseek"] .footer-links a:hover {
+    color: var(--primary);
+    text-shadow: 0 0 10px rgba(45, 140, 255, 0.3);
+}
+
+[data-theme="deepseek"] .modal-close:hover {
+    background: rgba(45, 140, 255, 0.1);
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.2);
+}
+
+[data-theme="deepseek"] .suggestion-item:hover {
+    background: rgba(45, 140, 255, 0.08);
+    box-shadow: 0 0 10px rgba(45, 140, 255, 0.15);
+}
+
+[data-theme="deepseek"] .ios-button:hover {
+    box-shadow: 
+        0 8px 15px rgba(45, 140, 255, 0.2),
+        0 0 20px rgba(45, 140, 255, 0.3);
+}
+
+[data-theme="deepseek"] .ios-button.secondary:hover {
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.2);
+}
+
+[data-theme="deepseek"] .ios-button.tertiary:hover {
+    background: rgba(45, 140, 255, 0.08);
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.2);
+}
+
+[data-theme="deepseek"] .message-action:hover {
+    box-shadow: 0 0 10px rgba(45, 140, 255, 0.4);
+}
+
+[data-theme="deepseek"] .theme-option:hover {
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.3);
+}
+
+[data-theme="deepseek"] .mode-item-settings:hover {
+    box-shadow: 0 5px 15px rgba(45, 140, 255, 0.2);
+}
+
+[data-theme="deepseek"] .mode-item-settings.active {
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.2);
+}
+
+[data-theme="deepseek"] .achievement-item-settings.unlocked {
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.2);
+}
+
+[data-theme="deepseek"] .stat-card-settings:hover {
+    box-shadow: 0 5px 15px rgba(45, 140, 255, 0.15);
+}
+
+[data-theme="deepseek"] .shortcut-item:hover {
+    background: rgba(45, 140, 255, 0.08);
+    box-shadow: 0 2px 8px rgba(45, 140, 255, 0.1);
+}
+
+[data-theme="deepseek"] .export-option:hover {
+    box-shadow: 0 0 20px rgba(45, 140, 255, 0.2);
+}
+
+[data-theme="deepseek"] .cookie-text a:hover {
+    text-shadow: 0 0 10px rgba(45, 140, 255, 0.3);
+}
+
+[data-theme="deepseek"] .encryption-option:hover {
+    background: rgba(45, 140, 255, 0.08);
+    box-shadow: 0 2px 8px rgba(45, 140, 255, 0.1);
+}
+
+[data-theme="deepseek"] .encryption-option.active {
+    background: rgba(45, 140, 255, 0.1);
+    border-color: var(--primary);
+}
+
+/* Аватары разработчиков */
+[data-theme="deepseek"] .dev-dropdown-item:hover {
+    background: rgba(45, 140, 255, 0.08);
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(45, 140, 255, 0.15);
+}
+
+[data-theme="deepseek"] .dev-dropdown-item:hover .dev-dropdown-telegram {
+    background: rgba(45, 140, 255, 0.15);
+}
+
+[data-theme="deepseek"] .brain-avatar {
+    background: linear-gradient(135deg, #2d8cff, #1c7df6);
+}
+
+[data-theme="deepseek"] .code-avatar {
+    background: linear-gradient(135deg, #22d3ee, #06b6d4);
+}
+
+[data-theme="deepseek"] .bug-avatar {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+/* Глобальные переопределения для свечений в теме DeepSeek */
+[data-theme="deepseek"] button:hover,
+[data-theme="deepseek"] .button:hover,
+[data-theme="deepseek"] [class*="button"]:hover,
+[data-theme="deepseek"] [class*="action"]:hover,
+[data-theme="deepseek"] [class*="icon"]:hover {
+    --glow: 0 0 20px rgba(45, 140, 255, 0.3);
+}
+
+[data-theme="deepseek"] [class*="primary"]:hover {
+    --glow: 0 0 20px rgba(45, 140, 255, 0.4);
+}
+
+:root, [data-theme="dark"] {
+    --primary-rgb: 236, 72, 153;
+    --secondary-rgb: 139, 92, 246;
+}
+
+[data-theme="deepseek"] {
+    --primary-rgb: 45, 140, 255;
+    --secondary-rgb: 34, 211, 238;
+}
+
+/* Исправление для кнопок в теме DeepSeek */
+[data-theme="deepseek"] .ios-button {
+    background: var(--ios-blue) !important;
+}
+
+[data-theme="deepseek"] .ios-button:hover {
+    background: var(--primary-dark) !important;
+    box-shadow: 
+        0 8px 15px rgba(var(--primary-rgb), 0.3),
+        0 0 20px rgba(var(--primary-rgb), 0.4) !important;
+}
+
+[data-theme="deepseek"] .ios-button:active {
+    background: var(--primary-dark) !important;
+    box-shadow: 
+        0 2px 4px -1px rgba(var(--primary-rgb), 0.2),
+        0 1px 2px -1px rgba(var(--primary-rgb), 0.1) !important;
+}
+
+[data-theme="deepseek"] .ios-button.secondary {
+    background: var(--ios-card) !important;
+}
+
+[data-theme="deepseek"] .ios-button.secondary:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2) !important;
+}
+
+[data-theme="deepseek"] .ios-button.tertiary {
+    background: transparent !important;
+    color: var(--primary) !important;
+}
+
+[data-theme="deepseek"] .ios-button.tertiary:hover {
+    background: rgba(var(--primary-rgb), 0.1) !important;
+    box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.3) !important;
+}
+
+[data-theme="deepseek"] {
+    
+    /* Цвета уведомлений */
+    --notification-success: linear-gradient(135deg, #10b981, #059669);
+    --notification-error: linear-gradient(135deg, #dc2626, #b91c1c);
+    --notification-warning: linear-gradient(135deg, #d97706, #b45309);
+    --notification-info: linear-gradient(135deg, #2d8cff, #22d3ee);
+}
+
+/* А в темной теме (по умолчанию) */
+:root, [data-theme="dark"] {
+    /* ... существующие переменные ... */
+    
+    /* Цвета уведомлений для темной темы */
+    --notification-success: linear-gradient(135deg, #ec4899, #db2777);
+    --notification-error: linear-gradient(135deg, #ef4444, #dc2626);
+    --notification-warning: linear-gradient(135deg, #f59e0b, #d97706);
+    --notification-info: var(--gradient);
+}
+
+/* Статус API */
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 18px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: var(--transition);
+    background: var(--api-status-bg, rgba(59, 130, 246, 0.1));
+    color: var(--api-status-color, #3b82f6);
+    border: 1px solid var(--api-status-border, rgba(59, 130, 246, 0.2));
+}
+
+.status-indicator:hover {
+    box-shadow: var(--api-status-glow, 0 0 15px rgba(59, 130, 246, 0.3));
+}
+
+/* Статусы API */
+.api-connecting {
+    animation: apiConnecting 2s infinite alternate !important;
+}
+
+.api-connected {
+    background: var(--api-status-connected-bg, rgba(34, 197, 94, 0.1)) !important;
+    color: var(--api-status-connected-color, #22c55e) !important;
+    border-color: var(--api-status-connected-border, rgba(34, 197, 94, 0.2)) !important;
+}
+
+.api-error {
+    background: var(--api-status-error-bg, rgba(239, 68, 68, 0.1)) !important;
+    color: var(--api-status-error-color, #ef4444) !important;
+    border-color: var(--api-status-error-border, rgba(239, 68, 68, 0.2)) !important;
+}
+
+/* Тёмная тема - цвета статуса API */
+[data-theme="dark"] {
+    --api-status-connected-bg: rgba(34, 197, 94, 0.15);
+    --api-status-connected-color: #4ade80;
+    --api-status-connected-border: rgba(34, 197, 94, 0.3);
+    --api-status-glow: 0 0 15px rgba(34, 197, 94, 0.3);
+    
+    --api-status-error-bg: rgba(239, 68, 68, 0.15);
+    --api-status-error-color: #f87171;
+    --api-status-error-border: rgba(239, 68, 68, 0.3);
+}
+
+/* DeepSeek тема - цвета статуса API */
+[data-theme="deepseek"] {
+    --api-status-connected-bg: rgba(34, 197, 94, 0.1);
+    --api-status-connected-color: #16a34a;
+    --api-status-connected-border: rgba(34, 197, 94, 0.2);
+    --api-status-glow: 0 0 15px rgba(34, 197, 94, 0.2);
+    
+    --api-status-error-bg: rgba(239, 68, 68, 0.1);
+    --api-status-error-color: #dc2626;
+    --api-status-error-border: rgba(239, 68, 68, 0.2);
+}
+
+/* Уведомления */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 14px 18px;
+    background: var(--notification-bg, var(--gradient));
+    color: white;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow);
+    z-index: 1000;
+    transform: translateX(150%);
+    transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    max-width: 350px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--notification-border, rgba(255, 255, 255, 0.1));
+    font-size: 0.9rem;
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+.notification i {
+    font-size: 1.2rem;
+}
+
+/* Типы уведомлений */
+.notification.success {
+    --notification-bg: var(--notification-success-bg, var(--gradient));
+    --notification-border: var(--notification-success-border, rgba(255, 255, 255, 0.1));
+}
+
+.notification.error {
+    --notification-bg: var(--notification-error-bg, linear-gradient(135deg, #ef4444, #dc2626));
+    --notification-border: var(--notification-error-border, rgba(239, 68, 68, 0.2));
+}
+
+.notification.warning {
+    --notification-bg: var(--notification-warning-bg, linear-gradient(135deg, #f59e0b, #d97706));
+    --notification-border: var(--notification-warning-border, rgba(245, 158, 11, 0.2));
+}
+
+.notification.info {
+    --notification-bg: var(--notification-info-bg, linear-gradient(135deg, #3b82f6, #1d4ed8));
+    --notification-border: var(--notification-info-border, rgba(59, 130, 246, 0.2));
+}
+
+/* Тёмная тема - цветовые переменные */
+[data-theme="dark"] {
+    --notification-success-bg: var(--gradient); /* Розовый градиент */
+    --notification-success-border: rgba(236, 72, 153, 0.2);
+    
+    --notification-error-bg: linear-gradient(135deg, #ef4444, #dc2626);
+    --notification-error-border: rgba(239, 68, 68, 0.2);
+    
+    --notification-warning-bg: linear-gradient(135deg, #f59e0b, #d97706);
+    --notification-warning-border: rgba(245, 158, 11, 0.2);
+    
+    --notification-info-bg: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    --notification-info-border: rgba(139, 92, 246, 0.2);
+}
+
+/* DeepSeek тема - цветовые переменные */
+[data-theme="deepseek"] {
+    --notification-success-bg: linear-gradient(135deg, var(--primary), var(--secondary)); /* Синий градиент */
+    --notification-success-border: rgba(45, 140, 255, 0.2);
+    
+    --notification-error-bg: linear-gradient(135deg, #ef4444, #dc2626);
+    --notification-error-border: rgba(239, 68, 68, 0.2);
+    
+    --notification-warning-bg: linear-gradient(135deg, #f59e0b, #d97706);
+    --notification-warning-border: rgba(245, 158, 11, 0.2);
+    
+    --notification-info-bg: linear-gradient(135deg, var(--primary-light), var(--primary));
+    --notification-info-border: rgba(45, 140, 255, 0.2);
+}
+
+/* Адаптивность уведомлений */
+@media (max-width: 768px) {
+    .notification {
+        top: max(12px, env(safe-area-inset-top));
+        right: max(12px, env(safe-area-inset-right));
+        left: max(12px, env(safe-area-inset-left));
+        max-width: none;
+        font-size: 0.85rem;
+    }
+}
+
+[data-theme="deepseek"] .logo-icon {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    box-shadow: 0 0 20px rgba(45, 140, 255, 0.3);
+}
+
+[data-theme="deepseek"] .logo-icon i {
+    color: white !important;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+[data-theme="deepseek"] .logo-icon i.fa-heart,
+[data-theme="deepseek"] .ai-avatar i.fa-heart,
+[data-theme="deepseek"] .message .message-sender i.fa-heart,
+[data-theme="deepseek"] .chat-header-content .ai-avatar i,
+[data-theme="deepseek"] .chat-header .ai-avatar i.fa-heart {
+    color: white !important;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
+}
+
+/* Исправление для быстрых команд в теме DeepSeek */
+[data-theme="deepseek"] .command-item-settings {
+    background: rgba(45, 140, 255, 0.08) !important;
+    color: #2d8cff !important;
+    border: 1px solid rgba(45, 140, 255, 0.2) !important;
+}
+
+[data-theme="deepseek"] .command-item-settings:hover {
+    background: rgba(45, 140, 255, 0.12) !important;
+    border-color: rgba(45, 140, 255, 0.4) !important;
+    box-shadow: 0 4px 12px rgba(45, 140, 255, 0.15) !important;
+}
+
+/* Простой вариант */
+.theme-selector {
+    display: flex;
+    gap: 15px;
+    margin-top: 12px;
+}
+
+.theme-option {
+    width: 100px;
+    height: 100px;
+    border-radius: 12px;
+    border: 2px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.theme-dark {
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+}
+
+.theme-deepseek {
+    background: linear-gradient(135deg, #ffffff, #f8f9fa);
+}
+
+.theme-dark i {
+    color: white;
+    font-size: 24px;
+}
+
+.theme-deepseek i {
+    color: #2d8cff;
+    font-size: 24px;
+}
+
+.theme-dark span {
+    color: white;
+    font-size: 12px;
+}
+
+.theme-deepseek span {
+    color: #1a1a1a;
+    font-size: 12px;
+}
+
+.theme-option.active {
+    border-color: var(--primary);
+    box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.3);
 }
