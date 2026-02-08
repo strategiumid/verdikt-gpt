@@ -267,7 +267,7 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 12px 20px;
-    background: var(--bg-card);
+    background: var(--bg-header, var(--bg-card));
     backdrop-filter: blur(20px);
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-color);
@@ -339,7 +339,7 @@ body {
 
 /* Заголовок чата */
 .chat-header {
-    background: rgba(30, 41, 59, 0.9);
+    background: var(--bg-card);
     padding: 18px 24px;
     border-bottom: 1px solid var(--border-color);
     display: flex;
@@ -380,6 +380,7 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    color: var(--text-primary);
 }
 
 .chat-header-text p {
@@ -552,7 +553,7 @@ body {
 /* Примеры вопросов */
 .examples {
     padding: 16px 20px;
-    background: rgba(30, 41, 59, 0.8);
+    background: var(--bg-card)
     border-radius: var(--radius-md);
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow-sm);
@@ -619,8 +620,8 @@ body {
 #message-input {
     width: 100%;
     padding: 14px 18px;
-    background: rgba(15, 23, 42, 0.7);
-    border: 2px solid rgba(236, 72, 153, 0.2);
+    background: var(--bg-card-light);
+    border: 2px solid var(--border-color);
     border-radius: 14px;
     font-size: 1rem;
     font-family: 'Inter', sans-serif;
