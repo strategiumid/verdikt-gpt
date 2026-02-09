@@ -640,3 +640,17 @@
 [data-theme="deepseek"] .auth-tab.active i {
     color: var(--primary);
 }
+
+[data-theme="deepseek"] .message-actions {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+[data-theme="deepseek"] .message:hover .message-actions {
+    opacity: 1;
+}
+
+[data-theme="deepseek"] .message-action {
+    background: rgba(0, 0, 0, 0.2);
+    color: white;
+}
