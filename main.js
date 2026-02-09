@@ -17,6 +17,16 @@ class VerdiktChatApp {
             apiKey: null // Будет загружено из localStorage
         };
 
+        // Конфигурация собственного бэкенда для авторизации пользователей
+        this.AUTH_CONFIG = {
+            baseUrl: (window && window.VERDIKT_BACKEND_URL) || window.location.origin,
+            endpoints: {
+                register: '/api/auth/register',
+                login: '/api/auth/login',
+                me: '/api/auth/me'
+            }
+        };
+
         this.state = {
             conversationHistory: [
                 {
@@ -67,6 +77,9 @@ class VerdiktChatApp {
                 popularTopics: {},
                 totalChats: 1
             },
+            // Пользователь и токен авторизации
+            user: null,
+            authToken: null,
             currentTheme: 'dark',
             isPresentationMode: false,
             currentSlide: 0,
@@ -113,6 +126,10 @@ class VerdiktChatApp {
             smartSuggestions: document.getElementById('smart-suggestions'),
             typingIndicator: document.getElementById('typing-indicator'),
             achievementNotification: document.getElementById('achievement-notification'),
+            // Авторизация
+            loginButton: document.getElementById('login-button'),
+            authModal: document.getElementById('auth-modal'),
+            authClose: document.getElementById('auth-close'),
             
             // Навигация
             prevSlide: document.getElementById('prev-slide'),
@@ -177,6 +194,7 @@ class VerdiktChatApp {
         this.loadApiKey(); // Загружаем API ключ
         this.setupEventListeners();
         this.loadFromLocalStorage();
+        this.loadUserFromStorage();
         this.setupSpeechRecognition();
         this.setupBackgroundAnimations();
         this.updateUI();
@@ -184,6 +202,7 @@ class VerdiktChatApp {
         this.setupKeyboardShortcuts();
         this.setupServiceWorker();
         this.setupSettingsTabs();
+        this.setupAuthUI();
         
         // Загружаем историю чатов
         await this.loadChats();
@@ -2020,6 +2039,201 @@ this.elements.apiStatus.classList.add('api-error');
     }
 
     // ==================== ПОЛЕЗНЫЕ ФУНКЦИИ ====================
+
+    // ==================== АВТОРИЗАЦИЯ ПОЛЬЗОВАТЕЛЯ ====================
+
+    loadUserFromStorage() {
+        try {
+            const userJson = localStorage.getItem('verdikt_user');
+            const token = localStorage.getItem('verdikt_token');
+            if (userJson && token) {
+                this.state.user = JSON.parse(userJson);
+                this.state.authToken = token;
+            }
+        } catch (e) {
+            console.warn('Не удалось загрузить пользователя из localStorage', e);
+        }
+    }
+
+    saveUserToStorage() {
+        if (this.state.user && this.state.authToken) {
+            localStorage.setItem('verdikt_user', JSON.stringify(this.state.user));
+            localStorage.setItem('verdikt_token', this.state.authToken);
+        } else {
+            localStorage.removeItem('verdikt_user');
+            localStorage.removeItem('verdikt_token');
+        }
+    }
+
+    setUser(user, token) {
+        this.state.user = user;
+        this.state.authToken = token || this.state.authToken;
+        this.saveUserToStorage();
+        this.updateAuthUI();
+    }
+
+    logout() {
+        this.state.user = null;
+        this.state.authToken = null;
+        this.saveUserToStorage();
+        this.updateAuthUI();
+        this.showNotification('Вы вышли из аккаунта', 'info');
+    }
+
+    getAuthHeaders() {
+        const headers = {};
+        if (this.state.authToken) {
+            headers['Authorization'] = `Bearer ${this.state.authToken}`;
+        }
+        return headers;
+    }
+
+    async registerUser({ name, email, password }) {
+        const url = `${this.AUTH_CONFIG.baseUrl}${this.AUTH_CONFIG.endpoints.register}`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name, email, password })
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            const message = error.message || `Ошибка регистрации (HTTP ${response.status})`;
+            throw new Error(message);
+        }
+
+        const data = await response.json();
+        // Ожидаем формат { user, token }
+        this.setUser(data.user, data.token);
+    }
+
+    async loginUser({ email, password }) {
+        const url = `${this.AUTH_CONFIG.baseUrl}${this.AUTH_CONFIG.endpoints.login}`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email, password })
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            const message = error.message || `Ошибка входа (HTTP ${response.status})`;
+            throw new Error(message);
+        }
+
+        const data = await response.json();
+        this.setUser(data.user, data.token);
+    }
+
+    setupAuthUI() {
+        const loginBtn = this.elements.loginButton;
+        const logoutBtn = document.getElementById('logout-button');
+        const authClose = this.elements.authClose;
+        const authTabs = document.querySelectorAll('.auth-tab');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+
+        if (loginBtn) {
+            loginBtn.addEventListener('click', () => {
+                this.showModal('auth-modal');
+            });
+        }
+
+        if (authClose) {
+            authClose.addEventListener('click', () => this.hideModal('auth-modal'));
+        }
+
+        authTabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const target = e.currentTarget.dataset.tab;
+                authTabs.forEach(t => t.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+
+                document.querySelectorAll('.auth-form').forEach(form => {
+                    form.classList.remove('active');
+                });
+                document.getElementById(`${target}-form`).classList.add('active');
+            });
+        });
+
+        if (loginForm) {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('login-email').value.trim();
+                const password = document.getElementById('login-password').value;
+
+                if (!email || !password) {
+                    this.showNotification('Введите email и пароль', 'warning');
+                    return;
+                }
+
+                try {
+                    await this.loginUser({ email, password });
+                    this.hideModal('auth-modal');
+                    this.showNotification('Вы успешно вошли ✅', 'success');
+                } catch (error) {
+                    this.showNotification(error.message || 'Ошибка входа', 'error');
+                }
+            });
+        }
+
+        if (registerForm) {
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = document.getElementById('register-name').value.trim();
+                const email = document.getElementById('register-email').value.trim();
+                const password = document.getElementById('register-password').value;
+
+                if (!name || !email || !password) {
+                    this.showNotification('Заполните все поля', 'warning');
+                    return;
+                }
+
+                try {
+                    await this.registerUser({ name, email, password });
+                    this.hideModal('auth-modal');
+                    this.showNotification('Регистрация прошла успешно ✅', 'success');
+                } catch (error) {
+                    this.showNotification(error.message || 'Ошибка регистрации', 'error');
+                }
+            });
+        }
+
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => this.logout());
+        }
+
+        this.updateAuthUI();
+    }
+
+    updateAuthUI() {
+        const userAuth = document.getElementById('user-auth');
+        const label = userAuth?.querySelector('.user-auth-label');
+        const userInfo = document.getElementById('auth-user-info');
+        const userNameLabel = document.getElementById('auth-user-name');
+
+        if (!userAuth || !label) return;
+
+        if (this.state.user) {
+            const name = this.state.user.name || this.state.user.email || 'Аккаунт';
+            label.textContent = name;
+            userAuth.classList.add('user-auth-logged-in');
+            if (userInfo && userNameLabel) {
+                userNameLabel.textContent = name;
+                userInfo.style.display = 'flex';
+            }
+        } else {
+            label.textContent = 'Войти';
+            userAuth.classList.remove('user-auth-logged-in');
+            if (userInfo) {
+                userInfo.style.display = 'none';
+            }
+        }
+    }
 
     getCurrentTime() {
         const now = new Date();
