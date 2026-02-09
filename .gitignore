@@ -1,0 +1,60 @@
+# === ОС и редакторы ===
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.iml
+.idea/
+.vscode/
+
+# === Сборка и артефакты ===
+# Gradle
+.gradle/
+build/
+out/
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+
+# === Логи и временные ===
+*.log
+*.tmp
+*.temp
+
+# === Покрытие/отчёты ===
+coverage/
+jacoco.exec
+*.lcov
+
+# === Кэш тестовых фреймворков ===
+surefire-reports/
+failsafe-reports/
+
+# === Пакеты/архивы ===
+*.jar
+*.war
+*.ear
+*.zip
+*.tar
+*.gz
+
+# === Среда/секреты (НЕ хранить в Git) ===
+.env
+*.env
+.env.*.local
+*.keystore
+*.jks
+*.p12
+*.pem
+*.crt
+*.key
+
+# === Генерация кода / IDE метаданные ===
+.annotation-cache/
+.classpath
+.project
+.settings/
