@@ -555,7 +555,7 @@ body {
 /* Примеры вопросов */
 .examples {
     padding: 16px 20px;
-    background: var(--bg-card)
+    background: var(--bg-card);
     border-radius: var(--radius-md);
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow-sm);
@@ -1301,29 +1301,78 @@ footer {
 
 .particle {
     position: absolute;
-    width: 3px;
+    width: 3px; /* базовый размер, в JS переопределяется */
     height: 3px;
-    background: var(--primary);
+    background: rgba(var(--primary-rgb), 0.85);
     border-radius: 50%;
     opacity: 0;
-    animation: particleFlow 3s infinite;
+    box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.7);
+    mix-blend-mode: screen;
+    /* Параметры по умолчанию, которые переопределяются из JS */
+    --tx: 100;      /* смещение по X в пикселях */
+    --ty: -100;     /* смещение по Y в пикселях */
+    --scale: 1;
+    --alpha: 0.7;
+    --duration: 6s;
+    animation: 
+        particleFlow var(--duration) linear infinite,
+        particlePulse 4s ease-in-out infinite;
 }
 
+/* Основное движение частицы */
 @keyframes particleFlow {
     0% {
-        transform: translate(0, 0);
+        transform: translate3d(0, 0, 0) scale(var(--scale));
         opacity: 0;
     }
     10% {
-        opacity: 0.7;
+        opacity: var(--alpha);
     }
     90% {
-        opacity: 0.7;
+        opacity: var(--alpha);
     }
     100% {
-        transform: translate(100px, -100px);
+        transform: translate3d(calc(var(--tx) * 1px), calc(var(--ty) * 1px), 0) scale(var(--scale));
         opacity: 0;
     }
+}
+
+/* Лёгкое “дыхание” свечения */
+@keyframes particlePulse {
+    0%, 100% {
+        box-shadow: 0 0 8px rgba(var(--primary-rgb), 0.6);
+    }
+    50% {
+        box-shadow: 0 0 16px rgba(var(--primary-rgb), 0.9);
+    }
+}
+
+/* Глобальные оптимизации для слабых устройств и режима "меньше движения" */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .connection-particles,
+    .grid-pattern {
+        display: none !important;
+        animation: none !important;
+    }
+}
+
+html.low-motion * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+}
+
+html.low-motion .connection-particles,
+html.low-motion .grid-pattern {
+    display: none !important;
+    animation: none !important;
 }
 
 /* Анимация подключения API */

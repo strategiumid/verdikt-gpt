@@ -2366,26 +2366,83 @@ this.elements.apiStatus.classList.add('api-error');
     }
 
     setupBackgroundAnimations() {
-        const heartsContainer = document.getElementById('floating-hearts');
-        for (let i = 0; i < 15; i++) {
-            const heart = document.createElement('div');
-            heart.className = 'heart';
-            heart.innerHTML = '❤';
-            heart.style.left = `${Math.random() * 100}%`;
-            heart.style.animationDelay = `${Math.random() * 15}s`;
-            heart.style.fontSize = `${10 + Math.random() * 20}px`;
-            heartsContainer.appendChild(heart);
+        const profile = this.getPerformanceProfile ? this.getPerformanceProfile() : { isLowEnd: false, reducedMotion: false };
+
+        // В режиме "меньше движения" полностью отключаем фоновые частицы
+        if (profile.reducedMotion) {
+            const particlesContainer = document.getElementById('connection-particles');
+            if (particlesContainer) {
+                particlesContainer.innerHTML = '';
+            }
+            return;
         }
 
         const particlesContainer = document.getElementById('connection-particles');
-        for (let i = 0; i < 30; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'particle';
-            particle.style.left = `${Math.random() * 100}%`;
-            particle.style.top = `${Math.random() * 100}%`;
-            particle.style.animationDelay = `${Math.random() * 3}s`;
-            particlesContainer.appendChild(particle);
+        if (particlesContainer) {
+            const baseCount = 80;
+            const particleCount = profile.isLowEnd ? 40 : baseCount;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+
+                // Случайный размер частицы (имитация глубины)
+                const size = 1.5 + Math.random() * 3.5;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+
+                // Случайное положение
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+
+                // Вариативная скорость и задержка анимации
+                const delay = Math.random() * 6;
+                const duration = 4 + Math.random() * 6;
+                particle.style.animationDelay = `${delay}s`;
+                particle.style.setProperty('--duration', `${duration}s`);
+
+                // Лёгкий разброс яркости
+                const alpha = 0.25 + Math.random() * 0.6;
+                particle.style.opacity = alpha.toFixed(2);
+                particle.style.setProperty('--alpha', alpha.toFixed(2));
+
+                // Случайное направление и дистанция движения
+                // Угол преимущественно вверх, с небольшим разбросом влево/вправо
+                const baseAngle = -Math.PI / 2; // вверх
+                const angleSpread = Math.PI / 3; // разброс
+                const angle = baseAngle + (Math.random() - 0.5) * angleSpread;
+                const distance = 80 + Math.random() * 180;
+                const tx = Math.cos(angle) * distance;
+                const ty = Math.sin(angle) * distance;
+                particle.style.setProperty('--tx', tx.toFixed(1));
+                particle.style.setProperty('--ty', ty.toFixed(1));
+
+                // Небольшая вариация масштаба (ещё один уровень глубины)
+                const scale = 0.7 + Math.random() * 1.3;
+                particle.style.setProperty('--scale', scale.toFixed(2));
+
+                particlesContainer.appendChild(particle);
+            }
         }
+    }
+
+    getPerformanceProfile() {
+        const cores = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
+            ? navigator.hardwareConcurrency
+            : 2;
+
+        const reducedMotion = typeof window !== 'undefined' && window.matchMedia
+            ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+            : false;
+
+        const isLowEnd = cores <= 4;
+
+        // Проставляем класс для CSS-оптимизаций
+        if (typeof document !== 'undefined' && (reducedMotion || isLowEnd)) {
+            document.documentElement.classList.add('low-motion');
+        }
+
+        return { cores, reducedMotion, isLowEnd };
     }
 
     setupServiceWorker() {
