@@ -612,3 +612,45 @@
     border-color: var(--primary);
     box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.3);
 }
+
+/* Стили для вкладок авторизации в светлой теме DeepSeek */
+[data-theme="deepseek"] .auth-tabs {
+    background: rgba(45, 140, 255, 0.04);
+    border: 1px solid rgba(45, 140, 255, 0.1);
+}
+
+[data-theme="deepseek"] .auth-tab {
+    background: transparent;
+    color: #4a5568; /* Серый текст */
+    border: 1px solid transparent;
+}
+
+[data-theme="deepseek"] .auth-tab:hover {
+    background: rgba(45, 140, 255, 0.08);
+    color: #1a1a1a;
+}
+
+[data-theme="deepseek"] .auth-tab.active {
+    background: rgba(45, 140, 255, 0.12);
+    color: var(--primary); /* Синий цвет текста */
+    border-color: rgba(45, 140, 255, 0.2);
+    box-shadow: 0 2px 8px rgba(45, 140, 255, 0.1);
+}
+
+[data-theme="deepseek"] .auth-tab.active i {
+    color: var(--primary);
+}
+
+[data-theme="deepseek"] .message-actions {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+[data-theme="deepseek"] .message:hover .message-actions {
+    opacity: 1;
+}
+
+[data-theme="deepseek"] .message-action {
+    background: rgba(0, 0, 0, 0.2);
+    color: white;
+}

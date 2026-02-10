@@ -88,6 +88,17 @@ class VerdiktChatApp {
             maxRetries: 3
         };
 
+        this.dashboard = {
+        isVisible: false,
+        stats: {
+            totalTime: 0,
+            sessions: 1,
+            avgSessionTime: 0,
+            messagesPerDay: 0,
+            favoriteTopics: []
+        }
+    };
+
         this.crypto = new VerdiktCrypto();
         
         this.encryptionState = {
@@ -116,7 +127,6 @@ class VerdiktChatApp {
             messageInput: document.getElementById('message-input'),
             sendButton: document.getElementById('send-button'),
             voiceInput: document.getElementById('voice-input'),
-            voiceOutput: document.getElementById('voice-output'),
             newChat: document.getElementById('new-chat'),
             settingsButton: document.getElementById('settings-button'),
             presentationMode: document.getElementById('presentation-mode'),
@@ -165,45 +175,7 @@ class VerdiktChatApp {
             exportChatConfirm: document.getElementById('export-chat-confirm'),
             exportChatCancel: document.getElementById('export-chat-cancel'),
             exportChatModalClose: document.getElementById('export-chat-modal-close'),
-            encryptionNote: document.getElementById('encryption-note'),
-
-            // Боковое меню элементы
-            sidebarToggle: document.getElementById('sidebar-toggle'),
-            sidebarOverlay: document.getElementById('sidebar-overlay'),
-            sidebar: document.getElementById('sidebar'),
-            sidebarUsername: document.getElementById('sidebar-username'),
-            sidebarUseremail: document.getElementById('sidebar-useremail'),
-            userAvatar: document.getElementById('user-avatar'),
-            navProfile: document.getElementById('nav-profile'),
-            navDashboard: document.getElementById('nav-dashboard'),
-            navStories: document.getElementById('nav-stories'),
-            navQuestions: document.getElementById('nav-questions'),
-            navLikes: document.getElementById('nav-likes'),
-            navComments: document.getElementById('nav-comments'),
-            navSettings: document.getElementById('nav-settings'),
-            navSecurity: document.getElementById('nav-security'),
-            navNotifications: document.getElementById('nav-notifications'),
-            questionsBadge: document.getElementById('questions-badge'),
-            likesBadge: document.getElementById('likes-badge'),
-            commentsBadge: document.getElementById('comments-badge'),
-            statQuestions: document.getElementById('stat-questions'),
-            statLikes: document.getElementById('stat-likes'),
-            statComments: document.getElementById('stat-comments'),
-            statHelpful: document.getElementById('stat-helpful'),
-            logoutSidebar: document.getElementById('logout-sidebar'),
-
-            // Дашборд элементы
-            dashboardModal: document.getElementById('dashboard-modal'),
-            dashboardClose: document.getElementById('dashboard-close'),
-            dashboardUsername: document.getElementById('dashboard-username'),
-            dashboardRating: document.getElementById('dashboard-rating'),
-            dashboardTabs: document.querySelectorAll('.dashboard-tab'),
-            dashboardTabContents: document.querySelectorAll('.dashboard-tab-content'),
-
-            // Настройки профиля элементы
-            profileSettingsModal: document.getElementById('profile-settings-modal'),
-            profileSettingsClose: document.getElementById('profile-settings-close'),
-            profileSettingsForm: document.getElementById('profile-settings-form')
+            encryptionNote: document.getElementById('encryption-note')
         };
 
         this.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -241,15 +213,6 @@ class VerdiktChatApp {
         this.setupServiceWorker();
         this.setupSettingsTabs();
         this.setupAuthUI();
-        
-        // Инициализация бокового меню
-        this.setupSidebar();
-        
-        // Инициализация дашборда
-        this.setupDashboard();
-        
-        // Инициализация настроек профиля
-        this.setupProfileSettings();
         
         // Загружаем историю чатов
         await this.loadChats();
@@ -390,7 +353,7 @@ class VerdiktChatApp {
                 
                 this.elements.apiStatus.innerHTML = `<i class="fas fa-circle"></i> ${modelName}`;
                 this.elements.apiStatus.classList.remove('api-connecting');
-                this.elements.apiStatus.classList.add('api-connected');
+                this.elements.apiStatus.classList.add('api-connected')
                 this.state.isApiConnected = true;
                 
                 if (data.data?.credits) {
@@ -410,8 +373,8 @@ class VerdiktChatApp {
             console.error('API check error:', error);
             
             this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API ключа';
-            this.elements.apiStatus.classList.remove('api-connecting');
-            this.elements.apiStatus.classList.add('api-error');
+this.elements.apiStatus.classList.remove('api-connecting');
+this.elements.apiStatus.classList.add('api-error');
             
             this.state.isApiConnected = false;
             this.showNotification('Не удалось проверить API ключ. Проверьте его правильность.', 'error');
@@ -1549,312 +1512,6 @@ class VerdiktChatApp {
         }
     }
 
-    // ==================== ФУНКЦИИ БОКОВОГО МЕНЮ ====================
-
-    setupSidebar() {
-        // Открытие/закрытие бокового меню
-        if (this.elements.sidebarToggle) {
-            this.elements.sidebarToggle.addEventListener('click', () => {
-                this.toggleSidebar();
-            });
-        }
-
-        if (this.elements.sidebarOverlay) {
-            this.elements.sidebarOverlay.addEventListener('click', () => {
-                this.hideSidebar();
-            });
-        }
-
-        // Навигация в боковом меню
-        if (this.elements.navDashboard) {
-            this.elements.navDashboard.addEventListener('click', () => {
-                this.showDashboardModal();
-                this.hideSidebar();
-            });
-        }
-
-        if (this.elements.navProfile) {
-            this.elements.navProfile.addEventListener('click', () => {
-                this.showProfileSettingsModal();
-                this.hideSidebar();
-            });
-        }
-
-        if (this.elements.navSettings) {
-            this.elements.navSettings.addEventListener('click', () => {
-                this.showProfileSettingsModal();
-                this.hideSidebar();
-            });
-        }
-
-        if (this.elements.navQuestions) {
-            this.elements.navQuestions.addEventListener('click', () => {
-                this.showDashboardModal();
-                this.switchDashboardTab('questions');
-                this.hideSidebar();
-            });
-        }
-
-        if (this.elements.navLikes) {
-            this.elements.navLikes.addEventListener('click', () => {
-                this.showDashboardModal();
-                this.switchDashboardTab('activity');
-                this.hideSidebar();
-            });
-        }
-
-        if (this.elements.navComments) {
-            this.elements.navComments.addEventListener('click', () => {
-                this.showDashboardModal();
-                this.switchDashboardTab('activity');
-                this.hideSidebar();
-            });
-        }
-
-        if (this.elements.navStories) {
-            this.elements.navStories.addEventListener('click', () => {
-                this.showDashboardModal();
-                this.switchDashboardTab('stories');
-                this.hideSidebar();
-            });
-        }
-
-        // Выход из аккаунта
-        if (this.elements.logoutSidebar) {
-            this.elements.logoutSidebar.addEventListener('click', () => {
-                this.logout();
-                this.hideSidebar();
-            });
-        }
-
-        // Обновление информации в боковом меню
-        this.updateSidebarInfo();
-    }
-
-    toggleSidebar() {
-        const isActive = this.elements.sidebar.classList.contains('active');
-        if (isActive) {
-            this.hideSidebar();
-        } else {
-            this.showSidebar();
-        }
-    }
-
-    showSidebar() {
-        this.elements.sidebar.classList.add('active');
-        this.elements.sidebarOverlay.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    }
-
-    hideSidebar() {
-        this.elements.sidebar.classList.remove('active');
-        this.elements.sidebarOverlay.classList.remove('active');
-        document.body.style.overflow = '';
-    }
-
-    updateSidebarInfo() {
-        if (!this.elements.sidebarUsername) return;
-        
-        if (this.state.user) {
-            this.elements.sidebarUsername.textContent = this.state.user.name || this.state.user.email || 'Пользователь';
-            this.elements.sidebarUseremail.textContent = this.state.user.email || 'В аккаунте';
-            
-            if (this.elements.dashboardUsername) {
-                this.elements.dashboardUsername.textContent = this.state.user.name || this.state.user.email || 'Пользователь';
-            }
-            
-            // Обновление аватара
-            const avatarIcon = this.elements.userAvatar.querySelector('i');
-            if (this.state.user.avatar) {
-                this.elements.userAvatar.style.backgroundImage = `url(${this.state.user.avatar})`;
-                this.elements.userAvatar.style.backgroundSize = 'cover';
-                this.elements.userAvatar.style.backgroundPosition = 'center';
-                if (avatarIcon) avatarIcon.style.display = 'none';
-            } else {
-                this.elements.userAvatar.style.backgroundImage = '';
-                if (avatarIcon) avatarIcon.style.display = 'flex';
-            }
-            
-            // Показываем кнопку выхода
-            if (this.elements.logoutSidebar) {
-                this.elements.logoutSidebar.style.display = 'flex';
-            }
-        } else {
-            this.elements.sidebarUsername.textContent = 'Гость';
-            this.elements.sidebarUseremail.textContent = 'Войдите в аккаунт';
-            
-            if (this.elements.dashboardUsername) {
-                this.elements.dashboardUsername.textContent = 'Гость';
-            }
-            
-            // Скрываем кнопку выхода для гостей
-            if (this.elements.logoutSidebar) {
-                this.elements.logoutSidebar.style.display = 'none';
-            }
-        }
-    }
-
-    // ==================== ДАШБОРД ====================
-
-    setupDashboard() {
-        // Вкладки дашборда
-        this.elements.dashboardTabs = document.querySelectorAll('.dashboard-tab');
-        this.elements.dashboardTabContents = document.querySelectorAll('.dashboard-tab-content');
-        
-        if (!this.elements.dashboardTabs.length) return;
-        
-        this.elements.dashboardTabs.forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                const tabId = e.currentTarget.dataset.tab;
-                this.switchDashboardTab(tabId);
-            });
-        });
-        
-        // Закрытие дашборда
-        if (this.elements.dashboardClose) {
-            this.elements.dashboardClose.addEventListener('click', () => {
-                this.hideModal('dashboard-modal');
-            });
-        }
-        
-        // Загрузка данных дашборда
-        this.loadDashboardData();
-    }
-
-    switchDashboardTab(tabId) {
-        if (!this.elements.dashboardTabs) return;
-        
-        // Убираем активный класс со всех вкладок и содержимого
-        this.elements.dashboardTabs.forEach(tab => {
-            tab.classList.remove('active');
-        });
-        
-        this.elements.dashboardTabContents.forEach(content => {
-            content.classList.remove('active');
-        });
-        
-        // Добавляем активный класс выбранной вкладке и содержимому
-        const activeTab = document.querySelector(`.dashboard-tab[data-tab="${tabId}"]`);
-        const activeContent = document.getElementById(`${tabId}-tab`);
-        
-        if (activeTab) activeTab.classList.add('active');
-        if (activeContent) activeContent.classList.add('active');
-        
-        // Обновляем данные при переключении на определенные вкладки
-        if (tabId === 'analytics') {
-            this.renderAnalytics();
-        }
-    }
-
-    showDashboardModal() {
-        if (!this.state.user) {
-            this.showNotification('Войдите в аккаунт для просмотра дашборда', 'warning');
-            return;
-        }
-        
-        // Обновляем данные перед показом
-        this.loadDashboardData();
-        this.showModal('dashboard-modal');
-    }
-
-    // ==================== НАСТРОЙКИ ПРОФИЛЯ ====================
-
-    setupProfileSettings() {
-        // Закрытие модального окна
-        if (this.elements.profileSettingsClose) {
-            this.elements.profileSettingsClose.addEventListener('click', () => {
-                this.hideModal('profile-settings-modal');
-            });
-        }
-        
-        // Обработка формы
-        if (this.elements.profileSettingsForm) {
-            this.elements.profileSettingsForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                await this.saveProfileSettings();
-            });
-        }
-    }
-
-    showProfileSettingsModal() {
-        if (!this.state.user) {
-            this.showNotification('Войдите в аккаунт для настройки профиля', 'warning');
-            return;
-        }
-        
-        // Заполняем форму текущими данными
-        document.getElementById('profile-name').value = this.state.user.name || '';
-        document.getElementById('profile-email').value = this.state.user.email || '';
-        document.getElementById('profile-bio').value = this.state.user.bio || '';
-        
-        // Сбрасываем выбор экспертизы
-        const expertiseSelect = document.getElementById('profile-expertise');
-        if (expertiseSelect) {
-            Array.from(expertiseSelect.options).forEach(option => {
-                option.selected = false;
-            });
-            
-            // Устанавливаем сохраненную экспертизу
-            if (this.state.user.expertise && Array.isArray(this.state.user.expertise)) {
-                this.state.user.expertise.forEach(exp => {
-                    const option = expertiseSelect.querySelector(`option[value="${exp}"]`);
-                    if (option) option.selected = true;
-                });
-            }
-        }
-        
-        // Устанавливаем настройки приватности
-        const privacySelect = document.getElementById('profile-privacy');
-        if (privacySelect) {
-            privacySelect.value = this.state.user.privacy || 'public';
-        }
-        
-        this.showModal('profile-settings-modal');
-    }
-
-    async saveProfileSettings() {
-        try {
-            const profileData = {
-                name: document.getElementById('profile-name').value.trim(),
-                email: document.getElementById('profile-email').value.trim(),
-                bio: document.getElementById('profile-bio').value.trim(),
-                expertise: Array.from(document.getElementById('profile-expertise').selectedOptions)
-                    .map(option => option.value),
-                privacy: document.getElementById('profile-privacy').value
-            };
-            
-            if (!profileData.name) {
-                this.showNotification('Введите имя', 'warning');
-                return;
-            }
-            
-            if (!profileData.email) {
-                this.showNotification('Введите email', 'warning');
-                return;
-            }
-            
-            // Симуляция сохранения (замените на реальный API вызов)
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Обновляем данные пользователя локально
-            this.state.user = {
-                ...this.state.user,
-                ...profileData
-            };
-            
-            this.saveUserToStorage();
-            this.updateSidebarInfo();
-            this.updateAuthUI();
-            
-            this.hideModal('profile-settings-modal');
-            this.showNotification('Профиль обновлен ✅', 'success');
-            
-        } catch (error) {
-            console.error('Error saving profile:', error);
-            this.showNotification('Ошибка при обновлении профиля', 'error');
-        }
-    }
-
     // ==================== ОСНОВНЫЕ ФУНКЦИИ ЧАТА ====================
 
     setupEventListeners() {
@@ -1869,7 +1526,6 @@ class VerdiktChatApp {
         
         // Голосовые функции
         this.elements.voiceInput.addEventListener('click', () => this.toggleVoiceRecording());
-        this.elements.voiceOutput.addEventListener('click', () => this.speakLastMessage());
         
         // Режимы AI в настройках
         document.querySelectorAll('.mode-item-settings').forEach(mode => {
@@ -2319,21 +1975,21 @@ class VerdiktChatApp {
     showNotification(text, type = 'info') {
         this.elements.notificationText.textContent = text;
     
-        // Убираем inline-стили
-        const notification = this.elements.notification;
-        notification.style.background = '';
-        notification.style.color = '';
-        
-        // Добавляем только класс
-        notification.className = 'notification';
-        notification.classList.add(type);
-        
-        notification.classList.add('show');
-        
-        setTimeout(() => {
-            notification.classList.remove('show');
-        }, 3000);
-    }
+    // Убираем inline-стили
+    const notification = this.elements.notification;
+    notification.style.background = '';
+    notification.style.color = '';
+    
+    // Добавляем только класс
+    notification.className = 'notification';
+    notification.classList.add(type);
+    
+    notification.classList.add('show');
+    
+    setTimeout(() => {
+        notification.classList.remove('show');
+    }, 3000);
+}
 
     unlockAchievement(achievementId) {
         if (!this.state.achievements[achievementId] || this.state.achievements[achievementId].unlocked) return;
@@ -2423,23 +2079,16 @@ class VerdiktChatApp {
         this.state.authToken = token || this.state.authToken;
         this.saveUserToStorage();
         this.updateAuthUI();
-        this.updateSidebarInfo();
-        
-        // Загружаем данные дашборда для нового пользователя
-        if (user) {
-            setTimeout(() => this.loadDashboardData(), 1000);
-        }
     }
 
     logout() {
-        this.state.user = null;
-        this.state.authToken = null;
-        this.saveUserToStorage();
-        this.updateAuthUI();
-        this.updateSidebarInfo();
-        
-        this.showNotification('Вы вышли из аккаунта', 'info');
-    }
+    this.state.user = null;
+    this.state.authToken = null;
+    this.saveUserToStorage();
+    this.updateAuthUI();
+    this.hideDashboard();
+    this.showNotification('Вы вышли из аккаунта', 'info');
+}
 
     getAuthHeaders() {
         const headers = {};
@@ -2491,110 +2140,662 @@ class VerdiktChatApp {
     }
 
     setupAuthUI() {
-        const loginBtn = this.elements.loginButton;
-        const logoutBtn = document.getElementById('logout-button');
-        const authClose = this.elements.authClose;
-        const authTabs = document.querySelectorAll('.auth-tab');
-        const loginForm = document.getElementById('login-form');
-        const registerForm = document.getElementById('register-form');
+    const loginBtn = this.elements.loginButton;
+    const userPanel = document.getElementById('user-panel');
+    const userAvatar = document.getElementById('user-avatar');
+    const logoutLink = document.getElementById('logout-link');
+    
+    // Инициализируем элементы панели пользователя
+    this.elements.userPanel = userPanel;
+    this.elements.userAvatar = userAvatar;
+    this.elements.userDropdown = document.getElementById('user-dropdown');
+    this.elements.userInfo = {
+        name: document.getElementById('user-info-name'),
+        email: document.getElementById('user-info-email'),
+        avatar: document.getElementById('user-info-avatar')
+    };
+    
+    const authClose = this.elements.authClose;
+    const authTabs = document.querySelectorAll('.auth-tab');
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
 
-        if (loginBtn) {
-            loginBtn.addEventListener('click', () => {
-                this.showModal('auth-modal');
-            });
-        }
-
-        if (authClose) {
-            authClose.addEventListener('click', () => this.hideModal('auth-modal'));
-        }
-
-        authTabs.forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                const target = e.currentTarget.dataset.tab;
-                authTabs.forEach(t => t.classList.remove('active'));
-                e.currentTarget.classList.add('active');
-
-                document.querySelectorAll('.auth-form').forEach(form => {
-                    form.classList.remove('active');
-                });
-                document.getElementById(`${target}-form`).classList.add('active');
-            });
+    if (loginBtn) {
+        loginBtn.addEventListener('click', () => {
+            this.showModal('auth-modal');
         });
-
-        if (loginForm) {
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('login-email').value.trim();
-                const password = document.getElementById('login-password').value;
-
-                if (!email || !password) {
-                    this.showNotification('Введите email и пароль', 'warning');
-                    return;
-                }
-
-                try {
-                    await this.loginUser({ email, password });
-                    this.hideModal('auth-modal');
-                    this.showNotification('Вы успешно вошли ✅', 'success');
-                } catch (error) {
-                    this.showNotification(error.message || 'Ошибка входа', 'error');
-                }
-            });
-        }
-
-        if (registerForm) {
-            registerForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const name = document.getElementById('register-name').value.trim();
-                const email = document.getElementById('register-email').value.trim();
-                const password = document.getElementById('register-password').value;
-
-                if (!name || !email || !password) {
-                    this.showNotification('Заполните все поля', 'warning');
-                    return;
-                }
-
-                try {
-                    await this.registerUser({ name, email, password });
-                    this.hideModal('auth-modal');
-                    this.showNotification('Регистрация прошла успешно ✅', 'success');
-                } catch (error) {
-                    this.showNotification(error.message || 'Ошибка регистрации', 'error');
-                }
-            });
-        }
-
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => this.logout());
-        }
-
-        this.updateAuthUI();
     }
 
-    updateAuthUI() {
-        const userAuth = document.getElementById('user-auth');
-        const label = userAuth?.querySelector('.user-auth-label');
-        const userInfo = document.getElementById('auth-user-info');
-        const userNameLabel = document.getElementById('auth-user-name');
+    if (authClose) {
+        authClose.addEventListener('click', () => this.hideModal('auth-modal'));
+    }
 
-        if (!userAuth || !label) return;
+    authTabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            const target = e.currentTarget.dataset.tab;
+            authTabs.forEach(t => t.classList.remove('active'));
+            e.currentTarget.classList.add('active');
 
-        if (this.state.user) {
-            const name = this.state.user.name || this.state.user.email || 'Аккаунт';
-            label.textContent = name;
-            userAuth.classList.add('user-auth-logged-in');
-            if (userInfo && userNameLabel) {
-                userNameLabel.textContent = name;
-                userInfo.style.display = 'flex';
+            document.querySelectorAll('.auth-form').forEach(form => {
+                form.classList.remove('active');
+            });
+            document.getElementById(`${target}-form`).classList.add('active');
+        });
+    });
+
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            if (!email || !password) {
+                this.showNotification('Введите email и пароль', 'warning');
+                return;
             }
-        } else {
-            label.textContent = 'Войти';
-            userAuth.classList.remove('user-auth-logged-in');
-            if (userInfo) {
-                userInfo.style.display = 'none';
+
+            try {
+                await this.loginUser({ email, password });
+                this.hideModal('auth-modal');
+                this.showNotification('Вы успешно вошли ✅', 'success');
+            } catch (error) {
+                this.showNotification(error.message || 'Ошибка входа', 'error');
             }
+        });
+    }
+
+    if (registerForm) {
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('register-name').value.trim();
+            const email = document.getElementById('register-email').value.trim();
+            const password = document.getElementById('register-password').value;
+
+            if (!name || !email || !password) {
+                this.showNotification('Заполните все поля', 'warning');
+                return;
+            }
+
+            try {
+                await this.registerUser({ name, email, password });
+                this.hideModal('auth-modal');
+                this.showNotification('Регистрация прошла успешно ✅', 'success');
+            } catch (error) {
+                this.showNotification(error.message || 'Ошибка регистрации', 'error');
+            }
+        });
+    }
+
+    // Добавляем обработчики для ссылок в выпадающем меню пользователя
+    document.getElementById('dashboard-link')?.addEventListener('click', () => {
+        this.showDashboard();
+        this.hideUserDropdown();
+    });
+    
+    document.getElementById('my-chats-link')?.addEventListener('click', () => {
+        this.showChatHistoryModal();
+        this.hideUserDropdown();
+    });
+    
+    document.getElementById('achievements-link')?.addEventListener('click', () => {
+        this.switchSettingsTab('achievements');
+        this.showSettingsModal();
+        this.hideUserDropdown();
+    });
+    
+    document.getElementById('stats-link')?.addEventListener('click', () => {
+        this.switchSettingsTab('stats');
+        this.showSettingsModal();
+        this.hideUserDropdown();
+    });
+    
+    document.getElementById('profile-link')?.addEventListener('click', () => {
+        this.showProfileSettings();
+        this.hideUserDropdown();
+    });
+    
+    document.getElementById('logout-link')?.addEventListener('click', () => {
+        this.logout();
+        this.hideUserDropdown();
+    });
+    
+    // Клик по аватару - показать/скрыть меню
+    if (userAvatar) {
+        userAvatar.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleUserDropdown();
+        });
+    }
+    
+    // Скрыть меню при клике вне его
+    document.addEventListener('click', () => {
+        this.hideUserDropdown();
+    });
+
+    // Обработчик для кнопки выхода в модальном окне авторизации
+    const logoutBtn = document.getElementById('logout-button');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => this.logout());
+    }
+
+    this.updateAuthUI();
+}
+
+    // ==================== МЕТОДЫ УПРАВЛЕНИЯ UI ПОЛЬЗОВАТЕЛЯ ====================
+
+updateAuthUI() {
+    const loginBtn = this.elements.loginButton;
+    const userPanel = this.elements.userPanel;
+    const label = loginBtn?.querySelector('.user-auth-label');
+    
+    if (this.state.user) {
+        // Показываем панель пользователя, скрываем кнопку входа
+        if (userPanel) {
+            userPanel.style.display = 'flex';
+        }
+        if (loginBtn) {
+            loginBtn.style.display = 'none';
+        }
+        
+        // Обновляем информацию в выпадающем меню
+        this.updateUserInfo();
+        
+        // Если у нас есть имя пользователя, показываем его в аватаре
+        const name = this.state.user.name || this.state.user.email || 'Пользователь';
+        if (this.elements.userInfo?.name) {
+            this.elements.userInfo.name.textContent = name;
+        }
+        if (this.elements.userInfo?.email) {
+            this.elements.userInfo.email.textContent = this.state.user.email || '';
+        }
+        
+        // Обновляем иконку аватара с первой буквой имени
+        this.updateUserAvatar();
+        
+        // Загружаем дашборд если нужно
+        this.loadDashboardData();
+        
+    } else {
+        // Показываем кнопку входа, скрываем панель пользователя
+        if (userPanel) {
+            userPanel.style.display = 'none';
+        }
+        if (loginBtn) {
+            loginBtn.style.display = 'flex';
+        }
+        
+        // Скрываем дашборд если он открыт
+        this.hideDashboard();
+    }
+}
+
+updateUserInfo() {
+    if (!this.state.user) return;
+    
+    const user = this.state.user;
+    
+    // Обновляем информацию в выпадающем меню
+    if (this.elements.userInfo?.name) {
+        this.elements.userInfo.name.textContent = user.name || user.email || 'Пользователь';
+    }
+    
+    if (this.elements.userInfo?.email) {
+        this.elements.userInfo.email.textContent = user.email || '';
+    }
+}
+
+updateUserAvatar() {
+    if (!this.state.user) return;
+    
+    const user = this.state.user;
+    const avatar = this.elements.userAvatar;
+    const infoAvatar = this.elements.userInfo?.avatar;
+    
+    // Получаем первую букву имени или email
+    const displayName = user.name || user.email || 'U';
+    const firstLetter = displayName.charAt(0).toUpperCase();
+    
+    // Создаем градиент на основе имени
+    const nameHash = this.hashString(displayName);
+    const hue = nameHash % 360;
+    
+    // Применяем градиент
+    const gradient = `linear-gradient(135deg, hsl(${hue}, 70%, 50%), hsl(${(hue + 30) % 360}, 70%, 50%))`;
+    
+    if (avatar) {
+        avatar.style.background = gradient;
+        avatar.innerHTML = `<span style="font-size: 16px; font-weight: 600;">${firstLetter}</span>`;
+    }
+    
+    if (infoAvatar) {
+        infoAvatar.style.background = gradient;
+        infoAvatar.innerHTML = `<span style="font-size: 20px; font-weight: 600;">${firstLetter}</span>`;
+    }
+}
+
+hashString(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return Math.abs(hash);
+}
+
+toggleUserDropdown() {
+    const dropdown = this.elements.userDropdown;
+    if (!dropdown) return;
+    
+    if (dropdown.style.opacity === '1') {
+        this.hideUserDropdown();
+    } else {
+        this.showUserDropdown();
+    }
+}
+
+showUserDropdown() {
+    const dropdown = this.elements.userDropdown;
+    if (dropdown) {
+        dropdown.style.opacity = '1';
+        dropdown.style.visibility = 'visible';
+        dropdown.style.transform = 'translateY(0)';
+    }
+}
+
+hideUserDropdown() {
+    const dropdown = this.elements.userDropdown;
+    if (dropdown) {
+        dropdown.style.opacity = '0';
+        dropdown.style.visibility = 'hidden';
+        dropdown.style.transform = 'translateY(-10px)';
+    }
+}
+
+// ==================== ДАШБОРД ====================
+
+async loadDashboardData() {
+    if (!this.state.user) return;
+    
+    // Загружаем статистику для дашборда
+    this.dashboard.stats = {
+        totalTime: Math.floor(Math.random() * 1000), // В минутах (демо данные)
+        sessions: this.state.stats.sessions,
+        avgSessionTime: Math.floor(Math.random() * 30) + 5, // Минуты (демо данные)
+        messagesPerDay: Math.floor(this.state.stats.totalMessages / Math.max(this.state.stats.sessions, 1)),
+        favoriteTopics: this.getFavoriteTopics()
+    };
+}
+
+getFavoriteTopics() {
+    const topics = [];
+    
+    if (this.state.stats.manipulationRequests > 0) {
+        topics.push({ name: 'Манипуляции', count: this.state.stats.manipulationRequests, icon: '🛡️' });
+    }
+    
+    if (this.state.stats.relationshipAdvice > 0) {
+        topics.push({ name: 'Отношения', count: this.state.stats.relationshipAdvice, icon: '💕' });
+    }
+    
+    if (this.state.stats.datingAdvice > 0) {
+        topics.push({ name: 'Знакомства', count: this.state.stats.datingAdvice, icon: '👥' });
+    }
+    
+    // Сортируем по популярности
+    return topics.sort((a, b) => b.count - a.count).slice(0, 3);
+}
+
+showDashboard() {
+    // Скрываем основной интерфейс чата
+    const chatArea = document.querySelector('.chat-area');
+    if (chatArea) chatArea.style.display = 'none';
+    
+    // Скрываем кнопки, которые не нужны в дашборде
+    const developersBtn = document.getElementById('developers-btn');
+    const settingsBtn = document.getElementById('settings-button');
+    const presentationBtn = document.getElementById('presentation-mode');
+    
+    if (developersBtn) developersBtn.style.display = 'none';
+    if (settingsBtn) settingsBtn.style.display = 'none';
+    if (presentationBtn) presentationBtn.style.display = 'none';
+    
+    // Создаем или показываем дашборд
+    let dashboard = document.getElementById('dashboard');
+    if (!dashboard) {
+        this.createDashboard();
+        dashboard = document.getElementById('dashboard');
+    }
+    
+    if (dashboard) {
+        dashboard.style.display = 'block';
+    }
+    this.dashboard.isVisible = true;
+    
+    // Обновляем данные на дашборде
+    this.updateDashboardStats();
+}
+
+hideDashboard() {
+    const dashboard = document.getElementById('dashboard');
+    if (dashboard) {
+        dashboard.style.display = 'none';
+    }
+    
+    // Показываем основной интерфейс
+    const chatArea = document.querySelector('.chat-area');
+    if (chatArea) chatArea.style.display = 'flex';
+    
+    // Восстанавливаем кнопки
+    const developersBtn = document.getElementById('developers-btn');
+    const settingsBtn = document.getElementById('settings-button');
+    const presentationBtn = document.getElementById('presentation-mode');
+    
+    if (developersBtn) developersBtn.style.display = 'flex';
+    if (settingsBtn) settingsBtn.style.display = 'flex';
+    if (presentationBtn) presentationBtn.style.display = 'flex';
+    
+    this.dashboard.isVisible = false;
+}
+
+createDashboard() {
+    const dashboardHTML = `
+    <div class="dashboard" id="dashboard" style="display: none;">
+        <div class="dashboard-header">
+            <h2>Добро пожаловать в панель управления</h2>
+            <p>Ваша статистика и инструменты для работы с Verdikt GPT</p>
+        </div>
+        
+        <div class="dashboard-stats" id="dashboard-stats">
+            <!-- Статистика будет загружена динамически -->
+        </div>
+        
+        <div class="dashboard-features" id="dashboard-features">
+            <!-- Карточки функций будут загружены динамически -->
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="ios-button secondary" id="back-to-chat">
+                <i class="fas fa-arrow-left"></i> Вернуться к чату
+            </button>
+        </div>
+    </div>
+    `;
+    
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.insertAdjacentHTML('beforeend', dashboardHTML);
+        
+        // Добавляем обработчик для кнопки возврата
+        const backBtn = document.getElementById('back-to-chat');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                this.hideDashboard();
+            });
         }
     }
+}
+
+updateDashboardStats() {
+    const statsContainer = document.getElementById('dashboard-stats');
+    if (!statsContainer) return;
+    
+    // Получаем количество разблокированных достижений
+    const unlockedAchievements = Object.values(this.state.achievements).filter(a => a.unlocked).length;
+    
+    const statsHTML = `
+        <div class="dashboard-stat-card">
+            <div class="dashboard-stat-icon">
+                <i class="fas fa-comment-dots"></i>
+            </div>
+            <div class="dashboard-stat-value" id="stat-messages">${this.state.stats.totalMessages}</div>
+            <div class="dashboard-stat-label">Всего сообщений</div>
+        </div>
+        
+        <div class="dashboard-stat-card">
+            <div class="dashboard-stat-icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="dashboard-stat-value" id="stat-time">${this.dashboard.stats.totalTime}</div>
+            <div class="dashboard-stat-label">Минут консультаций</div>
+        </div>
+        
+        <div class="dashboard-stat-card">
+            <div class="dashboard-stat-icon">
+                <i class="fas fa-history"></i>
+            </div>
+            <div class="dashboard-stat-value" id="stat-sessions">${this.dashboard.stats.sessions}</div>
+            <div class="dashboard-stat-label">Сессий</div>
+        </div>
+        
+        <div class="dashboard-stat-card">
+            <div class="dashboard-stat-icon">
+                <i class="fas fa-trophy"></i>
+            </div>
+            <div class="dashboard-stat-value" id="stat-achievements">${unlockedAchievements}</div>
+            <div class="dashboard-stat-label">Достижений</div>
+        </div>
+    `;
+    
+    statsContainer.innerHTML = statsHTML;
+    
+    // Обновляем карточки функций
+    this.updateDashboardFeatures();
+}
+
+updateDashboardFeatures() {
+    const featuresContainer = document.getElementById('dashboard-features');
+    if (!featuresContainer) return;
+    
+    const featuresHTML = `
+        <div class="dashboard-feature-card">
+            <div class="dashboard-feature-icon">
+                <i class="fas fa-brain"></i>
+            </div>
+            <div class="dashboard-feature-title">Анализ отношений</div>
+            <div class="dashboard-feature-desc">
+                Получите детальный анализ ваших отношений с помощью AI. 
+                Распознавание паттернов и рекомендации.
+            </div>
+            <a href="#" class="dashboard-feature-button" id="start-analysis">
+                <i class="fas fa-play"></i> Начать анализ
+            </a>
+        </div>
+        
+        <div class="dashboard-feature-card">
+            <div class="dashboard-feature-icon">
+                <i class="fas fa-chart-pie"></i>
+            </div>
+            <div class="dashboard-feature-title">Статистика эмоций</div>
+            <div class="dashboard-feature-desc">
+                Визуализация эмоциональных паттернов в ваших беседах.
+                Графики и аналитика по настроению.
+            </div>
+            <a href="#" class="dashboard-feature-button" id="view-emotions">
+                <i class="fas fa-chart-bar"></i> Посмотреть
+            </a>
+        </div>
+        
+        <div class="dashboard-feature-card">
+            <div class="dashboard-feature-icon">
+                <i class="fas fa-book"></i>
+            </div>
+            <div class="dashboard-feature-title">История консультаций</div>
+            <div class="dashboard-feature-desc">
+                Все ваши беседы в одном месте. Поиск, фильтрация и 
+                экспорт истории диалогов.
+            </div>
+            <a href="#" class="dashboard-feature-button" id="view-history">
+                <i class="fas fa-history"></i> Открыть историю
+            </a>
+        </div>
+    `;
+    
+    featuresContainer.innerHTML = featuresHTML;
+    
+    // Добавляем обработчики для кнопок
+    const startAnalysisBtn = document.getElementById('start-analysis');
+    const viewEmotionsBtn = document.getElementById('view-emotions');
+    const viewHistoryBtn = document.getElementById('view-history');
+    
+    if (startAnalysisBtn) {
+        startAnalysisBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.hideDashboard();
+            this.elements.messageInput.value = "Пожалуйста, проанализируй мои отношения и дай рекомендации";
+            this.elements.messageInput.focus();
+            this.showNotification('Готовлюсь к анализу ваших отношений...', 'info');
+        });
+    }
+    
+    if (viewEmotionsBtn) {
+        viewEmotionsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.switchSettingsTab('stats');
+            this.showSettingsModal();
+            this.hideDashboard();
+        });
+    }
+    
+    if (viewHistoryBtn) {
+        viewHistoryBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.showChatHistoryModal();
+            this.hideDashboard();
+        });
+    }
+}
+
+showProfileSettings() {
+    if (!this.state.user) return;
+    
+    // Создаем модальное окно настроек профиля
+    const modalHTML = `
+    <div class="modal" id="profile-modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <button class="modal-close" id="profile-modal-close">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-user-cog"></i> Настройки профиля
+            </h2>
+            
+            <div class="modal-section">
+                <div class="user-profile-header" style="text-align: center; margin-bottom: 25px;">
+                    <div class="user-profile-avatar" id="profile-avatar" 
+                         style="width: 80px; height: 80px; border-radius: 50%; 
+                                margin: 0 auto 15px; display: flex; align-items: center; 
+                                justify-content: center; font-size: 32px; font-weight: 600;
+                                background: var(--gradient); color: white;">
+                        ${this.state.user?.name?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                    <h3 id="profile-name">${this.state.user?.name || 'Пользователь'}</h3>
+                    <p style="color: var(--text-tertiary);" id="profile-email">${this.state.user?.email || ''}</p>
+                </div>
+                
+                <form id="profile-form">
+                    <div class="auth-field">
+                        <label for="profile-name-input">Имя</label>
+                        <input type="text" id="profile-name-input" 
+                               value="${this.state.user?.name || ''}" 
+                               placeholder="Ваше имя">
+                    </div>
+                    
+                    <div class="auth-field">
+                        <label for="profile-email-input">Email</label>
+                        <input type="email" id="profile-email-input" 
+                               value="${this.state.user?.email || ''}" 
+                               placeholder="Ваш email" readonly>
+                    </div>
+                    
+                    <div class="auth-field">
+                        <label for="profile-password">Новый пароль (оставьте пустым, чтобы не менять)</label>
+                        <input type="password" id="profile-password" 
+                               placeholder="Новый пароль">
+                    </div>
+                    
+                    <div class="auth-field">
+                        <label for="profile-confirm-password">Подтвердите пароль</label>
+                        <input type="password" id="profile-confirm-password" 
+                               placeholder="Подтвердите пароль">
+                    </div>
+                    
+                    <button type="submit" class="ios-button" id="save-profile" style="width: 100%; margin-top: 15px;">
+                        <i class="fas fa-save"></i> Сохранить изменения
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    const modal = document.getElementById('profile-modal');
+    if (modal) {
+        modal.classList.add('active');
+    }
+    
+    // Обработчики
+    const closeBtn = document.getElementById('profile-modal-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            if (modal) modal.remove();
+        });
+    }
+    
+    const profileForm = document.getElementById('profile-form');
+    if (profileForm) {
+        profileForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveProfileChanges();
+            if (modal) modal.remove();
+        });
+    }
+}
+
+async saveProfileChanges() {
+    const nameInput = document.getElementById('profile-name-input');
+    const passwordInput = document.getElementById('profile-password');
+    const confirmInput = document.getElementById('profile-confirm-password');
+    
+    if (!nameInput || !passwordInput || !confirmInput) return;
+    
+    const name = nameInput.value.trim();
+    const password = passwordInput.value;
+    const confirmPassword = confirmInput.value;
+    
+    if (!name) {
+        this.showNotification('Имя не может быть пустым', 'error');
+        return;
+    }
+    
+    if (password && password !== confirmPassword) {
+        this.showNotification('Пароли не совпадают', 'error');
+        return;
+    }
+    
+    if (password && password.length < 6) {
+        this.showNotification('Пароль должен быть не менее 6 символов', 'error');
+        return;
+    }
+    
+    // В реальном приложении здесь был бы запрос к API
+    // Для демо просто обновим локально
+    
+    if (this.state.user) {
+        this.state.user.name = name;
+        
+        if (password) {
+            // В реальном приложении здесь бы обновили пароль через API
+            this.showNotification('Пароль обновлен (демо)', 'info');
+        }
+        
+        this.saveUserToStorage();
+        this.updateUserInfo();
+        this.updateUserAvatar();
+        
+        this.showNotification('Профиль обновлен ✅', 'success');
+    }
+}
 
     getCurrentTime() {
         const now = new Date();
@@ -2618,7 +2819,6 @@ class VerdiktChatApp {
 
     updateUI() {
         this.updateSettingsStats();
-        this.updateSidebarInfo();
     }
 
     getAchievementIdByName(name) {
@@ -3996,407 +4196,6 @@ class VerdiktChatApp {
         }
     }
 
-    // ==================== ДЕМО ДАННЫЕ ====================
-
-    async loadDashboardData() {
-        try {
-            // Демо данные для тестирования
-            this.dashboard = {
-                questions: [
-                    {
-                        id: 1,
-                        user: {
-                            name: 'Анна',
-                            avatar: '👩'
-                        },
-                        content: 'Как понять, что партнер мной манипулирует? Замечаю, что после ссор всегда чувствую себя виноватой, хотя начиналось не из-за меня.',
-                        date: '2026-02-10T14:30:00',
-                        likes: 12,
-                        dislikes: 2,
-                        comments: 5,
-                        isLiked: false,
-                        isDisliked: false
-                    },
-                    {
-                        id: 2,
-                        user: {
-                            name: 'Максим',
-                            avatar: '👨'
-                        },
-                        content: 'Как правильно вести себя на первом свидании после знакомства в интернете? Волнуюсь и не знаю, о чем говорить.',
-                        date: '2026-02-09T20:15:00',
-                        likes: 8,
-                        dislikes: 1,
-                        comments: 3,
-                        isLiked: true,
-                        isDisliked: false
-                    }
-                ],
-                stories: this.chatManager.chats.map(chat => ({
-                    id: chat.id,
-                    title: chat.title,
-                    preview: chat.messages && chat.messages.length > 0 
-                        ? chat.messages[0].content.substring(0, 100) + '...'
-                        : 'Нет сообщений',
-                    date: new Date(chat.timestamp),
-                    messageCount: chat.messages ? chat.messages.length : 0,
-                    likes: Math.floor(Math.random() * 20),
-                    comments: Math.floor(Math.random() * 10)
-                })),
-                analytics: {
-                    totalResponses: 15,
-                    helpfulResponses: 12,
-                    averageRating: 4.5,
-                    activity: this.generateActivityData()
-                }
-            };
-            
-            this.renderDashboardData();
-            this.updateSidebarStats();
-            
-        } catch (error) {
-            console.error('Error loading dashboard data:', error);
-        }
-    }
-
-    generateActivityData() {
-        // Генерация демо данных активности за последние 7 дней
-        const activity = [];
-        const now = new Date();
-        
-        for (let i = 6; i >= 0; i--) {
-            const date = new Date(now);
-            date.setDate(now.getDate() - i);
-            
-            activity.push({
-                date: date.toISOString().split('T')[0],
-                questions: Math.floor(Math.random() * 5),
-                responses: Math.floor(Math.random() * 10),
-                likes: Math.floor(Math.random() * 20)
-            });
-        }
-        
-        return activity;
-    }
-
-    renderDashboardData() {
-        // Рендерим вопросы
-        this.renderQuestions();
-        
-        // Рендерим истории
-        this.renderStories();
-        
-        // Рендерим аналитику
-        this.renderAnalytics();
-        
-        // Рендерим активность
-        this.renderActivity();
-    }
-
-    renderQuestions() {
-        const questionsList = document.getElementById('questions-list');
-        if (!questionsList) return;
-        
-        if (!this.dashboard.questions || this.dashboard.questions.length === 0) {
-            questionsList.innerHTML = `
-                <div class="question-card" style="text-align: center; padding: 40px;">
-                    <i class="fas fa-question-circle" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
-                    <h4>Пока нет вопросов</h4>
-                    <p style="color: var(--text-tertiary);">Когда пользователи зададут вам вопросы, они появятся здесь</p>
-                </div>
-            `;
-            return;
-        }
-        
-        questionsList.innerHTML = this.dashboard.questions.map(question => `
-            <div class="question-card" data-question-id="${question.id}">
-                <div class="question-header">
-                    <div class="question-avatar">${question.user.avatar}</div>
-                    <div class="question-meta">
-                        <h5>${question.user.name}</h5>
-                        <div class="date">${this.formatDate(question.date)}</div>
-                    </div>
-                </div>
-                <div class="question-content">${question.content}</div>
-                <div class="question-actions">
-                    <div class="action-buttons">
-                        <button class="action-btn ${question.isLiked ? 'liked' : ''}" data-action="like" data-question-id="${question.id}">
-                            <i class="fas fa-thumbs-up"></i> ${question.likes}
-                        </button>
-                        <button class="action-btn ${question.isDisliked ? 'disliked' : ''}" data-action="dislike" data-question-id="${question.id}">
-                            <i class="fas fa-thumbs-down"></i> ${question.dislikes}
-                        </button>
-                        <button class="action-btn" data-action="comment" data-question-id="${question.id}">
-                            <i class="fas fa-comment"></i> Ответить
-                        </button>
-                    </div>
-                    <div class="comments-count">
-                        <i class="fas fa-comments"></i> ${question.comments}
-                    </div>
-                </div>
-            </div>
-        `).join('');
-        
-        // Обновляем бейджи
-        this.updateBadges();
-    }
-
-    renderStories() {
-        const storiesList = document.getElementById('stories-list');
-        if (!storiesList) return;
-        
-        if (!this.dashboard.stories || this.dashboard.stories.length === 0) {
-            storiesList.innerHTML = `
-                <div class="question-card" style="text-align: center; padding: 40px;">
-                    <i class="fas fa-history" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
-                    <h4>Пока нет историй</h4>
-                    <p style="color: var(--text-tertiary);">Ваши чаты и консультации появятся здесь</p>
-                </div>
-            `;
-            return;
-        }
-        
-        // Сортируем по дате (новые сверху)
-        const sortedStories = [...this.dashboard.stories].sort((a, b) => b.date - a.date);
-        
-        storiesList.innerHTML = sortedStories.map(story => `
-            <div class="question-card" data-story-id="${story.id}">
-                <div class="question-header">
-                    <div class="question-avatar">💬</div>
-                    <div class="question-meta">
-                        <h5>${story.title}</h5>
-                        <div class="date">${this.formatDate(story.date)}</div>
-                    </div>
-                </div>
-                <div class="question-content">${story.preview}</div>
-                <div class="question-actions">
-                    <div class="action-buttons">
-                        <button class="action-btn" onclick="window.verdiktApp.loadChat('${story.id}'); window.verdiktApp.hideModal('dashboard-modal');">
-                            <i class="fas fa-eye"></i> Открыть
-                        </button>
-                        <button class="action-btn" onclick="window.verdiktApp.shareStory('${story.id}')">
-                            <i class="fas fa-share"></i> Поделиться
-                        </button>
-                    </div>
-                    <div class="comments-count">
-                        <i class="fas fa-comment"></i> ${story.messageCount} сообщ.
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    renderAnalytics() {
-        // Обновляем статистику
-        const analyticsTotal = document.getElementById('analytics-total');
-        const analyticsHelpful = document.getElementById('analytics-helpful');
-        const analyticsLikes = document.getElementById('analytics-likes');
-        const analyticsComments = document.getElementById('analytics-comments');
-        const dashboardRating = document.getElementById('dashboard-rating');
-        
-        if (analyticsTotal) analyticsTotal.textContent = this.dashboard.analytics.totalResponses || 0;
-        if (analyticsHelpful) analyticsHelpful.textContent = this.dashboard.analytics.helpfulResponses || 0;
-        if (analyticsLikes) analyticsLikes.textContent = this.dashboard.dashboard?.likes || 0;
-        if (analyticsComments) analyticsComments.textContent = this.dashboard.dashboard?.comments?.length || 0;
-        if (dashboardRating) dashboardRating.textContent = this.dashboard.analytics.averageRating || 0;
-        
-        // Создаем график активности
-        this.createAnalyticsChart();
-    }
-
-    renderActivity() {
-        const activityList = document.getElementById('activity-list');
-        if (!activityList) return;
-        
-        // Демо данные активности
-        const activities = [
-            { type: 'question', text: 'Ответил на вопрос о манипуляциях', time: '2 часа назад' },
-            { type: 'like', text: 'Получил 5 лайков за совет о свиданиях', time: '5 часов назад' },
-            { type: 'comment', text: 'Прокомментировал историю о токсичных отношениях', time: 'Вчера' },
-            { type: 'chat', text: 'Провел консультацию по семейным отношениям', time: '2 дня назад' }
-        ];
-        
-        activityList.innerHTML = activities.map(activity => `
-            <div class="question-card">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="width: 40px; height: 40px; border-radius: 10px; background: ${this.getActivityColor(activity.type)}; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white;">
-                        ${this.getActivityIcon(activity.type)}
-                    </div>
-                    <div style="flex: 1;">
-                        <div style="font-weight: 600; margin-bottom: 3px;">${activity.text}</div>
-                        <div style="font-size: 0.8rem; color: var(--text-tertiary);">${activity.time}</div>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    getActivityColor(type) {
-        switch(type) {
-            case 'question': return 'linear-gradient(135deg, #8b5cf6, #7c3aed)';
-            case 'like': return 'linear-gradient(135deg, #ef4444, #dc2626)';
-            case 'comment': return 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
-            case 'chat': return 'linear-gradient(135deg, #10b981, #059669)';
-            default: return 'linear-gradient(135deg, var(--primary), var(--secondary))';
-        }
-    }
-
-    getActivityIcon(type) {
-        switch(type) {
-            case 'question': return '❓';
-            case 'like': return '❤️';
-            case 'comment': return '💬';
-            case 'chat': return '💕';
-            default: return '📝';
-        }
-    }
-
-    createAnalyticsChart() {
-        const ctx = document.getElementById('analytics-chart')?.getContext('2d');
-        if (!ctx) return;
-        
-        if (this.analyticsChart) {
-            this.analyticsChart.destroy();
-        }
-        
-        const labels = this.dashboard.analytics.activity.map(a => 
-            new Date(a.date).toLocaleDateString('ru-RU', { weekday: 'short' })
-        );
-        
-        const questionsData = this.dashboard.analytics.activity.map(a => a.questions);
-        const responsesData = this.dashboard.analytics.activity.map(a => a.responses);
-        
-        this.analyticsChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'Вопросы',
-                        data: questionsData,
-                        borderColor: '#ec4899',
-                        backgroundColor: 'rgba(236, 72, 153, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    },
-                    {
-                        label: 'Ответы',
-                        data: responsesData,
-                        borderColor: '#8b5cf6',
-                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: 'var(--text-secondary)'
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            color: 'var(--text-secondary)'
-                        },
-                        grid: {
-                            color: 'var(--border-color)'
-                        }
-                    },
-                    x: {
-                        ticks: {
-                            color: 'var(--text-secondary)'
-                        },
-                        grid: {
-                            color: 'var(--border-color)'
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    updateSidebarStats() {
-        if (!this.dashboard.questions) return;
-        
-        // Обновляем статистику в боковом меню
-        const totalQuestions = this.dashboard.questions.length;
-        const totalLikes = this.dashboard.questions.reduce((sum, q) => sum + q.likes, 0);
-        const totalComments = this.dashboard.questions.reduce((sum, q) => sum + q.comments, 0);
-        const helpfulResponses = this.dashboard.analytics.helpfulResponses;
-        
-        if (this.elements.statQuestions) this.elements.statQuestions.textContent = totalQuestions;
-        if (this.elements.statLikes) this.elements.statLikes.textContent = totalLikes;
-        if (this.elements.statComments) this.elements.statComments.textContent = totalComments;
-        if (this.elements.statHelpful) this.elements.statHelpful.textContent = helpfulResponses;
-    }
-
-    updateBadges() {
-        if (!this.dashboard.questions) return;
-        
-        // Обновляем бейджи в боковом меню
-        const totalQuestions = this.dashboard.questions.length;
-        const totalLikes = this.dashboard.questions.reduce((sum, q) => sum + q.likes, 0);
-        const totalComments = this.dashboard.questions.reduce((sum, q) => sum + q.comments, 0);
-        
-        if (this.elements.questionsBadge) this.elements.questionsBadge.textContent = totalQuestions;
-        if (this.elements.likesBadge) this.elements.likesBadge.textContent = totalLikes;
-        if (this.elements.commentsBadge) this.elements.commentsBadge.textContent = totalComments;
-    }
-
-    formatDate(dateString) {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffMs = now - date;
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-        
-        if (diffDays === 0) {
-            return 'Сегодня в ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-        } else if (diffDays === 1) {
-            return 'Вчера в ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-        } else if (diffDays < 7) {
-            return `${diffDays} дней назад`;
-        } else {
-            return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
-        }
-    }
-
-    shareStory(storyId) {
-        const story = this.dashboard.stories.find(s => s.id === storyId);
-        if (!story) return;
-        
-        // Создаем URL для шаринга
-        const shareUrl = `${window.location.origin}?story=${storyId}`;
-        
-        // Проверяем поддержку Web Share API
-        if (navigator.share) {
-            navigator.share({
-                title: story.title,
-                text: story.preview,
-                url: shareUrl
-            }).catch(console.error);
-        } else {
-            // Копируем в буфер обмена
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                this.showNotification('Ссылка скопирована в буфер обмена 📋', 'success');
-            }).catch(() => {
-                // Fallback для старых браузеров
-                const textArea = document.createElement('textarea');
-                textArea.value = shareUrl;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                this.showNotification('Ссылка скопирована в буфер обмена 📋', 'success');
-            });
-        }
-    }
-    
     async showPasswordPrompt() {
         return new Promise((resolve) => {
             const modalHTML = `
