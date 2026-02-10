@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -14,6 +15,557 @@
     <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💕</text></svg>">
     
     <style>
+    /* Стили для бокового меню */
+    .sidebar-toggle {
+        position: fixed;
+        left: 20px;
+        top: 20px;
+        z-index: 1001;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: var(--gradient);
+        border: none;
+        color: white;
+        font-size: 18px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--shadow);
+        transition: var(--transition);
+    }
+
+    .sidebar-toggle:hover {
+        transform: scale(1.1);
+        box-shadow: var(--glow);
+    }
+
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(5px);
+        z-index: 999;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .sidebar-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: -350px;
+        width: 320px;
+        height: 100vh;
+        background: var(--bg-card);
+        backdrop-filter: blur(20px);
+        border-right: 1px solid var(--border-color);
+        z-index: 1000;
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .sidebar.active {
+        left: 0;
+    }
+
+    .sidebar-header {
+        padding: 25px 20px 15px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .user-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 15px;
+        background: var(--gradient);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        color: white;
+        flex-shrink: 0;
+        box-shadow: var(--glow);
+    }
+
+    .user-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .user-info h3 {
+        font-size: 1.2rem;
+        margin-bottom: 5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .user-info p {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .sidebar-nav {
+        padding: 20px 0;
+        flex: 1;
+    }
+
+    .nav-section {
+        margin-bottom: 25px;
+        padding: 0 20px;
+    }
+
+    .nav-section h4 {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        color: var(--text-tertiary);
+        margin-bottom: 12px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+
+    .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 15px;
+        border-radius: var(--radius-md);
+        color: var(--text-secondary);
+        text-decoration: none;
+        transition: var(--transition);
+        margin-bottom: 5px;
+        cursor: pointer;
+        border: 1px solid transparent;
+    }
+
+    .nav-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+        transform: translateX(5px);
+    }
+
+    .nav-item.active {
+        background: rgba(236, 72, 153, 0.1);
+        color: var(--primary);
+        border-color: rgba(236, 72, 153, 0.3);
+    }
+
+    .nav-item i {
+        width: 20px;
+        text-align: center;
+        font-size: 16px;
+    }
+
+    .sidebar-footer {
+        padding: 20px;
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .stats-summary {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .stat-mini {
+        text-align: center;
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: var(--radius-md);
+        transition: var(--transition);
+    }
+
+    .stat-mini:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .stat-mini-value {
+        font-size: 1.2rem;
+        font-weight: 700;
+        background: var(--gradient);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin-bottom: 3px;
+    }
+
+    .stat-mini-label {
+        font-size: 0.75rem;
+        color: var(--text-tertiary);
+    }
+
+    /* Дашборд в модальном окне */
+    .dashboard-modal {
+        max-width: 900px;
+        max-height: 80vh;
+    }
+
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+    }
+
+    .dashboard-tabs {
+        display: flex;
+        gap: 5px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: var(--radius-md);
+        padding: 5px;
+        margin-bottom: 20px;
+    }
+
+    .dashboard-tab {
+        padding: 10px 15px;
+        background: transparent;
+        border: none;
+        border-radius: var(--radius-sm);
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition);
+        text-align: center;
+        flex: 1;
+    }
+
+    .dashboard-tab:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+    }
+
+    .dashboard-tab.active {
+        background: rgba(236, 72, 153, 0.2);
+        color: var(--primary);
+        box-shadow: 0 0 15px rgba(236, 72, 153, 0.1);
+    }
+
+    .questions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    .question-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: var(--radius-md);
+        padding: 20px;
+        border: 1px solid var(--border-color);
+        transition: var(--transition);
+    }
+
+    .question-card:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    .question-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .question-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        color: white;
+    }
+
+    .question-meta h5 {
+        font-size: 0.95rem;
+        margin-bottom: 3px;
+        color: var(--text-primary);
+    }
+
+    .question-meta .date {
+        font-size: 0.8rem;
+        color: var(--text-tertiary);
+    }
+
+    .question-content {
+        margin-bottom: 15px;
+        line-height: 1.5;
+        color: var(--text-secondary);
+    }
+
+    .question-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 15px;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .action-btn {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        background: transparent;
+        border: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        padding: 6px 12px;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: var(--transition);
+        font-size: 0.85rem;
+    }
+
+    .action-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+    }
+
+    .action-btn.liked {
+        color: #ef4444;
+        border-color: rgba(239, 68, 68, 0.3);
+        background: rgba(239, 68, 68, 0.1);
+    }
+
+    .action-btn.disliked {
+        color: #3b82f6;
+        border-color: rgba(59, 130, 246, 0.3);
+        background: rgba(59, 130, 246, 0.1);
+    }
+
+    .comments-count {
+        font-size: 0.85rem;
+        color: var(--text-tertiary);
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    /* Комментарии */
+    .comments-section {
+        margin-top: 25px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .comment-form {
+        margin-bottom: 20px;
+    }
+
+    .comment-input {
+        width: 100%;
+        padding: 12px;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        color: var(--text-primary);
+        font-family: inherit;
+        font-size: 0.9rem;
+        resize: vertical;
+        min-height: 80px;
+        margin-bottom: 10px;
+    }
+
+    .comment-input:focus {
+        outline: none;
+        border-color: var(--primary);
+    }
+
+    .comments-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        max-height: 300px;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+
+    .comment-item {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: var(--radius-md);
+        padding: 15px;
+        border: 1px solid var(--border-color);
+    }
+
+    .comment-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .comment-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        color: white;
+    }
+
+    .comment-content {
+        color: var(--text-secondary);
+        line-height: 1.5;
+        font-size: 0.9rem;
+    }
+
+    /* Настройки профиля */
+    .profile-form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .form-group label {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        padding: 12px;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        color: var(--text-primary);
+        font-family: inherit;
+        font-size: 0.9rem;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: var(--primary);
+    }
+
+    .form-group textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    /* Бейджи в навигации */
+    .badge {
+        background: var(--primary);
+        color: white;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        min-width: 20px;
+        text-align: center;
+        margin-left: auto;
+    }
+
+    .badge.likes {
+        background: #ef4444;
+    }
+
+    .badge.comments {
+        background: #3b82f6;
+    }
+
+    /* Контент вкладок дашборда */
+    .dashboard-tab-content {
+        display: none;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .dashboard-tab-content.active {
+        display: block;
+    }
+
+    /* Модальные окна для комментариев */
+    .question-preview {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 15px;
+        border-radius: var(--radius-md);
+        margin-bottom: 20px;
+    }
+
+    /* Адаптивность для бокового меню */
+    @media (max-width: 768px) {
+        .sidebar {
+            width: 280px;
+        }
+
+        .sidebar-toggle {
+            left: 10px;
+            top: 10px;
+            width: 40px;
+            height: 40px;
+            font-size: 16px;
+        }
+
+        .dashboard-modal {
+            max-width: 95vw;
+            max-height: 90vh;
+        }
+
+        .questions-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-summary {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+
+    @media (max-width: 480px) {
+        .sidebar {
+            width: 100%;
+            left: -100%;
+        }
+
+        .stats-summary {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
     /* Стили для управления вкладками настроек */
     .settings-tabs {
         display: flex;
@@ -534,27 +1086,288 @@
     </style>
 </head>
 
-<!-- Куки-уведомление -->
-<div class="cookie-notification" id="cookie-notification">
-    <div class="cookie-content">
-        <div class="cookie-text">
-            <h3><i class="fas fa-cookie-bite"></i> Использование файлов cookie</h3>
-            <p>Мы используем файлы cookie для улучшения работы приложения, сохранения ваших настроек и анализа статистики. 
-            Продолжая использовать Verdikt GPT, вы соглашаетесь с нашей 
-            <a href="#" id="cookie-policy-link">Политикой конфиденциальности</a>.</p>
+<body>
+    <!-- Боковое меню -->
+    <button class="sidebar-toggle" id="sidebar-toggle">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="user-avatar" id="user-avatar">
+                <i class="fas fa-user"></i>
+            </div>
+            <div class="user-info">
+                <h3 id="sidebar-username">Гость</h3>
+                <p id="sidebar-useremail">Войдите в аккаунт</p>
+                <div id="user-rating" style="margin-top: 5px;">
+                    <span style="font-size: 0.8rem; color: #fbbf24;">
+                        <i class="fas fa-star"></i> 0.0
+                    </span>
+                </div>
+            </div>
         </div>
-        <div class="cookie-buttons">
-            <button class="ios-button small secondary" id="cookie-reject">
-                Отклонить
-            </button>
-            <button class="ios-button small" id="cookie-accept">
-                Принять
+
+        <div class="sidebar-nav">
+            <div class="nav-section">
+                <h4>Основное</h4>
+                <div class="nav-item active" id="nav-profile">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Профиль</span>
+                </div>
+                <div class="nav-item" id="nav-dashboard">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Дашборд</span>
+                </div>
+                <div class="nav-item" id="nav-stories">
+                    <i class="fas fa-history"></i>
+                    <span>Истории</span>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <h4>Взаимодействие</h4>
+                <div class="nav-item" id="nav-questions">
+                    <i class="fas fa-question-circle"></i>
+                    <span>Вопросы</span>
+                    <span class="badge" id="questions-badge">0</span>
+                </div>
+                <div class="nav-item" id="nav-likes">
+                    <i class="fas fa-heart"></i>
+                    <span>Лайки</span>
+                    <span class="badge likes" id="likes-badge">0</span>
+                </div>
+                <div class="nav-item" id="nav-comments">
+                    <i class="fas fa-comments"></i>
+                    <span>Комментарии</span>
+                    <span class="badge comments" id="comments-badge">0</span>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <h4>Настройки</h4>
+                <div class="nav-item" id="nav-settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Настройки профиля</span>
+                </div>
+                <div class="nav-item" id="nav-security">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Безопасность</span>
+                </div>
+                <div class="nav-item" id="nav-notifications">
+                    <i class="fas fa-bell"></i>
+                    <span>Уведомления</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="stats-summary">
+                <div class="stat-mini">
+                    <div class="stat-mini-value" id="stat-questions">0</div>
+                    <div class="stat-mini-label">Вопросы</div>
+                </div>
+                <div class="stat-mini">
+                    <div class="stat-mini-value" id="stat-likes">0</div>
+                    <div class="stat-mini-label">Лайки</div>
+                </div>
+                <div class="stat-mini">
+                    <div class="stat-mini-value" id="stat-comments">0</div>
+                    <div class="stat-mini-label">Комментарии</div>
+                </div>
+                <div class="stat-mini">
+                    <div class="stat-mini-value" id="stat-helpful">0</div>
+                    <div class="stat-mini-label">Помогли</div>
+                </div>
+            </div>
+            <button class="ios-button secondary" id="logout-sidebar" style="width: 100%;">
+                <i class="fas fa-sign-out-alt"></i> Выйти
             </button>
         </div>
     </div>
-</div>
 
-<body>
+    <!-- Модальное окно дашборда -->
+    <div class="modal" id="dashboard-modal">
+        <div class="modal-content dashboard-modal">
+            <button class="modal-close" id="dashboard-close">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="dashboard-header">
+                <h2 style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-chart-line"></i> Дашборд
+                </h2>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 0.9rem; color: var(--text-secondary);">
+                        <i class="fas fa-user"></i> <span id="dashboard-username">Гость</span>
+                    </span>
+                    <span style="font-size: 0.9rem; color: #fbbf24;">
+                        <i class="fas fa-star"></i> <span id="dashboard-rating">0.0</span>
+                    </span>
+                </div>
+            </div>
+
+            <div class="dashboard-tabs">
+                <button class="dashboard-tab active" data-tab="questions">
+                    <i class="fas fa-question-circle"></i> Вопросы
+                </button>
+                <button class="dashboard-tab" data-tab="stories">
+                    <i class="fas fa-history"></i> Истории
+                </button>
+                <button class="dashboard-tab" data-tab="analytics">
+                    <i class="fas fa-chart-bar"></i> Аналитика
+                </button>
+                <button class="dashboard-tab" data-tab="activity">
+                    <i class="fas fa-bolt"></i> Активность
+                </button>
+            </div>
+
+            <div class="dashboard-tab-content active" id="questions-tab">
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 15px;">Последние вопросы от пользователей</h3>
+                    <div id="questions-list">
+                        <div class="question-card" style="text-align: center; padding: 40px;">
+                            <i class="fas fa-question-circle" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
+                            <h4>Пока нет вопросов</h4>
+                            <p style="color: var(--text-tertiary);">Когда пользователи зададут вам вопросы, они появятся здесь</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-tab-content" id="stories-tab">
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 15px;">Ваши истории</h3>
+                    <div id="stories-list">
+                        <div class="question-card" style="text-align: center; padding: 40px;">
+                            <i class="fas fa-history" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
+                            <h4>Пока нет историй</h4>
+                            <p style="color: var(--text-tertiary);">Ваши чаты и консультации появятся здесь</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-tab-content" id="analytics-tab">
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 15px;">Аналитика</h3>
+                    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px;">
+                        <div class="stat-card-settings">
+                            <div class="stat-value-settings" id="analytics-total">0</div>
+                            <div class="stat-label-settings">Всего ответов</div>
+                        </div>
+                        <div class="stat-card-settings">
+                            <div class="stat-value-settings" id="analytics-helpful">0</div>
+                            <div class="stat-label-settings">Помогли</div>
+                        </div>
+                        <div class="stat-card-settings">
+                            <div class="stat-value-settings" id="analytics-likes">0</div>
+                            <div class="stat-label-settings">Лайки</div>
+                        </div>
+                        <div class="stat-card-settings">
+                            <div class="stat-value-settings" id="analytics-comments">0</div>
+                            <div class="stat-label-settings">Комментарии</div>
+                        </div>
+                    </div>
+                    <div style="background: rgba(255, 255, 255, 0.05); border-radius: var(--radius-md); padding: 20px;">
+                        <canvas id="analytics-chart" style="width: 100%; height: 200px;"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-tab-content" id="activity-tab">
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 15px;">Недавняя активность</h3>
+                    <div id="activity-list">
+                        <div class="question-card" style="text-align: center; padding: 40px;">
+                            <i class="fas fa-bolt" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
+                            <h4>Пока нет активности</h4>
+                            <p style="color: var(--text-tertiary);">Ваша активность появится здесь</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно настроек профиля -->
+    <div class="modal" id="profile-settings-modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <button class="modal-close" id="profile-settings-close">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-user-cog"></i> Настройки профиля
+            </h2>
+            
+            <form class="profile-form" id="profile-settings-form">
+                <div class="form-group">
+                    <label for="profile-name">Имя</label>
+                    <input type="text" id="profile-name" placeholder="Ваше имя">
+                </div>
+                
+                <div class="form-group">
+                    <label for="profile-email">Email</label>
+                    <input type="email" id="profile-email" placeholder="your@email.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="profile-bio">Биография</label>
+                    <textarea id="profile-bio" placeholder="Расскажите о себе..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="profile-expertise">Экспертиза</label>
+                    <select id="profile-expertise" multiple style="height: 100px;">
+                        <option value="relationships">Отношения</option>
+                        <option value="dating">Знакомства</option>
+                        <option value="manipulation">Манипуляции</option>
+                        <option value="psychology">Психология</option>
+                        <option value="communication">Коммуникация</option>
+                        <option value="family">Семейные отношения</option>
+                    </select>
+                    <small style="color: var(--text-tertiary); font-size: 0.8rem;">Удерживайте Ctrl для выбора нескольких вариантов</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="profile-privacy">Настройки приватности</label>
+                    <select id="profile-privacy">
+                        <option value="public">Публичный профиль</option>
+                        <option value="private">Приватный профиль</option>
+                        <option value="friends">Только друзья</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="ios-button" style="width: 100%;">
+                    <i class="fas fa-save"></i> Сохранить изменения
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Куки-уведомление -->
+    <div class="cookie-notification" id="cookie-notification">
+        <div class="cookie-content">
+            <div class="cookie-text">
+                <h3><i class="fas fa-cookie-bite"></i> Использование файлов cookie</h3>
+                <p>Мы используем файлы cookie для улучшения работы приложения, сохранения ваших настроек и анализа статистики. 
+                Продолжая использовать Verdikt GPT, вы соглашаетесь с нашей 
+                <a href="#" id="cookie-policy-link">Политикой конфиденциальности</a>.</p>
+            </div>
+            <div class="cookie-buttons">
+                <button class="ios-button small secondary" id="cookie-reject">
+                    Отклонить
+                </button>
+                <button class="ios-button small" id="cookie-accept">
+                    Принять
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Фоновые элементы -->
     <div class="background-elements">
         <div class="grid-pattern"></div>
@@ -1129,68 +1942,12 @@
                 </button>
                 
                 <!-- Авторизация пользователя -->
-                <div class="user-panel" id="user-panel" style="display: none;">
-    <div class="user-avatar" id="user-avatar" title="Профиль">
-        <i class="fas fa-user"></i>
-    </div>
-    
-    <div class="user-dropdown" id="user-dropdown">
-        <div class="user-dropdown-header">
-            <div class="user-info" id="user-info">
-                <div class="user-info-avatar" id="user-info-avatar">
-                    <i class="fas fa-user"></i>
+                <div class="user-auth" id="user-auth">
+                    <button class="ios-button secondary" id="login-button" title="Войти">
+                        <i class="fas fa-user"></i>
+                        <span class="user-auth-label">Войти</span>
+                    </button>
                 </div>
-                <div class="user-info-text">
-                    <div class="user-info-name" id="user-info-name">Имя пользователя</div>
-                    <div class="user-info-email" id="user-info-email">email@example.com</div>
-                    <div class="user-status" id="user-status">
-                        <i class="fas fa-circle"></i> Онлайн
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="user-dropdown-menu">
-            <div class="user-dropdown-item" id="dashboard-link">
-                <i class="fas fa-tachometer-alt"></i>
-                <span>Дашборд</span>
-            </div>
-            
-            <div class="user-dropdown-item" id="my-chats-link">
-                <i class="fas fa-comments"></i>
-                <span>Мои чаты</span>
-            </div>
-            
-            <div class="user-dropdown-item" id="achievements-link">
-                <i class="fas fa-trophy"></i>
-                <span>Достижения</span>
-            </div>
-            
-            <div class="user-dropdown-item" id="stats-link">
-                <i class="fas fa-chart-line"></i>
-                <span>Статистика</span>
-            </div>
-            
-            <div class="user-dropdown-divider"></div>
-            
-            <div class="user-dropdown-item" id="profile-link">
-                <i class="fas fa-user-cog"></i>
-                <span>Настройки профиля</span>
-            </div>
-            
-            <div class="user-dropdown-item" id="logout-link">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Выйти</span>
-            </div>
-        </div>
-        
-        <div class="user-dropdown-footer">
-            <div style="font-size: 0.8rem; color: var(--text-tertiary);">
-                <i class="fas fa-heart"></i> Verdikt GPT Premium
-            </div>
-        </div>
-    </div>
-</div>
                 
                 <div class="developers-dropdown">
                     <button class="ios-button secondary" id="developers-btn" title="Команда разработки">
@@ -1252,67 +2009,6 @@
                     </div>
                 </div>
 
-    <!-- Модальное окно авторизации -->
-    <div class="modal" id="auth-modal">
-        <div class="modal-content auth-modal">
-            <button class="modal-close" id="auth-close">
-                <i class="fas fa-times"></i>
-            </button>
-
-            <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                <i class="fas fa-user-circle"></i> Аккаунт
-            </h2>
-
-            <div class="auth-tabs">
-                <button class="auth-tab active" data-tab="login">Вход</button>
-                <button class="auth-tab" data-tab="register">Регистрация</button>
-            </div>
-
-            <div class="auth-forms">
-                <form id="login-form" class="auth-form active">
-                    <div class="auth-field">
-                        <label for="login-email">Email</label>
-                        <input type="email" id="login-email" placeholder="you@example.com" required>
-                    </div>
-                    <div class="auth-field">
-                        <label for="login-password">Пароль</label>
-                        <input type="password" id="login-password" placeholder="Ваш пароль" required>
-                    </div>
-                    <button type="submit" class="ios-button" id="login-submit">
-                        <i class="fas fa-sign-in-alt"></i> Войти
-                    </button>
-                </form>
-
-                <form id="register-form" class="auth-form">
-                    <div class="auth-field">
-                        <label for="register-name">Имя</label>
-                        <input type="text" id="register-name" placeholder="Как к вам обращаться" required>
-                    </div>
-                    <div class="auth-field">
-                        <label for="register-email">Email</label>
-                        <input type="email" id="register-email" placeholder="you@example.com" required>
-                    </div>
-                    <div class="auth-field">
-                        <label for="register-password">Пароль</label>
-                        <input type="password" id="register-password" placeholder="Минимум 6 символов" required>
-                    </div>
-                    <button type="submit" class="ios-button" id="register-submit">
-                        <i class="fas fa-user-plus"></i> Зарегистрироваться
-                    </button>
-                </form>
-
-                <div class="auth-footer">
-                    <div class="auth-user-info" id="auth-user-info" style="display: none;">
-                        <span id="auth-user-name"></span>
-                        <button class="ios-button secondary" id="logout-button">
-                            <i class="fas fa-sign-out-alt"></i> Выйти
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-                
                 <button class="ios-button" id="new-chat">
                     <i class="fas fa-plus"></i> Новый чат
                 </button>
@@ -1442,9 +2138,71 @@
         </footer>
     </div>
 
+    <!-- Модальное окно авторизации -->
+    <div class="modal" id="auth-modal">
+        <div class="modal-content auth-modal">
+            <button class="modal-close" id="auth-close">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-user-circle"></i> Аккаунт
+            </h2>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-tab="login">Вход</button>
+                <button class="auth-tab" data-tab="register">Регистрация</button>
+            </div>
+
+            <div class="auth-forms">
+                <form id="login-form" class="auth-form active">
+                    <div class="auth-field">
+                        <label for="login-email">Email</label>
+                        <input type="email" id="login-email" placeholder="you@example.com" required>
+                    </div>
+                    <div class="auth-field">
+                        <label for="login-password">Пароль</label>
+                        <input type="password" id="login-password" placeholder="Ваш пароль" required>
+                    </div>
+                    <button type="submit" class="ios-button" id="login-submit">
+                        <i class="fas fa-sign-in-alt"></i> Войти
+                    </button>
+                </form>
+
+                <form id="register-form" class="auth-form">
+                    <div class="auth-field">
+                        <label for="register-name">Имя</label>
+                        <input type="text" id="register-name" placeholder="Как к вам обращаться" required>
+                    </div>
+                    <div class="auth-field">
+                        <label for="register-email">Email</label>
+                        <input type="email" id="register-email" placeholder="you@example.com" required>
+                    </div>
+                    <div class="auth-field">
+                        <label for="register-password">Пароль</label>
+                        <input type="password" id="register-password" placeholder="Минимум 6 символов" required>
+                    </div>
+                    <button type="submit" class="ios-button" id="register-submit">
+                        <i class="fas fa-user-plus"></i> Зарегистрироваться
+                    </button>
+                </form>
+
+                <div class="auth-footer">
+                    <div class="auth-user-info" id="auth-user-info" style="display: none;">
+                        <span id="auth-user-name"></span>
+                        <button class="ios-button secondary" id="logout-button">
+                            <i class="fas fa-sign-out-alt"></i> Выйти
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="crypto.js"></script>
+    <script>window.VERDIKT_BACKEND_URL = 'http://localhost:8080';</script>
     <script src="main.js"></script>
 </body>
 </html>
