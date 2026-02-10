@@ -812,3 +812,166 @@
 [data-theme="deepseek"] .mode-icon-settings i {
     color: white;
 }
+
+/* Стили для кнопки сайдбара в теме DeepSeek */
+[data-theme="deepseek"] .sidebar-toggle {
+    background: linear-gradient(135deg, #2d8cff, #22d3ee);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(45, 140, 255, 0.3);
+}
+
+[data-theme="deepseek"] .sidebar-toggle:hover {
+    background: linear-gradient(135deg, #1c7df6, #06b6d4);
+    box-shadow: 0 0 20px rgba(45, 140, 255, 0.5);
+    transform: scale(1.1);
+}
+
+[data-theme="deepseek"] .sidebar-toggle i {
+    color: white;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+}
+
+/* Стили для сайдбара в теме DeepSeek */
+[data-theme="deepseek"] .sidebar {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(45, 140, 255, 0.1);
+    box-shadow: 5px 0 25px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="deepseek"] .sidebar-header {
+    border-bottom: 1px solid rgba(45, 140, 255, 0.1);
+}
+
+[data-theme="deepseek"] .user-avatar {
+    background: linear-gradient(135deg, #2d8cff, #22d3ee);
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.3);
+}
+
+[data-theme="deepseek"] .user-info h3 {
+    color: #1a1a1a;
+}
+
+[data-theme="deepseek"] .user-info p {
+    color: #4a5568;
+}
+
+[data-theme="deepseek"] .nav-section h4 {
+    color: #718096;
+}
+
+[data-theme="deepseek"] .nav-item {
+    color: #4a5568;
+    border: 1px solid transparent;
+}
+
+[data-theme="deepseek"] .nav-item:hover {
+    background: rgba(45, 140, 255, 0.08);
+    color: #1a1a1a;
+    border-color: rgba(45, 140, 255, 0.2);
+}
+
+[data-theme="deepseek"] .nav-item.active {
+    background: rgba(45, 140, 255, 0.12);
+    color: #2d8cff;
+    border-color: rgba(45, 140, 255, 0.3);
+}
+
+[data-theme="deepseek"] .sidebar-footer {
+    border-top: 1px solid rgba(45, 140, 255, 0.1);
+}
+
+[data-theme="deepseek"] .stat-mini {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(45, 140, 255, 0.1);
+}
+
+[data-theme="deepseek"] .stat-mini:hover {
+    background: white;
+    border-color: rgba(45, 140, 255, 0.3);
+    box-shadow: 0 5px 15px rgba(45, 140, 255, 0.15);
+}
+
+[data-theme="deepseek"] .stat-mini-label {
+    color: #718096;
+}
+
+/* Оверлей сайдбара в теме DeepSeek */
+[data-theme="deepseek"] .sidebar-overlay {
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(5px);
+}
+
+/* Общие стили для иконки сайдбара во всех темах */
+.sidebar-toggle i.fa-bars {
+    position: relative;
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    font-size: 0; /* Скрываем текст иконки */
+}
+
+/* Квадрат */
+.sidebar-toggle i.fa-bars::before {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid white;
+    border-radius: 3px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-sizing: border-box;
+}
+
+/* Вертикальная линия на 1/3 от левого края */
+.sidebar-toggle i.fa-bars::after {
+    content: '';
+    position: absolute;
+    width: 2px;
+    height: 10px;
+    background: white;
+    border-radius: 1px;
+    top: 50%;
+    left: calc(50% - 4px); /* 1/3 от левого края квадрата */
+    transform: translateY(-50%);
+}
+
+/* Анимация при наведении для всех тем */
+.sidebar-toggle:hover i.fa-bars::before {
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+}
+
+.sidebar-toggle:hover i.fa-bars::after {
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+}
+
+/* Темная тема - цвета */
+[data-theme="dark"] .sidebar-toggle i.fa-bars::before {
+    border-color: white;
+}
+
+[data-theme="dark"] .sidebar-toggle i.fa-bars::after {
+    background: white;
+}
+
+/* DeepSeek тема - цвета (синий градиент кнопки уже задан ранее) */
+[data-theme="deepseek"] .sidebar-toggle i.fa-bars::before {
+    border-color: white;
+}
+
+[data-theme="deepseek"] .sidebar-toggle i.fa-bars::after {
+    background: white;
+}
+
+/* Убираем стандартные полоски FontAwesome */
+.sidebar-toggle i.fa-bars {
+    /* Уже скрыто font-size: 0; */
+}
+
+/* Альтернативный вариант если нужно скрыть стандартные полоски иконки */
+.fa-bars::before {
+    content: '' !important; /* Перезаписываем иконку FontAwesome */
+}
