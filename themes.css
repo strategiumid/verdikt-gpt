@@ -654,3 +654,161 @@
     background: rgba(0, 0, 0, 0.2);
     color: white;
 }
+
+/* Исправляем свечение полей ввода в окне авторизации для светлой темы */
+[data-theme="deepseek"] .auth-modal {
+    background: var(--bg-card);
+    border: 1px solid rgba(45, 140, 255, 0.1);
+}
+
+[data-theme="deepseek"] .auth-tabs {
+    background: rgba(45, 140, 255, 0.05);
+    border: 1px solid rgba(45, 140, 255, 0.1);
+}
+
+[data-theme="deepseek"] .auth-tab {
+    color: var(--text-secondary);
+}
+
+[data-theme="deepseek"] .auth-tab:hover {
+    background: rgba(45, 140, 255, 0.08);
+    color: var(--text-primary);
+}
+
+[data-theme="deepseek"] .auth-tab.active {
+    background: rgba(45, 140, 255, 0.12);
+    color: var(--primary);
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.2);
+}
+
+/* Поля ввода - убираем розовое свечение, добавляем голубое */
+[data-theme="deepseek"] .auth-field input {
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+}
+
+[data-theme="deepseek"] .auth-field input:hover {
+    border-color: rgba(45, 140, 255, 0.3);
+    box-shadow: 0 0 0 2px rgba(45, 140, 255, 0.1);
+}
+
+[data-theme="deepseek"] .auth-field input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(45, 140, 255, 0.2);
+}
+
+[data-theme="deepseek"] .auth-field input::placeholder {
+    color: rgba(30, 41, 59, 0.5);
+}
+
+/* Кнопки авторизации */
+[data-theme="deepseek"] #login-submit,
+[data-theme="deepseek"] #register-submit {
+    background: var(--primary);
+    color: white;
+}
+
+[data-theme="deepseek"] #login-submit:hover,
+[data-theme="deepseek"] #register-submit:hover {
+    background: var(--primary-dark);
+    box-shadow: 
+        0 8px 15px rgba(45, 140, 255, 0.3),
+        0 0 20px rgba(45, 140, 255, 0.4);
+}
+
+[data-theme="deepseek"] #logout-button {
+    background: rgba(45, 140, 255, 0.1);
+    color: var(--primary);
+    border: 1px solid rgba(45, 140, 255, 0.2);
+}
+
+[data-theme="deepseek"] #logout-button:hover {
+    background: rgba(45, 140, 255, 0.2);
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.2);
+}
+
+/* Заголовок окна авторизации */
+[data-theme="deepseek"] .auth-modal h2 {
+    color: var(--text-primary);
+}
+
+[data-theme="deepseek"] .auth-modal h2 i {
+    color: var(--primary);
+}
+
+/* Footer окна авторизации */
+[data-theme="deepseek"] .auth-footer {
+    color: var(--text-tertiary);
+    border-top: 1px solid rgba(45, 140, 255, 0.1);
+    padding-top: 15px;
+}
+
+/* Уведомления о пользователе */
+[data-theme="deepseek"] #auth-user-name {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* Специфичное переопределение розовых свечений для полей ввода */
+[data-theme="deepseek"] input[type="email"]:focus,
+[data-theme="deepseek"] input[type="password"]:focus,
+[data-theme="deepseek"] input[type="text"]:focus {
+    border-color: #2d8cff !important;
+    box-shadow: 0 0 0 4px rgba(45, 140, 255, 0.2) !important;
+}
+
+[data-theme="deepseek"] input[type="email"]:hover,
+[data-theme="deepseek"] input[type="password"]:hover,
+[data-theme="deepseek"] input[type="text"]:hover {
+    border-color: rgba(45, 140, 255, 0.3) !important;
+    box-shadow: 0 0 0 2px rgba(45, 140, 255, 0.1) !important;
+}
+
+/* Переопределяем общие стили для кнопок в светлой теме */
+[data-theme="deepseek"] .ios-button:hover {
+    box-shadow: 
+        0 8px 15px rgba(45, 140, 255, 0.3),
+        0 0 20px rgba(45, 140, 255, 0.4) !important;
+}
+
+[data-theme="deepseek"] .ios-button.secondary:hover {
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.2) !important;
+}
+
+/* Исправляем цвета для режимов AI в светлой теме */
+[data-theme="deepseek"] .mode-item-settings {
+    background: white;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="deepseek"] .mode-item-settings:hover {
+    background: rgba(255, 255, 255, 0.95);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(45, 140, 255, 0.15);
+}
+
+[data-theme="deepseek"] .mode-item-settings.active {
+    background: rgba(45, 140, 255, 0.1);
+    border-color: var(--primary);
+    color: var(--text-primary);
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.2);
+}
+
+[data-theme="deepseek"] .mode-info-settings h5 {
+    color: var(--text-primary);
+}
+
+[data-theme="deepseek"] .mode-info-settings p {
+    color: var(--text-secondary);
+}
+
+[data-theme="deepseek"] .mode-icon-settings {
+    background: var(--gradient);
+}
+
+[data-theme="deepseek"] .mode-icon-settings i {
+    color: white;
+}
