@@ -116,6 +116,7 @@ class VerdiktChatApp {
             messageInput: document.getElementById('message-input'),
             sendButton: document.getElementById('send-button'),
             voiceInput: document.getElementById('voice-input'),
+            voiceOutput: document.getElementById('voice-output'),
             newChat: document.getElementById('new-chat'),
             settingsButton: document.getElementById('settings-button'),
             presentationMode: document.getElementById('presentation-mode'),
@@ -1868,6 +1869,7 @@ class VerdiktChatApp {
         
         // Голосовые функции
         this.elements.voiceInput.addEventListener('click', () => this.toggleVoiceRecording());
+        this.elements.voiceOutput.addEventListener('click', () => this.speakLastMessage());
         
         // Режимы AI в настройках
         document.querySelectorAll('.mode-item-settings').forEach(mode => {
