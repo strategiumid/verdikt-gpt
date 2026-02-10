@@ -1129,12 +1129,68 @@
                 </button>
                 
                 <!-- Авторизация пользователя -->
-                <div class="user-auth" id="user-auth">
-                    <button class="ios-button secondary" id="login-button" title="Войти">
-                        <i class="fas fa-user"></i>
-                        <span class="user-auth-label">Войти</span>
-                    </button>
+                <div class="user-panel" id="user-panel" style="display: none;">
+    <div class="user-avatar" id="user-avatar" title="Профиль">
+        <i class="fas fa-user"></i>
+    </div>
+    
+    <div class="user-dropdown" id="user-dropdown">
+        <div class="user-dropdown-header">
+            <div class="user-info" id="user-info">
+                <div class="user-info-avatar" id="user-info-avatar">
+                    <i class="fas fa-user"></i>
                 </div>
+                <div class="user-info-text">
+                    <div class="user-info-name" id="user-info-name">Имя пользователя</div>
+                    <div class="user-info-email" id="user-info-email">email@example.com</div>
+                    <div class="user-status" id="user-status">
+                        <i class="fas fa-circle"></i> Онлайн
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="user-dropdown-menu">
+            <div class="user-dropdown-item" id="dashboard-link">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Дашборд</span>
+            </div>
+            
+            <div class="user-dropdown-item" id="my-chats-link">
+                <i class="fas fa-comments"></i>
+                <span>Мои чаты</span>
+            </div>
+            
+            <div class="user-dropdown-item" id="achievements-link">
+                <i class="fas fa-trophy"></i>
+                <span>Достижения</span>
+            </div>
+            
+            <div class="user-dropdown-item" id="stats-link">
+                <i class="fas fa-chart-line"></i>
+                <span>Статистика</span>
+            </div>
+            
+            <div class="user-dropdown-divider"></div>
+            
+            <div class="user-dropdown-item" id="profile-link">
+                <i class="fas fa-user-cog"></i>
+                <span>Настройки профиля</span>
+            </div>
+            
+            <div class="user-dropdown-item" id="logout-link">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Выйти</span>
+            </div>
+        </div>
+        
+        <div class="user-dropdown-footer">
+            <div style="font-size: 0.8rem; color: var(--text-tertiary);">
+                <i class="fas fa-heart"></i> Verdikt GPT Premium
+            </div>
+        </div>
+    </div>
+</div>
                 
                 <div class="developers-dropdown">
                     <button class="ios-button secondary" id="developers-btn" title="Команда разработки">
@@ -1266,16 +1322,6 @@
         <div class="main-content">
             <!-- Основная область чата -->
             <div class="chat-area">
-                <!-- Управление чатом -->
-                <div class="chat-header-controls">
-                    <div class="status-indicator" id="api-status">
-                        <i class="fas fa-circle"></i> Подключение...
-                    </div>
-                    
-                    <div class="chat-actions">
-                        
-                    </div>
-                </div>
                 
                 <!-- Контейнер чата -->
                 <div class="chat-container">
@@ -1287,6 +1333,9 @@
                             <div class="chat-header-text">
                                 <h2>Verdikt GPT - Эксперт по отношениям</h2>
                                 <p>Специалист в психологии отношений, знакомств и распознавании манипуляций</p>
+                            </div>
+                            <div class="status-indicator" id="api-status">
+                                <i class="fas fa-circle"></i> Подключение...
                             </div>
                         </div>
                     </div>

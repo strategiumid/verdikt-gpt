@@ -88,6 +88,17 @@ class VerdiktChatApp {
             maxRetries: 3
         };
 
+        this.dashboard = {
+        isVisible: false,
+        stats: {
+            totalTime: 0,
+            sessions: 1,
+            avgSessionTime: 0,
+            messagesPerDay: 0,
+            favoriteTopics: []
+        }
+    };
+
         this.crypto = new VerdiktCrypto();
         
         this.encryptionState = {
@@ -2071,12 +2082,13 @@ this.elements.apiStatus.classList.add('api-error');
     }
 
     logout() {
-        this.state.user = null;
-        this.state.authToken = null;
-        this.saveUserToStorage();
-        this.updateAuthUI();
-        this.showNotification('Вы вышли из аккаунта', 'info');
-    }
+    this.state.user = null;
+    this.state.authToken = null;
+    this.saveUserToStorage();
+    this.updateAuthUI();
+    this.hideDashboard();
+    this.showNotification('Вы вышли из аккаунта', 'info');
+}
 
     getAuthHeaders() {
         const headers = {};
@@ -2128,110 +2140,662 @@ this.elements.apiStatus.classList.add('api-error');
     }
 
     setupAuthUI() {
-        const loginBtn = this.elements.loginButton;
-        const logoutBtn = document.getElementById('logout-button');
-        const authClose = this.elements.authClose;
-        const authTabs = document.querySelectorAll('.auth-tab');
-        const loginForm = document.getElementById('login-form');
-        const registerForm = document.getElementById('register-form');
+    const loginBtn = this.elements.loginButton;
+    const userPanel = document.getElementById('user-panel');
+    const userAvatar = document.getElementById('user-avatar');
+    const logoutLink = document.getElementById('logout-link');
+    
+    // Инициализируем элементы панели пользователя
+    this.elements.userPanel = userPanel;
+    this.elements.userAvatar = userAvatar;
+    this.elements.userDropdown = document.getElementById('user-dropdown');
+    this.elements.userInfo = {
+        name: document.getElementById('user-info-name'),
+        email: document.getElementById('user-info-email'),
+        avatar: document.getElementById('user-info-avatar')
+    };
+    
+    const authClose = this.elements.authClose;
+    const authTabs = document.querySelectorAll('.auth-tab');
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
 
-        if (loginBtn) {
-            loginBtn.addEventListener('click', () => {
-                this.showModal('auth-modal');
-            });
-        }
-
-        if (authClose) {
-            authClose.addEventListener('click', () => this.hideModal('auth-modal'));
-        }
-
-        authTabs.forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                const target = e.currentTarget.dataset.tab;
-                authTabs.forEach(t => t.classList.remove('active'));
-                e.currentTarget.classList.add('active');
-
-                document.querySelectorAll('.auth-form').forEach(form => {
-                    form.classList.remove('active');
-                });
-                document.getElementById(`${target}-form`).classList.add('active');
-            });
+    if (loginBtn) {
+        loginBtn.addEventListener('click', () => {
+            this.showModal('auth-modal');
         });
-
-        if (loginForm) {
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('login-email').value.trim();
-                const password = document.getElementById('login-password').value;
-
-                if (!email || !password) {
-                    this.showNotification('Введите email и пароль', 'warning');
-                    return;
-                }
-
-                try {
-                    await this.loginUser({ email, password });
-                    this.hideModal('auth-modal');
-                    this.showNotification('Вы успешно вошли ✅', 'success');
-                } catch (error) {
-                    this.showNotification(error.message || 'Ошибка входа', 'error');
-                }
-            });
-        }
-
-        if (registerForm) {
-            registerForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const name = document.getElementById('register-name').value.trim();
-                const email = document.getElementById('register-email').value.trim();
-                const password = document.getElementById('register-password').value;
-
-                if (!name || !email || !password) {
-                    this.showNotification('Заполните все поля', 'warning');
-                    return;
-                }
-
-                try {
-                    await this.registerUser({ name, email, password });
-                    this.hideModal('auth-modal');
-                    this.showNotification('Регистрация прошла успешно ✅', 'success');
-                } catch (error) {
-                    this.showNotification(error.message || 'Ошибка регистрации', 'error');
-                }
-            });
-        }
-
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => this.logout());
-        }
-
-        this.updateAuthUI();
     }
 
-    updateAuthUI() {
-        const userAuth = document.getElementById('user-auth');
-        const label = userAuth?.querySelector('.user-auth-label');
-        const userInfo = document.getElementById('auth-user-info');
-        const userNameLabel = document.getElementById('auth-user-name');
+    if (authClose) {
+        authClose.addEventListener('click', () => this.hideModal('auth-modal'));
+    }
 
-        if (!userAuth || !label) return;
+    authTabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            const target = e.currentTarget.dataset.tab;
+            authTabs.forEach(t => t.classList.remove('active'));
+            e.currentTarget.classList.add('active');
 
-        if (this.state.user) {
-            const name = this.state.user.name || this.state.user.email || 'Аккаунт';
-            label.textContent = name;
-            userAuth.classList.add('user-auth-logged-in');
-            if (userInfo && userNameLabel) {
-                userNameLabel.textContent = name;
-                userInfo.style.display = 'flex';
+            document.querySelectorAll('.auth-form').forEach(form => {
+                form.classList.remove('active');
+            });
+            document.getElementById(`${target}-form`).classList.add('active');
+        });
+    });
+
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            if (!email || !password) {
+                this.showNotification('Введите email и пароль', 'warning');
+                return;
             }
-        } else {
-            label.textContent = 'Войти';
-            userAuth.classList.remove('user-auth-logged-in');
-            if (userInfo) {
-                userInfo.style.display = 'none';
+
+            try {
+                await this.loginUser({ email, password });
+                this.hideModal('auth-modal');
+                this.showNotification('Вы успешно вошли ✅', 'success');
+            } catch (error) {
+                this.showNotification(error.message || 'Ошибка входа', 'error');
             }
+        });
+    }
+
+    if (registerForm) {
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('register-name').value.trim();
+            const email = document.getElementById('register-email').value.trim();
+            const password = document.getElementById('register-password').value;
+
+            if (!name || !email || !password) {
+                this.showNotification('Заполните все поля', 'warning');
+                return;
+            }
+
+            try {
+                await this.registerUser({ name, email, password });
+                this.hideModal('auth-modal');
+                this.showNotification('Регистрация прошла успешно ✅', 'success');
+            } catch (error) {
+                this.showNotification(error.message || 'Ошибка регистрации', 'error');
+            }
+        });
+    }
+
+    // Добавляем обработчики для ссылок в выпадающем меню пользователя
+    document.getElementById('dashboard-link')?.addEventListener('click', () => {
+        this.showDashboard();
+        this.hideUserDropdown();
+    });
+    
+    document.getElementById('my-chats-link')?.addEventListener('click', () => {
+        this.showChatHistoryModal();
+        this.hideUserDropdown();
+    });
+    
+    document.getElementById('achievements-link')?.addEventListener('click', () => {
+        this.switchSettingsTab('achievements');
+        this.showSettingsModal();
+        this.hideUserDropdown();
+    });
+    
+    document.getElementById('stats-link')?.addEventListener('click', () => {
+        this.switchSettingsTab('stats');
+        this.showSettingsModal();
+        this.hideUserDropdown();
+    });
+    
+    document.getElementById('profile-link')?.addEventListener('click', () => {
+        this.showProfileSettings();
+        this.hideUserDropdown();
+    });
+    
+    document.getElementById('logout-link')?.addEventListener('click', () => {
+        this.logout();
+        this.hideUserDropdown();
+    });
+    
+    // Клик по аватару - показать/скрыть меню
+    if (userAvatar) {
+        userAvatar.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleUserDropdown();
+        });
+    }
+    
+    // Скрыть меню при клике вне его
+    document.addEventListener('click', () => {
+        this.hideUserDropdown();
+    });
+
+    // Обработчик для кнопки выхода в модальном окне авторизации
+    const logoutBtn = document.getElementById('logout-button');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => this.logout());
+    }
+
+    this.updateAuthUI();
+}
+
+    // ==================== МЕТОДЫ УПРАВЛЕНИЯ UI ПОЛЬЗОВАТЕЛЯ ====================
+
+updateAuthUI() {
+    const loginBtn = this.elements.loginButton;
+    const userPanel = this.elements.userPanel;
+    const label = loginBtn?.querySelector('.user-auth-label');
+    
+    if (this.state.user) {
+        // Показываем панель пользователя, скрываем кнопку входа
+        if (userPanel) {
+            userPanel.style.display = 'flex';
+        }
+        if (loginBtn) {
+            loginBtn.style.display = 'none';
+        }
+        
+        // Обновляем информацию в выпадающем меню
+        this.updateUserInfo();
+        
+        // Если у нас есть имя пользователя, показываем его в аватаре
+        const name = this.state.user.name || this.state.user.email || 'Пользователь';
+        if (this.elements.userInfo?.name) {
+            this.elements.userInfo.name.textContent = name;
+        }
+        if (this.elements.userInfo?.email) {
+            this.elements.userInfo.email.textContent = this.state.user.email || '';
+        }
+        
+        // Обновляем иконку аватара с первой буквой имени
+        this.updateUserAvatar();
+        
+        // Загружаем дашборд если нужно
+        this.loadDashboardData();
+        
+    } else {
+        // Показываем кнопку входа, скрываем панель пользователя
+        if (userPanel) {
+            userPanel.style.display = 'none';
+        }
+        if (loginBtn) {
+            loginBtn.style.display = 'flex';
+        }
+        
+        // Скрываем дашборд если он открыт
+        this.hideDashboard();
+    }
+}
+
+updateUserInfo() {
+    if (!this.state.user) return;
+    
+    const user = this.state.user;
+    
+    // Обновляем информацию в выпадающем меню
+    if (this.elements.userInfo?.name) {
+        this.elements.userInfo.name.textContent = user.name || user.email || 'Пользователь';
+    }
+    
+    if (this.elements.userInfo?.email) {
+        this.elements.userInfo.email.textContent = user.email || '';
+    }
+}
+
+updateUserAvatar() {
+    if (!this.state.user) return;
+    
+    const user = this.state.user;
+    const avatar = this.elements.userAvatar;
+    const infoAvatar = this.elements.userInfo?.avatar;
+    
+    // Получаем первую букву имени или email
+    const displayName = user.name || user.email || 'U';
+    const firstLetter = displayName.charAt(0).toUpperCase();
+    
+    // Создаем градиент на основе имени
+    const nameHash = this.hashString(displayName);
+    const hue = nameHash % 360;
+    
+    // Применяем градиент
+    const gradient = `linear-gradient(135deg, hsl(${hue}, 70%, 50%), hsl(${(hue + 30) % 360}, 70%, 50%))`;
+    
+    if (avatar) {
+        avatar.style.background = gradient;
+        avatar.innerHTML = `<span style="font-size: 16px; font-weight: 600;">${firstLetter}</span>`;
+    }
+    
+    if (infoAvatar) {
+        infoAvatar.style.background = gradient;
+        infoAvatar.innerHTML = `<span style="font-size: 20px; font-weight: 600;">${firstLetter}</span>`;
+    }
+}
+
+hashString(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return Math.abs(hash);
+}
+
+toggleUserDropdown() {
+    const dropdown = this.elements.userDropdown;
+    if (!dropdown) return;
+    
+    if (dropdown.style.opacity === '1') {
+        this.hideUserDropdown();
+    } else {
+        this.showUserDropdown();
+    }
+}
+
+showUserDropdown() {
+    const dropdown = this.elements.userDropdown;
+    if (dropdown) {
+        dropdown.style.opacity = '1';
+        dropdown.style.visibility = 'visible';
+        dropdown.style.transform = 'translateY(0)';
+    }
+}
+
+hideUserDropdown() {
+    const dropdown = this.elements.userDropdown;
+    if (dropdown) {
+        dropdown.style.opacity = '0';
+        dropdown.style.visibility = 'hidden';
+        dropdown.style.transform = 'translateY(-10px)';
+    }
+}
+
+// ==================== ДАШБОРД ====================
+
+async loadDashboardData() {
+    if (!this.state.user) return;
+    
+    // Загружаем статистику для дашборда
+    this.dashboard.stats = {
+        totalTime: Math.floor(Math.random() * 1000), // В минутах (демо данные)
+        sessions: this.state.stats.sessions,
+        avgSessionTime: Math.floor(Math.random() * 30) + 5, // Минуты (демо данные)
+        messagesPerDay: Math.floor(this.state.stats.totalMessages / Math.max(this.state.stats.sessions, 1)),
+        favoriteTopics: this.getFavoriteTopics()
+    };
+}
+
+getFavoriteTopics() {
+    const topics = [];
+    
+    if (this.state.stats.manipulationRequests > 0) {
+        topics.push({ name: 'Манипуляции', count: this.state.stats.manipulationRequests, icon: '🛡️' });
+    }
+    
+    if (this.state.stats.relationshipAdvice > 0) {
+        topics.push({ name: 'Отношения', count: this.state.stats.relationshipAdvice, icon: '💕' });
+    }
+    
+    if (this.state.stats.datingAdvice > 0) {
+        topics.push({ name: 'Знакомства', count: this.state.stats.datingAdvice, icon: '👥' });
+    }
+    
+    // Сортируем по популярности
+    return topics.sort((a, b) => b.count - a.count).slice(0, 3);
+}
+
+showDashboard() {
+    // Скрываем основной интерфейс чата
+    const chatArea = document.querySelector('.chat-area');
+    if (chatArea) chatArea.style.display = 'none';
+    
+    // Скрываем кнопки, которые не нужны в дашборде
+    const developersBtn = document.getElementById('developers-btn');
+    const settingsBtn = document.getElementById('settings-button');
+    const presentationBtn = document.getElementById('presentation-mode');
+    
+    if (developersBtn) developersBtn.style.display = 'none';
+    if (settingsBtn) settingsBtn.style.display = 'none';
+    if (presentationBtn) presentationBtn.style.display = 'none';
+    
+    // Создаем или показываем дашборд
+    let dashboard = document.getElementById('dashboard');
+    if (!dashboard) {
+        this.createDashboard();
+        dashboard = document.getElementById('dashboard');
+    }
+    
+    if (dashboard) {
+        dashboard.style.display = 'block';
+    }
+    this.dashboard.isVisible = true;
+    
+    // Обновляем данные на дашборде
+    this.updateDashboardStats();
+}
+
+hideDashboard() {
+    const dashboard = document.getElementById('dashboard');
+    if (dashboard) {
+        dashboard.style.display = 'none';
+    }
+    
+    // Показываем основной интерфейс
+    const chatArea = document.querySelector('.chat-area');
+    if (chatArea) chatArea.style.display = 'flex';
+    
+    // Восстанавливаем кнопки
+    const developersBtn = document.getElementById('developers-btn');
+    const settingsBtn = document.getElementById('settings-button');
+    const presentationBtn = document.getElementById('presentation-mode');
+    
+    if (developersBtn) developersBtn.style.display = 'flex';
+    if (settingsBtn) settingsBtn.style.display = 'flex';
+    if (presentationBtn) presentationBtn.style.display = 'flex';
+    
+    this.dashboard.isVisible = false;
+}
+
+createDashboard() {
+    const dashboardHTML = `
+    <div class="dashboard" id="dashboard" style="display: none;">
+        <div class="dashboard-header">
+            <h2>Добро пожаловать в панель управления</h2>
+            <p>Ваша статистика и инструменты для работы с Verdikt GPT</p>
+        </div>
+        
+        <div class="dashboard-stats" id="dashboard-stats">
+            <!-- Статистика будет загружена динамически -->
+        </div>
+        
+        <div class="dashboard-features" id="dashboard-features">
+            <!-- Карточки функций будут загружены динамически -->
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="ios-button secondary" id="back-to-chat">
+                <i class="fas fa-arrow-left"></i> Вернуться к чату
+            </button>
+        </div>
+    </div>
+    `;
+    
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.insertAdjacentHTML('beforeend', dashboardHTML);
+        
+        // Добавляем обработчик для кнопки возврата
+        const backBtn = document.getElementById('back-to-chat');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                this.hideDashboard();
+            });
         }
     }
+}
+
+updateDashboardStats() {
+    const statsContainer = document.getElementById('dashboard-stats');
+    if (!statsContainer) return;
+    
+    // Получаем количество разблокированных достижений
+    const unlockedAchievements = Object.values(this.state.achievements).filter(a => a.unlocked).length;
+    
+    const statsHTML = `
+        <div class="dashboard-stat-card">
+            <div class="dashboard-stat-icon">
+                <i class="fas fa-comment-dots"></i>
+            </div>
+            <div class="dashboard-stat-value" id="stat-messages">${this.state.stats.totalMessages}</div>
+            <div class="dashboard-stat-label">Всего сообщений</div>
+        </div>
+        
+        <div class="dashboard-stat-card">
+            <div class="dashboard-stat-icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="dashboard-stat-value" id="stat-time">${this.dashboard.stats.totalTime}</div>
+            <div class="dashboard-stat-label">Минут консультаций</div>
+        </div>
+        
+        <div class="dashboard-stat-card">
+            <div class="dashboard-stat-icon">
+                <i class="fas fa-history"></i>
+            </div>
+            <div class="dashboard-stat-value" id="stat-sessions">${this.dashboard.stats.sessions}</div>
+            <div class="dashboard-stat-label">Сессий</div>
+        </div>
+        
+        <div class="dashboard-stat-card">
+            <div class="dashboard-stat-icon">
+                <i class="fas fa-trophy"></i>
+            </div>
+            <div class="dashboard-stat-value" id="stat-achievements">${unlockedAchievements}</div>
+            <div class="dashboard-stat-label">Достижений</div>
+        </div>
+    `;
+    
+    statsContainer.innerHTML = statsHTML;
+    
+    // Обновляем карточки функций
+    this.updateDashboardFeatures();
+}
+
+updateDashboardFeatures() {
+    const featuresContainer = document.getElementById('dashboard-features');
+    if (!featuresContainer) return;
+    
+    const featuresHTML = `
+        <div class="dashboard-feature-card">
+            <div class="dashboard-feature-icon">
+                <i class="fas fa-brain"></i>
+            </div>
+            <div class="dashboard-feature-title">Анализ отношений</div>
+            <div class="dashboard-feature-desc">
+                Получите детальный анализ ваших отношений с помощью AI. 
+                Распознавание паттернов и рекомендации.
+            </div>
+            <a href="#" class="dashboard-feature-button" id="start-analysis">
+                <i class="fas fa-play"></i> Начать анализ
+            </a>
+        </div>
+        
+        <div class="dashboard-feature-card">
+            <div class="dashboard-feature-icon">
+                <i class="fas fa-chart-pie"></i>
+            </div>
+            <div class="dashboard-feature-title">Статистика эмоций</div>
+            <div class="dashboard-feature-desc">
+                Визуализация эмоциональных паттернов в ваших беседах.
+                Графики и аналитика по настроению.
+            </div>
+            <a href="#" class="dashboard-feature-button" id="view-emotions">
+                <i class="fas fa-chart-bar"></i> Посмотреть
+            </a>
+        </div>
+        
+        <div class="dashboard-feature-card">
+            <div class="dashboard-feature-icon">
+                <i class="fas fa-book"></i>
+            </div>
+            <div class="dashboard-feature-title">История консультаций</div>
+            <div class="dashboard-feature-desc">
+                Все ваши беседы в одном месте. Поиск, фильтрация и 
+                экспорт истории диалогов.
+            </div>
+            <a href="#" class="dashboard-feature-button" id="view-history">
+                <i class="fas fa-history"></i> Открыть историю
+            </a>
+        </div>
+    `;
+    
+    featuresContainer.innerHTML = featuresHTML;
+    
+    // Добавляем обработчики для кнопок
+    const startAnalysisBtn = document.getElementById('start-analysis');
+    const viewEmotionsBtn = document.getElementById('view-emotions');
+    const viewHistoryBtn = document.getElementById('view-history');
+    
+    if (startAnalysisBtn) {
+        startAnalysisBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.hideDashboard();
+            this.elements.messageInput.value = "Пожалуйста, проанализируй мои отношения и дай рекомендации";
+            this.elements.messageInput.focus();
+            this.showNotification('Готовлюсь к анализу ваших отношений...', 'info');
+        });
+    }
+    
+    if (viewEmotionsBtn) {
+        viewEmotionsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.switchSettingsTab('stats');
+            this.showSettingsModal();
+            this.hideDashboard();
+        });
+    }
+    
+    if (viewHistoryBtn) {
+        viewHistoryBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.showChatHistoryModal();
+            this.hideDashboard();
+        });
+    }
+}
+
+showProfileSettings() {
+    if (!this.state.user) return;
+    
+    // Создаем модальное окно настроек профиля
+    const modalHTML = `
+    <div class="modal" id="profile-modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <button class="modal-close" id="profile-modal-close">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-user-cog"></i> Настройки профиля
+            </h2>
+            
+            <div class="modal-section">
+                <div class="user-profile-header" style="text-align: center; margin-bottom: 25px;">
+                    <div class="user-profile-avatar" id="profile-avatar" 
+                         style="width: 80px; height: 80px; border-radius: 50%; 
+                                margin: 0 auto 15px; display: flex; align-items: center; 
+                                justify-content: center; font-size: 32px; font-weight: 600;
+                                background: var(--gradient); color: white;">
+                        ${this.state.user?.name?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                    <h3 id="profile-name">${this.state.user?.name || 'Пользователь'}</h3>
+                    <p style="color: var(--text-tertiary);" id="profile-email">${this.state.user?.email || ''}</p>
+                </div>
+                
+                <form id="profile-form">
+                    <div class="auth-field">
+                        <label for="profile-name-input">Имя</label>
+                        <input type="text" id="profile-name-input" 
+                               value="${this.state.user?.name || ''}" 
+                               placeholder="Ваше имя">
+                    </div>
+                    
+                    <div class="auth-field">
+                        <label for="profile-email-input">Email</label>
+                        <input type="email" id="profile-email-input" 
+                               value="${this.state.user?.email || ''}" 
+                               placeholder="Ваш email" readonly>
+                    </div>
+                    
+                    <div class="auth-field">
+                        <label for="profile-password">Новый пароль (оставьте пустым, чтобы не менять)</label>
+                        <input type="password" id="profile-password" 
+                               placeholder="Новый пароль">
+                    </div>
+                    
+                    <div class="auth-field">
+                        <label for="profile-confirm-password">Подтвердите пароль</label>
+                        <input type="password" id="profile-confirm-password" 
+                               placeholder="Подтвердите пароль">
+                    </div>
+                    
+                    <button type="submit" class="ios-button" id="save-profile" style="width: 100%; margin-top: 15px;">
+                        <i class="fas fa-save"></i> Сохранить изменения
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    const modal = document.getElementById('profile-modal');
+    if (modal) {
+        modal.classList.add('active');
+    }
+    
+    // Обработчики
+    const closeBtn = document.getElementById('profile-modal-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            if (modal) modal.remove();
+        });
+    }
+    
+    const profileForm = document.getElementById('profile-form');
+    if (profileForm) {
+        profileForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveProfileChanges();
+            if (modal) modal.remove();
+        });
+    }
+}
+
+async saveProfileChanges() {
+    const nameInput = document.getElementById('profile-name-input');
+    const passwordInput = document.getElementById('profile-password');
+    const confirmInput = document.getElementById('profile-confirm-password');
+    
+    if (!nameInput || !passwordInput || !confirmInput) return;
+    
+    const name = nameInput.value.trim();
+    const password = passwordInput.value;
+    const confirmPassword = confirmInput.value;
+    
+    if (!name) {
+        this.showNotification('Имя не может быть пустым', 'error');
+        return;
+    }
+    
+    if (password && password !== confirmPassword) {
+        this.showNotification('Пароли не совпадают', 'error');
+        return;
+    }
+    
+    if (password && password.length < 6) {
+        this.showNotification('Пароль должен быть не менее 6 символов', 'error');
+        return;
+    }
+    
+    // В реальном приложении здесь был бы запрос к API
+    // Для демо просто обновим локально
+    
+    if (this.state.user) {
+        this.state.user.name = name;
+        
+        if (password) {
+            // В реальном приложении здесь бы обновили пароль через API
+            this.showNotification('Пароль обновлен (демо)', 'info');
+        }
+        
+        this.saveUserToStorage();
+        this.updateUserInfo();
+        this.updateUserAvatar();
+        
+        this.showNotification('Профиль обновлен ✅', 'success');
+    }
+}
 
     getCurrentTime() {
         const now = new Date();
