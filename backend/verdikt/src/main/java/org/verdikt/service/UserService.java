@@ -3,6 +3,7 @@ package org.verdikt.service;
 import org.verdikt.dto.LoginRequest;
 import org.verdikt.dto.LoginResponse;
 import org.verdikt.dto.RegisterRequest;
+import org.verdikt.dto.UpdateProfileRequest;
 import org.verdikt.dto.UserResponse;
 import org.verdikt.entity.User;
 import org.verdikt.repository.UserRepository;
@@ -55,5 +56,37 @@ public class UserService {
         }
         String token = jwtService.generateToken(user);
         return new LoginResponse(token, UserResponse.from(user));
+    }
+
+    /**
+     * Обновление профиля пользователя по id (частичное обновление: только переданные поля).
+     */
+    @Transactional
+    public UserResponse updateProfile(Long userId, UpdateProfileRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь не найден"));
+        if (request.getName() != null) {
+            user.setName(request.getName().trim());
+        }
+        if (request.getEmail() != null) {
+            String email = request.getEmail().trim().toLowerCase();
+            userRepository.findByEmail(email)
+                    .filter(u -> !u.getId().equals(userId))
+                    .ifPresent(u -> {
+                        throw new ResponseStatusException(HttpStatus.CONFLICT, "Email уже занят");
+                    });
+            user.setEmail(email);
+        }
+        if (request.getBio() != null) {
+            user.setBio(request.getBio().trim());
+        }
+        if (request.getPrivacy() != null) {
+            user.setPrivacy(request.getPrivacy().trim());
+        }
+        if (request.getExpertise() != null) {
+            user.setExpertise(request.getExpertise());
+        }
+        user = userRepository.save(user);
+        return UserResponse.from(user);
     }
 }
