@@ -1832,25 +1832,36 @@ class VerdiktChatApp {
                 return;
             }
             
-            // Симуляция сохранения (замените на реальный API вызов)
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            if (!this.state.authToken) {
+                this.showNotification('Войдите в аккаунт для сохранения профиля', 'warning');
+                return;
+            }
             
-            // Обновляем данные пользователя локально
-            this.state.user = {
-                ...this.state.user,
-                ...profileData
-            };
+            const url = `${this.AUTH_CONFIG.baseUrl}/api/users/me`;
+            const response = await fetch(url, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...this.getAuthHeaders()
+                },
+                body: JSON.stringify(profileData)
+            });
             
-            this.saveUserToStorage();
-            this.updateSidebarInfo();
-            this.updateAuthUI();
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                const message = err.message || (response.status === 401 ? 'Войдите снова' : `Ошибка ${response.status}`);
+                throw new Error(message);
+            }
+            
+            const data = await response.json();
+            this.setUser(data, this.state.authToken);
             
             this.hideModal('profile-settings-modal');
             this.showNotification('Профиль обновлен ✅', 'success');
             
         } catch (error) {
             console.error('Error saving profile:', error);
-            this.showNotification('Ошибка при обновлении профиля', 'error');
+            this.showNotification(error.message || 'Ошибка при обновлении профиля', 'error');
         }
     }
 
