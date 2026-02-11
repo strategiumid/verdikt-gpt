@@ -116,7 +116,6 @@ class VerdiktChatApp {
             messageInput: document.getElementById('message-input'),
             sendButton: document.getElementById('send-button'),
             voiceInput: document.getElementById('voice-input'),
-            voiceOutput: document.getElementById('voice-output'),
             newChat: document.getElementById('new-chat'),
             settingsButton: document.getElementById('settings-button'),
             presentationMode: document.getElementById('presentation-mode'),
@@ -1552,84 +1551,84 @@ class VerdiktChatApp {
     // ==================== ФУНКЦИИ БОКОВОГО МЕНЮ ====================
 
     setupSidebar() {
-        // Открытие/закрытие бокового меню
-        if (this.elements.sidebarToggle) {
-            this.elements.sidebarToggle.addEventListener('click', () => {
-                this.toggleSidebar();
-            });
-        }
-
-        if (this.elements.sidebarOverlay) {
-            this.elements.sidebarOverlay.addEventListener('click', () => {
-                this.hideSidebar();
-            });
-        }
-
-        // Навигация в боковом меню
-        if (this.elements.navDashboard) {
-            this.elements.navDashboard.addEventListener('click', () => {
-                this.showDashboardModal();
-                this.hideSidebar();
-            });
-        }
-
-        if (this.elements.navProfile) {
-            this.elements.navProfile.addEventListener('click', () => {
-                this.showProfileSettingsModal();
-                this.hideSidebar();
-            });
-        }
-
-        if (this.elements.navSettings) {
-            this.elements.navSettings.addEventListener('click', () => {
-                this.showProfileSettingsModal();
-                this.hideSidebar();
-            });
-        }
-
-        if (this.elements.navQuestions) {
-            this.elements.navQuestions.addEventListener('click', () => {
-                this.showDashboardModal();
-                this.switchDashboardTab('questions');
-                this.hideSidebar();
-            });
-        }
-
-        if (this.elements.navLikes) {
-            this.elements.navLikes.addEventListener('click', () => {
-                this.showDashboardModal();
-                this.switchDashboardTab('activity');
-                this.hideSidebar();
-            });
-        }
-
-        if (this.elements.navComments) {
-            this.elements.navComments.addEventListener('click', () => {
-                this.showDashboardModal();
-                this.switchDashboardTab('activity');
-                this.hideSidebar();
-            });
-        }
-
-        if (this.elements.navStories) {
-            this.elements.navStories.addEventListener('click', () => {
-                this.showDashboardModal();
-                this.switchDashboardTab('stories');
-                this.hideSidebar();
-            });
-        }
-
-        // Выход из аккаунта
-        if (this.elements.logoutSidebar) {
-            this.elements.logoutSidebar.addEventListener('click', () => {
-                this.logout();
-                this.hideSidebar();
-            });
-        }
-
-        // Обновление информации в боковом меню
-        this.updateSidebarInfo();
+    // Открытие/закрытие бокового меню
+    if (this.elements.sidebarToggle) {
+        this.elements.sidebarToggle.addEventListener('click', () => {
+            this.toggleSidebar();
+        });
     }
+
+    if (this.elements.sidebarOverlay) {
+        this.elements.sidebarOverlay.addEventListener('click', () => {
+            this.hideSidebar();
+        });
+    }
+
+    // Навигация в боковом меню
+    if (this.elements.navDashboard) {
+        this.elements.navDashboard.addEventListener('click', () => {
+            this.showDashboardModal();
+            this.hideSidebar();
+        });
+    }
+
+    if (this.elements.navProfile) {
+        this.elements.navProfile.addEventListener('click', () => {
+            this.showProfileSettingsModal();
+            this.hideSidebar();
+        });
+    }
+
+    if (this.elements.navSettings) {
+        this.elements.navSettings.addEventListener('click', () => {
+            this.showProfileSettingsModal();
+            this.hideSidebar();
+        });
+    }
+
+    if (this.elements.navQuestions) {
+        this.elements.navQuestions.addEventListener('click', () => {
+            this.showDashboardModal();
+            this.switchDashboardTab('questions');
+            this.hideSidebar();
+        });
+    }
+
+    if (this.elements.navLikes) {
+        this.elements.navLikes.addEventListener('click', () => {
+            this.showDashboardModal();
+            this.switchDashboardTab('activity');
+            this.hideSidebar();
+        });
+    }
+
+    if (this.elements.navComments) {
+        this.elements.navComments.addEventListener('click', () => {
+            this.showDashboardModal();
+            this.switchDashboardTab('activity');
+            this.hideSidebar();
+        });
+    }
+
+    if (this.elements.navStories) {
+        this.elements.navStories.addEventListener('click', () => {
+            this.showDashboardModal();
+            this.switchDashboardTab('stories');
+            this.hideSidebar();
+        });
+    }
+
+    // Выход из аккаунта
+    if (this.elements.logoutSidebar) {
+        this.elements.logoutSidebar.addEventListener('click', () => {
+            this.logout();
+            this.hideSidebar();
+        });
+    }
+
+    // Обновление информации в боковом меню
+    this.updateSidebarInfo();
+}
 
     toggleSidebar() {
         const isActive = this.elements.sidebar.classList.contains('active');
@@ -1653,46 +1652,65 @@ class VerdiktChatApp {
     }
 
     updateSidebarInfo() {
+    
         if (!this.elements.sidebarUsername) return;
-        
+    
+    
         if (this.state.user) {
+        
             this.elements.sidebarUsername.textContent = this.state.user.name || this.state.user.email || 'Пользователь';
-            this.elements.sidebarUseremail.textContent = this.state.user.email || 'В аккаунте';
-            
+        
+            this.elements.sidebarUseremail.innerHTML = `<i class="fas fa-envelope"></i> ${this.state.user.email || 'В аккаунте'}`;
+        
+        
             if (this.elements.dashboardUsername) {
+            
                 this.elements.dashboardUsername.textContent = this.state.user.name || this.state.user.email || 'Пользователь';
+        
             }
-            
-            // Обновление аватара
-            const avatarIcon = this.elements.userAvatar.querySelector('i');
-            if (this.state.user.avatar) {
-                this.elements.userAvatar.style.backgroundImage = `url(${this.state.user.avatar})`;
-                this.elements.userAvatar.style.backgroundSize = 'cover';
-                this.elements.userAvatar.style.backgroundPosition = 'center';
-                if (avatarIcon) avatarIcon.style.display = 'none';
-            } else {
-                this.elements.userAvatar.style.backgroundImage = '';
-                if (avatarIcon) avatarIcon.style.display = 'flex';
-            }
-            
-            // Показываем кнопку выхода
-            if (this.elements.logoutSidebar) {
-                this.elements.logoutSidebar.style.display = 'flex';
-            }
+        
+        // Обновление аватара
+        
+        const avatarIcon = this.elements.userAvatar.querySelector('i');
+        
+        if (this.state.user.avatar) {
+            this.elements.userAvatar.style.backgroundImage = `url(${this.state.user.avatar})`;
+            this.elements.userAvatar.style.backgroundSize = 'cover';
+            this.elements.userAvatar.style.backgroundPosition = 'center';
+            if (avatarIcon) avatarIcon.style.display = 'none';
+       
         } else {
-            this.elements.sidebarUsername.textContent = 'Гость';
-            this.elements.sidebarUseremail.textContent = 'Войдите в аккаунт';
+            this.elements.userAvatar.style.backgroundImage = '';
+            if (avatarIcon) avatarIcon.style.display = 'flex';
+        }
+        
+        // Показываем кнопку выхода
+        
+        if (this.elements.logoutSidebar) {
             
-            if (this.elements.dashboardUsername) {
-                this.elements.dashboardUsername.textContent = 'Гость';
-            }
-            
-            // Скрываем кнопку выхода для гостей
-            if (this.elements.logoutSidebar) {
-                this.elements.logoutSidebar.style.display = 'none';
-            }
+            this.elements.logoutSidebar.style.display = 'flex';
+        
+        }
+    
+    } else {
+        this.elements.sidebarUsername.textContent = 'Гость';
+        this.elements.sidebarUseremail.innerHTML = 'Войдите в аккаунт <i class="fas fa-sign-in-alt" style="margin-left: 5px;"></i>';
+        this.elements.sidebarUseremail.style.cursor = 'pointer';
+        this.elements.sidebarUseremail.addEventListener('click', () => {
+            this.hideSidebar();
+            this.showModal('auth-modal');
+        });
+        
+        if (this.elements.dashboardUsername) {
+            this.elements.dashboardUsername.textContent = 'Гость';
+        }
+        
+        // Скрываем кнопку выхода для гостей
+        if (this.elements.logoutSidebar) {
+            this.elements.logoutSidebar.style.display = 'none';
         }
     }
+}
 
     // ==================== ДАШБОРД ====================
 
@@ -1833,25 +1851,36 @@ class VerdiktChatApp {
                 return;
             }
             
-            // Симуляция сохранения (замените на реальный API вызов)
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            if (!this.state.authToken) {
+                this.showNotification('Войдите в аккаунт для сохранения профиля', 'warning');
+                return;
+            }
             
-            // Обновляем данные пользователя локально
-            this.state.user = {
-                ...this.state.user,
-                ...profileData
-            };
+            const url = `${this.AUTH_CONFIG.baseUrl}/api/users/me`;
+            const response = await fetch(url, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...this.getAuthHeaders()
+                },
+                body: JSON.stringify(profileData)
+            });
             
-            this.saveUserToStorage();
-            this.updateSidebarInfo();
-            this.updateAuthUI();
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                const message = err.message || (response.status === 401 ? 'Войдите снова' : `Ошибка ${response.status}`);
+                throw new Error(message);
+            }
+            
+            const data = await response.json();
+            this.setUser(data, this.state.authToken);
             
             this.hideModal('profile-settings-modal');
             this.showNotification('Профиль обновлен ✅', 'success');
             
         } catch (error) {
             console.error('Error saving profile:', error);
-            this.showNotification('Ошибка при обновлении профиля', 'error');
+            this.showNotification(error.message || 'Ошибка при обновлении профиля', 'error');
         }
     }
 
@@ -1869,7 +1898,6 @@ class VerdiktChatApp {
         
         // Голосовые функции
         this.elements.voiceInput.addEventListener('click', () => this.toggleVoiceRecording());
-        this.elements.voiceOutput.addEventListener('click', () => this.speakLastMessage());
         
         // Режимы AI в настройках
         document.querySelectorAll('.mode-item-settings').forEach(mode => {
@@ -1981,6 +2009,15 @@ class VerdiktChatApp {
         // Импорт/экспорт
         this.setupImportListeners();
         this.setupExportListeners();
+
+        // Обработчик для ссылки "Команда разработки" в футере
+        const developersFooter = document.getElementById('developers-footer');
+        if (developersFooter) {
+            developersFooter.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.showDevelopersMenu();
+            });
+        }
     }
 
     async sendMessage() {
@@ -4058,6 +4095,106 @@ class VerdiktChatApp {
             console.error('Error loading dashboard data:', error);
         }
     }
+    // ==================== КОМАНДА РАЗРАБОТКИ ====================
+// ВСТАВЬТЕ ЭТОТ МЕТОД СЮДА 👇
+showDevelopersMenu() {
+    // Создаем HTML для модального окна с командой разработки
+    const modalHTML = `
+    <div class="modal" id="developers-modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <button class="modal-close" id="developers-modal-close">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-code-branch"></i> Команда разработки
+            </h2>
+            
+            <div class="modal-section">
+                <p style="margin-bottom: 20px; color: var(--text-secondary);">
+                    Нажмите для связи в Telegram
+                </p>
+                
+                <div class="dev-dropdown-list" style="display: flex; flex-direction: column; gap: 10px;">
+                    <a href="https://t.me/tensamore" target="_blank" class="dev-dropdown-item" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.05); text-decoration: none; color: inherit;">
+                        <div class="dev-dropdown-avatar brain-avatar" style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <div class="dev-dropdown-info" style="flex: 1;">
+                            <div class="dev-dropdown-name" style="font-weight: 600;">@tensamore</div>
+                            <div class="dev-dropdown-role" style="font-size: 0.85rem; color: var(--text-secondary);">Dev Lead</div>
+                        </div>
+                        <div class="dev-dropdown-telegram">
+                            <i class="fab fa-telegram" style="color: #26A5E4; font-size: 1.2rem;"></i>
+                        </div>
+                    </a>
+                    
+                    <a href="https://t.me/gama4i" target="_blank" class="dev-dropdown-item" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.05); text-decoration: none; color: inherit;">
+                        <div class="dev-dropdown-avatar code-avatar" style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #10b981, #059669); display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <div class="dev-dropdown-info" style="flex: 1;">
+                            <div class="dev-dropdown-name" style="font-weight: 600;">@gama4i</div>
+                            <div class="dev-dropdown-role" style="font-size: 0.85rem; color: var(--text-secondary);">Developer</div>
+                        </div>
+                        <div class="dev-dropdown-telegram">
+                            <i class="fab fa-telegram" style="color: #26A5E4; font-size: 1.2rem;"></i>
+                        </div>
+                    </a>
+                    
+                    <a href="https://t.me/suce4" target="_blank" class="dev-dropdown-item" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.05); text-decoration: none; color: inherit;">
+                        <div class="dev-dropdown-avatar bug-avatar" style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #ef4444, #dc2626); display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-bug"></i>
+                        </div>
+                        <div class="dev-dropdown-info" style="flex: 1;">
+                            <div class="dev-dropdown-name" style="font-weight: 600;">@suce4</div>
+                            <div class="dev-dropdown-role" style="font-size: 0.85rem; color: var(--text-secondary);">Tester</div>
+                        </div>
+                        <div class="dev-dropdown-telegram">
+                            <i class="fab fa-telegram" style="color: #26A5E4; font-size: 1.2rem;"></i>
+                        </div>
+                    </a>
+                </div>
+                
+                <div class="dev-dropdown-footer" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color); text-align: center;">
+                    <div class="dev-version" style="color: var(--text-tertiary); font-size: 0.9rem;">
+                        <i class="fas fa-heart"></i> Версия 2.1
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-buttons" style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="ios-button secondary" id="close-developers-modal" style="flex: 1;">
+                    Закрыть
+                </button>
+            </div>
+        </div>
+    </div>
+    `;
+    
+    // Удаляем предыдущее модальное окно, если есть
+    const existingModal = document.getElementById('developers-modal');
+    if (existingModal) existingModal.remove();
+    
+    // Добавляем новое модальное окно
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    const modal = document.getElementById('developers-modal');
+    modal.classList.add('active');
+    
+    // Обработчики закрытия
+    document.getElementById('developers-modal-close').addEventListener('click', () => {
+        modal.remove();
+    });
+    
+    document.getElementById('close-developers-modal').addEventListener('click', () => {
+        modal.remove();
+    });
+}
+// 👆 КОНЕЦ МЕТОДА
+
+async showPasswordPrompt() {
+    // ... существующий код ...
+}
 
     generateActivityData() {
         // Генерация демо данных активности за последние 7 дней
