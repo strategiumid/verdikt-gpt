@@ -17,6 +17,16 @@ class VerdiktChatApp {
             apiKey: null // Будет загружено из localStorage
         };
 
+        // Конфигурация собственного бэкенда для авторизации пользователей
+        this.AUTH_CONFIG = {
+            baseUrl: (window && window.VERDIKT_BACKEND_URL) || window.location.origin,
+            endpoints: {
+                register: '/api/auth/register',
+                login: '/api/auth/login',
+                me: '/api/auth/me'
+            }
+        };
+
         this.state = {
             conversationHistory: [
                 {
@@ -67,6 +77,9 @@ class VerdiktChatApp {
                 popularTopics: {},
                 totalChats: 1
             },
+            // Пользователь и токен авторизации
+            user: null,
+            authToken: null,
             currentTheme: 'dark',
             isPresentationMode: false,
             currentSlide: 0,
@@ -103,7 +116,6 @@ class VerdiktChatApp {
             messageInput: document.getElementById('message-input'),
             sendButton: document.getElementById('send-button'),
             voiceInput: document.getElementById('voice-input'),
-            voiceOutput: document.getElementById('voice-output'),
             newChat: document.getElementById('new-chat'),
             settingsButton: document.getElementById('settings-button'),
             presentationMode: document.getElementById('presentation-mode'),
@@ -113,6 +125,10 @@ class VerdiktChatApp {
             smartSuggestions: document.getElementById('smart-suggestions'),
             typingIndicator: document.getElementById('typing-indicator'),
             achievementNotification: document.getElementById('achievement-notification'),
+            // Авторизация
+            loginButton: document.getElementById('login-button'),
+            authModal: document.getElementById('auth-modal'),
+            authClose: document.getElementById('auth-close'),
             
             // Навигация
             prevSlide: document.getElementById('prev-slide'),
@@ -148,7 +164,45 @@ class VerdiktChatApp {
             exportChatConfirm: document.getElementById('export-chat-confirm'),
             exportChatCancel: document.getElementById('export-chat-cancel'),
             exportChatModalClose: document.getElementById('export-chat-modal-close'),
-            encryptionNote: document.getElementById('encryption-note')
+            encryptionNote: document.getElementById('encryption-note'),
+
+            // Боковое меню элементы
+            sidebarToggle: document.getElementById('sidebar-toggle'),
+            sidebarOverlay: document.getElementById('sidebar-overlay'),
+            sidebar: document.getElementById('sidebar'),
+            sidebarUsername: document.getElementById('sidebar-username'),
+            sidebarUseremail: document.getElementById('sidebar-useremail'),
+            userAvatar: document.getElementById('user-avatar'),
+            navProfile: document.getElementById('nav-profile'),
+            navDashboard: document.getElementById('nav-dashboard'),
+            navStories: document.getElementById('nav-stories'),
+            navQuestions: document.getElementById('nav-questions'),
+            navLikes: document.getElementById('nav-likes'),
+            navComments: document.getElementById('nav-comments'),
+            navSettings: document.getElementById('nav-settings'),
+            navSecurity: document.getElementById('nav-security'),
+            navNotifications: document.getElementById('nav-notifications'),
+            questionsBadge: document.getElementById('questions-badge'),
+            likesBadge: document.getElementById('likes-badge'),
+            commentsBadge: document.getElementById('comments-badge'),
+            statQuestions: document.getElementById('stat-questions'),
+            statLikes: document.getElementById('stat-likes'),
+            statComments: document.getElementById('stat-comments'),
+            statHelpful: document.getElementById('stat-helpful'),
+            logoutSidebar: document.getElementById('logout-sidebar'),
+
+            // Дашборд элементы
+            dashboardModal: document.getElementById('dashboard-modal'),
+            dashboardClose: document.getElementById('dashboard-close'),
+            dashboardUsername: document.getElementById('dashboard-username'),
+            dashboardRating: document.getElementById('dashboard-rating'),
+            dashboardTabs: document.querySelectorAll('.dashboard-tab'),
+            dashboardTabContents: document.querySelectorAll('.dashboard-tab-content'),
+
+            // Настройки профиля элементы
+            profileSettingsModal: document.getElementById('profile-settings-modal'),
+            profileSettingsClose: document.getElementById('profile-settings-close'),
+            profileSettingsForm: document.getElementById('profile-settings-form')
         };
 
         this.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -177,6 +231,7 @@ class VerdiktChatApp {
         this.loadApiKey(); // Загружаем API ключ
         this.setupEventListeners();
         this.loadFromLocalStorage();
+        this.loadUserFromStorage();
         this.setupSpeechRecognition();
         this.setupBackgroundAnimations();
         this.updateUI();
@@ -184,6 +239,16 @@ class VerdiktChatApp {
         this.setupKeyboardShortcuts();
         this.setupServiceWorker();
         this.setupSettingsTabs();
+        this.setupAuthUI();
+        
+        // Инициализация бокового меню
+        this.setupSidebar();
+        
+        // Инициализация дашборда
+        this.setupDashboard();
+        
+        // Инициализация настроек профиля
+        this.setupProfileSettings();
         
         // Загружаем историю чатов
         await this.loadChats();
@@ -324,7 +389,7 @@ class VerdiktChatApp {
                 
                 this.elements.apiStatus.innerHTML = `<i class="fas fa-circle"></i> ${modelName}`;
                 this.elements.apiStatus.classList.remove('api-connecting');
-                this.elements.apiStatus.classList.add('api-connected')
+                this.elements.apiStatus.classList.add('api-connected');
                 this.state.isApiConnected = true;
                 
                 if (data.data?.credits) {
@@ -344,8 +409,8 @@ class VerdiktChatApp {
             console.error('API check error:', error);
             
             this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API ключа';
-this.elements.apiStatus.classList.remove('api-connecting');
-this.elements.apiStatus.classList.add('api-error');
+            this.elements.apiStatus.classList.remove('api-connecting');
+            this.elements.apiStatus.classList.add('api-error');
             
             this.state.isApiConnected = false;
             this.showNotification('Не удалось проверить API ключ. Проверьте его правильность.', 'error');
@@ -1483,6 +1548,312 @@ this.elements.apiStatus.classList.add('api-error');
         }
     }
 
+    // ==================== ФУНКЦИИ БОКОВОГО МЕНЮ ====================
+
+    setupSidebar() {
+        // Открытие/закрытие бокового меню
+        if (this.elements.sidebarToggle) {
+            this.elements.sidebarToggle.addEventListener('click', () => {
+                this.toggleSidebar();
+            });
+        }
+
+        if (this.elements.sidebarOverlay) {
+            this.elements.sidebarOverlay.addEventListener('click', () => {
+                this.hideSidebar();
+            });
+        }
+
+        // Навигация в боковом меню
+        if (this.elements.navDashboard) {
+            this.elements.navDashboard.addEventListener('click', () => {
+                this.showDashboardModal();
+                this.hideSidebar();
+            });
+        }
+
+        if (this.elements.navProfile) {
+            this.elements.navProfile.addEventListener('click', () => {
+                this.showProfileSettingsModal();
+                this.hideSidebar();
+            });
+        }
+
+        if (this.elements.navSettings) {
+            this.elements.navSettings.addEventListener('click', () => {
+                this.showProfileSettingsModal();
+                this.hideSidebar();
+            });
+        }
+
+        if (this.elements.navQuestions) {
+            this.elements.navQuestions.addEventListener('click', () => {
+                this.showDashboardModal();
+                this.switchDashboardTab('questions');
+                this.hideSidebar();
+            });
+        }
+
+        if (this.elements.navLikes) {
+            this.elements.navLikes.addEventListener('click', () => {
+                this.showDashboardModal();
+                this.switchDashboardTab('activity');
+                this.hideSidebar();
+            });
+        }
+
+        if (this.elements.navComments) {
+            this.elements.navComments.addEventListener('click', () => {
+                this.showDashboardModal();
+                this.switchDashboardTab('activity');
+                this.hideSidebar();
+            });
+        }
+
+        if (this.elements.navStories) {
+            this.elements.navStories.addEventListener('click', () => {
+                this.showDashboardModal();
+                this.switchDashboardTab('stories');
+                this.hideSidebar();
+            });
+        }
+
+        // Выход из аккаунта
+        if (this.elements.logoutSidebar) {
+            this.elements.logoutSidebar.addEventListener('click', () => {
+                this.logout();
+                this.hideSidebar();
+            });
+        }
+
+        // Обновление информации в боковом меню
+        this.updateSidebarInfo();
+    }
+
+    toggleSidebar() {
+        const isActive = this.elements.sidebar.classList.contains('active');
+        if (isActive) {
+            this.hideSidebar();
+        } else {
+            this.showSidebar();
+        }
+    }
+
+    showSidebar() {
+        this.elements.sidebar.classList.add('active');
+        this.elements.sidebarOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    hideSidebar() {
+        this.elements.sidebar.classList.remove('active');
+        this.elements.sidebarOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    updateSidebarInfo() {
+        if (!this.elements.sidebarUsername) return;
+        
+        if (this.state.user) {
+            this.elements.sidebarUsername.textContent = this.state.user.name || this.state.user.email || 'Пользователь';
+            this.elements.sidebarUseremail.textContent = this.state.user.email || 'В аккаунте';
+            
+            if (this.elements.dashboardUsername) {
+                this.elements.dashboardUsername.textContent = this.state.user.name || this.state.user.email || 'Пользователь';
+            }
+            
+            // Обновление аватара
+            const avatarIcon = this.elements.userAvatar.querySelector('i');
+            if (this.state.user.avatar) {
+                this.elements.userAvatar.style.backgroundImage = `url(${this.state.user.avatar})`;
+                this.elements.userAvatar.style.backgroundSize = 'cover';
+                this.elements.userAvatar.style.backgroundPosition = 'center';
+                if (avatarIcon) avatarIcon.style.display = 'none';
+            } else {
+                this.elements.userAvatar.style.backgroundImage = '';
+                if (avatarIcon) avatarIcon.style.display = 'flex';
+            }
+            
+            // Показываем кнопку выхода
+            if (this.elements.logoutSidebar) {
+                this.elements.logoutSidebar.style.display = 'flex';
+            }
+        } else {
+            this.elements.sidebarUsername.textContent = 'Гость';
+            this.elements.sidebarUseremail.textContent = 'Войдите в аккаунт';
+            
+            if (this.elements.dashboardUsername) {
+                this.elements.dashboardUsername.textContent = 'Гость';
+            }
+            
+            // Скрываем кнопку выхода для гостей
+            if (this.elements.logoutSidebar) {
+                this.elements.logoutSidebar.style.display = 'none';
+            }
+        }
+    }
+
+    // ==================== ДАШБОРД ====================
+
+    setupDashboard() {
+        // Вкладки дашборда
+        this.elements.dashboardTabs = document.querySelectorAll('.dashboard-tab');
+        this.elements.dashboardTabContents = document.querySelectorAll('.dashboard-tab-content');
+        
+        if (!this.elements.dashboardTabs.length) return;
+        
+        this.elements.dashboardTabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const tabId = e.currentTarget.dataset.tab;
+                this.switchDashboardTab(tabId);
+            });
+        });
+        
+        // Закрытие дашборда
+        if (this.elements.dashboardClose) {
+            this.elements.dashboardClose.addEventListener('click', () => {
+                this.hideModal('dashboard-modal');
+            });
+        }
+        
+        // Загрузка данных дашборда
+        this.loadDashboardData();
+    }
+
+    switchDashboardTab(tabId) {
+        if (!this.elements.dashboardTabs) return;
+        
+        // Убираем активный класс со всех вкладок и содержимого
+        this.elements.dashboardTabs.forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        this.elements.dashboardTabContents.forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        // Добавляем активный класс выбранной вкладке и содержимому
+        const activeTab = document.querySelector(`.dashboard-tab[data-tab="${tabId}"]`);
+        const activeContent = document.getElementById(`${tabId}-tab`);
+        
+        if (activeTab) activeTab.classList.add('active');
+        if (activeContent) activeContent.classList.add('active');
+        
+        // Обновляем данные при переключении на определенные вкладки
+        if (tabId === 'analytics') {
+            this.renderAnalytics();
+        }
+    }
+
+    showDashboardModal() {
+        if (!this.state.user) {
+            this.showNotification('Войдите в аккаунт для просмотра дашборда', 'warning');
+            return;
+        }
+        
+        // Обновляем данные перед показом
+        this.loadDashboardData();
+        this.showModal('dashboard-modal');
+    }
+
+    // ==================== НАСТРОЙКИ ПРОФИЛЯ ====================
+
+    setupProfileSettings() {
+        // Закрытие модального окна
+        if (this.elements.profileSettingsClose) {
+            this.elements.profileSettingsClose.addEventListener('click', () => {
+                this.hideModal('profile-settings-modal');
+            });
+        }
+        
+        // Обработка формы
+        if (this.elements.profileSettingsForm) {
+            this.elements.profileSettingsForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await this.saveProfileSettings();
+            });
+        }
+    }
+
+    showProfileSettingsModal() {
+        if (!this.state.user) {
+            this.showNotification('Войдите в аккаунт для настройки профиля', 'warning');
+            return;
+        }
+        
+        // Заполняем форму текущими данными
+        document.getElementById('profile-name').value = this.state.user.name || '';
+        document.getElementById('profile-email').value = this.state.user.email || '';
+        document.getElementById('profile-bio').value = this.state.user.bio || '';
+        
+        // Сбрасываем выбор экспертизы
+        const expertiseSelect = document.getElementById('profile-expertise');
+        if (expertiseSelect) {
+            Array.from(expertiseSelect.options).forEach(option => {
+                option.selected = false;
+            });
+            
+            // Устанавливаем сохраненную экспертизу
+            if (this.state.user.expertise && Array.isArray(this.state.user.expertise)) {
+                this.state.user.expertise.forEach(exp => {
+                    const option = expertiseSelect.querySelector(`option[value="${exp}"]`);
+                    if (option) option.selected = true;
+                });
+            }
+        }
+        
+        // Устанавливаем настройки приватности
+        const privacySelect = document.getElementById('profile-privacy');
+        if (privacySelect) {
+            privacySelect.value = this.state.user.privacy || 'public';
+        }
+        
+        this.showModal('profile-settings-modal');
+    }
+
+    async saveProfileSettings() {
+        try {
+            const profileData = {
+                name: document.getElementById('profile-name').value.trim(),
+                email: document.getElementById('profile-email').value.trim(),
+                bio: document.getElementById('profile-bio').value.trim(),
+                expertise: Array.from(document.getElementById('profile-expertise').selectedOptions)
+                    .map(option => option.value),
+                privacy: document.getElementById('profile-privacy').value
+            };
+            
+            if (!profileData.name) {
+                this.showNotification('Введите имя', 'warning');
+                return;
+            }
+            
+            if (!profileData.email) {
+                this.showNotification('Введите email', 'warning');
+                return;
+            }
+            
+            // Симуляция сохранения (замените на реальный API вызов)
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Обновляем данные пользователя локально
+            this.state.user = {
+                ...this.state.user,
+                ...profileData
+            };
+            
+            this.saveUserToStorage();
+            this.updateSidebarInfo();
+            this.updateAuthUI();
+            
+            this.hideModal('profile-settings-modal');
+            this.showNotification('Профиль обновлен ✅', 'success');
+            
+        } catch (error) {
+            console.error('Error saving profile:', error);
+            this.showNotification('Ошибка при обновлении профиля', 'error');
+        }
+    }
+
     // ==================== ОСНОВНЫЕ ФУНКЦИИ ЧАТА ====================
 
     setupEventListeners() {
@@ -1497,7 +1868,6 @@ this.elements.apiStatus.classList.add('api-error');
         
         // Голосовые функции
         this.elements.voiceInput.addEventListener('click', () => this.toggleVoiceRecording());
-        this.elements.voiceOutput.addEventListener('click', () => this.speakLastMessage());
         
         // Режимы AI в настройках
         document.querySelectorAll('.mode-item-settings').forEach(mode => {
@@ -1947,21 +2317,21 @@ this.elements.apiStatus.classList.add('api-error');
     showNotification(text, type = 'info') {
         this.elements.notificationText.textContent = text;
     
-    // Убираем inline-стили
-    const notification = this.elements.notification;
-    notification.style.background = '';
-    notification.style.color = '';
-    
-    // Добавляем только класс
-    notification.className = 'notification';
-    notification.classList.add(type);
-    
-    notification.classList.add('show');
-    
-    setTimeout(() => {
-        notification.classList.remove('show');
-    }, 3000);
-}
+        // Убираем inline-стили
+        const notification = this.elements.notification;
+        notification.style.background = '';
+        notification.style.color = '';
+        
+        // Добавляем только класс
+        notification.className = 'notification';
+        notification.classList.add(type);
+        
+        notification.classList.add('show');
+        
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, 3000);
+    }
 
     unlockAchievement(achievementId) {
         if (!this.state.achievements[achievementId] || this.state.achievements[achievementId].unlocked) return;
@@ -2021,6 +2391,209 @@ this.elements.apiStatus.classList.add('api-error');
 
     // ==================== ПОЛЕЗНЫЕ ФУНКЦИИ ====================
 
+    // ==================== АВТОРИЗАЦИЯ ПОЛЬЗОВАТЕЛЯ ====================
+
+    loadUserFromStorage() {
+        try {
+            const userJson = localStorage.getItem('verdikt_user');
+            const token = localStorage.getItem('verdikt_token');
+            if (userJson && token) {
+                this.state.user = JSON.parse(userJson);
+                this.state.authToken = token;
+            }
+        } catch (e) {
+            console.warn('Не удалось загрузить пользователя из localStorage', e);
+        }
+    }
+
+    saveUserToStorage() {
+        if (this.state.user && this.state.authToken) {
+            localStorage.setItem('verdikt_user', JSON.stringify(this.state.user));
+            localStorage.setItem('verdikt_token', this.state.authToken);
+        } else {
+            localStorage.removeItem('verdikt_user');
+            localStorage.removeItem('verdikt_token');
+        }
+    }
+
+    setUser(user, token) {
+        this.state.user = user;
+        this.state.authToken = token || this.state.authToken;
+        this.saveUserToStorage();
+        this.updateAuthUI();
+        this.updateSidebarInfo();
+        
+        // Загружаем данные дашборда для нового пользователя
+        if (user) {
+            setTimeout(() => this.loadDashboardData(), 1000);
+        }
+    }
+
+    logout() {
+        this.state.user = null;
+        this.state.authToken = null;
+        this.saveUserToStorage();
+        this.updateAuthUI();
+        this.updateSidebarInfo();
+        
+        this.showNotification('Вы вышли из аккаунта', 'info');
+    }
+
+    getAuthHeaders() {
+        const headers = {};
+        if (this.state.authToken) {
+            headers['Authorization'] = `Bearer ${this.state.authToken}`;
+        }
+        return headers;
+    }
+
+    async registerUser({ name, email, password }) {
+        const url = `${this.AUTH_CONFIG.baseUrl}${this.AUTH_CONFIG.endpoints.register}`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name, email, password })
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            const message = error.message || `Ошибка регистрации (HTTP ${response.status})`;
+            throw new Error(message);
+        }
+
+        const data = await response.json();
+        // Ожидаем формат { user, token }
+        this.setUser(data.user, data.token);
+    }
+
+    async loginUser({ email, password }) {
+        const url = `${this.AUTH_CONFIG.baseUrl}${this.AUTH_CONFIG.endpoints.login}`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email, password })
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            const message = error.message || `Ошибка входа (HTTP ${response.status})`;
+            throw new Error(message);
+        }
+
+        const data = await response.json();
+        this.setUser(data.user, data.token);
+    }
+
+    setupAuthUI() {
+        const loginBtn = this.elements.loginButton;
+        const logoutBtn = document.getElementById('logout-button');
+        const authClose = this.elements.authClose;
+        const authTabs = document.querySelectorAll('.auth-tab');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+
+        if (loginBtn) {
+            loginBtn.addEventListener('click', () => {
+                this.showModal('auth-modal');
+            });
+        }
+
+        if (authClose) {
+            authClose.addEventListener('click', () => this.hideModal('auth-modal'));
+        }
+
+        authTabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const target = e.currentTarget.dataset.tab;
+                authTabs.forEach(t => t.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+
+                document.querySelectorAll('.auth-form').forEach(form => {
+                    form.classList.remove('active');
+                });
+                document.getElementById(`${target}-form`).classList.add('active');
+            });
+        });
+
+        if (loginForm) {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('login-email').value.trim();
+                const password = document.getElementById('login-password').value;
+
+                if (!email || !password) {
+                    this.showNotification('Введите email и пароль', 'warning');
+                    return;
+                }
+
+                try {
+                    await this.loginUser({ email, password });
+                    this.hideModal('auth-modal');
+                    this.showNotification('Вы успешно вошли ✅', 'success');
+                } catch (error) {
+                    this.showNotification(error.message || 'Ошибка входа', 'error');
+                }
+            });
+        }
+
+        if (registerForm) {
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = document.getElementById('register-name').value.trim();
+                const email = document.getElementById('register-email').value.trim();
+                const password = document.getElementById('register-password').value;
+
+                if (!name || !email || !password) {
+                    this.showNotification('Заполните все поля', 'warning');
+                    return;
+                }
+
+                try {
+                    await this.registerUser({ name, email, password });
+                    this.hideModal('auth-modal');
+                    this.showNotification('Регистрация прошла успешно ✅', 'success');
+                } catch (error) {
+                    this.showNotification(error.message || 'Ошибка регистрации', 'error');
+                }
+            });
+        }
+
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => this.logout());
+        }
+
+        this.updateAuthUI();
+    }
+
+    updateAuthUI() {
+        const userAuth = document.getElementById('user-auth');
+        const label = userAuth?.querySelector('.user-auth-label');
+        const userInfo = document.getElementById('auth-user-info');
+        const userNameLabel = document.getElementById('auth-user-name');
+
+        if (!userAuth || !label) return;
+
+        if (this.state.user) {
+            const name = this.state.user.name || this.state.user.email || 'Аккаунт';
+            label.textContent = name;
+            userAuth.classList.add('user-auth-logged-in');
+            if (userInfo && userNameLabel) {
+                userNameLabel.textContent = name;
+                userInfo.style.display = 'flex';
+            }
+        } else {
+            label.textContent = 'Войти';
+            userAuth.classList.remove('user-auth-logged-in');
+            if (userInfo) {
+                userInfo.style.display = 'none';
+            }
+        }
+    }
+
     getCurrentTime() {
         const now = new Date();
         return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
@@ -2043,6 +2616,7 @@ this.elements.apiStatus.classList.add('api-error');
 
     updateUI() {
         this.updateSettingsStats();
+        this.updateSidebarInfo();
     }
 
     getAchievementIdByName(name) {
@@ -2366,26 +2940,83 @@ this.elements.apiStatus.classList.add('api-error');
     }
 
     setupBackgroundAnimations() {
-        const heartsContainer = document.getElementById('floating-hearts');
-        for (let i = 0; i < 15; i++) {
-            const heart = document.createElement('div');
-            heart.className = 'heart';
-            heart.innerHTML = '❤';
-            heart.style.left = `${Math.random() * 100}%`;
-            heart.style.animationDelay = `${Math.random() * 15}s`;
-            heart.style.fontSize = `${10 + Math.random() * 20}px`;
-            heartsContainer.appendChild(heart);
+        const profile = this.getPerformanceProfile ? this.getPerformanceProfile() : { isLowEnd: false, reducedMotion: false };
+
+        // В режиме "меньше движения" полностью отключаем фоновые частицы
+        if (profile.reducedMotion) {
+            const particlesContainer = document.getElementById('connection-particles');
+            if (particlesContainer) {
+                particlesContainer.innerHTML = '';
+            }
+            return;
         }
 
         const particlesContainer = document.getElementById('connection-particles');
-        for (let i = 0; i < 30; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'particle';
-            particle.style.left = `${Math.random() * 100}%`;
-            particle.style.top = `${Math.random() * 100}%`;
-            particle.style.animationDelay = `${Math.random() * 3}s`;
-            particlesContainer.appendChild(particle);
+        if (particlesContainer) {
+            const baseCount = 80;
+            const particleCount = profile.isLowEnd ? 40 : baseCount;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+
+                // Случайный размер частицы (имитация глубины)
+                const size = 1.5 + Math.random() * 3.5;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+
+                // Случайное положение
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+
+                // Вариативная скорость и задержка анимации
+                const delay = Math.random() * 6;
+                const duration = 4 + Math.random() * 6;
+                particle.style.animationDelay = `${delay}s`;
+                particle.style.setProperty('--duration', `${duration}s`);
+
+                // Лёгкий разброс яркости
+                const alpha = 0.25 + Math.random() * 0.6;
+                particle.style.opacity = alpha.toFixed(2);
+                particle.style.setProperty('--alpha', alpha.toFixed(2));
+
+                // Случайное направление и дистанция движения
+                // Угол преимущественно вверх, с небольшим разбросом влево/вправо
+                const baseAngle = -Math.PI / 2; // вверх
+                const angleSpread = Math.PI / 3; // разброс
+                const angle = baseAngle + (Math.random() - 0.5) * angleSpread;
+                const distance = 80 + Math.random() * 180;
+                const tx = Math.cos(angle) * distance;
+                const ty = Math.sin(angle) * distance;
+                particle.style.setProperty('--tx', tx.toFixed(1));
+                particle.style.setProperty('--ty', ty.toFixed(1));
+
+                // Небольшая вариация масштаба (ещё один уровень глубины)
+                const scale = 0.7 + Math.random() * 1.3;
+                particle.style.setProperty('--scale', scale.toFixed(2));
+
+                particlesContainer.appendChild(particle);
+            }
         }
+    }
+
+    getPerformanceProfile() {
+        const cores = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
+            ? navigator.hardwareConcurrency
+            : 2;
+
+        const reducedMotion = typeof window !== 'undefined' && window.matchMedia
+            ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+            : false;
+
+        const isLowEnd = cores <= 4;
+
+        // Проставляем класс для CSS-оптимизаций
+        if (typeof document !== 'undefined' && (reducedMotion || isLowEnd)) {
+            document.documentElement.classList.add('low-motion');
+        }
+
+        return { cores, reducedMotion, isLowEnd };
     }
 
     setupServiceWorker() {
@@ -3363,6 +3994,407 @@ this.elements.apiStatus.classList.add('api-error');
         }
     }
 
+    // ==================== ДЕМО ДАННЫЕ ====================
+
+    async loadDashboardData() {
+        try {
+            // Демо данные для тестирования
+            this.dashboard = {
+                questions: [
+                    {
+                        id: 1,
+                        user: {
+                            name: 'Анна',
+                            avatar: '👩'
+                        },
+                        content: 'Как понять, что партнер мной манипулирует? Замечаю, что после ссор всегда чувствую себя виноватой, хотя начиналось не из-за меня.',
+                        date: '2026-02-10T14:30:00',
+                        likes: 12,
+                        dislikes: 2,
+                        comments: 5,
+                        isLiked: false,
+                        isDisliked: false
+                    },
+                    {
+                        id: 2,
+                        user: {
+                            name: 'Максим',
+                            avatar: '👨'
+                        },
+                        content: 'Как правильно вести себя на первом свидании после знакомства в интернете? Волнуюсь и не знаю, о чем говорить.',
+                        date: '2026-02-09T20:15:00',
+                        likes: 8,
+                        dislikes: 1,
+                        comments: 3,
+                        isLiked: true,
+                        isDisliked: false
+                    }
+                ],
+                stories: this.chatManager.chats.map(chat => ({
+                    id: chat.id,
+                    title: chat.title,
+                    preview: chat.messages && chat.messages.length > 0 
+                        ? chat.messages[0].content.substring(0, 100) + '...'
+                        : 'Нет сообщений',
+                    date: new Date(chat.timestamp),
+                    messageCount: chat.messages ? chat.messages.length : 0,
+                    likes: Math.floor(Math.random() * 20),
+                    comments: Math.floor(Math.random() * 10)
+                })),
+                analytics: {
+                    totalResponses: 15,
+                    helpfulResponses: 12,
+                    averageRating: 4.5,
+                    activity: this.generateActivityData()
+                }
+            };
+            
+            this.renderDashboardData();
+            this.updateSidebarStats();
+            
+        } catch (error) {
+            console.error('Error loading dashboard data:', error);
+        }
+    }
+
+    generateActivityData() {
+        // Генерация демо данных активности за последние 7 дней
+        const activity = [];
+        const now = new Date();
+        
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date(now);
+            date.setDate(now.getDate() - i);
+            
+            activity.push({
+                date: date.toISOString().split('T')[0],
+                questions: Math.floor(Math.random() * 5),
+                responses: Math.floor(Math.random() * 10),
+                likes: Math.floor(Math.random() * 20)
+            });
+        }
+        
+        return activity;
+    }
+
+    renderDashboardData() {
+        // Рендерим вопросы
+        this.renderQuestions();
+        
+        // Рендерим истории
+        this.renderStories();
+        
+        // Рендерим аналитику
+        this.renderAnalytics();
+        
+        // Рендерим активность
+        this.renderActivity();
+    }
+
+    renderQuestions() {
+        const questionsList = document.getElementById('questions-list');
+        if (!questionsList) return;
+        
+        if (!this.dashboard.questions || this.dashboard.questions.length === 0) {
+            questionsList.innerHTML = `
+                <div class="question-card" style="text-align: center; padding: 40px;">
+                    <i class="fas fa-question-circle" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
+                    <h4>Пока нет вопросов</h4>
+                    <p style="color: var(--text-tertiary);">Когда пользователи зададут вам вопросы, они появятся здесь</p>
+                </div>
+            `;
+            return;
+        }
+        
+        questionsList.innerHTML = this.dashboard.questions.map(question => `
+            <div class="question-card" data-question-id="${question.id}">
+                <div class="question-header">
+                    <div class="question-avatar">${question.user.avatar}</div>
+                    <div class="question-meta">
+                        <h5>${question.user.name}</h5>
+                        <div class="date">${this.formatDate(question.date)}</div>
+                    </div>
+                </div>
+                <div class="question-content">${question.content}</div>
+                <div class="question-actions">
+                    <div class="action-buttons">
+                        <button class="action-btn ${question.isLiked ? 'liked' : ''}" data-action="like" data-question-id="${question.id}">
+                            <i class="fas fa-thumbs-up"></i> ${question.likes}
+                        </button>
+                        <button class="action-btn ${question.isDisliked ? 'disliked' : ''}" data-action="dislike" data-question-id="${question.id}">
+                            <i class="fas fa-thumbs-down"></i> ${question.dislikes}
+                        </button>
+                        <button class="action-btn" data-action="comment" data-question-id="${question.id}">
+                            <i class="fas fa-comment"></i> Ответить
+                        </button>
+                    </div>
+                    <div class="comments-count">
+                        <i class="fas fa-comments"></i> ${question.comments}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        // Обновляем бейджи
+        this.updateBadges();
+    }
+
+    renderStories() {
+        const storiesList = document.getElementById('stories-list');
+        if (!storiesList) return;
+        
+        if (!this.dashboard.stories || this.dashboard.stories.length === 0) {
+            storiesList.innerHTML = `
+                <div class="question-card" style="text-align: center; padding: 40px;">
+                    <i class="fas fa-history" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
+                    <h4>Пока нет историй</h4>
+                    <p style="color: var(--text-tertiary);">Ваши чаты и консультации появятся здесь</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Сортируем по дате (новые сверху)
+        const sortedStories = [...this.dashboard.stories].sort((a, b) => b.date - a.date);
+        
+        storiesList.innerHTML = sortedStories.map(story => `
+            <div class="question-card" data-story-id="${story.id}">
+                <div class="question-header">
+                    <div class="question-avatar">💬</div>
+                    <div class="question-meta">
+                        <h5>${story.title}</h5>
+                        <div class="date">${this.formatDate(story.date)}</div>
+                    </div>
+                </div>
+                <div class="question-content">${story.preview}</div>
+                <div class="question-actions">
+                    <div class="action-buttons">
+                        <button class="action-btn" onclick="window.verdiktApp.loadChat('${story.id}'); window.verdiktApp.hideModal('dashboard-modal');">
+                            <i class="fas fa-eye"></i> Открыть
+                        </button>
+                        <button class="action-btn" onclick="window.verdiktApp.shareStory('${story.id}')">
+                            <i class="fas fa-share"></i> Поделиться
+                        </button>
+                    </div>
+                    <div class="comments-count">
+                        <i class="fas fa-comment"></i> ${story.messageCount} сообщ.
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    renderAnalytics() {
+        // Обновляем статистику
+        const analyticsTotal = document.getElementById('analytics-total');
+        const analyticsHelpful = document.getElementById('analytics-helpful');
+        const analyticsLikes = document.getElementById('analytics-likes');
+        const analyticsComments = document.getElementById('analytics-comments');
+        const dashboardRating = document.getElementById('dashboard-rating');
+        
+        if (analyticsTotal) analyticsTotal.textContent = this.dashboard.analytics.totalResponses || 0;
+        if (analyticsHelpful) analyticsHelpful.textContent = this.dashboard.analytics.helpfulResponses || 0;
+        if (analyticsLikes) analyticsLikes.textContent = this.dashboard.dashboard?.likes || 0;
+        if (analyticsComments) analyticsComments.textContent = this.dashboard.dashboard?.comments?.length || 0;
+        if (dashboardRating) dashboardRating.textContent = this.dashboard.analytics.averageRating || 0;
+        
+        // Создаем график активности
+        this.createAnalyticsChart();
+    }
+
+    renderActivity() {
+        const activityList = document.getElementById('activity-list');
+        if (!activityList) return;
+        
+        // Демо данные активности
+        const activities = [
+            { type: 'question', text: 'Ответил на вопрос о манипуляциях', time: '2 часа назад' },
+            { type: 'like', text: 'Получил 5 лайков за совет о свиданиях', time: '5 часов назад' },
+            { type: 'comment', text: 'Прокомментировал историю о токсичных отношениях', time: 'Вчера' },
+            { type: 'chat', text: 'Провел консультацию по семейным отношениям', time: '2 дня назад' }
+        ];
+        
+        activityList.innerHTML = activities.map(activity => `
+            <div class="question-card">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 40px; height: 40px; border-radius: 10px; background: ${this.getActivityColor(activity.type)}; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white;">
+                        ${this.getActivityIcon(activity.type)}
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; margin-bottom: 3px;">${activity.text}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-tertiary);">${activity.time}</div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    getActivityColor(type) {
+        switch(type) {
+            case 'question': return 'linear-gradient(135deg, #8b5cf6, #7c3aed)';
+            case 'like': return 'linear-gradient(135deg, #ef4444, #dc2626)';
+            case 'comment': return 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
+            case 'chat': return 'linear-gradient(135deg, #10b981, #059669)';
+            default: return 'linear-gradient(135deg, var(--primary), var(--secondary))';
+        }
+    }
+
+    getActivityIcon(type) {
+        switch(type) {
+            case 'question': return '❓';
+            case 'like': return '❤️';
+            case 'comment': return '💬';
+            case 'chat': return '💕';
+            default: return '📝';
+        }
+    }
+
+    createAnalyticsChart() {
+        const ctx = document.getElementById('analytics-chart')?.getContext('2d');
+        if (!ctx) return;
+        
+        if (this.analyticsChart) {
+            this.analyticsChart.destroy();
+        }
+        
+        const labels = this.dashboard.analytics.activity.map(a => 
+            new Date(a.date).toLocaleDateString('ru-RU', { weekday: 'short' })
+        );
+        
+        const questionsData = this.dashboard.analytics.activity.map(a => a.questions);
+        const responsesData = this.dashboard.analytics.activity.map(a => a.responses);
+        
+        this.analyticsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Вопросы',
+                        data: questionsData,
+                        borderColor: '#ec4899',
+                        backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Ответы',
+                        data: responsesData,
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: 'var(--text-secondary)'
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: 'var(--text-secondary)'
+                        },
+                        grid: {
+                            color: 'var(--border-color)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: 'var(--text-secondary)'
+                        },
+                        grid: {
+                            color: 'var(--border-color)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    updateSidebarStats() {
+        if (!this.dashboard.questions) return;
+        
+        // Обновляем статистику в боковом меню
+        const totalQuestions = this.dashboard.questions.length;
+        const totalLikes = this.dashboard.questions.reduce((sum, q) => sum + q.likes, 0);
+        const totalComments = this.dashboard.questions.reduce((sum, q) => sum + q.comments, 0);
+        const helpfulResponses = this.dashboard.analytics.helpfulResponses;
+        
+        if (this.elements.statQuestions) this.elements.statQuestions.textContent = totalQuestions;
+        if (this.elements.statLikes) this.elements.statLikes.textContent = totalLikes;
+        if (this.elements.statComments) this.elements.statComments.textContent = totalComments;
+        if (this.elements.statHelpful) this.elements.statHelpful.textContent = helpfulResponses;
+    }
+
+    updateBadges() {
+        if (!this.dashboard.questions) return;
+        
+        // Обновляем бейджи в боковом меню
+        const totalQuestions = this.dashboard.questions.length;
+        const totalLikes = this.dashboard.questions.reduce((sum, q) => sum + q.likes, 0);
+        const totalComments = this.dashboard.questions.reduce((sum, q) => sum + q.comments, 0);
+        
+        if (this.elements.questionsBadge) this.elements.questionsBadge.textContent = totalQuestions;
+        if (this.elements.likesBadge) this.elements.likesBadge.textContent = totalLikes;
+        if (this.elements.commentsBadge) this.elements.commentsBadge.textContent = totalComments;
+    }
+
+    formatDate(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 0) {
+            return 'Сегодня в ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        } else if (diffDays === 1) {
+            return 'Вчера в ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        } else if (diffDays < 7) {
+            return `${diffDays} дней назад`;
+        } else {
+            return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+        }
+    }
+
+    shareStory(storyId) {
+        const story = this.dashboard.stories.find(s => s.id === storyId);
+        if (!story) return;
+        
+        // Создаем URL для шаринга
+        const shareUrl = `${window.location.origin}?story=${storyId}`;
+        
+        // Проверяем поддержку Web Share API
+        if (navigator.share) {
+            navigator.share({
+                title: story.title,
+                text: story.preview,
+                url: shareUrl
+            }).catch(console.error);
+        } else {
+            // Копируем в буфер обмена
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                this.showNotification('Ссылка скопирована в буфер обмена 📋', 'success');
+            }).catch(() => {
+                // Fallback для старых браузеров
+                const textArea = document.createElement('textarea');
+                textArea.value = shareUrl;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                this.showNotification('Ссылка скопирована в буфер обмена 📋', 'success');
+            });
+        }
+    }
+    
     async showPasswordPrompt() {
         return new Promise((resolve) => {
             const modalHTML = `
