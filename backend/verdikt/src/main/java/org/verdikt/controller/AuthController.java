@@ -4,15 +4,17 @@ import org.verdikt.dto.LoginRequest;
 import org.verdikt.dto.LoginResponse;
 import org.verdikt.dto.RegisterRequest;
 import org.verdikt.dto.UserResponse;
+import org.verdikt.entity.User;
 import org.verdikt.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 
 /**
- * Регистрация и логин.
+ * Регистрация, логин и текущий пользователь.
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -22,6 +24,18 @@ public class AuthController {
 
     public AuthController(UserService userService) {
         this.userService = userService;
+    }
+
+    /**
+     * GET /api/auth/me — данные текущего пользователя по JWT.
+     * Требуется Authorization: Bearer &lt;token&gt;.
+     */
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> me(@AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(UserResponse.from(user));
     }
 
     /**
