@@ -5,6 +5,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Пользователь приложения.
@@ -31,6 +33,23 @@ public class User {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
+
+    @Size(max = 255)
+    @Column(name = "name", length = 255)
+    private String name;
+
+    @Size(max = 2000)
+    @Column(name = "bio", length = 2000)
+    private String bio;
+
+    @Size(max = 50)
+    @Column(name = "privacy", length = 50)
+    private String privacy;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_expertise", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "expertise", length = 100)
+    private List<String> expertise = new ArrayList<>();
 
     // --- Геттеры и сеттеры ---
 
@@ -64,5 +83,37 @@ public class User {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public String getPrivacy() {
+        return privacy;
+    }
+
+    public void setPrivacy(String privacy) {
+        this.privacy = privacy;
+    }
+
+    public List<String> getExpertise() {
+        return expertise;
+    }
+
+    public void setExpertise(List<String> expertise) {
+        this.expertise = expertise != null ? expertise : new ArrayList<>();
     }
 }
