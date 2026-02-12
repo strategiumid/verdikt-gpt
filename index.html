@@ -1251,6 +1251,10 @@
                 <button class="dashboard-tab" data-tab="activity">
                     <i class="fas fa-bolt"></i> Активность
                 </button>
+                <!-- Вкладка админ-панели отображается только в админ-режиме (через CSS/JS) -->
+                <button class="dashboard-tab admin-only" data-tab="admin" style="display: none;">
+                    <i class="fas fa-user-shield"></i> Админ
+                </button>
             </div>
 
             <div class="dashboard-tab-content active" id="questions-tab">
@@ -1314,6 +1318,47 @@
                             <i class="fas fa-bolt" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
                             <h4>Пока нет активности</h4>
                             <p style="color: var(--text-tertiary);">Ваша активность появится здесь</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Админ-панель (вкладка) -->
+            <div class="dashboard-tab-content" id="admin-tab">
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-user-shield"></i> Админ-панель
+                    </h3>
+
+                    <div class="question-card" style="margin-bottom: 20px;">
+                        <div class="question-header">
+                            <div class="question-avatar">⚙️</div>
+                            <div class="question-meta">
+                                <h5>Быстрые действия</h5>
+                                <div class="date">Управление платформой</div>
+                            </div>
+                        </div>
+                        <div class="question-content" style="margin-bottom: 10px;">
+                            Здесь вы можете управлять пользователями и вопросами прямо внутри Verdikt GPT.
+                        </div>
+                        <div class="question-actions">
+                            <div class="action-buttons">
+                                <button class="action-btn" id="admin-refresh-questions">
+                                    <i class="fas fa-sync-alt"></i> Обновить вопросы
+                                </button>
+                                <button class="action-btn" id="admin-refresh-users">
+                                    <i class="fas fa-users"></i> Обновить пользователей
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Админ-список вопросов -->
+                    <div class="questions-grid" id="admin-questions-list">
+                        <div class="question-card" style="text-align: center; padding: 40px;">
+                            <i class="fas fa-tasks" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
+                            <h4>Нет данных</h4>
+                            <p style="color: var(--text-tertiary);">Вопросы пользователей появятся здесь после загрузки дашборда</p>
                         </div>
                     </div>
                 </div>
@@ -1968,6 +2013,11 @@
                 
                 <button class="ios-button secondary" id="settings-button" title="Настройки">
                     <i class="fas fa-cog"></i>
+                </button>
+                
+                <!-- Локальная кнопка админ-режима (пока без проверки на бэкенде) -->
+                <button class="ios-button secondary" id="admin-mode-toggle" title="Войти в админ-режим">
+                    <i class="fas fa-user-shield"></i>
                 </button>
                 
                 <!-- Авторизация пользователя -->

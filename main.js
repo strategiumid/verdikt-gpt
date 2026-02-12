@@ -77,6 +77,8 @@ class VerdiktChatApp {
                 popularTopics: {},
                 totalChats: 1
             },
+            // Локальный флаг админ-режима (пока без проверки на бэкенде)
+            isAdmin: false,
             // Пользователь и токен авторизации
             user: null,
             authToken: null,
@@ -125,6 +127,8 @@ class VerdiktChatApp {
             smartSuggestions: document.getElementById('smart-suggestions'),
             typingIndicator: document.getElementById('typing-indicator'),
             achievementNotification: document.getElementById('achievement-notification'),
+            // Админ-режим
+            adminModeToggle: document.getElementById('admin-mode-toggle'),
             // Авторизация
             loginButton: document.getElementById('login-button'),
             authModal: document.getElementById('auth-modal'),
@@ -232,6 +236,7 @@ class VerdiktChatApp {
         this.setupEventListeners();
         this.loadFromLocalStorage();
         this.loadUserFromStorage();
+        this.setupAdminMode();
         this.setupSpeechRecognition();
         this.setupBackgroundAnimations();
         this.updateUI();
@@ -2394,10 +2399,84 @@ class VerdiktChatApp {
                 this.setTheme(savedTheme);
             }
         }
+
+        // Локальное хранение статуса админ-режима (пока без проверки на бэкенде)
+        const adminMode = localStorage.getItem('verdikt_admin_mode');
+        if (adminMode === '1') {
+            this.state.isAdmin = true;
+            document.body.classList.add('admin-mode');
+        }
     }
 
     async saveToLocalStorage() {
         await this.saveChats();
+    }
+
+    // ==================== АДМИН-РЕЖИМ (ЛОКАЛЬНЫЙ) ====================
+
+    setupAdminMode() {
+        const btn = this.elements.adminModeToggle;
+        if (!btn) return;
+
+        const applyStateToUI = () => {
+            document.body.classList.toggle('admin-mode', this.state.isAdmin);
+            btn.classList.toggle('primary', this.state.isAdmin);
+            btn.classList.toggle('secondary', !this.state.isAdmin);
+            btn.title = this.state.isAdmin
+                ? 'Выйти из админ-режима'
+                : 'Войти в админ-режим';
+        };
+
+        applyStateToUI();
+
+        btn.addEventListener('click', () => {
+            // Пока что просто локальный переключатель.
+            // В будущем здесь можно добавить запрос к бэкенду (например, /api/admin/login)
+            this.state.isAdmin = !this.state.isAdmin;
+            localStorage.setItem('verdikt_admin_mode', this.state.isAdmin ? '1' : '0');
+            applyStateToUI();
+
+            this.showNotification(
+                this.state.isAdmin
+                    ? 'Админ-режим включен (локально)'
+                    : 'Админ-режим выключен',
+                'info'
+            );
+        });
+    }
+
+    attachAdminQuestionHandlers() {
+        if (!this.state.isAdmin || !this.dashboard || !this.dashboard.questions) return;
+
+        const container = document.getElementById('questions-list');
+        if (!container) return;
+
+        container.querySelectorAll('[data-action="admin-delete"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-question-id');
+                if (!id) return;
+                // Пока удаляем только на клиенте. В будущем здесь будет запрос к бэкенду.
+                this.dashboard.questions = this.dashboard.questions.filter(q => String(q.id) !== String(id));
+                this.renderQuestions();
+                this.renderAdminQuestions();
+                this.updateSidebarStats();
+                this.showNotification('Вопрос удален (локально)', 'info');
+            });
+        });
+
+        container.querySelectorAll('[data-action="admin-ban"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-question-id');
+                if (!id) return;
+                const question = this.dashboard.questions.find(q => String(q.id) === String(id));
+                const userEmail = question?.user?.email || question?.user?.name || 'пользователь';
+
+                // Пока просто показываем уведомление и помечаем вопрос как "забаненный".
+                question.isBanned = true;
+                this.showNotification(`Пользователь ${userEmail} помечен как забаненный (локально)`, 'warning');
+                this.renderAdminQuestions();
+            });
+        });
     }
 
     // ==================== ПОЛЕЗНЫЕ ФУНКЦИИ ====================
@@ -4168,6 +4247,9 @@ class VerdiktChatApp {
         
         // Рендерим активность
         this.renderActivity();
+
+        // Рендерим админ-вкладку (если есть права)
+        this.renderAdminQuestions();
     }
 
     renderQuestions() {
@@ -4239,6 +4321,14 @@ class VerdiktChatApp {
                             <button class="action-btn" data-action="comment" data-question-id="${question.id}">
                                 <i class="fas fa-comment"></i> Ответить
                             </button>
+                            ${this.state.isAdmin ? `
+                            <button class="action-btn" data-action="admin-delete" data-question-id="${question.id}">
+                                <i class="fas fa-trash"></i> Удалить
+                            </button>
+                            <button class="action-btn" data-action="admin-ban" data-question-id="${question.id}">
+                                <i class="fas fa-user-slash"></i> Бан пользователя
+                            </button>
+                            ` : ''}
                         </div>
                         <div class="comments-count">
                             <i class="fas fa-comments"></i> ${question.comments}
@@ -4262,6 +4352,9 @@ class VerdiktChatApp {
                 }
             });
         }
+
+        // Навешиваем обработчики админ-действий по вопросам
+        this.attachAdminQuestionHandlers();
 
         // Обновляем бейджи
         this.updateBadges();
@@ -4355,6 +4448,119 @@ class VerdiktChatApp {
                 </div>
             </div>
         `).join('');
+    }
+
+    renderAdminQuestions() {
+        const adminTabButton = document.querySelector('.dashboard-tab[data-tab="admin"]');
+        const adminList = document.getElementById('admin-questions-list');
+
+        // Если элементов нет в DOM — просто выходим
+        if (!adminTabButton || !adminList) return;
+
+        // Показываем/скрываем вкладку "Админ" в зависимости от прав
+        if (this.state.isAdmin) {
+            adminTabButton.style.display = '';
+        } else {
+            adminTabButton.style.display = 'none';
+        }
+
+        if (!this.state.isAdmin) {
+            adminList.innerHTML = `
+                <div class="question-card" style="text-align: center; padding: 40px;">
+                    <i class="fas fa-lock" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
+                    <h4>Нет доступа</h4>
+                    <p style="color: var(--text-tertiary);">Админ-панель доступна только в админ-режиме</p>
+                </div>
+            `;
+            return;
+        }
+
+        if (!this.dashboard || !this.dashboard.questions || this.dashboard.questions.length === 0) {
+            adminList.innerHTML = `
+                <div class="question-card" style="text-align: center; padding: 40px;">
+                    <i class="fas fa-tasks" style="font-size: 3rem; color: var(--text-terтиary); margin-bottom: 20px;"></i>
+                    <h4>Пока нет вопросов</h4>
+                    <p style="color: var(--text-tertiary);">После появления вопросов вы сможете управлять ими здесь</p>
+                </div>
+            `;
+            return;
+        }
+
+        const html = this.dashboard.questions.map(question => `
+            <div class="question-card" data-question-id="${question.id}">
+                <div class="question-header">
+                    <div class="question-avatar">${question.user.avatar}</div>
+                    <div class="question-meta">
+                        <h5>${question.user.name}</h5>
+                        <div class="date">${this.formatDate(question.date)}</div>
+                    </div>
+                </div>
+                <div class="question-content">
+                    ${question.content}
+                    ${question.isBanned ? `
+                        <div style="margin-top: 8px; font-size: 0.8rem; color: #f97316;">
+                            <i class="fas fa-exclamation-triangle"></i> Пользователь помечен как забаненный
+                        </div>
+                    ` : ''}
+                </div>
+                <div class="question-actions">
+                    <div class="action-buttons">
+                        <button class="action-btn" data-action="admin-delete" data-question-id="${question.id}">
+                            <i class="fas fa-trash"></i> Удалить вопрос
+                        </button>
+                        <button class="action-btn" data-action="admin-ban" data-question-id="${question.id}">
+                            <i class="fas fa-user-slash"></i> Забанить пользователя
+                        </button>
+                        <button class="action-btn" data-action="admin-resolve" data-question-id="${question.id}">
+                            <i class="fas fa-check"></i> Отметить как решенный
+                        </button>
+                    </div>
+                    <div class="comments-count">
+                        <i class="fas fa-comments"></i> ${question.comments}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        adminList.innerHTML = html;
+
+        // Навешиваем обработчики на кнопки внутри админ-списка
+        adminList.querySelectorAll('[data-action="admin-delete"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-question-id');
+                if (!id) return;
+                this.dashboard.questions = this.dashboard.questions.filter(q => String(q.id) !== String(id));
+                this.renderQuestions();
+                this.renderAdminQuestions();
+                this.updateSidebarStats();
+                this.showNotification('Вопрос удален (локально)', 'info');
+            });
+        });
+
+        adminList.querySelectorAll('[data-action="admin-ban"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-question-id');
+                if (!id) return;
+                const question = this.dashboard.questions.find(q => String(q.id) === String(id));
+                const userEmail = question?.user?.email || question?.user?.name || 'пользователь';
+
+                question.isBanned = true;
+                this.showNotification(`Пользователь ${userEmail} помечен как забаненный (локально)`, 'warning');
+                this.renderAdminQuestions();
+            });
+        });
+
+        adminList.querySelectorAll('[data-action="admin-resolve"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-question-id');
+                if (!id) return;
+                const question = this.dashboard.questions.find(q => String(q.id) === String(id));
+                if (!question) return;
+                question.isResolved = true;
+                this.showNotification('Вопрос отмечен как решенный (локально)', 'success');
+                this.renderAdminQuestions();
+            });
+        });
     }
 
     getActivityColor(type) {
