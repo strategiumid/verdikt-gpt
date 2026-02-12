@@ -232,7 +232,6 @@ class VerdiktChatApp {
         this.setupEventListeners();
         this.loadFromLocalStorage();
         this.loadUserFromStorage();
-        this.loadUserSettings();
         this.setupSpeechRecognition();
         this.setupBackgroundAnimations();
         this.updateUI();
@@ -2312,31 +2311,17 @@ class VerdiktChatApp {
         }
     }
 
-    applyTheme(theme) {
-        if (!theme) return;
+    setTheme(theme) {
         this.state.currentTheme = theme;
         document.body.setAttribute('data-theme', theme);
+        
+        // Обновляем активный класс
         document.querySelectorAll('.theme-option').forEach(opt => opt.classList.remove('active'));
         const activeTheme = document.querySelector(`.theme-option[data-theme="${theme}"]`);
-        if (activeTheme) activeTheme.classList.add('active');
-    }
-
-    setTheme(theme) {
-        this.applyTheme(theme);
-        localStorage.setItem('verdikt_theme', theme);
-        if (this.state.user && this.state.authToken) {
-            const url = `${this.AUTH_CONFIG.baseUrl}/api/users/me/settings`;
-            fetch(url, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
-                body: JSON.stringify({ theme })
-            }).then(r => r.ok && r.json()).then(data => {
-                if (data && data.theme && this.state.user) {
-                    this.state.user.theme = data.theme;
-                    this.saveUserToStorage();
-                }
-            }).catch(() => {});
+        if (activeTheme) {
+            activeTheme.classList.add('active');
         }
+        
         this.saveChats();
         this.showNotification(`Тема изменена: ${theme}`, 'info');
     }
@@ -2451,8 +2436,11 @@ class VerdiktChatApp {
         this.saveUserToStorage();
         this.updateAuthUI();
         this.updateSidebarInfo();
-        if (user && user.theme) this.applyTheme(user.theme);
-        if (user) setTimeout(() => this.loadDashboardData(), 1000);
+        
+        // Загружаем данные дашборда для нового пользователя
+        if (user) {
+            setTimeout(() => this.loadDashboardData(), 1000);
+        }
     }
 
     logout() {
@@ -2471,18 +2459,6 @@ class VerdiktChatApp {
             headers['Authorization'] = `Bearer ${this.state.authToken}`;
         }
         return headers;
-    }
-
-    async loadUserSettings() {
-        if (!this.state.authToken) return;
-        try {
-            const url = `${this.AUTH_CONFIG.baseUrl}/api/users/me/settings`;
-            const res = await fetch(url, { headers: this.getAuthHeaders() });
-            if (res.ok) {
-                const data = await res.json();
-                if (data.theme) this.applyTheme(data.theme);
-            }
-        } catch (e) {}
     }
 
     async registerUser({ name, email, password }) {
@@ -4032,42 +4008,49 @@ class VerdiktChatApp {
         }
     }
 
-    // ==================== ДЕМО ДАННЫЕ ====================
-
     async loadDashboardData() {
         try {
-            // Демо данные для тестирования
-            this.dashboard = {
-                questions: [
-                    {
-                        id: 1,
-                        user: {
-                            name: 'Анна',
-                            avatar: '👩'
-                        },
-                        content: 'Как понять, что партнер мной манипулирует? Замечаю, что после ссор всегда чувствую себя виноватой, хотя начиналось не из-за меня.',
-                        date: '2026-02-10T14:30:00',
-                        likes: 12,
-                        dislikes: 2,
-                        comments: 5,
-                        isLiked: false,
-                        isDisliked: false
-                    },
-                    {
-                        id: 2,
-                        user: {
-                            name: 'Максим',
-                            avatar: '👨'
-                        },
-                        content: 'Как правильно вести себя на первом свидании после знакомства в интернете? Волнуюсь и не знаю, о чем говорить.',
-                        date: '2026-02-09T20:15:00',
-                        likes: 8,
-                        dislikes: 1,
-                        comments: 3,
-                        isLiked: true,
-                        isDisliked: false
+            // Загружаем вопросы из бэкенда (только для авторизованных пользователей)
+            let questions = [];
+            if (this.state.user && this.state.authToken) {
+                try {
+                    const url = `${this.AUTH_CONFIG.baseUrl}/api/questions`;
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...this.getAuthHeaders()
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (Array.isArray(data)) {
+                            questions = data.map(q => ({
+                                id: q.id,
+                                user: {
+                                    name: q.authorName || q.authorEmail || 'Пользователь',
+                                    avatar: '👤'
+                                },
+                                content: q.content,
+                                date: q.createdAt,
+                                likes: 0,
+                                dislikes: 0,
+                                comments: 0,
+                                isLiked: false,
+                                isDisliked: false
+                            }));
+                        }
+                    } else if (response.status !== 404) {
+                        console.warn('Не удалось загрузить вопросы с бэкенда', response.status);
                     }
-                ],
+                } catch (e) {
+                    console.error('Error fetching questions from backend:', e);
+                }
+            }
+
+            this.dashboard = {
+                questions,
                 stories: this.chatManager.chats.map(chat => ({
                     id: chat.id,
                     title: chat.title,
@@ -4080,9 +4063,11 @@ class VerdiktChatApp {
                     comments: Math.floor(Math.random() * 10)
                 })),
                 analytics: {
-                    totalResponses: 15,
-                    helpfulResponses: 12,
-                    averageRating: 4.5,
+                    totalResponses: this.state.stats.aiMessages || 0,
+                    helpfulResponses: (this.state.stats.relationshipAdvice || 0)
+                        + (this.state.stats.manipulationRequests || 0)
+                        + (this.state.stats.datingAdvice || 0),
+                    averageRating: 0,
                     activity: this.generateActivityData()
                 }
             };
@@ -4092,6 +4077,65 @@ class VerdiktChatApp {
             
         } catch (error) {
             console.error('Error loading dashboard data:', error);
+        }
+    }
+
+    async submitDashboardQuestion(content) {
+        if (!this.state.user || !this.state.authToken) {
+            this.showNotification('Войдите в аккаунт, чтобы задать вопрос', 'warning');
+            return;
+        }
+
+        const trimmed = (content || '').trim();
+        if (!trimmed) {
+            this.showNotification('Введите текст вопроса', 'warning');
+            return;
+        }
+
+        try {
+            const url = `${this.AUTH_CONFIG.baseUrl}/api/questions`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...this.getAuthHeaders()
+                },
+                body: JSON.stringify({ content: trimmed })
+            });
+
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                const message = error.message || `Не удалось отправить вопрос (HTTP ${response.status})`;
+                throw new Error(message);
+            }
+
+            const question = await response.json();
+            const mapped = {
+                id: question.id,
+                user: {
+                    name: question.authorName || question.authorEmail || (this.state.user.name || this.state.user.email || 'Пользователь'),
+                    avatar: '👤'
+                },
+                content: question.content,
+                date: question.createdAt,
+                likes: 0,
+                dislikes: 0,
+                comments: 0,
+                isLiked: false,
+                isDisliked: false
+            };
+
+            if (!this.dashboard) {
+                this.dashboard = { questions: [], stories: [], analytics: { activity: [] } };
+            }
+
+            this.dashboard.questions = [mapped, ...(this.dashboard.questions || [])];
+            this.renderQuestions();
+            this.updateSidebarStats();
+            this.showNotification('Вопрос отправлен', 'success');
+        } catch (error) {
+            console.error('submitDashboardQuestion error:', error);
+            this.showNotification(error.message || 'Не удалось отправить вопрос', 'error');
         }
     }
 
@@ -4132,47 +4176,96 @@ class VerdiktChatApp {
     renderQuestions() {
         const questionsList = document.getElementById('questions-list');
         if (!questionsList) return;
-        
+
+        // Форма для отправки вопроса доступна только авторизованным пользователям
+        let formHtml = '';
+        if (this.state.user) {
+            formHtml = `
+                <div class="question-card" style="margin-bottom: 15px;">
+                    <div class="question-header">
+                        <div class="question-avatar">👤</div>
+                        <div class="question-meta">
+                            <h5>${this.state.user.name || this.state.user.email || 'Пользователь'}</h5>
+                            <div class="date">Задайте новый вопрос</div>
+                        </div>
+                    </div>
+                    <div class="question-content">
+                        <textarea id="new-question-content" class="comment-input" placeholder="Опишите ваш вопрос или ситуацию..." rows="3"></textarea>
+                    </div>
+                    <div class="question-actions">
+                        <div class="action-buttons">
+                            <button class="action-btn" id="new-question-submit">
+                                <i class="fas fa-paper-plane"></i> Отправить вопрос
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            formHtml = `
+                <div class="question-card" style="margin-bottom: 15px; text-align: center;">
+                    <p style="color: var(--text-tertiary);">
+                        Войдите в аккаунт, чтобы задавать вопросы.
+                    </p>
+                </div>
+            `;
+        }
+
+        let listHtml = '';
         if (!this.dashboard.questions || this.dashboard.questions.length === 0) {
-            questionsList.innerHTML = `
+            listHtml = `
                 <div class="question-card" style="text-align: center; padding: 40px;">
                     <i class="fas fa-question-circle" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
                     <h4>Пока нет вопросов</h4>
                     <p style="color: var(--text-tertiary);">Когда пользователи зададут вам вопросы, они появятся здесь</p>
                 </div>
             `;
-            return;
+        } else {
+            listHtml = this.dashboard.questions.map(question => `
+                <div class="question-card" data-question-id="${question.id}">
+                    <div class="question-header">
+                        <div class="question-avatar">${question.user.avatar}</div>
+                        <div class="question-meta">
+                            <h5>${question.user.name}</h5>
+                            <div class="date">${this.formatDate(question.date)}</div>
+                        </div>
+                    </div>
+                    <div class="question-content">${question.content}</div>
+                    <div class="question-actions">
+                        <div class="action-buttons">
+                            <button class="action-btn ${question.isLiked ? 'liked' : ''}" data-action="like" data-question-id="${question.id}">
+                                <i class="fas fa-thumbs-up"></i> ${question.likes}
+                            </button>
+                            <button class="action-btn ${question.isDisliked ? 'disliked' : ''}" data-action="dislike" data-question-id="${question.id}">
+                                <i class="fas fa-thumbs-down"></i> ${question.dislikes}
+                            </button>
+                            <button class="action-btn" data-action="comment" data-question-id="${question.id}">
+                                <i class="fas fa-comment"></i> Ответить
+                            </button>
+                        </div>
+                        <div class="comments-count">
+                            <i class="fas fa-comments"></i> ${question.comments}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
         }
-        
-        questionsList.innerHTML = this.dashboard.questions.map(question => `
-            <div class="question-card" data-question-id="${question.id}">
-                <div class="question-header">
-                    <div class="question-avatar">${question.user.avatar}</div>
-                    <div class="question-meta">
-                        <h5>${question.user.name}</h5>
-                        <div class="date">${this.formatDate(question.date)}</div>
-                    </div>
-                </div>
-                <div class="question-content">${question.content}</div>
-                <div class="question-actions">
-                    <div class="action-buttons">
-                        <button class="action-btn ${question.isLiked ? 'liked' : ''}" data-action="like" data-question-id="${question.id}">
-                            <i class="fas fa-thumbs-up"></i> ${question.likes}
-                        </button>
-                        <button class="action-btn ${question.isDisliked ? 'disliked' : ''}" data-action="dislike" data-question-id="${question.id}">
-                            <i class="fas fa-thumbs-down"></i> ${question.dislikes}
-                        </button>
-                        <button class="action-btn" data-action="comment" data-question-id="${question.id}">
-                            <i class="fas fa-comment"></i> Ответить
-                        </button>
-                    </div>
-                    <div class="comments-count">
-                        <i class="fas fa-comments"></i> ${question.comments}
-                    </div>
-                </div>
-            </div>
-        `).join('');
-        
+
+        questionsList.innerHTML = formHtml + listHtml;
+
+        // Обработчик отправки вопроса
+        const submitBtn = document.getElementById('new-question-submit');
+        if (submitBtn) {
+            submitBtn.addEventListener('click', async () => {
+                const textarea = document.getElementById('new-question-content');
+                const text = textarea ? textarea.value : '';
+                await this.submitDashboardQuestion(text);
+                if (textarea) {
+                    textarea.value = '';
+                }
+            });
+        }
+
         // Обновляем бейджи
         this.updateBadges();
     }

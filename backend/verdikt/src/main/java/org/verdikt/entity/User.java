@@ -51,10 +51,6 @@ public class User {
     @Column(name = "expertise", length = 100)
     private List<String> expertise = new ArrayList<>();
 
-    @Size(max = 50)
-    @Column(name = "theme", length = 50)
-    private String theme;
-
     // --- Геттеры и сеттеры ---
 
     public Long getId() {
@@ -119,13 +115,5 @@ public class User {
 
     public void setExpertise(List<String> expertise) {
         this.expertise = expertise != null ? expertise : new ArrayList<>();
-    }
-
-    public String getTheme() {
-        return theme;
-    }
-
-    public void setTheme(String theme) {
-        this.theme = theme;
     }
 }
