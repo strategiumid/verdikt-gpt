@@ -4570,9 +4570,12 @@ class VerdiktChatApp {
         }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         // Навешиваем обработчики админ-действий по вопросам
         this.attachAdminQuestionHandlers();
 
+=======
+>>>>>>> parent of db98ae9 (Add files via upload)
 =======
 >>>>>>> parent of db98ae9 (Add files via upload)
         // Обновляем бейджи
