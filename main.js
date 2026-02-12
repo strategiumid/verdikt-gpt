@@ -1922,6 +1922,68 @@ class VerdiktChatApp {
         this.elements.toggleChatHistory.addEventListener('click', () => {
             this.showChatHistoryModal();
         });
+
+        // Drag & drop файлов прямо в область ввода сообщения
+        const messageInput = this.elements.messageInput;
+        if (messageInput) {
+            const inputContainer = messageInput.closest('.input-container-extended') || messageInput;
+
+            const preventDefaults = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            };
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                inputContainer.addEventListener(eventName, preventDefaults);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                inputContainer.addEventListener(eventName, () => {
+                    inputContainer.classList.add('drag-over');
+                });
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                inputContainer.addEventListener(eventName, () => {
+                    inputContainer.classList.remove('drag-over');
+                });
+            });
+
+            inputContainer.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const file = dt && dt.files && dt.files[0];
+                if (!file) return;
+
+                const allowedTypes = [
+                    'text/plain',
+                    'application/json'
+                ];
+                const isAllowed =
+                    allowedTypes.includes(file.type) ||
+                    file.name.endsWith('.txt') ||
+                    file.name.endsWith('.json');
+
+                if (!isAllowed) {
+                    this.showNotification('Можно перетащить только .txt или .json файл', 'warning');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const text = reader.result || '';
+                    if (!text) return;
+
+                    const current = messageInput.value || '';
+                    const separator = current && !current.endsWith('\n') ? '\n\n' : '';
+                    messageInput.value = current + separator + String(text);
+                    messageInput.focus();
+                };
+                reader.onerror = () => {
+                    this.showNotification('Не удалось прочитать файл', 'error');
+                };
+                reader.readAsText(file, 'utf-8');
+            });
+        }
         
         // Настройки
         this.elements.temperatureSlider.addEventListener('input', (e) => {
@@ -2878,9 +2940,30 @@ class VerdiktChatApp {
                     <i class="fas fa-times"></i>
                 </button>
                 
-                <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <h2 style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
                     <i class="fas fa-history"></i> История чатов
                 </h2>
+
+                <div class="modal-section" style="margin-bottom: 12px;">
+                    <input 
+                        type="text" 
+                        id="chat-history-search" 
+                        placeholder="Поиск по названию и содержимому..." 
+                        style="
+                            width: 100%;
+                            padding: 10px 12px;
+                            border-radius: var(--radius-md);
+                            border: 1px solid var(--border-color);
+                            background: var(--bg-card);
+                            color: var(--text-primary);
+                            font-size: 0.9rem;
+                            margin-bottom: 4px;
+                        "
+                    />
+                    <div style="font-size: 0.75rem; color: var(--text-tertiary);">
+                        Поиск учитывает имя чата и первые сообщения в нём
+                    </div>
+                </div>
                 
                 <div class="modal-section">
                     <div id="chat-history-list" style="max-height: 300px; overflow-y: auto;">
@@ -2931,15 +3014,26 @@ class VerdiktChatApp {
             this.clearAllChats();
             this.hideModal('chat-history-modal');
         });
+
+        // Поиск по истории
+        const searchInput = document.getElementById('chat-history-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', () => {
+                const query = searchInput.value.trim().toLowerCase();
+                this.updateHistoryModalContent(query);
+            });
+        }
     }
 
-    updateHistoryModalContent() {
+    updateHistoryModalContent(searchQuery = '') {
         const historyList = document.getElementById('chat-history-list');
         if (!historyList) return;
         
         historyList.innerHTML = '';
         
-        if (this.chatManager.chats.length === 0) {
+        const chats = this.chatManager.chats || [];
+
+        if (chats.length === 0) {
             historyList.innerHTML = `
                 <div class="chat-history-empty" style="text-align: center; padding: 30px; color: var(--text-tertiary);">
                     Нет сохраненных чатов
@@ -2949,7 +3043,29 @@ class VerdiktChatApp {
         }
         
         // Сортируем чаты по времени (новые сверху)
-        const sortedChats = [...this.chatManager.chats].sort((a, b) => b.timestamp - a.timestamp);
+        let sortedChats = [...chats].sort((a, b) => b.timestamp - a.timestamp);
+
+        // Фильтруем по поисковому запросу (заголовок + первые сообщения)
+        const q = (searchQuery || '').toLowerCase();
+        if (q) {
+            sortedChats = sortedChats.filter(chat => {
+                const title = (chat.title || '').toLowerCase();
+                const messagesText = (chat.messages || [])
+                    .slice(0, 10)
+                    .map(m => (m.content || '').toLowerCase())
+                    .join(' ');
+                return title.includes(q) || messagesText.includes(q);
+            });
+        }
+
+        if (!sortedChats.length) {
+            historyList.innerHTML = `
+                <div class="chat-history-empty" style="text-align: center; padding: 30px; color: var(--text-tertiary);">
+                    Ничего не найдено. Попробуйте изменить запрос.
+                </div>
+            `;
+            return;
+        }
         
         sortedChats.forEach(chat => {
             const chatItem = document.createElement('div');
@@ -3095,6 +3211,14 @@ class VerdiktChatApp {
                 // Небольшая вариация масштаба (ещё один уровень глубины)
                 const scale = 0.7 + Math.random() * 1.3;
                 particle.style.setProperty('--scale', scale.toFixed(2));
+
+                // После окончания основного цикла анимации удаляем элемент, чтобы не засорять DOM.
+                // Используем onanimationend только для анимации particleFlow (без infinite в CSS).
+                particle.addEventListener('animationend', (e) => {
+                    if (e.animationName === 'particleFlow') {
+                        particle.remove();
+                    }
+                });
 
                 particlesContainer.appendChild(particle);
             }

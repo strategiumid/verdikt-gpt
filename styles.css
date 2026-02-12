@@ -1427,8 +1427,15 @@ footer {
     --alpha: 0.7;
     --duration: 6s;
     animation: 
-        particleFlow var(--duration) linear infinite,
+        particleFlow var(--duration) linear,
         particlePulse 4s ease-in-out infinite;
+}
+
+/* Подсветка области ввода при drag & drop файла */
+.input-container-extended.drag-over {
+    outline: 2px dashed rgba(236, 72, 153, 0.8);
+    outline-offset: 4px;
+    background: rgba(236, 72, 153, 0.05);
 }
 
 /* Основное движение частицы */
