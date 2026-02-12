@@ -1,4 +1,4 @@
-// main.js - Полная версия с системой истории чатов и OpenRouter API
+
 document.addEventListener('DOMContentLoaded', function() {
     hljs.highlightAll();
     
