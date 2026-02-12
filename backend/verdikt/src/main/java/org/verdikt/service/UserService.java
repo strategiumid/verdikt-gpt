@@ -41,6 +41,9 @@ public class UserService {
         User user = new User();
         user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        if (request.getName() != null && !request.getName().isBlank()) {
+            user.setName(request.getName().trim());
+        }
         user = userRepository.save(user);
         return UserResponse.from(user);
     }
