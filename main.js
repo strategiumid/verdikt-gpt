@@ -267,7 +267,10 @@ class VerdiktChatApp {
         
         // Загружаем историю чатов
         await this.loadChats();
-        
+        // Восстанавливаем выбранную тему (loadChat мог подставить тему чата)
+        const savedTheme = localStorage.getItem('verdikt_theme');
+        if (savedTheme) this.applyTheme(savedTheme);
+
         // Статистика
         const currentHour = new Date().getHours();
         this.state.stats.activityByHour[currentHour]++;
@@ -844,9 +847,9 @@ class VerdiktChatApp {
             if (encryptedData) {
                 decryptedData = await this.crypto.decrypt(encryptedData, this.encryptionState.password);
             }
-            
             decryptedData.chats = this.chatManager.chats;
-            
+            decryptedData.settings = { ...(decryptedData.settings || {}), theme: this.state.currentTheme };
+
             const reencryptedData = await this.crypto.encrypt(
                 decryptedData, 
                 this.encryptionState.password
@@ -4566,9 +4569,12 @@ class VerdiktChatApp {
             });
         }
 
+<<<<<<< HEAD
         // Навешиваем обработчики админ-действий по вопросам
         this.attachAdminQuestionHandlers();
 
+=======
+>>>>>>> parent of db98ae9 (Add files via upload)
         // Обновляем бейджи
         this.updateBadges();
     }
