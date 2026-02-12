@@ -58,3 +58,4 @@ failsafe-reports/
 .classpath
 .project
 .settings/
+main.js
