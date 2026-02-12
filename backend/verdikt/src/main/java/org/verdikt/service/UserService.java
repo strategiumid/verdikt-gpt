@@ -3,9 +3,7 @@ package org.verdikt.service;
 import org.verdikt.dto.LoginRequest;
 import org.verdikt.dto.LoginResponse;
 import org.verdikt.dto.RegisterRequest;
-import org.verdikt.dto.SettingsResponse;
 import org.verdikt.dto.UpdateProfileRequest;
-import org.verdikt.dto.UpdateSettingsRequest;
 import org.verdikt.dto.UserResponse;
 import org.verdikt.entity.User;
 import org.verdikt.repository.UserRepository;
@@ -90,32 +88,5 @@ public class UserService {
         }
         user = userRepository.save(user);
         return UserResponse.from(user);
-    }
-
-    /**
-     * Получить настройки пользователя (тема и др.).
-     */
-    public SettingsResponse getSettings(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь не найден"));
-        SettingsResponse r = new SettingsResponse();
-        r.setTheme(user.getTheme());
-        return r;
-    }
-
-    /**
-     * Обновить настройки пользователя (частично).
-     */
-    @Transactional
-    public SettingsResponse updateSettings(Long userId, UpdateSettingsRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь не найден"));
-        if (request.getTheme() != null) {
-            user.setTheme(request.getTheme().trim());
-        }
-        user = userRepository.save(user);
-        SettingsResponse r = new SettingsResponse();
-        r.setTheme(user.getTheme());
-        return r;
     }
 }
