@@ -1,6 +1,8 @@
 package org.verdikt.controller;
 
+import org.verdikt.dto.SettingsResponse;
 import org.verdikt.dto.UpdateProfileRequest;
+import org.verdikt.dto.UpdateSettingsRequest;
 import org.verdikt.dto.UserResponse;
 import org.verdikt.entity.User;
 import org.verdikt.service.UserService;
@@ -37,5 +39,30 @@ public class UserController {
         }
         UserResponse updated = userService.updateProfile(user.getId(), request);
         return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * GET /api/users/me/settings — настройки текущего пользователя (тема и др.).
+     */
+    @GetMapping("/me/settings")
+    public ResponseEntity<SettingsResponse> getSettings(@AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(userService.getSettings(user.getId()));
+    }
+
+    /**
+     * PATCH /api/users/me/settings — обновление настроек (тема и др.).
+     */
+    @PatchMapping("/me/settings")
+    public ResponseEntity<SettingsResponse> updateSettings(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody UpdateSettingsRequest request
+    ) {
+        if (user == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(userService.updateSettings(user.getId(), request));
     }
 }

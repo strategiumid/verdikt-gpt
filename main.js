@@ -232,6 +232,7 @@ class VerdiktChatApp {
         this.setupEventListeners();
         this.loadFromLocalStorage();
         this.loadUserFromStorage();
+        this.loadUserSettings();
         this.setupSpeechRecognition();
         this.setupBackgroundAnimations();
         this.updateUI();
@@ -2308,17 +2309,31 @@ class VerdiktChatApp {
         }
     }
 
-    setTheme(theme) {
+    applyTheme(theme) {
+        if (!theme) return;
         this.state.currentTheme = theme;
         document.body.setAttribute('data-theme', theme);
-        
-        // Обновляем активный класс
         document.querySelectorAll('.theme-option').forEach(opt => opt.classList.remove('active'));
         const activeTheme = document.querySelector(`.theme-option[data-theme="${theme}"]`);
-        if (activeTheme) {
-            activeTheme.classList.add('active');
+        if (activeTheme) activeTheme.classList.add('active');
+    }
+
+    setTheme(theme) {
+        this.applyTheme(theme);
+        localStorage.setItem('verdikt_theme', theme);
+        if (this.state.user && this.state.authToken) {
+            const url = `${this.AUTH_CONFIG.baseUrl}/api/users/me/settings`;
+            fetch(url, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
+                body: JSON.stringify({ theme })
+            }).then(r => r.ok && r.json()).then(data => {
+                if (data && data.theme && this.state.user) {
+                    this.state.user.theme = data.theme;
+                    this.saveUserToStorage();
+                }
+            }).catch(() => {});
         }
-        
         this.saveChats();
         this.showNotification(`Тема изменена: ${theme}`, 'info');
     }
@@ -2433,11 +2448,8 @@ class VerdiktChatApp {
         this.saveUserToStorage();
         this.updateAuthUI();
         this.updateSidebarInfo();
-        
-        // Загружаем данные дашборда для нового пользователя
-        if (user) {
-            setTimeout(() => this.loadDashboardData(), 1000);
-        }
+        if (user && user.theme) this.applyTheme(user.theme);
+        if (user) setTimeout(() => this.loadDashboardData(), 1000);
     }
 
     logout() {
@@ -2456,6 +2468,18 @@ class VerdiktChatApp {
             headers['Authorization'] = `Bearer ${this.state.authToken}`;
         }
         return headers;
+    }
+
+    async loadUserSettings() {
+        if (!this.state.authToken) return;
+        try {
+            const url = `${this.AUTH_CONFIG.baseUrl}/api/users/me/settings`;
+            const res = await fetch(url, { headers: this.getAuthHeaders() });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.theme) this.applyTheme(data.theme);
+            }
+        } catch (e) {}
     }
 
     async registerUser({ name, email, password }) {
