@@ -246,6 +246,7 @@ class VerdiktChatApp {
         this.setupEventListeners();
         this.loadFromLocalStorage();
         this.loadUserFromStorage();
+        await this.restoreSession();
         this.setupAdminMode();
         this.setupSpeechRecognition();
         this.setupBackgroundAnimations();
@@ -2669,6 +2670,36 @@ class VerdiktChatApp {
             }
         } catch (e) {
             console.warn('Не удалось загрузить пользователя из localStorage', e);
+        }
+    }
+
+    /**
+     * Проверяет токен у бэкенда: при 200 обновляет state.user, при 401 очищает вход.
+     */
+    async restoreSession() {
+        if (!this.state.authToken) return;
+        try {
+            const url = `${this.AUTH_CONFIG.baseUrl}${this.AUTH_CONFIG.endpoints.me}`;
+            const response = await fetch(url, { headers: this.getAuthHeaders() });
+            if (response.ok) {
+                const user = await response.json();
+                this.state.user = user;
+                this.saveUserToStorage();
+                this.updateAuthUI();
+                this.updateSidebarInfo();
+            } else {
+                this.state.user = null;
+                this.state.authToken = null;
+                this.saveUserToStorage();
+                this.updateAuthUI();
+                this.updateSidebarInfo();
+            }
+        } catch (e) {
+            this.state.user = null;
+            this.state.authToken = null;
+            this.saveUserToStorage();
+            this.updateAuthUI();
+            this.updateSidebarInfo();
         }
     }
 
