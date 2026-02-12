@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -1115,7 +1116,7 @@
 </head>
 
 <body>
-      <!-- Боковое меню -->
+    <!-- Боковое меню -->
      <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
     <div class="sidebar" id="sidebar">
@@ -1212,6 +1213,10 @@
         </div>
     </div>
 
+    <button class="sidebar-toggle" id="sidebar-toggle">
+        <i class="fas fa-bars"></i>
+    </button>
+
     <!-- Модальное окно дашборда -->
     <div class="modal" id="dashboard-modal">
         <div class="modal-content dashboard-modal">
@@ -1245,6 +1250,10 @@
                 </button>
                 <button class="dashboard-tab" data-tab="activity">
                     <i class="fas fa-bolt"></i> Активность
+                </button>
+                <!-- Вкладка админ-панели отображается только в админ-режиме (через CSS/JS) -->
+                <button class="dashboard-tab admin-only" data-tab="admin" style="display: none;">
+                    <i class="fas fa-user-shield"></i> Админ
                 </button>
             </div>
 
@@ -1309,6 +1318,47 @@
                             <i class="fas fa-bolt" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
                             <h4>Пока нет активности</h4>
                             <p style="color: var(--text-tertiary);">Ваша активность появится здесь</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Админ-панель (вкладка) -->
+            <div class="dashboard-tab-content" id="admin-tab">
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-user-shield"></i> Админ-панель
+                    </h3>
+
+                    <div class="question-card" style="margin-bottom: 20px;">
+                        <div class="question-header">
+                            <div class="question-avatar">⚙️</div>
+                            <div class="question-meta">
+                                <h5>Быстрые действия</h5>
+                                <div class="date">Управление платформой</div>
+                            </div>
+                        </div>
+                        <div class="question-content" style="margin-bottom: 10px;">
+                            Здесь вы можете управлять пользователями и вопросами прямо внутри Verdikt GPT.
+                        </div>
+                        <div class="question-actions">
+                            <div class="action-buttons">
+                                <button class="action-btn" id="admin-refresh-questions">
+                                    <i class="fas fa-sync-alt"></i> Обновить вопросы
+                                </button>
+                                <button class="action-btn" id="admin-refresh-users">
+                                    <i class="fas fa-users"></i> Обновить пользователей
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Админ-список вопросов -->
+                    <div class="questions-grid" id="admin-questions-list">
+                        <div class="question-card" style="text-align: center; padding: 40px;">
+                            <i class="fas fa-tasks" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
+                            <h4>Нет данных</h4>
+                            <p style="color: var(--text-tertiary);">Вопросы пользователей появятся здесь после загрузки дашборда</p>
                         </div>
                     </div>
                 </div>
@@ -1947,25 +1997,99 @@
         <div class="app-header">
             <div class="header-left">
                 <div class="logo">
-                    <button class="sidebar-toggle" id="sidebar-toggle" title="Меню">
-                        <i class="fas fa-bars"></i>
-                    </button>
+                    <div class="logo-icon">
+                        <i class="fas fa-heart"></i>
+                    </div>
                     <div class="app-title">
-                        <button class="ios-button" id="new-chat">
-                            <i class="fas fa-plus"></i>
-                        </button>
+                        <h1>Verdikt GPT</h1>
                     </div>
                 </div>
             </div>
-    
-    
+            
             <div class="header-right">
                 <button class="ios-button secondary" id="presentation-mode" title="Режим презентации">
                     <i class="fas fa-expand"></i>
                 </button>
-        
+                
                 <button class="ios-button secondary" id="settings-button" title="Настройки">
                     <i class="fas fa-cog"></i>
+                </button>
+                
+                <!-- Локальная кнопка админ-режима (пока без проверки на бэкенде) -->
+                <button class="ios-button secondary" id="admin-mode-toggle" title="Войти в админ-режим">
+                    <i class="fas fa-user-shield"></i>
+                </button>
+                
+                <!-- Авторизация пользователя -->
+                <div class="user-auth" id="user-auth">
+                    <button class="ios-button secondary" id="login-button" title="Войти">
+                        <i class="fas fa-user"></i>
+                        <span class="user-auth-label">Войти</span>
+                    </button>
+                </div>
+                
+                <div class="developers-dropdown">
+                    <button class="ios-button secondary" id="developers-btn" title="Команда разработки">
+                        <i class="fas fa-users"></i>
+                    </button>
+                    
+                    <div class="developers-dropdown-menu">
+                        <div class="dev-dropdown-header">
+                            <h4><i class="fas fa-code-branch"></i> Команда разработки</h4>
+                            <p>Нажмите для связи в Telegram</p>
+                        </div>
+                        
+                        <div class="dev-dropdown-list">
+                            <a href="https://t.me/tensamore" target="_blank" class="dev-dropdown-item">
+                                <div class="dev-dropdown-avatar brain-avatar">
+                                    <i class="fas fa-brain"></i>
+                                </div>
+                                <div class="dev-dropdown-info">
+                                    <div class="dev-dropdown-name">@tensamore</div>
+                                    <div class="dev-dropdown-role">Dev Lead</div>
+                                </div>
+                                <div class="dev-dropdown-telegram">
+                                    <i class="fab fa-telegram"></i>
+                                </div>
+                            </a>
+                            
+                            <a href="https://t.me/gama4i" target="_blank" class="dev-dropdown-item">
+                                <div class="dev-dropdown-avatar code-avatar">
+                                    <i class="fas fa-code"></i>
+                                </div>
+                                <div class="dev-dropdown-info">
+                                    <div class="dev-dropdown-name">@gama4i</div>
+                                    <div class="dev-dropdown-role">Developer</div>
+                                </div>
+                                <div class="dev-dropdown-telegram">
+                                    <i class="fab fa-telegram"></i>
+                                </div>
+                            </a>
+                            
+                            <a href="https://t.me/suce4" target="_blank" class="dev-dropdown-item">
+                                <div class="dev-dropdown-avatar bug-avatar">
+                                    <i class="fas fa-bug"></i>
+                                </div>
+                                <div class="dev-dropdown-info">
+                                    <div class="dev-dropdown-name">@suce4</div>
+                                    <div class="dev-dropdown-role">Tester</div>
+                                </div>
+                                <div class="dev-dropdown-telegram">
+                                    <i class="fab fa-telegram"></i>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <div class="dev-dropdown-footer">
+                            <div class="dev-version">
+                                <i class="fas fa-heart"></i> Версия 2.1
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="ios-button" id="new-chat">
+                    <i class="fas fa-plus"></i> Новый чат
                 </button>
             </div>
         </div>
@@ -1978,15 +2102,12 @@
                 <div class="chat-container">
                     <div class="chat-header">
                         <div class="chat-header-content">
+                            <div class="ai-avatar">
+                                <i class="fas fa-heart"></i>
+                            </div>
                             <div class="chat-header-text">
-                                <div class="logo" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                                    <div class="logo-icon" style="width: 40px; height: 40px; border-radius: 12px; background: var(--gradient); display: flex; align-items: center; justify-content: center; font-size: 20px; color: white;">
-                                        <i class="fas fa-heart"></i>
-                                    </div>
-                                    <div class="app-title">
-                                        <h1 style="font-size: 1.8rem; font-weight: 700; background: var(--gradient); -webkit-background-clip: text; background-clip: text; color: transparent; margin: 0;">Verdikt GPT</h1>
-                                    </div>
-                                </div>
+                                <h2>Verdikt GPT - Эксперт по отношениям</h2>
+                                <p>Специалист в психологии отношений, знакомств и распознавании манипуляций</p>
                             </div>
                             <div class="status-indicator" id="api-status">
                                 <i class="fas fa-circle"></i> Подключение...
@@ -2091,9 +2212,6 @@
                 <div class="footer-links">
                     <a href="#" id="model-info"><i class="fas fa-robot"></i> О модели</a>
                     <a href="#" id="privacy-policy"><i class="fas fa-shield-alt"></i> Конфиденциальность</a>
-                    <a href="#" id="developers-footer" title="Команда разработки">
-                        <i class="fas fa-users"></i> Команда разработки
-                    </a>
                 </div>
             </div>
         </footer>

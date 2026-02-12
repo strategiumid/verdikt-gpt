@@ -77,6 +77,8 @@ class VerdiktChatApp {
                 popularTopics: {},
                 totalChats: 1
             },
+            // Локальный флаг админ-режима (пока без проверки на бэкенде)
+            isAdmin: false,
             // Пользователь и токен авторизации
             user: null,
             authToken: null,
@@ -125,6 +127,8 @@ class VerdiktChatApp {
             smartSuggestions: document.getElementById('smart-suggestions'),
             typingIndicator: document.getElementById('typing-indicator'),
             achievementNotification: document.getElementById('achievement-notification'),
+            // Админ-режим
+            adminModeToggle: document.getElementById('admin-mode-toggle'),
             // Авторизация
             loginButton: document.getElementById('login-button'),
             authModal: document.getElementById('auth-modal'),
@@ -232,6 +236,7 @@ class VerdiktChatApp {
         this.setupEventListeners();
         this.loadFromLocalStorage();
         this.loadUserFromStorage();
+        this.setupAdminMode();
         this.setupSpeechRecognition();
         this.setupBackgroundAnimations();
         this.updateUI();
@@ -1551,7 +1556,7 @@ class VerdiktChatApp {
     // ==================== ФУНКЦИИ БОКОВОГО МЕНЮ ====================
 
     setupSidebar() {
-    // Открытие/закрытие бокового меню
+    // Открытие/закрытие бокового меню - ИСПРАВЛЕНО
     if (this.elements.sidebarToggle) {
         this.elements.sidebarToggle.addEventListener('click', () => {
             this.toggleSidebar();
@@ -1630,76 +1635,105 @@ class VerdiktChatApp {
     this.updateSidebarInfo();
 }
 
-    toggleSidebar() {
-        const isActive = this.elements.sidebar.classList.contains('active');
-        if (isActive) {
-            this.hideSidebar();
-        } else {
-            this.showSidebar();
-        }
+toggleSidebar() {
+    // ИСПРАВЛЕНО: используем правильные имена элементов
+    if (!this.elements.sidebar) return;
+    
+    const isActive = this.elements.sidebar.classList.contains('active');
+    if (isActive) {
+        this.hideSidebar();
+    } else {
+        this.showSidebar();
     }
+}
 
-    showSidebar() {
+showSidebar() {
+    // ИСПРАВЛЕНО: используем правильные имена элементов
+    if (this.elements.sidebar) {
         this.elements.sidebar.classList.add('active');
+    }
+    if (this.elements.sidebarOverlay) {
         this.elements.sidebarOverlay.classList.add('active');
-        document.body.style.overflow = 'hidden';
     }
+    document.body.style.overflow = 'hidden';
+}
 
-    hideSidebar() {
+hideSidebar() {
+    // ИСПРАВЛЕНО: используем правильные имена элементов
+    if (this.elements.sidebar) {
         this.elements.sidebar.classList.remove('active');
-        this.elements.sidebarOverlay.classList.remove('active');
-        document.body.style.overflow = '';
     }
+    if (this.elements.sidebarOverlay) {
+        this.elements.sidebarOverlay.classList.remove('active');
+    }
+    document.body.style.overflow = '';
+}
 
-    updateSidebarInfo() {
+updateSidebarInfo() {
+    if (!this.elements.sidebarUsername) return;
     
-        if (!this.elements.sidebarUsername) return;
-    
-    
-        if (this.state.user) {
+    if (this.state.user) {
+        this.elements.sidebarUsername.textContent = this.state.user.name || this.state.user.email || 'Пользователь';
+        this.elements.sidebarUseremail.innerHTML = `<i class="fas fa-envelope"></i> ${this.state.user.email || 'В аккаунте'}`;
         
-            this.elements.sidebarUsername.textContent = this.state.user.name || this.state.user.email || 'Пользователь';
-        
-            this.elements.sidebarUseremail.innerHTML = `<i class="fas fa-envelope"></i> ${this.state.user.email || 'В аккаунте'}`;
-        
-        
-            if (this.elements.dashboardUsername) {
-            
-                this.elements.dashboardUsername.textContent = this.state.user.name || this.state.user.email || 'Пользователь';
-        
-            }
+        if (this.elements.dashboardUsername) {
+            this.elements.dashboardUsername.textContent = this.state.user.name || this.state.user.email || 'Пользователь';
+        }
         
         // Обновление аватара
-        
-        const avatarIcon = this.elements.userAvatar.querySelector('i');
-        
-        if (this.state.user.avatar) {
-            this.elements.userAvatar.style.backgroundImage = `url(${this.state.user.avatar})`;
-            this.elements.userAvatar.style.backgroundSize = 'cover';
-            this.elements.userAvatar.style.backgroundPosition = 'center';
-            if (avatarIcon) avatarIcon.style.display = 'none';
-       
-        } else {
-            this.elements.userAvatar.style.backgroundImage = '';
-            if (avatarIcon) avatarIcon.style.display = 'flex';
+        const avatarIcon = this.elements.userAvatar?.querySelector('i');
+        if (this.elements.userAvatar) {
+            if (this.state.user.avatar) {
+                this.elements.userAvatar.style.backgroundImage = `url(${this.state.user.avatar})`;
+                this.elements.userAvatar.style.backgroundSize = 'cover';
+                this.elements.userAvatar.style.backgroundPosition = 'center';
+                if (avatarIcon) avatarIcon.style.display = 'none';
+            } else {
+                this.elements.userAvatar.style.backgroundImage = '';
+                if (avatarIcon) avatarIcon.style.display = 'flex';
+            }
         }
         
         // Показываем кнопку выхода
-        
         if (this.elements.logoutSidebar) {
-            
             this.elements.logoutSidebar.style.display = 'flex';
-        
         }
-    
+        
+        // Скрываем приглашение к входу
+        if (this.elements.sidebarUseremail) {
+            this.elements.sidebarUseremail.style.cursor = 'default';
+            this.elements.sidebarUseremail.removeEventListener('click', this._loginClickListener);
+        }
+        
     } else {
         this.elements.sidebarUsername.textContent = 'Гость';
-        this.elements.sidebarUseremail.innerHTML = 'Войдите в аккаунт <i class="fas fa-sign-in-alt" style="margin-left: 5px;"></i>';
+        
+        // ИСПРАВЛЕНО: перемещаем иконку "Войти" прямо в sidebarUseremail
+        this.elements.sidebarUseremail.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: var(--gradient); display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-sign-in-alt" style="color: white;"></i>
+                </div>
+                <div>
+                    <div style="font-weight: 600;">Войти в аккаунт</div>
+                </div>
+            </div>
+        `;
+        
         this.elements.sidebarUseremail.style.cursor = 'pointer';
-        this.elements.sidebarUseremail.addEventListener('click', () => {
+        
+        // Удаляем предыдущий обработчик, если был
+        if (this._loginClickListener) {
+            this.elements.sidebarUseremail.removeEventListener('click', this._loginClickListener);
+        }
+        
+        // Создаем новый обработчик и сохраняем ссылку на него
+        this._loginClickListener = () => {
             this.hideSidebar();
             this.showModal('auth-modal');
-        });
+        };
+        
+        this.elements.sidebarUseremail.addEventListener('click', this._loginClickListener);
         
         if (this.elements.dashboardUsername) {
             this.elements.dashboardUsername.textContent = 'Гость';
@@ -2009,15 +2043,6 @@ class VerdiktChatApp {
         // Импорт/экспорт
         this.setupImportListeners();
         this.setupExportListeners();
-
-        // Обработчик для ссылки "Команда разработки" в футере
-        const developersFooter = document.getElementById('developers-footer');
-        if (developersFooter) {
-            developersFooter.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.showDevelopersMenu();
-            });
-        }
     }
 
     async sendMessage() {
@@ -2422,10 +2447,84 @@ class VerdiktChatApp {
                 this.setTheme(savedTheme);
             }
         }
+
+        // Локальное хранение статуса админ-режима (пока без проверки на бэкенде)
+        const adminMode = localStorage.getItem('verdikt_admin_mode');
+        if (adminMode === '1') {
+            this.state.isAdmin = true;
+            document.body.classList.add('admin-mode');
+        }
     }
 
     async saveToLocalStorage() {
         await this.saveChats();
+    }
+
+    // ==================== АДМИН-РЕЖИМ (ЛОКАЛЬНЫЙ) ====================
+
+    setupAdminMode() {
+        const btn = this.elements.adminModeToggle;
+        if (!btn) return;
+
+        const applyStateToUI = () => {
+            document.body.classList.toggle('admin-mode', this.state.isAdmin);
+            btn.classList.toggle('primary', this.state.isAdmin);
+            btn.classList.toggle('secondary', !this.state.isAdmin);
+            btn.title = this.state.isAdmin
+                ? 'Выйти из админ-режима'
+                : 'Войти в админ-режим';
+        };
+
+        applyStateToUI();
+
+        btn.addEventListener('click', () => {
+            // Пока что просто локальный переключатель.
+            // В будущем здесь можно добавить запрос к бэкенду (например, /api/admin/login)
+            this.state.isAdmin = !this.state.isAdmin;
+            localStorage.setItem('verdikt_admin_mode', this.state.isAdmin ? '1' : '0');
+            applyStateToUI();
+
+            this.showNotification(
+                this.state.isAdmin
+                    ? 'Админ-режим включен (локально)'
+                    : 'Админ-режим выключен',
+                'info'
+            );
+        });
+    }
+
+    attachAdminQuestionHandlers() {
+        if (!this.state.isAdmin || !this.dashboard || !this.dashboard.questions) return;
+
+        const container = document.getElementById('questions-list');
+        if (!container) return;
+
+        container.querySelectorAll('[data-action="admin-delete"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-question-id');
+                if (!id) return;
+                // Пока удаляем только на клиенте. В будущем здесь будет запрос к бэкенду.
+                this.dashboard.questions = this.dashboard.questions.filter(q => String(q.id) !== String(id));
+                this.renderQuestions();
+                this.renderAdminQuestions();
+                this.updateSidebarStats();
+                this.showNotification('Вопрос удален (локально)', 'info');
+            });
+        });
+
+        container.querySelectorAll('[data-action="admin-ban"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-question-id');
+                if (!id) return;
+                const question = this.dashboard.questions.find(q => String(q.id) === String(id));
+                const userEmail = question?.user?.email || question?.user?.name || 'пользователь';
+
+                // Пока просто показываем уведомление и помечаем вопрос как "забаненный".
+                question.isBanned = true;
+                this.showNotification(`Пользователь ${userEmail} помечен как забаненный (локально)`, 'warning');
+                this.renderAdminQuestions();
+            });
+        });
     }
 
     // ==================== ПОЛЕЗНЫЕ ФУНКЦИИ ====================
@@ -2611,22 +2710,40 @@ class VerdiktChatApp {
     updateAuthUI() {
         const userAuth = document.getElementById('user-auth');
         const label = userAuth?.querySelector('.user-auth-label');
-        const userInfo = document.getElementById('auth-user-info');
+        const userInfo = document.getElementById('auth-user-info');    
         const userNameLabel = document.getElementById('auth-user-name');
-
+    
         if (!userAuth || !label) return;
 
         if (this.state.user) {
             const name = this.state.user.name || this.state.user.email || 'Аккаунт';
-            label.textContent = name;
-            userAuth.classList.add('user-auth-logged-in');
+        
+            // Обновляем текст в сайдбаре вместо кнопки
+            if (this.elements.sidebarUseremail) {
+                this.elements.sidebarUseremail.innerHTML = `<i class="fas fa-user"></i> ${name}`;
+                this.elements.sidebarUseremail.style.cursor = 'pointer';
+                this.elements.sidebarUseremail.addEventListener('click', () => {
+                    this.showModal('auth-modal');
+                });
+            }
+        
+            userAuth.style.display = 'none'; // Скрываем кнопку в хедере
             if (userInfo && userNameLabel) {
                 userNameLabel.textContent = name;
                 userInfo.style.display = 'flex';
             }
         } else {
-            label.textContent = 'Войти';
-            userAuth.classList.remove('user-auth-logged-in');
+            // Для гостя показываем "Войти" в сайдбаре
+            if (this.elements.sidebarUseremail) {
+                this.elements.sidebarUseremail.innerHTML = 'Войдите в аккаунт <i class="fas fa-sign-in-alt" style="margin-left: 5px;"></i>';
+                this.elements.sidebarUseremail.style.cursor = 'pointer';
+                this.elements.sidebarUseremail.addEventListener('click', () => {
+                    this.hideSidebar();
+                    this.showModal('auth-modal');
+                });
+            }
+        
+            userAuth.style.display = 'none'; // Скрываем кнопку в хедере
             if (userInfo) {
                 userInfo.style.display = 'none';
             }
@@ -4033,42 +4150,49 @@ class VerdiktChatApp {
         }
     }
 
-    // ==================== ДЕМО ДАННЫЕ ====================
-
     async loadDashboardData() {
         try {
-            // Демо данные для тестирования
-            this.dashboard = {
-                questions: [
-                    {
-                        id: 1,
-                        user: {
-                            name: 'Анна',
-                            avatar: '👩'
-                        },
-                        content: 'Как понять, что партнер мной манипулирует? Замечаю, что после ссор всегда чувствую себя виноватой, хотя начиналось не из-за меня.',
-                        date: '2026-02-10T14:30:00',
-                        likes: 12,
-                        dislikes: 2,
-                        comments: 5,
-                        isLiked: false,
-                        isDisliked: false
-                    },
-                    {
-                        id: 2,
-                        user: {
-                            name: 'Максим',
-                            avatar: '👨'
-                        },
-                        content: 'Как правильно вести себя на первом свидании после знакомства в интернете? Волнуюсь и не знаю, о чем говорить.',
-                        date: '2026-02-09T20:15:00',
-                        likes: 8,
-                        dislikes: 1,
-                        comments: 3,
-                        isLiked: true,
-                        isDisliked: false
+            // Загружаем вопросы из бэкенда (только для авторизованных пользователей)
+            let questions = [];
+            if (this.state.user && this.state.authToken) {
+                try {
+                    const url = `${this.AUTH_CONFIG.baseUrl}/api/questions`;
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...this.getAuthHeaders()
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (Array.isArray(data)) {
+                            questions = data.map(q => ({
+                                id: q.id,
+                                user: {
+                                    name: q.authorName || q.authorEmail || 'Пользователь',
+                                    avatar: '👤'
+                                },
+                                content: q.content,
+                                date: q.createdAt,
+                                likes: 0,
+                                dislikes: 0,
+                                comments: 0,
+                                isLiked: false,
+                                isDisliked: false
+                            }));
+                        }
+                    } else if (response.status !== 404) {
+                        console.warn('Не удалось загрузить вопросы с бэкенда', response.status);
                     }
-                ],
+                } catch (e) {
+                    console.error('Error fetching questions from backend:', e);
+                }
+            }
+
+            this.dashboard = {
+                questions,
                 stories: this.chatManager.chats.map(chat => ({
                     id: chat.id,
                     title: chat.title,
@@ -4081,9 +4205,11 @@ class VerdiktChatApp {
                     comments: Math.floor(Math.random() * 10)
                 })),
                 analytics: {
-                    totalResponses: 15,
-                    helpfulResponses: 12,
-                    averageRating: 4.5,
+                    totalResponses: this.state.stats.aiMessages || 0,
+                    helpfulResponses: (this.state.stats.relationshipAdvice || 0)
+                        + (this.state.stats.manipulationRequests || 0)
+                        + (this.state.stats.datingAdvice || 0),
+                    averageRating: 0,
                     activity: this.generateActivityData()
                 }
             };
@@ -4095,106 +4221,65 @@ class VerdiktChatApp {
             console.error('Error loading dashboard data:', error);
         }
     }
-    // ==================== КОМАНДА РАЗРАБОТКИ ====================
-// ВСТАВЬТЕ ЭТОТ МЕТОД СЮДА 👇
-showDevelopersMenu() {
-    // Создаем HTML для модального окна с командой разработки
-    const modalHTML = `
-    <div class="modal" id="developers-modal">
-        <div class="modal-content" style="max-width: 500px;">
-            <button class="modal-close" id="developers-modal-close">
-                <i class="fas fa-times"></i>
-            </button>
-            
-            <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                <i class="fas fa-code-branch"></i> Команда разработки
-            </h2>
-            
-            <div class="modal-section">
-                <p style="margin-bottom: 20px; color: var(--text-secondary);">
-                    Нажмите для связи в Telegram
-                </p>
-                
-                <div class="dev-dropdown-list" style="display: flex; flex-direction: column; gap: 10px;">
-                    <a href="https://t.me/tensamore" target="_blank" class="dev-dropdown-item" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.05); text-decoration: none; color: inherit;">
-                        <div class="dev-dropdown-avatar brain-avatar" style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-brain"></i>
-                        </div>
-                        <div class="dev-dropdown-info" style="flex: 1;">
-                            <div class="dev-dropdown-name" style="font-weight: 600;">@tensamore</div>
-                            <div class="dev-dropdown-role" style="font-size: 0.85rem; color: var(--text-secondary);">Dev Lead</div>
-                        </div>
-                        <div class="dev-dropdown-telegram">
-                            <i class="fab fa-telegram" style="color: #26A5E4; font-size: 1.2rem;"></i>
-                        </div>
-                    </a>
-                    
-                    <a href="https://t.me/gama4i" target="_blank" class="dev-dropdown-item" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.05); text-decoration: none; color: inherit;">
-                        <div class="dev-dropdown-avatar code-avatar" style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #10b981, #059669); display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-code"></i>
-                        </div>
-                        <div class="dev-dropdown-info" style="flex: 1;">
-                            <div class="dev-dropdown-name" style="font-weight: 600;">@gama4i</div>
-                            <div class="dev-dropdown-role" style="font-size: 0.85rem; color: var(--text-secondary);">Developer</div>
-                        </div>
-                        <div class="dev-dropdown-telegram">
-                            <i class="fab fa-telegram" style="color: #26A5E4; font-size: 1.2rem;"></i>
-                        </div>
-                    </a>
-                    
-                    <a href="https://t.me/suce4" target="_blank" class="dev-dropdown-item" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.05); text-decoration: none; color: inherit;">
-                        <div class="dev-dropdown-avatar bug-avatar" style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #ef4444, #dc2626); display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-bug"></i>
-                        </div>
-                        <div class="dev-dropdown-info" style="flex: 1;">
-                            <div class="dev-dropdown-name" style="font-weight: 600;">@suce4</div>
-                            <div class="dev-dropdown-role" style="font-size: 0.85rem; color: var(--text-secondary);">Tester</div>
-                        </div>
-                        <div class="dev-dropdown-telegram">
-                            <i class="fab fa-telegram" style="color: #26A5E4; font-size: 1.2rem;"></i>
-                        </div>
-                    </a>
-                </div>
-                
-                <div class="dev-dropdown-footer" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color); text-align: center;">
-                    <div class="dev-version" style="color: var(--text-tertiary); font-size: 0.9rem;">
-                        <i class="fas fa-heart"></i> Версия 2.1
-                    </div>
-                </div>
-            </div>
-            
-            <div class="modal-buttons" style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="ios-button secondary" id="close-developers-modal" style="flex: 1;">
-                    Закрыть
-                </button>
-            </div>
-        </div>
-    </div>
-    `;
-    
-    // Удаляем предыдущее модальное окно, если есть
-    const existingModal = document.getElementById('developers-modal');
-    if (existingModal) existingModal.remove();
-    
-    // Добавляем новое модальное окно
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-    const modal = document.getElementById('developers-modal');
-    modal.classList.add('active');
-    
-    // Обработчики закрытия
-    document.getElementById('developers-modal-close').addEventListener('click', () => {
-        modal.remove();
-    });
-    
-    document.getElementById('close-developers-modal').addEventListener('click', () => {
-        modal.remove();
-    });
-}
-// 👆 КОНЕЦ МЕТОДА
 
-async showPasswordPrompt() {
-    // ... существующий код ...
-}
+    async submitDashboardQuestion(content) {
+        if (!this.state.user || !this.state.authToken) {
+            this.showNotification('Войдите в аккаунт, чтобы задать вопрос', 'warning');
+            return;
+        }
+
+        const trimmed = (content || '').trim();
+        if (!trimmed) {
+            this.showNotification('Введите текст вопроса', 'warning');
+            return;
+        }
+
+        try {
+            const url = `${this.AUTH_CONFIG.baseUrl}/api/questions`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...this.getAuthHeaders()
+                },
+                body: JSON.stringify({ content: trimmed })
+            });
+
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                const message = error.message || `Не удалось отправить вопрос (HTTP ${response.status})`;
+                throw new Error(message);
+            }
+
+            const question = await response.json();
+            const mapped = {
+                id: question.id,
+                user: {
+                    name: question.authorName || question.authorEmail || (this.state.user.name || this.state.user.email || 'Пользователь'),
+                    avatar: '👤'
+                },
+                content: question.content,
+                date: question.createdAt,
+                likes: 0,
+                dislikes: 0,
+                comments: 0,
+                isLiked: false,
+                isDisliked: false
+            };
+
+            if (!this.dashboard) {
+                this.dashboard = { questions: [], stories: [], analytics: { activity: [] } };
+            }
+
+            this.dashboard.questions = [mapped, ...(this.dashboard.questions || [])];
+            this.renderQuestions();
+            this.updateSidebarStats();
+            this.showNotification('Вопрос отправлен', 'success');
+        } catch (error) {
+            console.error('submitDashboardQuestion error:', error);
+            this.showNotification(error.message || 'Не удалось отправить вопрос', 'error');
+        }
+    }
 
     generateActivityData() {
         // Генерация демо данных активности за последние 7 дней
@@ -4228,52 +4313,115 @@ async showPasswordPrompt() {
         
         // Рендерим активность
         this.renderActivity();
+
+        // Рендерим админ-вкладку (если есть права)
+        this.renderAdminQuestions();
     }
 
     renderQuestions() {
         const questionsList = document.getElementById('questions-list');
         if (!questionsList) return;
-        
+
+        // Форма для отправки вопроса доступна только авторизованным пользователям
+        let formHtml = '';
+        if (this.state.user) {
+            formHtml = `
+                <div class="question-card" style="margin-bottom: 15px;">
+                    <div class="question-header">
+                        <div class="question-avatar">👤</div>
+                        <div class="question-meta">
+                            <h5>${this.state.user.name || this.state.user.email || 'Пользователь'}</h5>
+                            <div class="date">Задайте новый вопрос</div>
+                        </div>
+                    </div>
+                    <div class="question-content">
+                        <textarea id="new-question-content" class="comment-input" placeholder="Опишите ваш вопрос или ситуацию..." rows="3"></textarea>
+                    </div>
+                    <div class="question-actions">
+                        <div class="action-buttons">
+                            <button class="action-btn" id="new-question-submit">
+                                <i class="fas fa-paper-plane"></i> Отправить вопрос
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            formHtml = `
+                <div class="question-card" style="margin-bottom: 15px; text-align: center;">
+                    <p style="color: var(--text-tertiary);">
+                        Войдите в аккаунт, чтобы задавать вопросы.
+                    </p>
+                </div>
+            `;
+        }
+
+        let listHtml = '';
         if (!this.dashboard.questions || this.dashboard.questions.length === 0) {
-            questionsList.innerHTML = `
+            listHtml = `
                 <div class="question-card" style="text-align: center; padding: 40px;">
                     <i class="fas fa-question-circle" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
                     <h4>Пока нет вопросов</h4>
                     <p style="color: var(--text-tertiary);">Когда пользователи зададут вам вопросы, они появятся здесь</p>
                 </div>
             `;
-            return;
+        } else {
+            listHtml = this.dashboard.questions.map(question => `
+                <div class="question-card" data-question-id="${question.id}">
+                    <div class="question-header">
+                        <div class="question-avatar">${question.user.avatar}</div>
+                        <div class="question-meta">
+                            <h5>${question.user.name}</h5>
+                            <div class="date">${this.formatDate(question.date)}</div>
+                        </div>
+                    </div>
+                    <div class="question-content">${question.content}</div>
+                    <div class="question-actions">
+                        <div class="action-buttons">
+                            <button class="action-btn ${question.isLiked ? 'liked' : ''}" data-action="like" data-question-id="${question.id}">
+                                <i class="fas fa-thumbs-up"></i> ${question.likes}
+                            </button>
+                            <button class="action-btn ${question.isDisliked ? 'disliked' : ''}" data-action="dislike" data-question-id="${question.id}">
+                                <i class="fas fa-thumbs-down"></i> ${question.dislikes}
+                            </button>
+                            <button class="action-btn" data-action="comment" data-question-id="${question.id}">
+                                <i class="fas fa-comment"></i> Ответить
+                            </button>
+                            ${this.state.isAdmin ? `
+                            <button class="action-btn" data-action="admin-delete" data-question-id="${question.id}">
+                                <i class="fas fa-trash"></i> Удалить
+                            </button>
+                            <button class="action-btn" data-action="admin-ban" data-question-id="${question.id}">
+                                <i class="fas fa-user-slash"></i> Бан пользователя
+                            </button>
+                            ` : ''}
+                        </div>
+                        <div class="comments-count">
+                            <i class="fas fa-comments"></i> ${question.comments}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
         }
-        
-        questionsList.innerHTML = this.dashboard.questions.map(question => `
-            <div class="question-card" data-question-id="${question.id}">
-                <div class="question-header">
-                    <div class="question-avatar">${question.user.avatar}</div>
-                    <div class="question-meta">
-                        <h5>${question.user.name}</h5>
-                        <div class="date">${this.formatDate(question.date)}</div>
-                    </div>
-                </div>
-                <div class="question-content">${question.content}</div>
-                <div class="question-actions">
-                    <div class="action-buttons">
-                        <button class="action-btn ${question.isLiked ? 'liked' : ''}" data-action="like" data-question-id="${question.id}">
-                            <i class="fas fa-thumbs-up"></i> ${question.likes}
-                        </button>
-                        <button class="action-btn ${question.isDisliked ? 'disliked' : ''}" data-action="dislike" data-question-id="${question.id}">
-                            <i class="fas fa-thumbs-down"></i> ${question.dislikes}
-                        </button>
-                        <button class="action-btn" data-action="comment" data-question-id="${question.id}">
-                            <i class="fas fa-comment"></i> Ответить
-                        </button>
-                    </div>
-                    <div class="comments-count">
-                        <i class="fas fa-comments"></i> ${question.comments}
-                    </div>
-                </div>
-            </div>
-        `).join('');
-        
+
+        questionsList.innerHTML = formHtml + listHtml;
+
+        // Обработчик отправки вопроса
+        const submitBtn = document.getElementById('new-question-submit');
+        if (submitBtn) {
+            submitBtn.addEventListener('click', async () => {
+                const textarea = document.getElementById('new-question-content');
+                const text = textarea ? textarea.value : '';
+                await this.submitDashboardQuestion(text);
+                if (textarea) {
+                    textarea.value = '';
+                }
+            });
+        }
+
+        // Навешиваем обработчики админ-действий по вопросам
+        this.attachAdminQuestionHandlers();
+
         // Обновляем бейджи
         this.updateBadges();
     }
@@ -4366,6 +4514,119 @@ async showPasswordPrompt() {
                 </div>
             </div>
         `).join('');
+    }
+
+    renderAdminQuestions() {
+        const adminTabButton = document.querySelector('.dashboard-tab[data-tab="admin"]');
+        const adminList = document.getElementById('admin-questions-list');
+
+        // Если элементов нет в DOM — просто выходим
+        if (!adminTabButton || !adminList) return;
+
+        // Показываем/скрываем вкладку "Админ" в зависимости от прав
+        if (this.state.isAdmin) {
+            adminTabButton.style.display = '';
+        } else {
+            adminTabButton.style.display = 'none';
+        }
+
+        if (!this.state.isAdmin) {
+            adminList.innerHTML = `
+                <div class="question-card" style="text-align: center; padding: 40px;">
+                    <i class="fas fa-lock" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
+                    <h4>Нет доступа</h4>
+                    <p style="color: var(--text-tertiary);">Админ-панель доступна только в админ-режиме</p>
+                </div>
+            `;
+            return;
+        }
+
+        if (!this.dashboard || !this.dashboard.questions || this.dashboard.questions.length === 0) {
+            adminList.innerHTML = `
+                <div class="question-card" style="text-align: center; padding: 40px;">
+                    <i class="fas fa-tasks" style="font-size: 3rem; color: var(--text-terтиary); margin-bottom: 20px;"></i>
+                    <h4>Пока нет вопросов</h4>
+                    <p style="color: var(--text-tertiary);">После появления вопросов вы сможете управлять ими здесь</p>
+                </div>
+            `;
+            return;
+        }
+
+        const html = this.dashboard.questions.map(question => `
+            <div class="question-card" data-question-id="${question.id}">
+                <div class="question-header">
+                    <div class="question-avatar">${question.user.avatar}</div>
+                    <div class="question-meta">
+                        <h5>${question.user.name}</h5>
+                        <div class="date">${this.formatDate(question.date)}</div>
+                    </div>
+                </div>
+                <div class="question-content">
+                    ${question.content}
+                    ${question.isBanned ? `
+                        <div style="margin-top: 8px; font-size: 0.8rem; color: #f97316;">
+                            <i class="fas fa-exclamation-triangle"></i> Пользователь помечен как забаненный
+                        </div>
+                    ` : ''}
+                </div>
+                <div class="question-actions">
+                    <div class="action-buttons">
+                        <button class="action-btn" data-action="admin-delete" data-question-id="${question.id}">
+                            <i class="fas fa-trash"></i> Удалить вопрос
+                        </button>
+                        <button class="action-btn" data-action="admin-ban" data-question-id="${question.id}">
+                            <i class="fas fa-user-slash"></i> Забанить пользователя
+                        </button>
+                        <button class="action-btn" data-action="admin-resolve" data-question-id="${question.id}">
+                            <i class="fas fa-check"></i> Отметить как решенный
+                        </button>
+                    </div>
+                    <div class="comments-count">
+                        <i class="fas fa-comments"></i> ${question.comments}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        adminList.innerHTML = html;
+
+        // Навешиваем обработчики на кнопки внутри админ-списка
+        adminList.querySelectorAll('[data-action="admin-delete"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-question-id');
+                if (!id) return;
+                this.dashboard.questions = this.dashboard.questions.filter(q => String(q.id) !== String(id));
+                this.renderQuestions();
+                this.renderAdminQuestions();
+                this.updateSidebarStats();
+                this.showNotification('Вопрос удален (локально)', 'info');
+            });
+        });
+
+        adminList.querySelectorAll('[data-action="admin-ban"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-question-id');
+                if (!id) return;
+                const question = this.dashboard.questions.find(q => String(q.id) === String(id));
+                const userEmail = question?.user?.email || question?.user?.name || 'пользователь';
+
+                question.isBanned = true;
+                this.showNotification(`Пользователь ${userEmail} помечен как забаненный (локально)`, 'warning');
+                this.renderAdminQuestions();
+            });
+        });
+
+        adminList.querySelectorAll('[data-action="admin-resolve"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-question-id');
+                if (!id) return;
+                const question = this.dashboard.questions.find(q => String(q.id) === String(id));
+                if (!question) return;
+                question.isResolved = true;
+                this.showNotification('Вопрос отмечен как решенный (локально)', 'success');
+                this.renderAdminQuestions();
+            });
+        });
     }
 
     getActivityColor(type) {

@@ -1,0 +1,4 @@
+# Amvera Cloud: порт приложения и постоянное хранилище для H2
+run:
+  containerPort: 8080
+  persistenceMount: /data

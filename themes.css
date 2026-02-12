@@ -975,13 +975,3 @@
 .fa-bars::before {
     content: '' !important; /* Перезаписываем иконку FontAwesome */
 }
-
-.app-header .sidebar-toggle {
-    position: static !important; /* Убираем fixed позиционирование */
-    left: auto !important;
-    top: auto !important;
-    margin-right: 10px;
-    opacity: 1 !important;
-    visibility: visible !important;
-    transform: none !important;
-}
