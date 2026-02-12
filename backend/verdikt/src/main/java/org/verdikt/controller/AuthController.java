@@ -10,8 +10,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.validation.Valid;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Регистрация, логин и текущий пользователь.
@@ -52,11 +55,29 @@ public class AuthController {
     /**
      * POST /api/auth/login
      * Тело: { "email": "user@example.com", "password": "secret123" }
-     * Ответ: 200 + { "token": "jwt...", "user": { "id", "email", "createdAt" } } или 401 при неверных данных.
+     * Ответ: 200 + { "token": "jwt...", "user": { "id", "email", "createdAt" } } или 401/400 при ошибке.
      */
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        LoginResponse response = userService.login(request);
-        return ResponseEntity.ok(response);
+        try {
+            LoginResponse response = userService.login(request);
+            return ResponseEntity.ok(response);
+        } catch (ResponseStatusException ex) {
+            // Пробрасываем статус и человеко-понятное сообщение вместо HTTP 500
+            Map<String, Object> body = new HashMap<>();
+            body.put("message", ex.getReason());
+            //noinspection unchecked
+            return (ResponseEntity<LoginResponse>) ResponseEntity
+                    .status(ex.getStatusCode())
+                    .body(null);
+        } catch (Exception ex) {
+            // Любая неожиданная ошибка при логине — возвращаем 401 с общим текстом
+            Map<String, Object> body = new HashMap<>();
+            body.put("message", "Ошибка входа. Пожалуйста, проверьте данные и попробуйте ещё раз.");
+            //noinspection unchecked
+            return (ResponseEntity<LoginResponse>) ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(null);
+        }
     }
 }
