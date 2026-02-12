@@ -2710,47 +2710,32 @@ updateSidebarInfo() {
     }
 
     updateAuthUI() {
-        const userAuth = document.getElementById('user-auth');
-        const label = userAuth?.querySelector('.user-auth-label');
-        const userInfo = document.getElementById('auth-user-info');    
-        const userNameLabel = document.getElementById('auth-user-name');
-    
-        if (!userAuth || !label) return;
+    const userAuth = document.getElementById('user-auth');
+    const label = userAuth?.querySelector('.user-auth-label');
+    const userInfo = document.getElementById('auth-user-info');    
+    const userNameLabel = document.getElementById('auth-user-name');
 
-        if (this.state.user) {
-            const name = this.state.user.name || this.state.user.email || 'Аккаунт';
-        
-            // Обновляем текст в сайдбаре вместо кнопки
-            if (this.elements.sidebarUseremail) {
-                this.elements.sidebarUseremail.innerHTML = `<i class="fas fa-user"></i> ${name}`;
-                this.elements.sidebarUseremail.style.cursor = 'pointer';
-                this.elements.sidebarUseremail.addEventListener('click', () => {
-                    this.showModal('auth-modal');
-                });
-            }
-        
-            userAuth.style.display = 'none'; // Скрываем кнопку в хедере
-            if (userInfo && userNameLabel) {
-                userNameLabel.textContent = name;
-                userInfo.style.display = 'flex';
-            }
-        } else {
-            // Для гостя показываем "Войти" в сайдбаре
-            if (this.elements.sidebarUseremail) {
-                this.elements.sidebarUseremail.innerHTML = 'Войдите в аккаунт <i class="fas fa-sign-in-alt" style="margin-left: 5px;"></i>';
-                this.elements.sidebarUseremail.style.cursor = 'pointer';
-                this.elements.sidebarUseremail.addEventListener('click', () => {
-                    this.hideSidebar();
-                    this.showModal('auth-modal');
-                });
-            }
-        
-            userAuth.style.display = 'none'; // Скрываем кнопку в хедере
-            if (userInfo) {
-                userInfo.style.display = 'none';
-            }
+    if (!userAuth || !label) return;
+
+    if (this.state.user) {
+        const name = this.state.user.name || this.state.user.email || 'Аккаунт';
+        label.textContent = name;
+        userAuth.classList.add('user-auth-logged-in');
+        if (userInfo && userNameLabel) {
+            userNameLabel.textContent = name;
+            userInfo.style.display = 'flex';
+        }
+    } else {
+        label.textContent = 'Войти';
+        userAuth.classList.remove('user-auth-logged-in');
+        if (userInfo) {
+            userInfo.style.display = 'none';
         }
     }
+    
+    // 🚫 НИЧЕГО НЕ ТРОГАЕМ В САЙДБАРЕ!
+    // Вся работа с sidebarUseremail ТОЛЬКО в updateSidebarInfo()
+}
 
     getCurrentTime() {
         const now = new Date();
