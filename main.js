@@ -79,6 +79,10 @@ class VerdiktChatApp {
             },
             // Локальный флаг админ-режима (пока без проверки на бэкенде)
             isAdmin: false,
+            // Фильтры и роли админа
+            adminQuestionFilter: 'all',
+            adminUserFilter: 'all',
+            adminRoles: {},
             // Пользователь и токен авторизации
             user: null,
             authToken: null,
@@ -2442,6 +2446,11 @@ class VerdiktChatApp {
                     : 'Админ-режим выключен',
                 'info'
             );
+
+            // Перерисовываем зависящие от админ-режима части
+            this.renderQuestions();
+            this.renderAdminQuestions();
+            this.renderAdminUsers();
         });
     }
 
@@ -2459,6 +2468,7 @@ class VerdiktChatApp {
                 this.dashboard.questions = this.dashboard.questions.filter(q => String(q.id) !== String(id));
                 this.renderQuestions();
                 this.renderAdminQuestions();
+                this.renderAdminUsers();
                 this.updateSidebarStats();
                 this.showNotification('Вопрос удален (локально)', 'info');
             });
@@ -2475,6 +2485,7 @@ class VerdiktChatApp {
                 question.isBanned = true;
                 this.showNotification(`Пользователь ${userEmail} помечен как забаненный (локально)`, 'warning');
                 this.renderAdminQuestions();
+                this.renderAdminUsers();
             });
         });
     }
@@ -4250,6 +4261,7 @@ class VerdiktChatApp {
 
         // Рендерим админ-вкладку (если есть права)
         this.renderAdminQuestions();
+        this.renderAdminUsers();
     }
 
     renderQuestions() {
@@ -4450,6 +4462,182 @@ class VerdiktChatApp {
         `).join('');
     }
 
+    renderAdminUsers() {
+        const usersList = document.getElementById('admin-users-list');
+        const usersFilterButtons = document.querySelectorAll('.admin-user-filter');
+
+        if (!usersList) return;
+
+        // Если админ-режим выключен — просто показываем заглушку
+        if (!this.state.isAdmin) {
+            usersList.innerHTML = `
+                <div class="question-card" style="text-align: center; padding: 40px;">
+                    <i class="fas fa-lock" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
+                    <h4>Нет доступа</h4>
+                    <p style="color: var(--text-tertiary);">Управление пользователями доступно только в админ-режиме</p>
+                </div>
+            `;
+            return;
+        }
+
+        if (!this.dashboard || !this.dashboard.questions || this.dashboard.questions.length === 0) {
+            usersList.innerHTML = `
+                <div class="question-card" style="text-align: center; padding: 40px;">
+                    <i class="fas fa-users" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
+                    <h4>Пока нет пользователей</h4>
+                    <p style="color: var(--text-tertiary);">Пользователи появятся здесь после того, как начнут задавать вопросы</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Собираем пользователей из вопросов
+        const usersMap = new Map();
+
+        this.dashboard.questions.forEach(question => {
+            const u = question.user || {};
+            const key = u.email || u.name;
+            if (!key) return;
+
+            const existing = usersMap.get(key) || {
+                key,
+                name: u.name || u.email || 'Пользователь',
+                email: u.email || '',
+                avatar: u.avatar || '👤',
+                isBanned: false,
+                role: 'user'
+            };
+
+            existing.isBanned = existing.isBanned || !!question.isBanned;
+            usersMap.set(key, existing);
+        });
+
+        // Применяем сохраненные роли
+        const roles = this.state.adminRoles || {};
+        let users = Array.from(usersMap.values()).map(u => ({
+            ...u,
+            role: roles[u.key] || u.role
+        }));
+
+        // Фильтрация по типу
+        const filter = this.state.adminUserFilter || 'all';
+        if (filter === 'banned') {
+            users = users.filter(u => u.isBanned);
+        } else if (filter === 'admins') {
+            users = users.filter(u => u.role === 'admin');
+        }
+
+        if (!users.length) {
+            usersList.innerHTML = `
+                <div class="question-card" style="text-align: center; padding: 40px;">
+                    <i class="fas fa-users-slash" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
+                    <h4>Ничего не найдено</h4>
+                    <p style="color: var(--text-tertiary);">Попробуйте изменить фильтр</p>
+                </div>
+            `;
+            return;
+        }
+
+        usersList.innerHTML = users.map(user => `
+            <div class="question-card" data-user-key="${user.key}">
+                <div class="question-header">
+                    <div class="question-avatar">${user.avatar}</div>
+                    <div class="question-meta">
+                        <h5>${user.name}</h5>
+                        <div class="date">
+                            ${user.email ? user.email + ' · ' : ''}${user.role === 'admin' ? 'Админ' : 'Пользователь'}
+                        </div>
+                    </div>
+                </div>
+                <div class="question-actions">
+                    <div class="action-buttons">
+                        <button class="action-btn" data-action="user-ban" data-user-key="${user.key}">
+                            <i class="fas fa-${user.isBanned ? 'user-check' : 'user-slash'}"></i>
+                            ${user.isBanned ? 'Разбанить' : 'Забанить'}
+                        </button>
+                        <button class="action-btn" data-action="user-role" data-user-key="${user.key}">
+                            <i class="fas fa-${user.role === 'admin' ? 'user' : 'user-shield'}"></i>
+                            ${user.role === 'admin' ? 'Сделать пользователем' : 'Сделать админом'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        // Фильтры по пользователям
+        usersFilterButtons.forEach(btn => {
+            const value = btn.getAttribute('data-filter');
+            if (!value) return;
+
+            btn.classList.toggle('active', value === this.state.adminUserFilter);
+
+            if (!btn._adminUserFilterBound) {
+                btn.addEventListener('click', () => {
+                    this.state.adminUserFilter = value;
+                    this.renderAdminUsers();
+                });
+                btn._adminUserFilterBound = true;
+            }
+        });
+
+        // Обработчики действий по пользователям
+        usersList.querySelectorAll('[data-action="user-ban"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const key = btn.getAttribute('data-user-key');
+                if (!key) return;
+
+                // Переключаем бан пользователя через его вопросы
+                const questions = this.dashboard.questions || [];
+                const isCurrentlyBanned = questions.some(q => {
+                    const u = q.user || {};
+                    const k = u.email || u.name;
+                    return k === key && q.isBanned;
+                });
+
+                questions.forEach(q => {
+                    const u = q.user || {};
+                    const k = u.email || u.name;
+                    if (k === key) {
+                        q.isBanned = !isCurrentlyBanned;
+                    }
+                });
+
+                this.showNotification(
+                    isCurrentlyBanned ? 'Пользователь разбанен (локально)' : 'Пользователь забанен (локально)',
+                    isCurrentlyBanned ? 'success' : 'warning'
+                );
+
+                this.renderQuestions();
+                this.renderAdminQuestions();
+                this.renderAdminUsers();
+            });
+        });
+
+        usersList.querySelectorAll('[data-action="user-role"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const key = btn.getAttribute('data-user-key');
+                if (!key) return;
+
+                const currentRole = this.state.adminRoles?.[key] || 'user';
+                const newRole = currentRole === 'admin' ? 'user' : 'admin';
+
+                this.state.adminRoles = {
+                    ...(this.state.adminRoles || {}),
+                    [key]: newRole
+                };
+
+                this.showNotification(
+                    newRole === 'admin'
+                        ? 'Пользователь отмечен как админ (локально)'
+                        : 'Права админа сняты (локально)',
+                    'info'
+                );
+
+                this.renderAdminUsers();
+            });
+        });
+    }
+
     renderAdminQuestions() {
         const adminTabButton = document.querySelector('.dashboard-tab[data-tab="admin"]');
         const adminList = document.getElementById('admin-questions-list');
@@ -4486,7 +4674,21 @@ class VerdiktChatApp {
             return;
         }
 
-        const html = this.dashboard.questions.map(question => `
+        // Применяем фильтры по статусу
+        const filter = this.state.adminQuestionFilter || 'all';
+        let questions = [...this.dashboard.questions];
+
+        if (filter === 'unresolved') {
+            questions = questions.filter(q => !q.isResolved);
+        } else if (filter === 'resolved') {
+            questions = questions.filter(q => q.isResolved);
+        } else if (filter === 'banned') {
+            questions = questions.filter(q => q.isBanned);
+        } else if (filter === 'not-banned') {
+            questions = questions.filter(q => !q.isBanned);
+        }
+
+        const html = questions.map(question => `
             <div class="question-card" data-question-id="${question.id}">
                 <div class="question-header">
                     <div class="question-avatar">${question.user.avatar}</div>
@@ -4533,6 +4735,7 @@ class VerdiktChatApp {
                 this.renderQuestions();
                 this.renderAdminQuestions();
                 this.updateSidebarStats();
+                this.renderAdminUsers();
                 this.showNotification('Вопрос удален (локально)', 'info');
             });
         });
@@ -4547,6 +4750,7 @@ class VerdiktChatApp {
                 question.isBanned = true;
                 this.showNotification(`Пользователь ${userEmail} помечен как забаненный (локально)`, 'warning');
                 this.renderAdminQuestions();
+                this.renderAdminUsers();
             });
         });
 
@@ -4560,6 +4764,23 @@ class VerdiktChatApp {
                 this.showNotification('Вопрос отмечен как решенный (локально)', 'success');
                 this.renderAdminQuestions();
             });
+        });
+
+        // Обработчики фильтров по вопросам
+        const filterButtons = document.querySelectorAll('.admin-question-filter');
+        filterButtons.forEach(btn => {
+            const value = btn.getAttribute('data-filter');
+            if (!value) return;
+
+            btn.classList.toggle('active', value === this.state.adminQuestionFilter);
+
+            if (!btn._adminFilterBound) {
+                btn.addEventListener('click', () => {
+                    this.state.adminQuestionFilter = value;
+                    this.renderAdminQuestions();
+                });
+                btn._adminFilterBound = true;
+            }
         });
     }
 
