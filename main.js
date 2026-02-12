@@ -1744,12 +1744,7 @@ class VerdiktChatApp {
             // Обновление аватара
             const avatarIcon = this.elements.userAvatar.querySelector('i');
             if (this.state.user.avatarUrl) {
-                // Если путь относительный (/uploads/...), добавляем базовый URL бэкенда
-                const rawUrl = this.state.user.avatarUrl;
-                const fullUrl = rawUrl.startsWith('http')
-                    ? rawUrl
-                    : `${this.AUTH_CONFIG.baseUrl}${rawUrl}`;
-                this.elements.userAvatar.style.backgroundImage = `url(${fullUrl})`;
+                this.elements.userAvatar.style.backgroundImage = `url(${this.state.user.avatarUrl})`;
                 this.elements.userAvatar.style.backgroundSize = 'cover';
                 this.elements.userAvatar.style.backgroundPosition = 'center';
                 if (avatarIcon) avatarIcon.style.display = 'none';
@@ -4439,13 +4434,6 @@ class VerdiktChatApp {
                 const action = e.currentTarget.dataset.action;
                 const id = e.currentTarget.dataset.questionId;
                 if (!action || !id) return;
-
-                // Для лайков/дизлайков/комментариев требуем авторизацию
-                if (!this.state.authToken) {
-                    this.showNotification('Войдите в аккаунт, чтобы оценивать и комментировать вопросы', 'warning');
-                    return;
-                }
-
                 const q = (this.dashboard.questions || []).find(q => String(q.id) === String(id));
                 if (!q) return;
 
@@ -4480,9 +4468,6 @@ class VerdiktChatApp {
                         this.showNotification('Комментарий отправлен', 'success');
                     }
                 }
-
-                // Мгновенно обновляем интерфейс
-                this.renderQuestions();
 
                 // синхронизируем с бекендом
                 this.syncQuestionStats(q);
