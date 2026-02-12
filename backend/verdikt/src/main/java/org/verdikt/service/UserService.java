@@ -86,9 +86,6 @@ public class UserService {
         if (request.getExpertise() != null) {
             user.setExpertise(request.getExpertise());
         }
-        if (request.getAvatarUrl() != null) {
-            user.setAvatarUrl(request.getAvatarUrl().trim());
-        }
         user = userRepository.save(user);
         return UserResponse.from(user);
     }

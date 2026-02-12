@@ -18,8 +18,6 @@ public class UserResponse {
     private String privacy;
     private List<String> expertise = new ArrayList<>();
     private Instant createdAt;
-    private String avatarUrl;
-    private boolean admin;
 
     public static UserResponse from(User user) {
         UserResponse r = new UserResponse();
@@ -30,8 +28,6 @@ public class UserResponse {
         r.setPrivacy(user.getPrivacy());
         r.setExpertise(user.getExpertise() != null ? new ArrayList<>(user.getExpertise()) : new ArrayList<>());
         r.setCreatedAt(user.getCreatedAt());
-        r.setAvatarUrl(user.getAvatarUrl());
-        r.setAdmin(user.isAdmin());
         return r;
     }
 
@@ -57,22 +53,6 @@ public class UserResponse {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
-    }
-
-    public String getAvatarUrl() {
-        return avatarUrl;
-    }
-
-    public void setAvatarUrl(String avatarUrl) {
-        this.avatarUrl = avatarUrl;
-    }
-
-    public boolean isAdmin() {
-        return admin;
-    }
-
-    public void setAdmin(boolean admin) {
-        this.admin = admin;
     }
 
     public String getName() {

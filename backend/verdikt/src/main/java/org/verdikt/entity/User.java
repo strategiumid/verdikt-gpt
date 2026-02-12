@@ -51,13 +51,6 @@ public class User {
     @Column(name = "expertise", length = 100)
     private List<String> expertise = new ArrayList<>();
 
-    @Size(max = 500)
-    @Column(name = "avatar_url", length = 500)
-    private String avatarUrl;
-
-    @Column(name = "is_admin", nullable = false)
-    private boolean admin = false;
-
     // --- Геттеры и сеттеры ---
 
     public Long getId() {
@@ -122,21 +115,5 @@ public class User {
 
     public void setExpertise(List<String> expertise) {
         this.expertise = expertise != null ? expertise : new ArrayList<>();
-    }
-
-    public String getAvatarUrl() {
-        return avatarUrl;
-    }
-
-    public void setAvatarUrl(String avatarUrl) {
-        this.avatarUrl = avatarUrl;
-    }
-
-    public boolean isAdmin() {
-        return admin;
-    }
-
-    public void setAdmin(boolean admin) {
-        this.admin = admin;
     }
 }
