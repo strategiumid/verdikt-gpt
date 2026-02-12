@@ -269,9 +269,13 @@ class VerdiktChatApp {
         
         // Загружаем историю чатов
         await this.loadChats();
-        // Восстанавливаем выбранную тему (loadChat мог подставить тему чата)
-        const savedTheme = localStorage.getItem('verdikt_theme');
-        if (savedTheme) this.applyTheme(savedTheme);
+        // Тема: для авторизованных — с бэкенда, иначе из localStorage
+        if (this.state.user) {
+            await this.loadUserSettings();
+        } else {
+            const savedTheme = localStorage.getItem('verdikt_theme');
+            if (savedTheme) this.setTheme(savedTheme);
+        }
 
         // Статистика
         const currentHour = new Date().getHours();
@@ -2477,19 +2481,51 @@ class VerdiktChatApp {
         }
     }
 
-    setTheme(theme) {
+    setTheme(theme, options = {}) {
+        const { fromServer = false } = options;
         this.state.currentTheme = theme;
         document.body.setAttribute('data-theme', theme);
         
-        // Обновляем активный класс
         document.querySelectorAll('.theme-option').forEach(opt => opt.classList.remove('active'));
         const activeTheme = document.querySelector(`.theme-option[data-theme="${theme}"]`);
         if (activeTheme) {
             activeTheme.classList.add('active');
         }
         
+        localStorage.setItem('verdikt_theme', theme);
         this.saveChats();
-        this.showNotification(`Тема изменена: ${theme}`, 'info');
+        if (this.state.user && !fromServer) {
+            const url = `${this.AUTH_CONFIG.baseUrl}/api/users/me/settings`;
+            fetch(url, {
+                method: 'PATCH',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ theme })
+            }).catch(() => {});
+        }
+        if (!fromServer) {
+            this.showNotification(`Тема изменена: ${theme}`, 'info');
+        }
+    }
+
+    /**
+     * Загружает настройки пользователя (тема) с бэкенда и применяет тему.
+     */
+    async loadUserSettings() {
+        if (!this.state.user) return;
+        try {
+            const url = `${this.AUTH_CONFIG.baseUrl}/api/users/me/settings`;
+            const response = await fetch(url, { credentials: 'include' });
+            if (response.ok) {
+                const data = await response.json();
+                if (data.theme) {
+                    this.setTheme(data.theme, { fromServer: true });
+                }
+            }
+        } catch (e) {
+            const savedTheme = localStorage.getItem('verdikt_theme');
+            if (savedTheme) this.setTheme(savedTheme, { fromServer: true });
+        }
     }
 
     // ==================== СИСТЕМА УВЕДОМЛЕНИЙ ====================
