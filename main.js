@@ -91,6 +91,8 @@ class VerdiktChatApp {
         };
 
         this.crypto = new VerdiktCrypto();
+
+        this._loginClickListener = null;
         
         this.encryptionState = {
             enabled: false,
