@@ -23,7 +23,8 @@ class VerdiktChatApp {
             endpoints: {
                 register: '/api/auth/register',
                 login: '/api/auth/login',
-                me: '/api/auth/me'
+                me: '/api/auth/me',
+                logout: '/api/auth/logout'
             }
         };
 
@@ -1781,7 +1782,7 @@ class VerdiktChatApp {
                 const commentBtn = e.target.closest('[data-action="comment"]');
                 const questionId = (likeBtn || dislikeBtn || commentBtn)?.getAttribute('data-question-id');
                 if (!questionId) return;
-                if (!this.state.user || !this.state.authToken) {
+                if (!this.state.user) {
                     if (commentBtn) this.showNotification('Войдите в аккаунт, чтобы ответить', 'warning');
                     return;
                 }
@@ -1913,7 +1914,7 @@ class VerdiktChatApp {
                 return;
             }
             
-            if (!this.state.authToken) {
+            if (!this.state.user) {
                 this.showNotification('Войдите в аккаунт для сохранения профиля', 'warning');
                 return;
             }
@@ -1921,10 +1922,8 @@ class VerdiktChatApp {
             const url = `${this.AUTH_CONFIG.baseUrl}/api/users/me`;
             const response = await fetch(url, {
                 method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...this.getAuthHeaders()
-                },
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
                 body: JSON.stringify(profileData)
             });
             
@@ -1935,7 +1934,7 @@ class VerdiktChatApp {
             }
             
             const data = await response.json();
-            this.setUser(data, this.state.authToken);
+            this.setUser(data);
             
             this.hideModal('profile-settings-modal');
             this.showNotification('Профиль обновлен ✅', 'success');
@@ -2663,24 +2662,22 @@ class VerdiktChatApp {
     loadUserFromStorage() {
         try {
             const userJson = localStorage.getItem('verdikt_user');
-            const token = localStorage.getItem('verdikt_token');
-            if (userJson && token) {
+            if (userJson) {
                 this.state.user = JSON.parse(userJson);
-                this.state.authToken = token;
             }
+            this.state.authToken = null;
         } catch (e) {
             console.warn('Не удалось загрузить пользователя из localStorage', e);
         }
     }
 
     /**
-     * Проверяет токен у бэкенда: при 200 обновляет state.user, при 401 очищает вход.
+     * Проверяет сессию по HttpOnly cookie: при 200 обновляет state.user, при 401 очищает вход.
      */
     async restoreSession() {
-        if (!this.state.authToken) return;
         try {
             const url = `${this.AUTH_CONFIG.baseUrl}${this.AUTH_CONFIG.endpoints.me}`;
-            const response = await fetch(url, { headers: this.getAuthHeaders() });
+            const response = await fetch(url, { credentials: 'include' });
             if (response.ok) {
                 const user = await response.json();
                 this.state.user = user;
@@ -2704,53 +2701,50 @@ class VerdiktChatApp {
     }
 
     saveUserToStorage() {
-        if (this.state.user && this.state.authToken) {
+        if (this.state.user) {
             localStorage.setItem('verdikt_user', JSON.stringify(this.state.user));
-            localStorage.setItem('verdikt_token', this.state.authToken);
         } else {
             localStorage.removeItem('verdikt_user');
-            localStorage.removeItem('verdikt_token');
         }
+        localStorage.removeItem('verdikt_token');
     }
 
-    setUser(user, token) {
+    setUser(user, _token) {
         this.state.user = user;
-        this.state.authToken = token || this.state.authToken;
+        this.state.authToken = null;
         this.saveUserToStorage();
         this.updateAuthUI();
         this.updateSidebarInfo();
-        
-        // Загружаем данные дашборда для нового пользователя
         if (user) {
             setTimeout(() => this.loadDashboardData(), 1000);
         }
     }
 
-    logout() {
+    async logout() {
+        try {
+            const url = `${this.AUTH_CONFIG.baseUrl}${this.AUTH_CONFIG.endpoints.logout}`;
+            await fetch(url, { method: 'POST', credentials: 'include' });
+        } catch (e) {
+            // игнорируем ошибку сети — всё равно очищаем локальное состояние
+        }
         this.state.user = null;
         this.state.authToken = null;
         this.saveUserToStorage();
         this.updateAuthUI();
         this.updateSidebarInfo();
-        
         this.showNotification('Вы вышли из аккаунта', 'info');
     }
 
     getAuthHeaders() {
-        const headers = {};
-        if (this.state.authToken) {
-            headers['Authorization'] = `Bearer ${this.state.authToken}`;
-        }
-        return headers;
+        return {};
     }
 
     async registerUser({ name, email, password }) {
         const url = `${this.AUTH_CONFIG.baseUrl}${this.AUTH_CONFIG.endpoints.register}`;
         const response = await fetch(url, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, email, password })
         });
 
@@ -2761,17 +2755,15 @@ class VerdiktChatApp {
         }
 
         const data = await response.json();
-        // Ожидаем формат { user, token }
-        this.setUser(data.user, data.token);
+        this.setUser(data);
     }
 
     async loginUser({ email, password }) {
         const url = `${this.AUTH_CONFIG.baseUrl}${this.AUTH_CONFIG.endpoints.login}`;
         const response = await fetch(url, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
 
@@ -2782,7 +2774,7 @@ class VerdiktChatApp {
         }
 
         const data = await response.json();
-        this.setUser(data.user, data.token);
+        this.setUser(data.user);
     }
 
     setupAuthUI() {
@@ -4359,15 +4351,13 @@ class VerdiktChatApp {
         try {
             // Загружаем вопросы из бэкенда (только для авторизованных пользователей)
             let questions = [];
-            if (this.state.user && this.state.authToken) {
+            if (this.state.user) {
                 try {
                     const url = `${this.AUTH_CONFIG.baseUrl}/api/questions`;
                     const response = await fetch(url, {
                         method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...this.getAuthHeaders()
-                        }
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() }
                     });
 
                     if (response.ok) {
@@ -4428,7 +4418,7 @@ class VerdiktChatApp {
     }
 
     async submitDashboardQuestion(content) {
-        if (!this.state.user || !this.state.authToken) {
+        if (!this.state.user) {
             this.showNotification('Войдите в аккаунт, чтобы задать вопрос', 'warning');
             return;
         }
@@ -4443,10 +4433,8 @@ class VerdiktChatApp {
             const url = `${this.AUTH_CONFIG.baseUrl}/api/questions`;
             const response = await fetch(url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...this.getAuthHeaders()
-                },
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
                 body: JSON.stringify({ content: trimmed })
             });
 
@@ -4487,11 +4475,12 @@ class VerdiktChatApp {
     }
 
     async setQuestionReaction(questionId, type) {
-        if (!this.state.user || !this.state.authToken) return;
+        if (!this.state.user) return;
         try {
             const url = `${this.AUTH_CONFIG.baseUrl}/api/questions/${questionId}/reaction`;
             const res = await fetch(url, {
                 method: 'POST',
+                credentials: 'include',
                 headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
                 body: JSON.stringify({ type })
             });
@@ -4518,11 +4507,12 @@ class VerdiktChatApp {
     }
 
     async submitQuestionComment(questionId, content) {
-        if (!this.state.user || !this.state.authToken) return;
+        if (!this.state.user) return;
         try {
             const url = `${this.AUTH_CONFIG.baseUrl}/api/questions/${questionId}/comments`;
             const res = await fetch(url, {
                 method: 'POST',
+                credentials: 'include',
                 headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
                 body: JSON.stringify({ content })
             });
