@@ -5,7 +5,7 @@ import org.verdikt.entity.Question;
 import java.time.Instant;
 
 /**
- * Ответ с данными вопроса.
+ * Ответ с данными вопроса (включая счётчики лайков/дизлайков/комментариев).
  */
 public class QuestionResponse {
 
@@ -15,6 +15,11 @@ public class QuestionResponse {
     private Long authorId;
     private String authorName;
     private String authorEmail;
+    private long likesCount;
+    private long dislikesCount;
+    private long commentsCount;
+    private Boolean isLiked;
+    private Boolean isDisliked;
 
     public static QuestionResponse from(Question question) {
         QuestionResponse r = new QuestionResponse();
@@ -75,6 +80,46 @@ public class QuestionResponse {
 
     public void setAuthorEmail(String authorEmail) {
         this.authorEmail = authorEmail;
+    }
+
+    public long getLikesCount() {
+        return likesCount;
+    }
+
+    public void setLikesCount(long likesCount) {
+        this.likesCount = likesCount;
+    }
+
+    public long getDislikesCount() {
+        return dislikesCount;
+    }
+
+    public void setDislikesCount(long dislikesCount) {
+        this.dislikesCount = dislikesCount;
+    }
+
+    public long getCommentsCount() {
+        return commentsCount;
+    }
+
+    public void setCommentsCount(long commentsCount) {
+        this.commentsCount = commentsCount;
+    }
+
+    public Boolean getIsLiked() {
+        return isLiked;
+    }
+
+    public void setIsLiked(Boolean isLiked) {
+        this.isLiked = isLiked;
+    }
+
+    public Boolean getIsDisliked() {
+        return isDisliked;
+    }
+
+    public void setIsDisliked(Boolean isDisliked) {
+        this.isDisliked = isDisliked;
     }
 }
 
