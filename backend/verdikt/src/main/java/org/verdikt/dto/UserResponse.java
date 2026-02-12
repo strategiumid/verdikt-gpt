@@ -17,6 +17,7 @@ public class UserResponse {
     private String bio;
     private String privacy;
     private List<String> expertise = new ArrayList<>();
+    private String theme;
     private Instant createdAt;
 
     public static UserResponse from(User user) {
@@ -27,6 +28,7 @@ public class UserResponse {
         r.setBio(user.getBio());
         r.setPrivacy(user.getPrivacy());
         r.setExpertise(user.getExpertise() != null ? new ArrayList<>(user.getExpertise()) : new ArrayList<>());
+        r.setTheme(user.getTheme());
         r.setCreatedAt(user.getCreatedAt());
         return r;
     }
@@ -85,5 +87,13 @@ public class UserResponse {
 
     public void setExpertise(List<String> expertise) {
         this.expertise = expertise != null ? expertise : new ArrayList<>();
+    }
+
+    public String getTheme() {
+        return theme;
+    }
+
+    public void setTheme(String theme) {
+        this.theme = theme;
     }
 }
