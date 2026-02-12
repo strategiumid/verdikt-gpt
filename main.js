@@ -1770,6 +1770,31 @@ class VerdiktChatApp {
                 this.hideModal('dashboard-modal');
             });
         }
+
+        // Лайк / дизлайк / комментарий (делегирование на модалке дашборда)
+        const dashboardModal = document.getElementById('dashboard-modal');
+        if (dashboardModal) {
+            dashboardModal.addEventListener('click', async (e) => {
+                const likeBtn = e.target.closest('[data-action="like"]');
+                const dislikeBtn = e.target.closest('[data-action="dislike"]');
+                const commentBtn = e.target.closest('[data-action="comment"]');
+                const questionId = (likeBtn || dislikeBtn || commentBtn)?.getAttribute('data-question-id');
+                if (!questionId) return;
+                if (!this.state.user || !this.state.authToken) {
+                    if (commentBtn) this.showNotification('Войдите в аккаунт, чтобы ответить', 'warning');
+                    return;
+                }
+                if (likeBtn) {
+                    await this.setQuestionReaction(questionId, 'like');
+                    return;
+                }
+                if (dislikeBtn) {
+                    await this.setQuestionReaction(questionId, 'dislike');
+                    return;
+                }
+                if (commentBtn) this.showQuestionCommentModal(questionId);
+            });
+        }
         
         // Загрузка данных дашборда
         this.loadDashboardData();
@@ -4325,11 +4350,11 @@ class VerdiktChatApp {
                                 },
                                 content: q.content,
                                 date: q.createdAt,
-                                likes: 0,
-                                dislikes: 0,
-                                comments: 0,
-                                isLiked: false,
-                                isDisliked: false
+                                likes: q.likesCount ?? 0,
+                                dislikes: q.dislikesCount ?? 0,
+                                comments: q.commentsCount ?? 0,
+                                isLiked: q.isLiked ?? false,
+                                isDisliked: q.isDisliked ?? false
                             }));
                         }
                     } else if (response.status !== 404) {
@@ -4409,11 +4434,11 @@ class VerdiktChatApp {
                 },
                 content: question.content,
                 date: question.createdAt,
-                likes: 0,
-                dislikes: 0,
-                comments: 0,
-                isLiked: false,
-                isDisliked: false
+                likes: question.likesCount ?? 0,
+                dislikes: question.dislikesCount ?? 0,
+                comments: question.commentsCount ?? 0,
+                isLiked: question.isLiked ?? false,
+                isDisliked: question.isDisliked ?? false
             };
 
             if (!this.dashboard) {
@@ -4427,6 +4452,57 @@ class VerdiktChatApp {
         } catch (error) {
             console.error('submitDashboardQuestion error:', error);
             this.showNotification(error.message || 'Не удалось отправить вопрос', 'error');
+        }
+    }
+
+    async setQuestionReaction(questionId, type) {
+        if (!this.state.user || !this.state.authToken) return;
+        try {
+            const url = `${this.AUTH_CONFIG.baseUrl}/api/questions/${questionId}/reaction`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
+                body: JSON.stringify({ type })
+            });
+            if (!res.ok) throw new Error('Не удалось отправить реакцию');
+            const q = await res.json();
+            const question = this.dashboard?.questions?.find(x => String(x.id) === String(questionId));
+            if (question) {
+                question.likes = q.likesCount ?? question.likes;
+                question.dislikes = q.dislikesCount ?? question.dislikes;
+                question.isLiked = q.isLiked ?? false;
+                question.isDisliked = q.isDisliked ?? false;
+            }
+            this.renderQuestions();
+            this.updateSidebarStats();
+        } catch (e) {
+            this.showNotification(e.message || 'Ошибка реакции', 'error');
+        }
+    }
+
+    showQuestionCommentModal(questionId) {
+        const text = prompt('Введите ваш комментарий:');
+        if (text == null || !text.trim()) return;
+        this.submitQuestionComment(questionId, text.trim());
+    }
+
+    async submitQuestionComment(questionId, content) {
+        if (!this.state.user || !this.state.authToken) return;
+        try {
+            const url = `${this.AUTH_CONFIG.baseUrl}/api/questions/${questionId}/comments`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
+                body: JSON.stringify({ content })
+            });
+            if (!res.ok) throw new Error('Не удалось отправить комментарий');
+            const question = this.dashboard?.questions?.find(x => String(x.id) === String(questionId));
+            if (question) question.comments = (question.comments || 0) + 1;
+            this.renderQuestions();
+            this.updateSidebarStats();
+            this.showNotification('Комментарий добавлен', 'success');
+        } catch (e) {
+            this.showNotification(e.message || 'Ошибка отправки комментария', 'error');
         }
     }
 
@@ -4568,7 +4644,6 @@ class VerdiktChatApp {
                 }
             });
         }
-
 
         // Навешиваем обработчики админ-действий по вопросам
         this.attachAdminQuestionHandlers();
