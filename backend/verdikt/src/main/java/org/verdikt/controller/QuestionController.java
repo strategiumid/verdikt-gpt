@@ -43,71 +43,56 @@ public class QuestionController {
 
     /**
      * GET /api/questions — последние вопросы (пока без фильтрации по адресату).
-     * Использует текущего пользователя для определения likedByCurrentUser / dislikedByCurrentUser.
      */
     @GetMapping
-    public List<QuestionResponse> list(@AuthenticationPrincipal User user) {
-        return questionService.getRecentQuestions(user);
+    public List<QuestionResponse> list() {
+        return questionService.getRecentQuestions();
     }
 
     /**
-     * POST /api/questions/{id}/like — поставить/снять лайк.
+     * PATCH /api/questions/{id}/stats — обновление счётчиков лайков/дизлайков/комментариев.
+     * Сейчас вызывается фронтендом после каждого действия.
      */
-    @PostMapping("/{id}/like")
-    public ResponseEntity<QuestionResponse> like(
-            @AuthenticationPrincipal User user,
-            @PathVariable Long id
-    ) {
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        QuestionResponse response = questionService.toggleLike(id, user);
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * POST /api/questions/{id}/dislike — поставить/снять дизлайк.
-     */
-    @PostMapping("/{id}/dislike")
-    public ResponseEntity<QuestionResponse> dislike(
-            @AuthenticationPrincipal User user,
-            @PathVariable Long id
-    ) {
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        QuestionResponse response = questionService.toggleDislike(id, user);
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * POST /api/questions/{id}/comments — добавить комментарий к вопросу.
-     */
-    @PostMapping("/{id}/comments")
-    public ResponseEntity<QuestionResponse> comment(
+    @PatchMapping("/{id}/stats")
+    public ResponseEntity<QuestionResponse> updateStats(
             @AuthenticationPrincipal User user,
             @PathVariable Long id,
-            @RequestBody CommentRequest body
+            @RequestBody StatsRequest body
     ) {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        if (body.getContent() == null || body.getContent().trim().isEmpty()) {
-            return ResponseEntity.badRequest().build();
-        }
-        QuestionResponse response = questionService.addComment(id, user, body.getContent());
+        QuestionResponse response = questionService.updateStats(id, body.getLikes(), body.getDislikes(), body.getComments());
         return ResponseEntity.ok(response);
     }
 
-    public static class CommentRequest {
-        private String content;
+    public static class StatsRequest {
+        private int likes;
+        private int dislikes;
+        private int comments;
 
-        public String getContent() {
-            return content;
+        public int getLikes() {
+            return likes;
         }
 
-        public void setContent(String content) {
-            this.content = content;
+        public void setLikes(int likes) {
+            this.likes = likes;
+        }
+
+        public int getDislikes() {
+            return dislikes;
+        }
+
+        public void setDislikes(int dislikes) {
+            this.dislikes = dislikes;
+        }
+
+        public int getComments() {
+            return comments;
+        }
+
+        public void setComments(int comments) {
+            this.comments = comments;
         }
     }
 }

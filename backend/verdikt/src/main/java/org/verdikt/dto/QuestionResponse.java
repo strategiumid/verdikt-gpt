@@ -18,10 +18,6 @@ public class QuestionResponse {
     private int likesCount;
     private int dislikesCount;
     private int commentsCount;
-    /** Поставил ли текущий пользователь лайк этому вопросу */
-    private boolean likedByCurrentUser;
-    /** Поставил ли текущий пользователь дизлайк этому вопросу */
-    private boolean dislikedByCurrentUser;
 
     public static QuestionResponse from(Question question) {
         QuestionResponse r = new QuestionResponse();
@@ -85,46 +81,6 @@ public class QuestionResponse {
 
     public void setAuthorEmail(String authorEmail) {
         this.authorEmail = authorEmail;
-    }
-
-    public int getLikesCount() {
-        return likesCount;
-    }
-
-    public void setLikesCount(int likesCount) {
-        this.likesCount = likesCount;
-    }
-
-    public int getDislikesCount() {
-        return dislikesCount;
-    }
-
-    public void setDislikesCount(int dislikesCount) {
-        this.dislikesCount = dislikesCount;
-    }
-
-    public int getCommentsCount() {
-        return commentsCount;
-    }
-
-    public void setCommentsCount(int commentsCount) {
-        this.commentsCount = commentsCount;
-    }
-
-    public boolean isLikedByCurrentUser() {
-        return likedByCurrentUser;
-    }
-
-    public void setLikedByCurrentUser(boolean likedByCurrentUser) {
-        this.likedByCurrentUser = likedByCurrentUser;
-    }
-
-    public boolean isDislikedByCurrentUser() {
-        return dislikedByCurrentUser;
-    }
-
-    public void setDislikedByCurrentUser(boolean dislikedByCurrentUser) {
-        this.dislikedByCurrentUser = dislikedByCurrentUser;
     }
 }
 

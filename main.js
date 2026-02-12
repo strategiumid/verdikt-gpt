@@ -2002,84 +2002,36 @@ class VerdiktChatApp {
         }
     }
 
-    async toggleQuestionLike(question) {
-        try {
-            const url = `${this.AUTH_CONFIG.baseUrl}/api/questions/${encodeURIComponent(question.id)}/like`;
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    ...this.getAuthHeaders()
-                }
-            });
-            if (!response.ok) {
-                this.showNotification(`Ошибка лайка (HTTP ${response.status})`, 'error');
-                return;
-            }
-            const data = await response.json();
-            question.likes = data.likesCount ?? question.likes;
-            question.dislikes = data.dislikesCount ?? question.dislikes;
-            question.comments = data.commentsCount ?? question.comments;
-            question.isLiked = data.likedByCurrentUser ?? false;
-            question.isDisliked = data.dislikedByCurrentUser ?? false;
-            this.renderQuestions();
-        } catch (e) {
-            console.error('toggleQuestionLike error', e);
-            this.showNotification('Не удалось поставить лайк', 'error');
+    async syncQuestionStats(question) {
+        if (!this.state.authToken) {
+            return;
         }
-    }
-
-    async toggleQuestionDislike(question) {
         try {
-            const url = `${this.AUTH_CONFIG.baseUrl}/api/questions/${encodeURIComponent(question.id)}/dislike`;
+            const url = `${this.AUTH_CONFIG.baseUrl}/api/questions/${encodeURIComponent(question.id)}/stats`;
             const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    ...this.getAuthHeaders()
-                }
-            });
-            if (!response.ok) {
-                this.showNotification(`Ошибка дизлайка (HTTP ${response.status})`, 'error');
-                return;
-            }
-            const data = await response.json();
-            question.likes = data.likesCount ?? question.likes;
-            question.dislikes = data.dislikesCount ?? question.dislikes;
-            question.comments = data.commentsCount ?? question.comments;
-            question.isLiked = data.likedByCurrentUser ?? false;
-            question.isDisliked = data.dislikedByCurrentUser ?? false;
-            this.renderQuestions();
-        } catch (e) {
-            console.error('toggleQuestionDislike error', e);
-            this.showNotification('Не удалось поставить дизлайк', 'error');
-        }
-    }
-
-    async postQuestionComment(question, content) {
-        try {
-            const url = `${this.AUTH_CONFIG.baseUrl}/api/questions/${encodeURIComponent(question.id)}/comments`;
-            const response = await fetch(url, {
-                method: 'POST',
+                method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
                     ...this.getAuthHeaders()
                 },
-                body: JSON.stringify({ content })
+                body: JSON.stringify({
+                    likes: question.likes,
+                    dislikes: question.dislikes,
+                    comments: question.comments
+                })
             });
             if (!response.ok) {
-                this.showNotification(`Ошибка комментария (HTTP ${response.status})`, 'error');
+                console.warn('Не удалось синхронизировать лайки/комментарии', response.status);
                 return;
             }
             const data = await response.json();
+            // Обновляем локально счётчики из ответа (на случай рассинхрона)
             question.likes = data.likesCount ?? question.likes;
             question.dislikes = data.dislikesCount ?? question.dislikes;
             question.comments = data.commentsCount ?? question.comments;
-            question.isLiked = data.likedByCurrentUser ?? false;
-            question.isDisliked = data.dislikedByCurrentUser ?? false;
-            this.showNotification('Комментарий отправлен', 'success');
             this.renderQuestions();
         } catch (e) {
-            console.error('postQuestionComment error', e);
-            this.showNotification('Не удалось отправить комментарий', 'error');
+            console.error('syncQuestionStats error', e);
         }
     }
 
@@ -4252,8 +4204,8 @@ class VerdiktChatApp {
                                 likes: q.likesCount ?? 0,
                                 dislikes: q.dislikesCount ?? 0,
                                 comments: q.commentsCount ?? 0,
-                                isLiked: q.likedByCurrentUser ?? false,
-                                isDisliked: q.dislikedByCurrentUser ?? false
+                                isLiked: false,
+                                isDisliked: false
                             }));
                         }
                     } else if (response.status !== 404) {
@@ -4336,8 +4288,8 @@ class VerdiktChatApp {
                 likes: question.likesCount ?? 0,
                 dislikes: question.dislikesCount ?? 0,
                 comments: question.commentsCount ?? 0,
-                isLiked: question.likedByCurrentUser ?? false,
-                isDisliked: question.dislikedByCurrentUser ?? false
+                isLiked: false,
+                isDisliked: false
             };
 
             if (!this.dashboard) {
@@ -4481,9 +4433,9 @@ class VerdiktChatApp {
             });
         }
 
-        // Обработчики лайков/дизлайков/комментариев (бекенд-логика)
+        // Обработчики лайков/дизлайков/комментариев (фронтенд-логика)
         questionsList.querySelectorAll('.action-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
+            btn.addEventListener('click', (e) => {
                 const action = e.currentTarget.dataset.action;
                 const id = e.currentTarget.dataset.questionId;
                 if (!action || !id) return;
@@ -4498,15 +4450,42 @@ class VerdiktChatApp {
                 if (!q) return;
 
                 if (action === 'like') {
-                    await this.toggleQuestionLike(q);
+                    if (q.isLiked) {
+                        q.isLiked = false;
+                        q.likes = Math.max(0, q.likes - 1);
+                    } else {
+                        q.isLiked = true;
+                        q.likes += 1;
+                        if (q.isDisliked) {
+                            q.isDisliked = false;
+                            q.dislikes = Math.max(0, q.dislikes - 1);
+                        }
+                    }
                 } else if (action === 'dislike') {
-                    await this.toggleQuestionDislike(q);
+                    if (q.isDisliked) {
+                        q.isDisliked = false;
+                        q.dislikes = Math.max(0, q.dislikes - 1);
+                    } else {
+                        q.isDisliked = true;
+                        q.dislikes += 1;
+                        if (q.isLiked) {
+                            q.isLiked = false;
+                            q.likes = Math.max(0, q.likes - 1);
+                        }
+                    }
                 } else if (action === 'comment') {
                     const comment = prompt('Введите ваш комментарий к вопросу:');
                     if (comment && comment.trim()) {
-                        await this.postQuestionComment(q, comment.trim());
+                        q.comments += 1;
+                        this.showNotification('Комментарий отправлен', 'success');
                     }
                 }
+
+                // Мгновенно обновляем интерфейс
+                this.renderQuestions();
+
+                // синхронизируем с бекендом
+                this.syncQuestionStats(q);
             });
         });
 

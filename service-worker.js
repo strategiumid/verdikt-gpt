@@ -27,9 +27,9 @@ self.addEventListener('activate', event => {
         caches.keys().then(cacheNames => {
             return Promise.all(
                 cacheNames.map(cacheName => {
-                    // Удаляем абсолютно все старые кэши, чтобы при обновлении
-                    // всегда подхватывалась свежая версия сайта
-                    return caches.delete(cacheName);
+                    if (cacheName !== CACHE_NAME) {
+                        return caches.delete(cacheName);
+                    }
                 })
             );
         }).then(() => self.clients.claim())
