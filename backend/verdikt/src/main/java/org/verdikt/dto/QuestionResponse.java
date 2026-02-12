@@ -15,12 +15,18 @@ public class QuestionResponse {
     private Long authorId;
     private String authorName;
     private String authorEmail;
+    private int likesCount;
+    private int dislikesCount;
+    private int commentsCount;
 
     public static QuestionResponse from(Question question) {
         QuestionResponse r = new QuestionResponse();
         r.setId(question.getId());
         r.setContent(question.getContent());
         r.setCreatedAt(question.getCreatedAt());
+        r.setLikesCount(question.getLikesCount());
+        r.setDislikesCount(question.getDislikesCount());
+        r.setCommentsCount(question.getCommentsCount());
         if (question.getAuthor() != null) {
             r.setAuthorId(question.getAuthor().getId());
             r.setAuthorEmail(question.getAuthor().getEmail());

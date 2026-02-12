@@ -1120,7 +1120,7 @@
      <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
     <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
+            <div class="sidebar-header">
             <div class="user-avatar" id="user-avatar">
                 <i class="fas fa-user"></i>
             </div>
@@ -1176,6 +1176,10 @@
                 <div class="nav-item" id="nav-settings">
                     <i class="fas fa-cog"></i>
                     <span>Настройки профиля</span>
+                </div>
+                <div class="nav-item" id="nav-admin" style="display: none;">
+                    <i class="fas fa-user-shield"></i>
+                    <span>Админ-панель</span>
                 </div>
                 <div class="nav-item" id="nav-security">
                     <i class="fas fa-shield-alt"></i>
@@ -1337,6 +1341,14 @@
                     <label for="profile-name">Имя</label>
                     <input type="text" id="profile-name" placeholder="Ваше имя">
                 </div>
+
+                <div class="form-group">
+                    <label for="profile-avatar-file">Аватарка</label>
+                    <input type="file" id="profile-avatar-file" accept="image/*">
+                    <small style="color: var(--text-tertiary); font-size: 0.8rem;">
+                        Изображение будет сохранено на сервере и отображаться в профиле.
+                    </small>
+                </div>
                 
                 <div class="form-group">
                     <label for="profile-email">Email</label>
@@ -1449,6 +1461,9 @@
                 </button>
                 <button class="settings-tab" data-tab="security">
                     <i class="fas fa-shield-alt"></i> Безопасность
+                </button>
+                <button class="settings-tab" data-tab="admin" id="admin-settings-tab" style="display: none;">
+                    <i class="fas fa-user-shield"></i> Админ
                 </button>
             </div>
 
@@ -1709,6 +1724,32 @@
                     <button class="ios-button tertiary" id="encryption-manager" style="width: 100%; margin-top: 15px;">
                         <i class="fas fa-lock"></i> Управление шифрованием
                     </button>
+                </div>
+            </div>
+
+            <div class="settings-tab-content" id="admin-tab">
+                <div class="settings-section">
+                    <h4><i class="fas fa-user-shield"></i> Админ-панель</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 10px;">
+                        Здесь можно назначать админов по email и удалять вопросы.
+                    </p>
+                    <div class="form-group">
+                        <label for="admin-email">Email пользователя для назначения админки</label>
+                        <input type="email" id="admin-email" placeholder="user@example.com">
+                    </div>
+                    <button class="ios-button secondary" id="make-admin-btn" style="margin-bottom: 20px;">
+                        <i class="fas fa-user-shield"></i> Назначить админом
+                    </button>
+                    <div class="form-group">
+                        <label for="admin-delete-question-id">ID вопроса для удаления</label>
+                        <input type="number" id="admin-delete-question-id" placeholder="ID вопроса">
+                    </div>
+                    <button class="ios-button tertiary" id="delete-question-btn">
+                        <i class="fas fa-trash"></i> Удалить вопрос
+                    </button>
+                    <p style="color: var(--text-tertiary); font-size: 0.8rem; margin-top: 10px;">
+                        Админ‑возможности доступны только для аккаунтов с правами администратора.
+                    </p>
                 </div>
             </div>
 

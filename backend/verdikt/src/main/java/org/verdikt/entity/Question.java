@@ -29,6 +29,15 @@ public class Question {
     @JoinColumn(name = "author_id", nullable = false)
     private User author;
 
+    @Column(name = "likes_count", nullable = false)
+    private int likesCount = 0;
+
+    @Column(name = "dislikes_count", nullable = false)
+    private int dislikesCount = 0;
+
+    @Column(name = "comments_count", nullable = false)
+    private int commentsCount = 0;
+
     public Long getId() {
         return id;
     }
@@ -59,6 +68,30 @@ public class Question {
 
     public void setAuthor(User author) {
         this.author = author;
+    }
+
+    public int getLikesCount() {
+        return likesCount;
+    }
+
+    public void setLikesCount(int likesCount) {
+        this.likesCount = likesCount;
+    }
+
+    public int getDislikesCount() {
+        return dislikesCount;
+    }
+
+    public void setDislikesCount(int dislikesCount) {
+        this.dislikesCount = dislikesCount;
+    }
+
+    public int getCommentsCount() {
+        return commentsCount;
+    }
+
+    public void setCommentsCount(int commentsCount) {
+        this.commentsCount = commentsCount;
     }
 }
 

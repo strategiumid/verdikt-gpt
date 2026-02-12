@@ -180,6 +180,7 @@ class VerdiktChatApp {
             navLikes: document.getElementById('nav-likes'),
             navComments: document.getElementById('nav-comments'),
             navSettings: document.getElementById('nav-settings'),
+            navAdmin: document.getElementById('nav-admin'),
             navSecurity: document.getElementById('nav-security'),
             navNotifications: document.getElementById('nav-notifications'),
             questionsBadge: document.getElementById('questions-badge'),
@@ -252,10 +253,7 @@ class VerdiktChatApp {
         
         // Загружаем историю чатов
         await this.loadChats();
-        // Восстанавливаем выбранную тему (loadChat мог подставить тему чата)
-        const savedTheme = localStorage.getItem('verdikt_theme');
-        if (savedTheme) this.applyTheme(savedTheme);
-
+        
         // Статистика
         const currentHour = new Date().getHours();
         this.state.stats.activityByHour[currentHour]++;
@@ -638,6 +636,76 @@ class VerdiktChatApp {
         // Загружаем статистику в настройки
         this.updateSettingsStats();
         this.updateSettingsAchievements();
+
+        // Обработчики админ-панели
+        const makeAdminBtn = document.getElementById('make-admin-btn');
+        if (makeAdminBtn) {
+            makeAdminBtn.addEventListener('click', async () => {
+                const emailInput = document.getElementById('admin-email');
+                const email = emailInput ? emailInput.value.trim() : '';
+                if (!email) {
+                    this.showNotification('Введите email пользователя', 'warning');
+                    return;
+                }
+                try {
+                    const url = `${this.AUTH_CONFIG.baseUrl}/api/admin/users/make-admin?email=${encodeURIComponent(email)}`;
+                    const resp = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            ...this.getAuthHeaders()
+                        }
+                    });
+                    if (!resp.ok) {
+                        throw new Error(`Ошибка назначения админа (HTTP ${resp.status})`);
+                    }
+                    this.showNotification('Права админа назначены ✅', 'success');
+                } catch (e) {
+                    console.error('makeAdmin error', e);
+                    this.showNotification(e.message || 'Не удалось назначить админа', 'error');
+                }
+            });
+        }
+
+        const deleteQuestionBtn = document.getElementById('delete-question-btn');
+        if (deleteQuestionBtn) {
+            deleteQuestionBtn.addEventListener('click', async () => {
+                const idInput = document.getElementById('admin-delete-question-id');
+                const id = idInput ? idInput.value.trim() : '';
+                if (!id) {
+                    this.showNotification('Укажите ID вопроса', 'warning');
+                    return;
+                }
+                if (!confirm(`Удалить вопрос #${id}?`)) return;
+
+                try {
+                    const url = `${this.AUTH_CONFIG.baseUrl}/api/admin/questions/${encodeURIComponent(id)}`;
+                    const resp = await fetch(url, {
+                        method: 'DELETE',
+                        headers: {
+                            ...this.getAuthHeaders()
+                        }
+                    });
+                    if (resp.status === 404) {
+                        throw new Error('Вопрос не найден');
+                    }
+                    if (!resp.ok) {
+                        throw new Error(`Ошибка удаления вопроса (HTTP ${resp.status})`);
+                    }
+
+                    // Убираем вопрос из локального списка, если он загружен
+                    if (this.dashboard && Array.isArray(this.dashboard.questions)) {
+                        this.dashboard.questions = this.dashboard.questions.filter(q => String(q.id) !== String(id));
+                        this.renderQuestions();
+                        this.updateSidebarStats();
+                    }
+
+                    this.showNotification('Вопрос удалён ✅', 'success');
+                } catch (e) {
+                    console.error('deleteQuestion error', e);
+                    this.showNotification(e.message || 'Не удалось удалить вопрос', 'error');
+                }
+            });
+        }
     }
 
     switchSettingsTab(tabId) {
@@ -795,9 +863,9 @@ class VerdiktChatApp {
             if (encryptedData) {
                 decryptedData = await this.crypto.decrypt(encryptedData, this.encryptionState.password);
             }
+            
             decryptedData.chats = this.chatManager.chats;
-            decryptedData.settings = { ...(decryptedData.settings || {}), theme: this.state.currentTheme };
-
+            
             const reencryptedData = await this.crypto.encrypt(
                 decryptedData, 
                 this.encryptionState.password
@@ -1589,6 +1657,14 @@ class VerdiktChatApp {
             });
         }
 
+        if (this.elements.navAdmin) {
+            this.elements.navAdmin.addEventListener('click', () => {
+                this.showSettingsModal();
+                this.switchSettingsTab('admin');
+                this.hideSidebar();
+            });
+        }
+
         if (this.elements.navQuestions) {
             this.elements.navQuestions.addEventListener('click', () => {
                 this.showDashboardModal();
@@ -1667,8 +1743,8 @@ class VerdiktChatApp {
             
             // Обновление аватара
             const avatarIcon = this.elements.userAvatar.querySelector('i');
-            if (this.state.user.avatar) {
-                this.elements.userAvatar.style.backgroundImage = `url(${this.state.user.avatar})`;
+            if (this.state.user.avatarUrl) {
+                this.elements.userAvatar.style.backgroundImage = `url(${this.state.user.avatarUrl})`;
                 this.elements.userAvatar.style.backgroundSize = 'cover';
                 this.elements.userAvatar.style.backgroundPosition = 'center';
                 if (avatarIcon) avatarIcon.style.display = 'none';
@@ -1680,6 +1756,18 @@ class VerdiktChatApp {
             // Показываем кнопку выхода
             if (this.elements.logoutSidebar) {
                 this.elements.logoutSidebar.style.display = 'flex';
+            }
+
+            // Показываем элементы админа, если есть права
+            const isAdmin = !!this.state.user.admin;
+            const adminNavItem = this.elements.navAdmin;
+            const adminTab = document.getElementById('admin-settings-tab');
+            if (isAdmin) {
+                if (adminNavItem) adminNavItem.style.display = 'flex';
+                if (adminTab) adminTab.style.display = 'inline-flex';
+            } else {
+                if (adminNavItem) adminNavItem.style.display = 'none';
+                if (adminTab) adminTab.style.display = 'none';
             }
         } else {
             this.elements.sidebarUsername.textContent = 'Гость';
@@ -1693,6 +1781,11 @@ class VerdiktChatApp {
             if (this.elements.logoutSidebar) {
                 this.elements.logoutSidebar.style.display = 'none';
             }
+
+            const adminNavItem = this.elements.navAdmin;
+            const adminTab = document.getElementById('admin-settings-tab');
+            if (adminNavItem) adminNavItem.style.display = 'none';
+            if (adminTab) adminTab.style.display = 'none';
         }
     }
 
@@ -1858,6 +1951,12 @@ class VerdiktChatApp {
             
             const data = await response.json();
             this.setUser(data, this.state.authToken);
+
+            // Если выбрана новая аватарка — загружаем её отдельным запросом
+            const avatarInput = document.getElementById('profile-avatar-file');
+            if (avatarInput && avatarInput.files && avatarInput.files[0]) {
+                await this.uploadAvatarFile(avatarInput.files[0]);
+            }
             
             this.hideModal('profile-settings-modal');
             this.showNotification('Профиль обновлен ✅', 'success');
@@ -1865,6 +1964,69 @@ class VerdiktChatApp {
         } catch (error) {
             console.error('Error saving profile:', error);
             this.showNotification(error.message || 'Ошибка при обновлении профиля', 'error');
+        }
+    }
+
+    async uploadAvatarFile(file) {
+        if (!this.state.authToken) {
+            this.showNotification('Войдите в аккаунт для загрузки аватарки', 'warning');
+            return;
+        }
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const url = `${this.AUTH_CONFIG.baseUrl}/api/users/me/avatar`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    ...this.getAuthHeaders()
+                },
+                body: formData
+            });
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                const message = err.message || `Ошибка загрузки аватарки (HTTP ${response.status})`;
+                throw new Error(message);
+            }
+            const data = await response.json();
+            this.setUser(data, this.state.authToken);
+            this.showNotification('Аватарка обновлена ✅', 'success');
+        } catch (e) {
+            console.error('uploadAvatarFile error', e);
+            this.showNotification(e.message || 'Не удалось загрузить аватарку', 'error');
+        }
+    }
+
+    async syncQuestionStats(question) {
+        if (!this.state.authToken) {
+            return;
+        }
+        try {
+            const url = `${this.AUTH_CONFIG.baseUrl}/api/questions/${encodeURIComponent(question.id)}/stats`;
+            const response = await fetch(url, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...this.getAuthHeaders()
+                },
+                body: JSON.stringify({
+                    likes: question.likes,
+                    dislikes: question.dislikes,
+                    comments: question.comments
+                })
+            });
+            if (!response.ok) {
+                console.warn('Не удалось синхронизировать лайки/комментарии', response.status);
+                return;
+            }
+            const data = await response.json();
+            // Обновляем локально счётчики из ответа (на случай рассинхрона)
+            question.likes = data.likesCount ?? question.likes;
+            question.dislikes = data.dislikesCount ?? question.dislikes;
+            question.comments = data.commentsCount ?? question.comments;
+            this.renderQuestions();
+        } catch (e) {
+            console.error('syncQuestionStats error', e);
         }
     }
 
@@ -4034,9 +4196,9 @@ class VerdiktChatApp {
                                 },
                                 content: q.content,
                                 date: q.createdAt,
-                                likes: 0,
-                                dislikes: 0,
-                                comments: 0,
+                                likes: q.likesCount ?? 0,
+                                dislikes: q.dislikesCount ?? 0,
+                                comments: q.commentsCount ?? 0,
                                 isLiked: false,
                                 isDisliked: false
                             }));
@@ -4050,7 +4212,7 @@ class VerdiktChatApp {
             }
 
             this.dashboard = {
-                questions,
+                questions: questions || [],
                 stories: this.chatManager.chats.map(chat => ({
                     id: chat.id,
                     title: chat.title,
@@ -4118,9 +4280,9 @@ class VerdiktChatApp {
                 },
                 content: question.content,
                 date: question.createdAt,
-                likes: 0,
-                dislikes: 0,
-                comments: 0,
+                likes: question.likesCount ?? 0,
+                dislikes: question.dislikesCount ?? 0,
+                comments: question.commentsCount ?? 0,
                 isLiked: false,
                 isDisliked: false
             };
@@ -4265,6 +4427,52 @@ class VerdiktChatApp {
                 }
             });
         }
+
+        // Обработчики лайков/дизлайков/комментариев (фронтенд-логика)
+        questionsList.querySelectorAll('.action-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const action = e.currentTarget.dataset.action;
+                const id = e.currentTarget.dataset.questionId;
+                if (!action || !id) return;
+                const q = (this.dashboard.questions || []).find(q => String(q.id) === String(id));
+                if (!q) return;
+
+                if (action === 'like') {
+                    if (q.isLiked) {
+                        q.isLiked = false;
+                        q.likes = Math.max(0, q.likes - 1);
+                    } else {
+                        q.isLiked = true;
+                        q.likes += 1;
+                        if (q.isDisliked) {
+                            q.isDisliked = false;
+                            q.dislikes = Math.max(0, q.dislikes - 1);
+                        }
+                    }
+                } else if (action === 'dislike') {
+                    if (q.isDisliked) {
+                        q.isDisliked = false;
+                        q.dislikes = Math.max(0, q.dislikes - 1);
+                    } else {
+                        q.isDisliked = true;
+                        q.dislikes += 1;
+                        if (q.isLiked) {
+                            q.isLiked = false;
+                            q.likes = Math.max(0, q.likes - 1);
+                        }
+                    }
+                } else if (action === 'comment') {
+                    const comment = prompt('Введите ваш комментарий к вопросу:');
+                    if (comment && comment.trim()) {
+                        q.comments += 1;
+                        this.showNotification('Комментарий отправлен', 'success');
+                    }
+                }
+
+                // синхронизируем с бекендом
+                this.syncQuestionStats(q);
+            });
+        });
 
         // Обновляем бейджи
         this.updateBadges();

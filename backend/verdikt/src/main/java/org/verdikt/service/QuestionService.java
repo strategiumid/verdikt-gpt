@@ -25,6 +25,9 @@ public class QuestionService {
         Question question = new Question();
         question.setAuthor(author);
         question.setContent(request.getContent().trim());
+        question.setLikesCount(0);
+        question.setDislikesCount(0);
+        question.setCommentsCount(0);
         Question saved = questionRepository.save(question);
         return QuestionResponse.from(saved);
     }
@@ -35,6 +38,17 @@ public class QuestionService {
                 .stream()
                 .map(QuestionResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public QuestionResponse updateStats(Long questionId, int likes, int dislikes, int comments) {
+        Question q = questionRepository.findById(questionId)
+                .orElseThrow(() -> new IllegalArgumentException("Вопрос не найден"));
+        q.setLikesCount(Math.max(likes, 0));
+        q.setDislikesCount(Math.max(dislikes, 0));
+        q.setCommentsCount(Math.max(comments, 0));
+        Question saved = questionRepository.save(q);
+        return QuestionResponse.from(saved);
     }
 }
 

@@ -25,6 +25,9 @@ public class UpdateProfileRequest {
 
     private List<@Size(max = 100) String> expertise;
 
+    @Size(max = 500)
+    private String avatarUrl;
+
     public String getName() {
         return name;
     }
@@ -63,5 +66,13 @@ public class UpdateProfileRequest {
 
     public void setExpertise(List<String> expertise) {
         this.expertise = expertise;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
     }
 }

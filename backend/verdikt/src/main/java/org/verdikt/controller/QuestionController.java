@@ -48,5 +48,52 @@ public class QuestionController {
     public List<QuestionResponse> list() {
         return questionService.getRecentQuestions();
     }
+
+    /**
+     * PATCH /api/questions/{id}/stats — обновление счётчиков лайков/дизлайков/комментариев.
+     * Сейчас вызывается фронтендом после каждого действия.
+     */
+    @PatchMapping("/{id}/stats")
+    public ResponseEntity<QuestionResponse> updateStats(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id,
+            @RequestBody StatsRequest body
+    ) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        QuestionResponse response = questionService.updateStats(id, body.getLikes(), body.getDislikes(), body.getComments());
+        return ResponseEntity.ok(response);
+    }
+
+    public static class StatsRequest {
+        private int likes;
+        private int dislikes;
+        private int comments;
+
+        public int getLikes() {
+            return likes;
+        }
+
+        public void setLikes(int likes) {
+            this.likes = likes;
+        }
+
+        public int getDislikes() {
+            return dislikes;
+        }
+
+        public void setDislikes(int dislikes) {
+            this.dislikes = dislikes;
+        }
+
+        public int getComments() {
+            return comments;
+        }
+
+        public void setComments(int comments) {
+            this.comments = comments;
+        }
+    }
 }
 
