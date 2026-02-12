@@ -79,6 +79,10 @@ class VerdiktChatApp {
             },
             // Локальный флаг админ-режима (пока без проверки на бэкенде)
             isAdmin: false,
+            // Режим "Не беспокоить"
+            doNotDisturb: false,
+            // Колесо баланса уже показано автоматически
+            balanceShown: false,
             // Фильтры и роли админа
             adminQuestionFilter: 'all',
             adminUserFilter: 'all',
@@ -131,6 +135,7 @@ class VerdiktChatApp {
             smartSuggestions: document.getElementById('smart-suggestions'),
             typingIndicator: document.getElementById('typing-indicator'),
             achievementNotification: document.getElementById('achievement-notification'),
+            dndToggle: document.getElementById('dnd-toggle'),
             // Админ-режим
             adminModeToggle: document.getElementById('admin-mode-toggle'),
             // Авторизация
@@ -217,6 +222,7 @@ class VerdiktChatApp {
         this.speechSynthesis = window.speechSynthesis;
         this.recognition = null;
         this.activityChart = null;
+        this.balanceChart = null;
 
         // Список доступных моделей OpenRouter
         this.availableModels = [
@@ -692,6 +698,43 @@ class VerdiktChatApp {
                 element.textContent = value;
             }
         });
+
+        // Обновляем дерево навыков
+        this.updateSkillsTree();
+    }
+
+    updateSkillsTree() {
+        const total = this.state.stats.totalMessages || 0;
+        const empathyBase = this.state.stats.relationshipAdvice || 0;
+        const protectionBase = this.state.stats.manipulationRequests || 0;
+        const wisdomBase = this.state.stats.sessions || 0;
+
+        const empathyLevel = Math.min(3, Math.floor(empathyBase / 5));
+        const protectionLevel = Math.min(3, Math.floor(protectionBase / 3));
+        const wisdomLevel = Math.min(3, Math.floor(total / 30));
+
+        const empathyLabel = document.getElementById('skill-empathy-level');
+        const protectionLabel = document.getElementById('skill-protection-level');
+        const wisdomLabel = document.getElementById('skill-wisdom-level');
+
+        if (empathyLabel) empathyLabel.textContent = `Уровень ${empathyLevel}`;
+        if (protectionLabel) protectionLabel.textContent = `Уровень ${protectionLevel}`;
+        if (wisdomLabel) wisdomLabel.textContent = `Уровень ${wisdomLevel}`;
+
+        const setNodes = (branch, level) => {
+            const nodes = document.querySelectorAll(`.skill-node[data-skill^="${branch}-"]`);
+            nodes.forEach((node, index) => {
+                if (index < level) {
+                    node.classList.add('unlocked');
+                } else {
+                    node.classList.remove('unlocked');
+                }
+            });
+        };
+
+        setNodes('empathy', empathyLevel);
+        setNodes('protection', protectionLevel);
+        setNodes('wisdom', wisdomLevel);
     }
 
     updateSettingsAchievements() {
@@ -1923,6 +1966,28 @@ class VerdiktChatApp {
             this.showChatHistoryModal();
         });
 
+        // Режим "Не беспокоить"
+        if (this.elements.dndToggle) {
+            this.elements.dndToggle.addEventListener('click', () => {
+                this.state.doNotDisturb = !this.state.doNotDisturb;
+                const enabled = this.state.doNotDisturb;
+
+                this.elements.dndToggle.innerHTML = enabled
+                    ? '<i class="fas fa-bell-slash"></i>'
+                    : '<i class="fas fa-bell"></i>';
+
+                const status = this.elements.apiStatus;
+                if (status) {
+                    status.classList.toggle('dnd-active', enabled);
+                }
+
+                this.showNotification(
+                    enabled ? 'Режим «Не беспокоить» включен' : 'Режим «Не беспокоить» выключен',
+                    'info'
+                );
+            });
+        }
+
         // Drag & drop файлов прямо в область ввода сообщения
         const messageInput = this.elements.messageInput;
         if (messageInput) {
@@ -2136,9 +2201,18 @@ class VerdiktChatApp {
             }
             
             this.showNotification(`Ответ получен за ${responseTime.toFixed(1)}с ✅`, 'success');
+
+            // Легкая вибрация на мобильных устройствах при ответе AI
+            this.triggerHapticFeedback();
             this.updateUI();
             this.updateSettingsStats();
             await this.saveChats();
+
+            // Автоматический показ "Колеса баланса" после 10 ответов AI
+            if (this.state.stats.aiMessages >= 10 && !this.state.balanceShown) {
+                this.state.balanceShown = true;
+                this.showBalanceModal(true);
+            }
             
             this.state.retryCount = 0;
             
@@ -2241,10 +2315,6 @@ class VerdiktChatApp {
         `;
         
         this.elements.chatMessages.appendChild(messageElement);
-        
-        setTimeout(() => {
-            messageElement.style.animation = 'messageAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards';
-        }, 10);
         
         setTimeout(() => {
             hljs.highlightAll();
@@ -2397,6 +2467,11 @@ class VerdiktChatApp {
     // ==================== СИСТЕМА УВЕДОМЛЕНИЙ ====================
 
     showNotification(text, type = 'info') {
+        // В режиме "Не беспокоить" не показываем всплывающие уведомления
+        if (this.state.doNotDisturb) {
+            return;
+        }
+
         this.elements.notificationText.textContent = text;
     
         // Убираем inline-стили
@@ -2769,6 +2844,8 @@ class VerdiktChatApp {
     }
 
     showTypingIndicator() {
+        // В режиме "Не беспокоить" не показываем индикатор набора
+        if (this.state.doNotDisturb) return;
         this.elements.typingIndicator.style.display = 'block';
         this.scrollToBottom();
     }
@@ -4928,6 +5005,17 @@ class VerdiktChatApp {
         }
     }
 
+    triggerHapticFeedback() {
+        // Вибрация только на мобильных устройствах, если поддерживается
+        if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
+        const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent || '');
+        if (!isMobile) return;
+        if (!navigator.vibrate) return;
+
+        // Мягкий короткий паттерн
+        navigator.vibrate(30);
+    }
+
     createAnalyticsChart() {
         const ctx = document.getElementById('analytics-chart')?.getContext('2d');
         if (!ctx) return;
@@ -4996,6 +5084,174 @@ class VerdiktChatApp {
                 }
             }
         });
+    }
+
+    getBalanceData() {
+        const stats = this.state.stats;
+        const total = stats.totalMessages || 0;
+
+        // Базируемся на уже считаемых темах
+        const trustConcerns = stats.relationshipAdvice || 0;
+        const communicationConcerns = stats.relationshipAdvice || 0;
+        const boundariesConcerns = stats.manipulationRequests || 0;
+        const passionConcerns = stats.datingAdvice || 0;
+
+        const clampScore = (concerns, maxImpact = 5) => {
+            const impact = Math.min(concerns, maxImpact);
+            const score = 10 - impact; // больше проблем -> ниже балл
+            return Math.max(2, Math.min(10, score));
+        };
+
+        const trust = clampScore(trustConcerns, 6);
+        const passion = clampScore(passionConcerns, 5);
+        const communication = clampScore(communicationConcerns, 6);
+        const boundaries = clampScore(boundariesConcerns, 6);
+        const selfEsteem = clampScore(boundariesConcerns + trustConcerns, 8);
+        const conflicts = clampScore(trustConcerns, 6);
+        const support = Math.min(10, 5 + Math.floor(total / 15));
+        const independence = Math.min(10, 6 + Math.floor(stats.sessions / 2));
+
+        const labels = [
+            'Доверие',
+            'Страсть',
+            'Коммуникация',
+            'Границы',
+            'Самоценность',
+            'Конфликты',
+            'Поддержка',
+            'Самостоятельность',
+        ];
+
+        const values = [
+            trust,
+            passion,
+            communication,
+            boundaries,
+            selfEsteem,
+            conflicts,
+            support,
+            independence,
+        ];
+
+        return { labels, values };
+    }
+
+    showBalanceModal(auto = false) {
+        const modal = document.getElementById('balance-modal');
+        const canvas = document.getElementById('balance-chart');
+        if (!modal || !canvas) return;
+
+        const { labels, values } = this.getBalanceData();
+
+        // Рисуем радар-чарт
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        if (this.balanceChart) {
+            this.balanceChart.destroy();
+        }
+
+        this.balanceChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Баланс отношений',
+                    data: values,
+                    backgroundColor: 'rgba(236, 72, 153, 0.18)',
+                    borderColor: '#ec4899',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#ec4899',
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                }],
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    r: {
+                        suggestedMin: 0,
+                        suggestedMax: 10,
+                        ticks: {
+                            display: false,
+                        },
+                        grid: {
+                            color: 'rgba(148, 163, 184, 0.4)',
+                        },
+                        angleLines: {
+                            color: 'rgba(148, 163, 184, 0.4)',
+                        },
+                        pointLabels: {
+                            color: 'var(--text-secondary)',
+                            font: {
+                                size: 11,
+                            },
+                        },
+                    },
+                },
+                plugins: {
+                    legend: {
+                        display: false,
+                    },
+                },
+            },
+        });
+
+        // Текстовый анализ
+        const summaryEl = document.getElementById('balance-summary');
+        const recsEl = document.getElementById('balance-recommendations');
+
+        if (summaryEl && recsEl) {
+            const pairs = labels.map((label, idx) => ({ label, value: values[idx] }));
+            const sorted = [...pairs].sort((a, b) => a.value - b.value);
+            const weakest = sorted.slice(0, 2);
+            const strongest = sorted.slice(-2).reverse();
+
+            summaryEl.innerHTML = `
+                Сильные стороны сейчас: <strong>${strongest.map(s => s.label).join(', ')}</strong>.<br>
+                Зоны напряжения: <strong>${weakest.map(w => w.label).join(', ')}</strong>.
+            `;
+
+            const recs = [];
+            weakest.forEach(({ label }) => {
+                switch (label) {
+                    case 'Доверие':
+                        recs.push('Больше проговаривайте ожидания и страхи, договоритесь о прозрачности в важных темах.');
+                        break;
+                    case 'Коммуникация':
+                        recs.push('Вводите привычку «спокойных разговоров»: обсуждать сложные темы отдельно от ссор.');
+                        break;
+                    case 'Границы':
+                        recs.push('Определите, что для вас недопустимо, и проговорите это партнёру в спокойной форме.');
+                        break;
+                    case 'Страсть':
+                        recs.push('Запланируйте совместные тёплые активности: свидания, ритуалы близости, общие впечатления.');
+                        break;
+                    case 'Самоценность':
+                        recs.push('Отслеживайте, где вы поступаетесь собой ради партнёра, и постепенно выравнивайте баланс.');
+                        break;
+                    case 'Конфликты':
+                        recs.push('Договоритесь об общих правилах ссор: без оскорблений, с паузами и возвращением к диалогу.');
+                        break;
+                    case 'Поддержка':
+                        recs.push('Попросите партнёра о конкретной поддержке и сами интересуйтесь его состоянием чаще.');
+                        break;
+                    case 'Самостоятельность':
+                        recs.push('Сохраните свои личные интересы и друзей — это укрепляет, а не рушит отношения.');
+                        break;
+                }
+            });
+
+            recsEl.innerHTML = recs.map(r => `<li>${r}</li>`).join('');
+        }
+
+        this.showModal('balance-modal');
+
+        const closeBtn = document.getElementById('balance-close');
+        if (closeBtn && !closeBtn._balanceBound) {
+            closeBtn.addEventListener('click', () => this.hideModal('balance-modal'));
+            closeBtn._balanceBound = true;
+        }
     }
 
     updateSidebarStats() {

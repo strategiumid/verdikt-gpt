@@ -1699,6 +1699,66 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Дерево навыков отношений -->
+                <div class="settings-section">
+                    <h4><i class="fas fa-project-diagram"></i> Дерево навыков</h4>
+                    <div class="skills-tree" id="skills-tree">
+                        <div class="skills-branch">
+                            <div class="skills-branch-title">
+                                <span>🌸 Эмпатия</span>
+                                <small id="skill-empathy-level">Уровень 0</small>
+                            </div>
+                            <div class="skills-nodes">
+                                <div class="skill-node" data-skill="empathy-1">
+                                    Слушатель
+                                </div>
+                                <div class="skill-node" data-skill="empathy-2">
+                                    Поддержка
+                                </div>
+                                <div class="skill-node" data-skill="empathy-3">
+                                    Глубокое понимание
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="skills-branch">
+                            <div class="skills-branch-title">
+                                <span>🛡️ Защита</span>
+                                <small id="skill-protection-level">Уровень 0</small>
+                            </div>
+                            <div class="skills-nodes">
+                                <div class="skill-node" data-skill="protection-1">
+                                    Замечает триггеры
+                                </div>
+                                <div class="skill-node" data-skill="protection-2">
+                                    Читает манипуляции
+                                </div>
+                                <div class="skill-node" data-skill="protection-3">
+                                    Сильные границы
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="skills-branch">
+                            <div class="skills-branch-title">
+                                <span>🧠 Мудрость</span>
+                                <small id="skill-wisdom-level">Уровень 0</small>
+                            </div>
+                            <div class="skills-nodes">
+                                <div class="skill-node" data-skill="wisdom-1">
+                                    Рефлексия
+                                </div>
+                                <div class="skill-node" data-skill="wisdom-2">
+                                    Выводы
+                                </div>
+                                <div class="skill-node" data-skill="wisdom-3">
+                                    Стратегия отношений
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="settings-tab-content" id="stats-tab">
@@ -1936,6 +1996,37 @@
             <div id="popular-topics" style="color: var(--text-secondary);">
                 Загрузка данных...
             </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно "Колесо баланса" -->
+    <div class="modal" id="balance-modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <button class="modal-close" id="balance-close">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <h2 style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-balance-scale"></i> Колесо баланса отношений
+            </h2>
+
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 15px;">
+                На основе последних сообщений построен профиль по ключевым сферам отношений. 
+                Восприятие строится по тем запросам, с которыми вы обращались.
+            </p>
+            
+            <div style="background: rgba(255, 255, 255, 0.05); border-radius: var(--radius-md); padding: 16px; margin-bottom: 18px;">
+                <canvas id="balance-chart" style="width: 100%; height: 260px;"></canvas>
+            </div>
+
+            <h3 style="margin-bottom: 8px;">Сильные и слабые стороны</h3>
+            <div id="balance-summary" style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 10px;">
+                Анализируется...
+            </div>
+
+            <h3 style="margin-bottom: 8px;">Рекомендации</h3>
+            <ul id="balance-recommendations" style="font-size: 0.9rem; color: var(--text-secondary); padding-left: 18px; margin: 0;">
+            </ul>
         </div>
     </div>
 
@@ -2185,8 +2276,13 @@
                                 <h2>Verdikt GPT - Эксперт по отношениям</h2>
                                 <p>Специалист в психологии отношений, знакомств и распознавании манипуляций</p>
                             </div>
-                            <div class="status-indicator" id="api-status">
-                                <i class="fas fa-circle"></i> Подключение...
+                            <div class="chat-header-controls">
+                                <div class="status-indicator" id="api-status">
+                                    <i class="fas fa-circle"></i> Подключение...
+                                </div>
+                                <button class="chat-action-button" id="dnd-toggle" title="Режим «Не беспокоить»">
+                                    <i class="fas fa-bell"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
