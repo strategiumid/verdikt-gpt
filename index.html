@@ -474,6 +474,22 @@
         font-size: 0.9rem;
     }
 
+    /* Эмодзи-пикер */
+    .emoji-btn {
+        background: transparent;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        padding: 5px 8px;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .emoji-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: scale(1.1);
+    }
+
     /* Настройки профиля */
     .profile-form {
         display: flex;
@@ -1342,15 +1358,14 @@
                             </div>
                         </div>
                         <div class="question-content" style="margin-bottom: 10px;">
-                            Здесь отображаются пользователи, собранные из их вопросов и активностей. Все действия пока выполняются локально, без бэкенда.
+                            <input type="text" id="admin-users-search" placeholder="Поиск по email или имени..." 
+                                   style="width: 100%; padding: 10px; background: var(--bg-card); border: 1px solid var(--border-color); 
+                                          border-radius: var(--radius-md); color: var(--text-primary); margin-bottom: 10px;">
                         </div>
                         <div class="question-actions">
                             <div class="action-buttons admin-users-filters">
                                 <button class="action-btn admin-user-filter" data-filter="all">
                                     <i class="fas fa-list"></i> Все
-                                </button>
-                                <button class="action-btn admin-user-filter" data-filter="banned">
-                                    <i class="fas fa-user-slash"></i> Забаненные
                                 </button>
                                 <button class="action-btn admin-user-filter" data-filter="admins">
                                     <i class="fas fa-user-shield"></i> Админы

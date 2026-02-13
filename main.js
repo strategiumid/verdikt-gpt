@@ -4542,8 +4542,69 @@ class VerdiktChatApp {
         this.submitQuestionComment(questionId, text.trim());
     }
 
+    async loadQuestionComments(questionId) {
+        try {
+            const url = `${this.AUTH_CONFIG.baseUrl}/api/questions/${questionId}/comments`;
+            const res = await fetch(url, {
+                method: 'GET',
+                credentials: 'include',
+                headers: { ...this.getAuthHeaders() }
+            });
+            
+            if (!res.ok) throw new Error('Не удалось загрузить комментарии');
+            
+            const comments = await res.json();
+            const commentsList = document.getElementById(`comments-list-${questionId}`);
+            if (!commentsList) return;
+
+            if (!comments || comments.length === 0) {
+                commentsList.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: var(--text-tertiary);">
+                        <i class="fas fa-comment-slash"></i> Пока нет комментариев
+                    </div>
+                `;
+                return;
+            }
+
+            commentsList.innerHTML = comments.map(comment => {
+                const date = comment.createdAt ? this.formatDate(comment.createdAt) : 'Недавно';
+                return `
+                <div class="comment-item">
+                    <div class="comment-header">
+                        <div class="comment-avatar">
+                            ${(comment.authorName || comment.authorEmail || 'П').charAt(0).toUpperCase()}
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; font-size: 0.9rem; color: var(--text-primary);">
+                                ${comment.authorName || comment.authorEmail || 'Пользователь'}
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--text-tertiary);">
+                                ${date}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="comment-content">${this.formatMessage(comment.content)}</div>
+                </div>
+            `;
+            }).join('');
+        } catch (e) {
+            const commentsList = document.getElementById(`comments-list-${questionId}`);
+            if (commentsList) {
+                commentsList.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: var(--text-danger);">
+                        <i class="fas fa-exclamation-circle"></i> Ошибка загрузки комментариев
+                    </div>
+                `;
+            }
+            console.error('Error loading comments:', e);
+        }
+    }
+
     async submitQuestionComment(questionId, content) {
-        if (!this.state.user) return;
+        if (!this.state.user) {
+            this.showNotification('Войдите в аккаунт, чтобы оставить комментарий', 'warning');
+            return;
+        }
         try {
             const url = `${this.AUTH_CONFIG.baseUrl}/api/questions/${questionId}/comments`;
             const res = await fetch(url, {
@@ -4555,6 +4616,7 @@ class VerdiktChatApp {
             if (!res.ok) throw new Error('Не удалось отправить комментарий');
             const question = this.dashboard?.questions?.find(x => String(x.id) === String(questionId));
             if (question) question.comments = (question.comments || 0) + 1;
+            await this.loadQuestionComments(questionId);
             this.renderQuestions();
             this.updateSidebarStats();
             this.showNotification('Комментарий добавлен', 'success');
@@ -4598,7 +4660,10 @@ class VerdiktChatApp {
 
         // Рендерим админ-вкладку (если есть права)
         this.renderAdminQuestions();
-        this.renderAdminUsers();
+        // renderAdminUsers вызывается асинхронно, так как загружает данные с бэкенда
+        if (this.state.isAdmin) {
+            this.renderAdminUsers();
+        }
     }
 
     renderQuestions() {
@@ -4667,8 +4732,8 @@ class VerdiktChatApp {
                             <button class="action-btn ${question.isDisliked ? 'disliked' : ''}" data-action="dislike" data-question-id="${question.id}">
                                 <i class="fas fa-thumbs-down"></i> ${question.dislikes}
                             </button>
-                            <button class="action-btn" data-action="comment" data-question-id="${question.id}">
-                                <i class="fas fa-comment"></i> Ответить
+                            <button class="action-btn" data-action="toggle-comments" data-question-id="${question.id}">
+                                <i class="fas fa-comment"></i> Комментарии (${question.comments || 0})
                             </button>
                             ${this.state.isAdmin ? `
                             <button class="action-btn" data-action="admin-delete" data-question-id="${question.id}">
@@ -4679,8 +4744,24 @@ class VerdiktChatApp {
                             </button>
                             ` : ''}
                         </div>
-                        <div class="comments-count">
-                            <i class="fas fa-comments"></i> ${question.comments}
+                    </div>
+                    <div class="comments-section" id="comments-${question.id}" style="display: none;">
+                        <div class="comment-form">
+                            ${this.state.user ? `
+                                <textarea class="comment-input" id="comment-input-${question.id}" placeholder="Напишите комментарий..." rows="3"></textarea>
+                                <button class="action-btn" data-action="submit-comment" data-question-id="${question.id}" style="margin-top: 10px;">
+                                    <i class="fas fa-paper-plane"></i> Отправить
+                                </button>
+                            ` : `
+                                <p style="color: var(--text-tertiary); text-align: center; padding: 10px;">
+                                    Войдите в аккаунт, чтобы оставить комментарий
+                                </p>
+                            `}
+                        </div>
+                        <div class="comments-list" id="comments-list-${question.id}">
+                            <div style="text-align: center; padding: 20px; color: var(--text-tertiary);">
+                                <i class="fas fa-spinner fa-spin"></i> Загрузка комментариев...
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -4702,8 +4783,93 @@ class VerdiktChatApp {
             });
         }
 
+        // Эмодзи-пикер
+        const emojiPickerToggle = document.getElementById('emoji-picker-toggle');
+        const emojiPicker = document.getElementById('emoji-picker');
+        const questionTextarea = document.getElementById('new-question-content');
+
+        if (emojiPickerToggle && emojiPicker && questionTextarea) {
+            emojiPickerToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                const isVisible = emojiPicker.style.display !== 'none';
+                emojiPicker.style.display = isVisible ? 'none' : 'block';
+            });
+
+            // Закрытие при клике вне пикера
+            document.addEventListener('click', (e) => {
+                if (emojiPicker && emojiPickerToggle && 
+                    !emojiPicker.contains(e.target) && 
+                    !emojiPickerToggle.contains(e.target)) {
+                    emojiPicker.style.display = 'none';
+                }
+            });
+
+            // Обработчики кнопок эмодзи
+            emojiPicker.querySelectorAll('.emoji-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const emoji = btn.getAttribute('data-emoji');
+                    const cursorPos = questionTextarea.selectionStart;
+                    const textBefore = questionTextarea.value.substring(0, cursorPos);
+                    const textAfter = questionTextarea.value.substring(cursorPos);
+                    questionTextarea.value = textBefore + emoji + textAfter;
+                    questionTextarea.focus();
+                    questionTextarea.setSelectionRange(cursorPos + emoji.length, cursorPos + emoji.length);
+                });
+            });
+        }
+
         // Навешиваем обработчики админ-действий по вопросам
         this.attachAdminQuestionHandlers();
+
+        // Обработчики комментариев
+        questionsList.querySelectorAll('[data-action="toggle-comments"]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const questionId = btn.getAttribute('data-question-id');
+                const commentsSection = document.getElementById(`comments-${questionId}`);
+                if (!commentsSection) return;
+
+                const isVisible = commentsSection.style.display !== 'none';
+                if (!isVisible) {
+                    commentsSection.style.display = 'block';
+                    await this.loadQuestionComments(questionId);
+                } else {
+                    commentsSection.style.display = 'none';
+                }
+            });
+        });
+
+        questionsList.querySelectorAll('[data-action="submit-comment"]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const questionId = btn.getAttribute('data-question-id');
+                const input = document.getElementById(`comment-input-${questionId}`);
+                if (!input) return;
+
+                const content = input.value.trim();
+                if (!content) {
+                    this.showNotification('Введите текст комментария', 'warning');
+                    return;
+                }
+
+                await this.submitQuestionComment(questionId, content);
+                input.value = '';
+            });
+        });
+
+        // Обработчики лайков/дизлайков
+        questionsList.querySelectorAll('[data-action="like"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const questionId = btn.getAttribute('data-question-id');
+                this.setQuestionReaction(questionId, 'like');
+            });
+        });
+
+        questionsList.querySelectorAll('[data-action="dislike"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const questionId = btn.getAttribute('data-question-id');
+                this.setQuestionReaction(questionId, 'dislike');
+            });
+        });
 
         // Обновляем бейджи
         this.updateBadges();
@@ -4799,9 +4965,44 @@ class VerdiktChatApp {
         `).join('');
     }
 
-    renderAdminUsers() {
+    async loadAdminUsers(searchQuery = '') {
+        if (!this.state.isAdmin || !this.state.user) {
+            return [];
+        }
+
+        try {
+            const url = `${this.AUTH_CONFIG.baseUrl}/api/admin/users${searchQuery ? `?search=${encodeURIComponent(searchQuery)}` : ''}`;
+            const response = await fetch(url, {
+                method: 'GET',
+                credentials: 'include',
+                headers: { ...this.getAuthHeaders() }
+            });
+
+            if (!response.ok) {
+                if (response.status === 403) {
+                    throw new Error('Нет прав доступа');
+                }
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const users = await response.json();
+            return users.map(u => ({
+                id: u.id,
+                name: u.name || u.email || 'Пользователь',
+                email: u.email || '',
+                isAdmin: u.admin || false,
+                createdAt: u.createdAt
+            }));
+        } catch (e) {
+            console.error('Error loading admin users:', e);
+            return [];
+        }
+    }
+
+    async renderAdminUsers() {
         const usersList = document.getElementById('admin-users-list');
         const usersFilterButtons = document.querySelectorAll('.admin-user-filter');
+        const searchInput = document.getElementById('admin-users-search');
 
         if (!usersList) return;
 
@@ -4817,85 +5018,70 @@ class VerdiktChatApp {
             return;
         }
 
-        if (!this.dashboard || !this.dashboard.questions || this.dashboard.questions.length === 0) {
-            usersList.innerHTML = `
-                <div class="question-card" style="text-align: center; padding: 40px;">
-                    <i class="fas fa-users" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
-                    <h4>Пока нет пользователей</h4>
-                    <p style="color: var(--text-tertiary);">Пользователи появятся здесь после того, как начнут задавать вопросы</p>
-                </div>
-            `;
-            return;
+        // Показываем индикатор загрузки
+        usersList.innerHTML = `
+            <div class="question-card" style="text-align: center; padding: 40px;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
+                <h4>Загрузка пользователей...</h4>
+            </div>
+        `;
+
+        // Загружаем пользователей с бэкенда
+        const searchQuery = searchInput ? searchInput.value.trim() : '';
+        const users = await this.loadAdminUsers(searchQuery);
+
+        // Обработчик поиска
+        if (searchInput && !searchInput._searchBound) {
+            let searchTimeout;
+            searchInput.addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.renderAdminUsers();
+                }, 300);
+            });
+            searchInput._searchBound = true;
         }
-
-        // Собираем пользователей из вопросов
-        const usersMap = new Map();
-
-        this.dashboard.questions.forEach(question => {
-            const u = question.user || {};
-            const key = u.email || u.name;
-            if (!key) return;
-
-            const existing = usersMap.get(key) || {
-                key,
-                name: u.name || u.email || 'Пользователь',
-                email: u.email || '',
-                avatar: u.avatar || '👤',
-                isBanned: false,
-                role: 'user'
-            };
-
-            existing.isBanned = existing.isBanned || !!question.isBanned;
-            usersMap.set(key, existing);
-        });
-
-        // Применяем сохраненные роли
-        const roles = this.state.adminRoles || {};
-        let users = Array.from(usersMap.values()).map(u => ({
-            ...u,
-            role: roles[u.key] || u.role
-        }));
 
         // Фильтрация по типу
         const filter = this.state.adminUserFilter || 'all';
-        if (filter === 'banned') {
-            users = users.filter(u => u.isBanned);
-        } else if (filter === 'admins') {
-            users = users.filter(u => u.role === 'admin');
+        let filteredUsers = users;
+        if (filter === 'admins') {
+            filteredUsers = users.filter(u => u.isAdmin);
         }
 
-        if (!users.length) {
+        if (!filteredUsers.length) {
             usersList.innerHTML = `
                 <div class="question-card" style="text-align: center; padding: 40px;">
                     <i class="fas fa-users-slash" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
                     <h4>Ничего не найдено</h4>
-                    <p style="color: var(--text-tertiary);">Попробуйте изменить фильтр</p>
+                    <p style="color: var(--text-tertiary);">${searchQuery ? 'Попробуйте изменить поисковый запрос' : 'Попробуйте изменить фильтр'}</p>
                 </div>
             `;
             return;
         }
 
-        usersList.innerHTML = users.map(user => `
-            <div class="question-card" data-user-key="${user.key}">
+        usersList.innerHTML = filteredUsers.map(user => `
+            <div class="question-card" data-user-id="${user.id}">
                 <div class="question-header">
-                    <div class="question-avatar">${user.avatar}</div>
+                    <div class="question-avatar">${(user.name || user.email || 'П').charAt(0).toUpperCase()}</div>
                     <div class="question-meta">
                         <h5>${user.name}</h5>
                         <div class="date">
-                            ${user.email ? user.email + ' · ' : ''}${user.role === 'admin' ? 'Админ' : 'Пользователь'}
+                            ${user.email} · ${user.isAdmin ? 'Админ' : 'Пользователь'} · ${this.formatDate(user.createdAt)}
                         </div>
                     </div>
                 </div>
                 <div class="question-actions">
                     <div class="action-buttons">
-                        <button class="action-btn" data-action="user-ban" data-user-key="${user.key}">
-                            <i class="fas fa-${user.isBanned ? 'user-check' : 'user-slash'}"></i>
-                            ${user.isBanned ? 'Разбанить' : 'Забанить'}
+                        ${!user.isAdmin ? `
+                        <button class="action-btn" data-action="user-make-admin" data-user-email="${user.email}">
+                            <i class="fas fa-user-shield"></i> Сделать админом
                         </button>
-                        <button class="action-btn" data-action="user-role" data-user-key="${user.key}">
-                            <i class="fas fa-${user.role === 'admin' ? 'user' : 'user-shield'}"></i>
-                            ${user.role === 'admin' ? 'Сделать пользователем' : 'Сделать админом'}
+                        ` : `
+                        <button class="action-btn" disabled style="opacity: 0.5;">
+                            <i class="fas fa-user-shield"></i> Админ
                         </button>
+                        `}
                     </div>
                 </div>
             </div>
@@ -4918,59 +5104,28 @@ class VerdiktChatApp {
         });
 
         // Обработчики действий по пользователям
-        usersList.querySelectorAll('[data-action="user-ban"]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const key = btn.getAttribute('data-user-key');
-                if (!key) return;
+        usersList.querySelectorAll('[data-action="user-make-admin"]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const email = btn.getAttribute('data-user-email');
+                if (!email) return;
 
-                // Переключаем бан пользователя через его вопросы
-                const questions = this.dashboard.questions || [];
-                const isCurrentlyBanned = questions.some(q => {
-                    const u = q.user || {};
-                    const k = u.email || u.name;
-                    return k === key && q.isBanned;
-                });
+                try {
+                    const url = `${this.AUTH_CONFIG.baseUrl}/api/admin/users/make-admin?email=${encodeURIComponent(email)}`;
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: { ...this.getAuthHeaders() }
+                    });
 
-                questions.forEach(q => {
-                    const u = q.user || {};
-                    const k = u.email || u.name;
-                    if (k === key) {
-                        q.isBanned = !isCurrentlyBanned;
+                    if (!response.ok) {
+                        throw new Error('Не удалось назначить админа');
                     }
-                });
 
-                this.showNotification(
-                    isCurrentlyBanned ? 'Пользователь разбанен (локально)' : 'Пользователь забанен (локально)',
-                    isCurrentlyBanned ? 'success' : 'warning'
-                );
-
-                this.renderQuestions();
-                this.renderAdminQuestions();
-                this.renderAdminUsers();
-            });
-        });
-
-        usersList.querySelectorAll('[data-action="user-role"]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const key = btn.getAttribute('data-user-key');
-                if (!key) return;
-
-                const currentRole = this.state.adminRoles?.[key] || 'user';
-                const newRole = currentRole === 'admin' ? 'user' : 'admin';
-
-                this.state.adminRoles = {
-                    ...(this.state.adminRoles || {}),
-                    [key]: newRole
-                };
-
-                this.showNotification(
-                    newRole === 'admin'
-                        ? 'Пользователь отмечен как админ (локально)'
-                        : 'Права админа сняты (локально)',
-                    'info'
-                );
-
-                this.renderAdminUsers();
+                    this.showNotification('Пользователь назначен админом', 'success');
+                    await this.renderAdminUsers();
+                } catch (e) {
+                    this.showNotification(e.message || 'Ошибка назначения админа', 'error');
+                }
             });
         });
     }
