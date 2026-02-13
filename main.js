@@ -1,13 +1,12 @@
 
-document.addEventListener('DOMContentLoaded', function() {
-    hljs.highlightAll();
-    
-    window.verdiktApp = new VerdiktChatApp();
-    window.verdiktApp.init();
-});
+import { APIClient } from './apiClient.js';
+import { ChatStore } from './chatStore.js';
+import { UIManager } from './uiManager.js';
+import { EncryptionService } from './encryptionService.js';
+import { AuthService } from './authService.js';
 
 // Основной класс приложения
-class VerdiktChatApp {
+export class VerdiktChatApp {
     constructor() {
         this.API_CONFIG = {
             url: 'https://openrouter.ai/api/v1/chat/completions',
@@ -30,17 +29,7 @@ class VerdiktChatApp {
 
         this.state = {
             conversationHistory: [
-                {
-                    role: "system",
-                    content: `Ты - Verdikt GPT, эксперт по психологии отношений, знакомств и манипуляций.
-Отвечай на русском языке дружелюбно, но профессионально.
-Специализация:
-💕 Отношения - конфликты, общение, восстановление
-👥 Знакомства - советы по свиданиям, профилям
-🛡️ Манипуляции - распознавание, защита, границы
-
-Будь поддерживающим, давай практические советы, используй эмодзи умеренно.`
-                }
+                this.createSystemPromptMessage()
             ],
             currentMode: 'balanced',
             aiModes: {
@@ -228,6 +217,13 @@ class VerdiktChatApp {
         this.activityChart = null;
         this.balanceChart = null;
 
+        // Сервисы
+        this.apiClient = new APIClient(this);
+        this.chatStore = new ChatStore(this);
+        this.uiManager = new UIManager(this);
+        this.encryptionService = new EncryptionService(this);
+        this.authService = new AuthService(this);
+
         // Список доступных моделей OpenRouter
         this.availableModels = [
             { id: 'google/gemini-2.0-flash-exp:free', name: 'Gemini 2.0 Flash (Бесплатно)', free: true },
@@ -242,6 +238,20 @@ class VerdiktChatApp {
         // Элементы для вкладок настроек
         this.settingsTabs = null;
         this.settingsTabContents = null;
+    }
+
+    createSystemPromptMessage() {
+        return {
+            role: "system",
+            content: `Ты - Verdikt GPT, эксперт по психологии отношений, знакомств и манипуляций.
+Отвечай на русском языке дружелюбно, но профессионально.
+Специализация:
+💕 Отношения - конфликты, общение, восстановление
+👥 Знакомства - советы по свиданиям, профилям
+🛡️ Манипуляции - распознавание, защита, границы
+
+Будь поддерживающим, давай практические советы, используй эмодзи умеренно.`
+        };
     }
 
     async init() {
@@ -327,121 +337,11 @@ class VerdiktChatApp {
     }
 
     async getAIResponse(messages) {
-        if (!this.API_CONFIG.apiKey) {
-            throw new Error('API ключ не настроен. Пожалуйста, добавьте ключ OpenRouter в настройках.');
-        }
-
-        try {
-            const response = await fetch(this.API_CONFIG.url, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer': 'https://verdikt-gpt.local',
-                    'X-Title': 'Verdikt GPT'
-                },
-                body: JSON.stringify({
-                    model: this.API_CONFIG.model,
-                    messages: messages,
-                    max_tokens: this.API_CONFIG.maxTokens,
-                    temperature: this.API_CONFIG.temperature,
-                    stream: false
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                console.error('OpenRouter API Error:', errorData);
-                
-                let errorMessage = "Ошибка API: ";
-                if (errorData.error?.message) {
-                    errorMessage += errorData.error.message;
-                } else if (response.status === 401) {
-                    errorMessage = "Неверный API ключ. Проверьте ключ в настройках.";
-                } else if (response.status === 429) {
-                    errorMessage = "Превышен лимит запросов. Попробуйте позже.";
-                } else if (response.status === 402) {
-                    errorMessage = "Недостаточно средств на балансе. Пополните счёт на OpenRouter.";
-                } else {
-                    errorMessage += `HTTP ${response.status}`;
-                }
-                
-                throw new Error(errorMessage);
-            }
-
-            const data = await response.json();
-            
-            if (!data.choices || !data.choices[0]?.message?.content) {
-                throw new Error('Неверный формат ответа от API');
-            }
-            
-            return data.choices[0].message.content.trim();
-            
-        } catch (error) {
-            console.error('Error in getAIResponse:', error);
-            
-            if (error.message.includes('API ключ') || error.message.includes('401')) {
-                throw new Error('Пожалуйста, настройте API ключ OpenRouter в настройках приложения.');
-            }
-            
-            throw error;
-        }
+        return this.apiClient.getAIResponse(messages);
     }
 
     async checkApiStatus() {
-        if (!this.API_CONFIG.apiKey) {
-            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> API ключ не настроен';
-            this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
-            this.elements.apiStatus.style.color = '#f87171';
-            this.showNotification('Добавьте API ключ OpenRouter в настройках', 'warning');
-            this.state.isApiConnected = false;
-            return;
-        }
-
-        this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> Проверка API ключа...';
-        this.elements.apiStatus.classList.add('api-connecting');
-        
-        try {
-            const response = await fetch('https://openrouter.ai/api/v1/auth/key', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${this.API_CONFIG.apiKey}`
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                const selectedModel = this.availableModels.find(m => m.id === this.API_CONFIG.model);
-                const modelName = selectedModel ? selectedModel.name : this.API_CONFIG.model;
-                
-                this.elements.apiStatus.innerHTML = `<i class="fas fa-circle"></i> ${modelName}`;
-                this.elements.apiStatus.classList.remove('api-connecting');
-                this.elements.apiStatus.classList.add('api-connected');
-                this.state.isApiConnected = true;
-                
-                if (data.data?.credits) {
-                    const credits = data.data.credits;
-                    this.showNotification(`API ключ активен. Баланс: $${credits.toFixed(2)}`, 'success');
-                    
-                    if (credits < 0.5 && !selectedModel.free) {
-                        this.elements.apiStatus.classList.add('balance-warning');
-                    }
-                } else {
-                    this.showNotification('API ключ проверен и активен ✅', 'success');
-                }
-            } else {
-                throw new Error(`HTTP ${response.status}`);
-            }
-        } catch (error) {
-            console.error('API check error:', error);
-            
-            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API ключа';
-            this.elements.apiStatus.classList.remove('api-connecting');
-            this.elements.apiStatus.classList.add('api-error');
-            
-            this.state.isApiConnected = false;
-            this.showNotification('Не удалось проверить API ключ. Проверьте его правильность.', 'error');
-        }
+        return this.apiClient.checkApiStatus();
     }
 
     setupApiSettingsListeners() {
@@ -824,90 +724,15 @@ class VerdiktChatApp {
     }
 
     async saveChats() {
-        try {
-            // Сохраняем текущий чат
-            await this.saveCurrentChat();
-            
-            // Сохраняем список всех чатов
-            if (this.encryptionState.enabled && !this.encryptionState.isLocked) {
-                await this.saveEncryptedChats();
-            } else {
-                localStorage.setItem('verdikt_chats', JSON.stringify(this.chatManager.chats));
-            }
-            
-            // Сохраняем ID последнего активного чата
-            if (this.chatManager.currentChatId) {
-                localStorage.setItem('verdikt_last_active_chat', this.chatManager.currentChatId);
-            }
-            
-            // Обновляем статистику в настройках
-            this.updateSettingsStats();
-            
-        } catch (error) {
-            console.error('Error saving chats:', error);
-        }
+        return this.chatStore.saveChats();
     }
 
     async saveEncryptedChats() {
-        try {
-            const encryptedData = localStorage.getItem('verdikt_encrypted_data');
-            let decryptedData = {};
-            
-            if (encryptedData) {
-                decryptedData = await this.crypto.decrypt(encryptedData, this.encryptionState.password);
-            }
-            decryptedData.chats = this.chatManager.chats;
-            decryptedData.settings = { ...(decryptedData.settings || {}), theme: this.state.currentTheme };
-
-            const reencryptedData = await this.crypto.encrypt(
-                decryptedData, 
-                this.encryptionState.password
-            );
-            
-            localStorage.setItem('verdikt_encrypted_data', reencryptedData);
-            
-        } catch (error) {
-            console.error('Error saving encrypted chats:', error);
-            throw error;
-        }
+        return this.chatStore.saveEncryptedChats();
     }
 
     async saveCurrentChat() {
-        if (!this.chatManager.currentChatId) return;
-        
-        const chatData = {
-            id: this.chatManager.currentChatId,
-            title: this.generateChatTitle(),
-            messages: this.state.conversationHistory.filter(msg => msg.role !== 'system'),
-            timestamp: Date.now(),
-            mode: this.state.currentMode,
-            stats: {
-                totalMessages: this.state.stats.totalMessages,
-                userMessages: this.state.stats.userMessages,
-                aiMessages: this.state.stats.aiMessages,
-                savedChats: this.state.stats.savedChats
-            },
-            theme: this.state.currentTheme
-        };
-        
-        // Находим или создаем запись чата
-        const existingIndex = this.chatManager.chats.findIndex(chat => chat.id === chatData.id);
-        
-        if (existingIndex >= 0) {
-            this.chatManager.chats[existingIndex] = chatData;
-        } else {
-            this.chatManager.chats.push(chatData);
-            
-            // Ограничиваем количество сохраненных чатов
-            if (this.chatManager.chats.length > this.chatManager.maxChats) {
-                this.chatManager.chats = this.chatManager.chats.slice(-this.chatManager.maxChats);
-            }
-            
-            // Достижение за создание чатов
-            if (this.chatManager.chats.length >= 5 && !this.state.achievements.chatHistorian.unlocked) {
-                this.unlockAchievement('chatHistorian');
-            }
-        }
+        return this.chatStore.saveCurrentChat();
     }
 
     generateChatTitle() {
@@ -1780,17 +1605,20 @@ class VerdiktChatApp {
             });
         }
 
-        // Лайк / дизлайк / комментарий (делегирование на модалке дашборда)
+        // Лайк / дизлайк / комментарий / ветка комментариев (делегирование на модалке дашборда)
         const dashboardModal = document.getElementById('dashboard-modal');
         if (dashboardModal) {
             dashboardModal.addEventListener('click', async (e) => {
                 const likeBtn = e.target.closest('[data-action="like"]');
                 const dislikeBtn = e.target.closest('[data-action="dislike"]');
                 const commentBtn = e.target.closest('[data-action="comment"]');
-                const questionId = (likeBtn || dislikeBtn || commentBtn)?.getAttribute('data-question-id');
+                const commentsBlock = e.target.closest('.comments-count');
+                const sourceEl = likeBtn || dislikeBtn || commentBtn || commentsBlock;
+                const cardEl = e.target.closest('.question-card[data-question-id]');
+                const questionId = sourceEl?.getAttribute('data-question-id') || cardEl?.getAttribute('data-question-id');
                 if (!questionId) return;
                 if (!this.state.user) {
-                    if (commentBtn) this.showNotification('Войдите в аккаунт, чтобы ответить', 'warning');
+                    if (commentBtn || commentsBlock) this.showNotification('Войдите в аккаунт, чтобы ответить', 'warning');
                     return;
                 }
                 if (likeBtn) {
@@ -1801,7 +1629,7 @@ class VerdiktChatApp {
                     await this.setQuestionReaction(questionId, 'dislike');
                     return;
                 }
-                if (commentBtn) this.showQuestionCommentModal(questionId);
+                if (commentBtn || commentsBlock) this.showQuestionCommentModal(questionId);
             });
         }
 
@@ -4408,158 +4236,15 @@ class VerdiktChatApp {
     }
 
     async loadDashboardData() {
-        try {
-            // Загружаем вопросы из бэкенда (только для авторизованных пользователей)
-            let questions = [];
-            if (this.state.user) {
-                try {
-                    const url = `${this.AUTH_CONFIG.baseUrl}/api/questions`;
-                    const response = await fetch(url, {
-                        method: 'GET',
-                        credentials: 'include',
-                        headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() }
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (Array.isArray(data)) {
-                            questions = data.map(q => ({
-                                id: q.id,
-                                user: {
-                                    name: q.authorName || q.authorEmail || 'Пользователь',
-                                    email: q.authorEmail || '',
-                                    avatar: '👤'
-                                },
-                                content: q.content,
-                                date: q.createdAt,
-                                likes: q.likesCount ?? 0,
-                                dislikes: q.dislikesCount ?? 0,
-                                comments: q.commentsCount ?? 0,
-                                isLiked: q.isLiked ?? false,
-                                isDisliked: q.isDisliked ?? false
-                            }));
-                        }
-                    } else if (response.status !== 404) {
-                        console.warn('Не удалось загрузить вопросы с бэкенда', response.status);
-                    }
-                } catch (e) {
-                    console.error('Error fetching questions from backend:', e);
-                }
-            }
-
-            this.dashboard = {
-                questions,
-                stories: this.chatManager.chats.map(chat => ({
-                    id: chat.id,
-                    title: chat.title,
-                    preview: chat.messages && chat.messages.length > 0 
-                        ? chat.messages[0].content.substring(0, 100) + '...'
-                        : 'Нет сообщений',
-                    date: new Date(chat.timestamp),
-                    messageCount: chat.messages ? chat.messages.length : 0,
-                    likes: Math.floor(Math.random() * 20),
-                    comments: Math.floor(Math.random() * 10)
-                })),
-                analytics: {
-                    totalResponses: this.state.stats.aiMessages || 0,
-                    helpfulResponses: (this.state.stats.relationshipAdvice || 0)
-                        + (this.state.stats.manipulationRequests || 0)
-                        + (this.state.stats.datingAdvice || 0),
-                    averageRating: 0,
-                    activity: this.generateActivityData()
-                }
-            };
-            
-            this.renderDashboardData();
-            this.updateSidebarStats();
-            
-        } catch (error) {
-            console.error('Error loading dashboard data:', error);
-        }
+        return this.apiClient.loadDashboardData();
     }
 
     async submitDashboardQuestion(content) {
-        if (!this.state.user) {
-            this.showNotification('Войдите в аккаунт, чтобы задать вопрос', 'warning');
-            return;
-        }
-
-        const trimmed = (content || '').trim();
-        if (!trimmed) {
-            this.showNotification('Введите текст вопроса', 'warning');
-            return;
-        }
-
-        try {
-            const url = `${this.AUTH_CONFIG.baseUrl}/api/questions`;
-            const response = await fetch(url, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
-                body: JSON.stringify({ content: trimmed })
-            });
-
-            if (!response.ok) {
-                const error = await response.json().catch(() => ({}));
-                const message = error.message || `Не удалось отправить вопрос (HTTP ${response.status})`;
-                throw new Error(message);
-            }
-
-            const question = await response.json();
-            const mapped = {
-                id: question.id,
-                user: {
-                    name: question.authorName || question.authorEmail || (this.state.user.name || this.state.user.email || 'Пользователь'),
-                    email: question.authorEmail || this.state.user.email || '',
-                    avatar: '👤'
-                },
-                content: question.content,
-                date: question.createdAt,
-                likes: question.likesCount ?? 0,
-                dislikes: question.dislikesCount ?? 0,
-                comments: question.commentsCount ?? 0,
-                isLiked: question.isLiked ?? false,
-                isDisliked: question.isDisliked ?? false
-            };
-
-            if (!this.dashboard) {
-                this.dashboard = { questions: [], stories: [], analytics: { activity: [] } };
-            }
-
-            this.dashboard.questions = [mapped, ...(this.dashboard.questions || [])];
-            this.renderQuestions();
-            this.updateSidebarStats();
-            this.showNotification('Вопрос отправлен', 'success');
-        } catch (error) {
-            console.error('submitDashboardQuestion error:', error);
-            this.showNotification(error.message || 'Не удалось отправить вопрос', 'error');
-        }
+        return this.apiClient.submitDashboardQuestion(content);
     }
 
     async setQuestionReaction(questionId, type) {
-        if (!this.state.user) return;
-        try {
-            const url = `${this.AUTH_CONFIG.baseUrl}/api/questions/${questionId}/reaction`;
-            const res = await fetch(url, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
-                body: JSON.stringify({ type })
-            });
-            if (!res.ok) throw new Error('Не удалось отправить реакцию');
-            const q = await res.json();
-            const question = this.dashboard?.questions?.find(x => String(x.id) === String(questionId));
-            if (question) {
-                question.likes = q.likesCount ?? question.likes;
-                question.dislikes = q.dislikesCount ?? question.dislikes;
-                question.isLiked = q.isLiked ?? false;
-                question.isDisliked = q.isDisliked ?? false;
-            }
-            this.renderQuestions();
-            this.updateSidebarStats();
-        } catch (e) {
-            this.showNotification(e.message || 'Ошибка реакции', 'error');
-        }
+        return this.apiClient.setQuestionReaction(questionId, type);
     }
 
     async showQuestionCommentModal(questionId) {
@@ -4590,77 +4275,11 @@ class VerdiktChatApp {
     }
 
     async submitQuestionComment(questionId, content) {
-        if (!this.state.user) return;
-        try {
-            const trimmed = (content || '').trim();
-            if (!trimmed) {
-                this.showNotification('Введите текст комментария', 'warning');
-                return;
-            }
-
-            const url = `${this.AUTH_CONFIG.baseUrl}/api/questions/${questionId}/comments`;
-            const res = await fetch(url, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
-                body: JSON.stringify({ content: trimmed })
-            });
-            if (!res.ok) throw new Error('Не удалось отправить комментарий');
-            const question = this.dashboard?.questions?.find(x => String(x.id) === String(questionId));
-            if (question) question.comments = (question.comments || 0) + 1;
-
-            // Инвалидируем кеш комментариев для этого вопроса
-            if (this.state.questionComments && this.state.questionComments[questionId]) {
-                this.state.questionComments[questionId] = null;
-            }
-
-            this.renderQuestions();
-            this.updateSidebarStats();
-            this.showNotification('Комментарий добавлен', 'success');
-        } catch (e) {
-            this.showNotification(e.message || 'Ошибка отправки комментария', 'error');
-        }
+        return this.apiClient.submitQuestionComment(questionId, content);
     }
 
     async loadQuestionComments(questionId, force = false) {
-        if (!this.state.questionComments) {
-            this.state.questionComments = {};
-        }
-
-        if (!force && this.state.questionComments[questionId]) {
-            return this.state.questionComments[questionId];
-        }
-
-        let comments = [];
-
-        try {
-            const url = `${this.AUTH_CONFIG.baseUrl}/api/questions/${questionId}/comments`;
-            const res = await fetch(url, {
-                method: 'GET',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() }
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                if (Array.isArray(data)) {
-                    comments = data.map(c => ({
-                        id: c.id,
-                        authorName: c.authorName || c.authorEmail || 'Пользователь',
-                        authorEmail: c.authorEmail || '',
-                        content: c.content || '',
-                        createdAt: c.createdAt || c.created_at || null
-                    }));
-                }
-            } else if (res.status !== 404) {
-                console.warn('Не удалось загрузить комментарии', res.status);
-            }
-        } catch (e) {
-            console.error('Error loading question comments:', e);
-        }
-
-        this.state.questionComments[questionId] = comments;
-        return comments;
+        return this.apiClient.loadQuestionComments(questionId, force);
     }
 
     renderQuestionComments(questionId) {
@@ -4815,7 +4434,7 @@ class VerdiktChatApp {
                             </button>
                             ` : ''}
                         </div>
-                        <div class="comments-count">
+                        <div class="comments-count" data-question-id="${question.id}">
                             <i class="fas fa-comments"></i> ${question.comments}
                         </div>
                     </div>
@@ -5216,7 +4835,7 @@ class VerdiktChatApp {
                             <i class="fas fa-check"></i> Отметить как решенный
                         </button>
                     </div>
-                    <div class="comments-count">
+                    <div class="comments-count" data-question-id="${question.id}">
                         <i class="fas fa-comments"></i> ${question.comments}
                     </div>
                 </div>
