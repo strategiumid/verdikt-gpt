@@ -4683,7 +4683,46 @@ class VerdiktChatApp {
                         </div>
                     </div>
                     <div class="question-content">
-                        <textarea id="new-question-content" class="comment-input" placeholder="Опишите ваш вопрос или ситуацию..." rows="3"></textarea>
+                        <div style="position: relative;">
+                            <textarea id="new-question-content" class="comment-input" placeholder="Опишите ваш вопрос или ситуацию..." rows="3"></textarea>
+                            <button class="action-btn" id="emoji-picker-toggle" style="position: absolute; right: 10px; bottom: 10px; padding: 5px 10px; font-size: 1.2rem;" title="Добавить эмодзи">
+                                😊
+                            </button>
+                        </div>
+                        <div id="emoji-picker" style="display: none; margin-top: 10px; padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px; max-height: 150px; overflow-y: auto;">
+                                <button class="emoji-btn" data-emoji="😊">😊</button>
+                                <button class="emoji-btn" data-emoji="😢">😢</button>
+                                <button class="emoji-btn" data-emoji="😡">😡</button>
+                                <button class="emoji-btn" data-emoji="❤️">❤️</button>
+                                <button class="emoji-btn" data-emoji="💔">💔</button>
+                                <button class="emoji-btn" data-emoji="💕">💕</button>
+                                <button class="emoji-btn" data-emoji="😍">😍</button>
+                                <button class="emoji-btn" data-emoji="😘">😘</button>
+                                <button class="emoji-btn" data-emoji="🤔">🤔</button>
+                                <button class="emoji-btn" data-emoji="😔">😔</button>
+                                <button class="emoji-btn" data-emoji="😤">😤</button>
+                                <button class="emoji-btn" data-emoji="🙄">🙄</button>
+                                <button class="emoji-btn" data-emoji="😴">😴</button>
+                                <button class="emoji-btn" data-emoji="😎">😎</button>
+                                <button class="emoji-btn" data-emoji="👍">👍</button>
+                                <button class="emoji-btn" data-emoji="👎">👎</button>
+                                <button class="emoji-btn" data-emoji="👏">👏</button>
+                                <button class="emoji-btn" data-emoji="🙏">🙏</button>
+                                <button class="emoji-btn" data-emoji="💪">💪</button>
+                                <button class="emoji-btn" data-emoji="🎉">🎉</button>
+                                <button class="emoji-btn" data-emoji="✨">✨</button>
+                                <button class="emoji-btn" data-emoji="🔥">🔥</button>
+                                <button class="emoji-btn" data-emoji="💯">💯</button>
+                                <button class="emoji-btn" data-emoji="❓">❓</button>
+                                <button class="emoji-btn" data-emoji="❗">❗</button>
+                                <button class="emoji-btn" data-emoji="💬">💬</button>
+                                <button class="emoji-btn" data-emoji="👥">👥</button>
+                                <button class="emoji-btn" data-emoji="🛡️">🛡️</button>
+                                <button class="emoji-btn" data-emoji="⚡">⚡</button>
+                                <button class="emoji-btn" data-emoji="🌟">🌟</button>
+                            </div>
+                        </div>
                     </div>
                     <div class="question-actions">
                         <div class="action-buttons">
@@ -4965,41 +5004,11 @@ class VerdiktChatApp {
         `).join('');
     }
 
-    async loadAdminUsers(searchQuery = '') {
-        if (!this.state.isAdmin || !this.state.user) {
-            return [];
-        }
-
-        try {
-            const url = `${this.AUTH_CONFIG.baseUrl}/api/admin/users${searchQuery ? `?search=${encodeURIComponent(searchQuery)}` : ''}`;
-            const response = await fetch(url, {
-                method: 'GET',
-                credentials: 'include',
-                headers: { ...this.getAuthHeaders() }
-            });
-
-            if (!response.ok) {
-                if (response.status === 403) {
-                    throw new Error('Нет прав доступа');
-                }
-                throw new Error(`HTTP ${response.status}`);
-            }
-
-            const users = await response.json();
-            return users.map(u => ({
-                id: u.id,
-                name: u.name || u.email || 'Пользователь',
-                email: u.email || '',
-                isAdmin: u.admin || false,
-                createdAt: u.createdAt
-            }));
-        } catch (e) {
-            console.error('Error loading admin users:', e);
-            return [];
-        }
-    }
-
-    async renderAdminUsers() {
+    /**
+     * Вкладка "Пользователи" в дашборде (только фронтенд, без доп. бэкенда).
+     * Пользователи собираются из списка вопросов this.dashboard.questions.
+     */
+    renderAdminUsers() {
         const usersList = document.getElementById('admin-users-list');
         const usersFilterButtons = document.querySelectorAll('.admin-user-filter');
         const searchInput = document.getElementById('admin-users-search');
@@ -5018,17 +5027,55 @@ class VerdiktChatApp {
             return;
         }
 
-        // Показываем индикатор загрузки
-        usersList.innerHTML = `
-            <div class="question-card" style="text-align: center; padding: 40px;">
-                <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
-                <h4>Загрузка пользователей...</h4>
-            </div>
-        `;
+        // Если ещё нет вопросов — не из чего собирать пользователей
+        if (!this.dashboard || !this.dashboard.questions || this.dashboard.questions.length === 0) {
+            usersList.innerHTML = `
+                <div class="question-card" style="text-align: center; padding: 40px;">
+                    <i class="fas fa-users" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
+                    <h4>Пока нет пользователей</h4>
+                    <p style="color: var(--text-tertiary);">Пользователи появятся здесь после того, как начнут задавать вопросы</p>
+                </div>
+            `;
+            return;
+        }
 
-        // Загружаем пользователей с бэкенда
-        const searchQuery = searchInput ? searchInput.value.trim() : '';
-        const users = await this.loadAdminUsers(searchQuery);
+        // Собираем пользователей из вопросов (чисто фронтенд)
+        const usersMap = new Map();
+        (this.dashboard.questions || []).forEach(q => {
+            const u = q.user || {};
+            const key = u.email || u.name;
+            if (!key) return;
+
+            const existing = usersMap.get(key) || {
+                key,
+                name: u.name || u.email || 'Пользователь',
+                email: u.email || '',
+                avatar: u.avatar || '👤',
+                // Локальный бан — если какие-то вопросы помечены isBanned
+                isBanned: false,
+                // Локальная роль (user/admin)
+                role: 'user'
+            };
+
+            existing.isBanned = existing.isBanned || !!q.isBanned;
+            usersMap.set(key, existing);
+        });
+
+        // Применяем локально сохранённые роли (state.adminRoles)
+        const roles = this.state.adminRoles || {};
+        let users = Array.from(usersMap.values()).map(u => ({
+            ...u,
+            role: roles[u.key] || u.role
+        }));
+
+        // Поиск по email / имени (только фронтенд)
+        const searchQuery = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        if (searchQuery) {
+            users = users.filter(u =>
+                (u.name && u.name.toLowerCase().includes(searchQuery)) ||
+                (u.email && u.email.toLowerCase().includes(searchQuery))
+            );
+        }
 
         // Обработчик поиска
         if (searchInput && !searchInput._searchBound) {
@@ -5046,7 +5093,7 @@ class VerdiktChatApp {
         const filter = this.state.adminUserFilter || 'all';
         let filteredUsers = users;
         if (filter === 'admins') {
-            filteredUsers = users.filter(u => u.isAdmin);
+            filteredUsers = users.filter(u => u.role === 'admin');
         }
 
         if (!filteredUsers.length) {
@@ -5061,27 +5108,26 @@ class VerdiktChatApp {
         }
 
         usersList.innerHTML = filteredUsers.map(user => `
-            <div class="question-card" data-user-id="${user.id}">
+            <div class="question-card" data-user-key="${user.key}">
                 <div class="question-header">
-                    <div class="question-avatar">${(user.name || user.email || 'П').charAt(0).toUpperCase()}</div>
+                    <div class="question-avatar">${user.avatar}</div>
                     <div class="question-meta">
                         <h5>${user.name}</h5>
                         <div class="date">
-                            ${user.email} · ${user.isAdmin ? 'Админ' : 'Пользователь'} · ${this.formatDate(user.createdAt)}
+                            ${user.email ? user.email + ' · ' : ''}${user.role === 'admin' ? 'Админ' : 'Пользователь'}
                         </div>
                     </div>
                 </div>
                 <div class="question-actions">
                     <div class="action-buttons">
-                        ${!user.isAdmin ? `
-                        <button class="action-btn" data-action="user-make-admin" data-user-email="${user.email}">
-                            <i class="fas fa-user-shield"></i> Сделать админом
+                        <button class="action-btn" data-action="user-ban" data-user-key="${user.key}">
+                            <i class="fas fa-${user.isBanned ? 'user-check' : 'user-slash'}"></i>
+                            ${user.isBanned ? 'Разбанить' : 'Забанить'}
                         </button>
-                        ` : `
-                        <button class="action-btn" disabled style="opacity: 0.5;">
-                            <i class="fas fa-user-shield"></i> Админ
+                        <button class="action-btn" data-action="user-role" data-user-key="${user.key}">
+                            <i class="fas fa-${user.role === 'admin' ? 'user' : 'user-shield'}"></i>
+                            ${user.role === 'admin' ? 'Сделать пользователем' : 'Сделать админом'}
                         </button>
-                        `}
                     </div>
                 </div>
             </div>
@@ -5104,28 +5150,59 @@ class VerdiktChatApp {
         });
 
         // Обработчики действий по пользователям
-        usersList.querySelectorAll('[data-action="user-make-admin"]').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const email = btn.getAttribute('data-user-email');
-                if (!email) return;
+        usersList.querySelectorAll('[data-action="user-ban"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const key = btn.getAttribute('data-user-key');
+                if (!key) return;
 
-                try {
-                    const url = `${this.AUTH_CONFIG.baseUrl}/api/admin/users/make-admin?email=${encodeURIComponent(email)}`;
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        credentials: 'include',
-                        headers: { ...this.getAuthHeaders() }
-                    });
+                // Переключаем локальный бан через вопросы
+                const questions = this.dashboard.questions || [];
+                const isCurrentlyBanned = questions.some(q => {
+                    const u = q.user || {};
+                    const k = u.email || u.name;
+                    return k === key && q.isBanned;
+                });
 
-                    if (!response.ok) {
-                        throw new Error('Не удалось назначить админа');
+                questions.forEach(q => {
+                    const u = q.user || {};
+                    const k = u.email || u.name;
+                    if (k === key) {
+                        q.isBanned = !isCurrentlyBanned;
                     }
+                });
 
-                    this.showNotification('Пользователь назначен админом', 'success');
-                    await this.renderAdminUsers();
-                } catch (e) {
-                    this.showNotification(e.message || 'Ошибка назначения админа', 'error');
-                }
+                this.showNotification(
+                    isCurrentlyBanned ? 'Пользователь разбанен (локально)' : 'Пользователь забанен (локально)',
+                    isCurrentlyBanned ? 'success' : 'warning'
+                );
+
+                this.renderQuestions();
+                this.renderAdminQuestions();
+                this.renderAdminUsers();
+            });
+        });
+
+        usersList.querySelectorAll('[data-action="user-role"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const key = btn.getAttribute('data-user-key');
+                if (!key) return;
+
+                const currentRole = this.state.adminRoles?.[key] || 'user';
+                const newRole = currentRole === 'admin' ? 'user' : 'admin';
+
+                this.state.adminRoles = {
+                    ...(this.state.adminRoles || {}),
+                    [key]: newRole
+                };
+
+                this.showNotification(
+                    newRole === 'admin'
+                        ? 'Пользователь отмечен как админ (локально)'
+                        : 'Права админа сняты (локально)',
+                    'info'
+                );
+
+                this.renderAdminUsers();
             });
         });
     }
