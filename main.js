@@ -4542,69 +4542,8 @@ class VerdiktChatApp {
         this.submitQuestionComment(questionId, text.trim());
     }
 
-    async loadQuestionComments(questionId) {
-        try {
-            const url = `${this.AUTH_CONFIG.baseUrl}/api/questions/${questionId}/comments`;
-            const res = await fetch(url, {
-                method: 'GET',
-                credentials: 'include',
-                headers: { ...this.getAuthHeaders() }
-            });
-            
-            if (!res.ok) throw new Error('Не удалось загрузить комментарии');
-            
-            const comments = await res.json();
-            const commentsList = document.getElementById(`comments-list-${questionId}`);
-            if (!commentsList) return;
-
-            if (!comments || comments.length === 0) {
-                commentsList.innerHTML = `
-                    <div style="text-align: center; padding: 20px; color: var(--text-tertiary);">
-                        <i class="fas fa-comment-slash"></i> Пока нет комментариев
-                    </div>
-                `;
-                return;
-            }
-
-            commentsList.innerHTML = comments.map(comment => {
-                const date = comment.createdAt ? this.formatDate(comment.createdAt) : 'Недавно';
-                return `
-                <div class="comment-item">
-                    <div class="comment-header">
-                        <div class="comment-avatar">
-                            ${(comment.authorName || comment.authorEmail || 'П').charAt(0).toUpperCase()}
-                        </div>
-                        <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 0.9rem; color: var(--text-primary);">
-                                ${comment.authorName || comment.authorEmail || 'Пользователь'}
-                            </div>
-                            <div style="font-size: 0.75rem; color: var(--text-tertiary);">
-                                ${date}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="comment-content">${this.formatMessage(comment.content)}</div>
-                </div>
-            `;
-            }).join('');
-        } catch (e) {
-            const commentsList = document.getElementById(`comments-list-${questionId}`);
-            if (commentsList) {
-                commentsList.innerHTML = `
-                    <div style="text-align: center; padding: 20px; color: var(--text-danger);">
-                        <i class="fas fa-exclamation-circle"></i> Ошибка загрузки комментариев
-                    </div>
-                `;
-            }
-            console.error('Error loading comments:', e);
-        }
-    }
-
     async submitQuestionComment(questionId, content) {
-        if (!this.state.user) {
-            this.showNotification('Войдите в аккаунт, чтобы оставить комментарий', 'warning');
-            return;
-        }
+        if (!this.state.user) return;
         try {
             const url = `${this.AUTH_CONFIG.baseUrl}/api/questions/${questionId}/comments`;
             const res = await fetch(url, {
@@ -4616,7 +4555,6 @@ class VerdiktChatApp {
             if (!res.ok) throw new Error('Не удалось отправить комментарий');
             const question = this.dashboard?.questions?.find(x => String(x.id) === String(questionId));
             if (question) question.comments = (question.comments || 0) + 1;
-            await this.loadQuestionComments(questionId);
             this.renderQuestions();
             this.updateSidebarStats();
             this.showNotification('Комментарий добавлен', 'success');
@@ -4660,10 +4598,7 @@ class VerdiktChatApp {
 
         // Рендерим админ-вкладку (если есть права)
         this.renderAdminQuestions();
-        // renderAdminUsers вызывается асинхронно, так как загружает данные с бэкенда
-        if (this.state.isAdmin) {
-            this.renderAdminUsers();
-        }
+        this.renderAdminUsers();
     }
 
     renderQuestions() {
@@ -4683,46 +4618,7 @@ class VerdiktChatApp {
                         </div>
                     </div>
                     <div class="question-content">
-                        <div style="position: relative;">
-                            <textarea id="new-question-content" class="comment-input" placeholder="Опишите ваш вопрос или ситуацию..." rows="3"></textarea>
-                            <button class="action-btn" id="emoji-picker-toggle" style="position: absolute; right: 10px; bottom: 10px; padding: 5px 10px; font-size: 1.2rem;" title="Добавить эмодзи">
-                                😊
-                            </button>
-                        </div>
-                        <div id="emoji-picker" style="display: none; margin-top: 10px; padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
-                            <div style="display: flex; flex-wrap: wrap; gap: 8px; max-height: 150px; overflow-y: auto;">
-                                <button class="emoji-btn" data-emoji="😊">😊</button>
-                                <button class="emoji-btn" data-emoji="😢">😢</button>
-                                <button class="emoji-btn" data-emoji="😡">😡</button>
-                                <button class="emoji-btn" data-emoji="❤️">❤️</button>
-                                <button class="emoji-btn" data-emoji="💔">💔</button>
-                                <button class="emoji-btn" data-emoji="💕">💕</button>
-                                <button class="emoji-btn" data-emoji="😍">😍</button>
-                                <button class="emoji-btn" data-emoji="😘">😘</button>
-                                <button class="emoji-btn" data-emoji="🤔">🤔</button>
-                                <button class="emoji-btn" data-emoji="😔">😔</button>
-                                <button class="emoji-btn" data-emoji="😤">😤</button>
-                                <button class="emoji-btn" data-emoji="🙄">🙄</button>
-                                <button class="emoji-btn" data-emoji="😴">😴</button>
-                                <button class="emoji-btn" data-emoji="😎">😎</button>
-                                <button class="emoji-btn" data-emoji="👍">👍</button>
-                                <button class="emoji-btn" data-emoji="👎">👎</button>
-                                <button class="emoji-btn" data-emoji="👏">👏</button>
-                                <button class="emoji-btn" data-emoji="🙏">🙏</button>
-                                <button class="emoji-btn" data-emoji="💪">💪</button>
-                                <button class="emoji-btn" data-emoji="🎉">🎉</button>
-                                <button class="emoji-btn" data-emoji="✨">✨</button>
-                                <button class="emoji-btn" data-emoji="🔥">🔥</button>
-                                <button class="emoji-btn" data-emoji="💯">💯</button>
-                                <button class="emoji-btn" data-emoji="❓">❓</button>
-                                <button class="emoji-btn" data-emoji="❗">❗</button>
-                                <button class="emoji-btn" data-emoji="💬">💬</button>
-                                <button class="emoji-btn" data-emoji="👥">👥</button>
-                                <button class="emoji-btn" data-emoji="🛡️">🛡️</button>
-                                <button class="emoji-btn" data-emoji="⚡">⚡</button>
-                                <button class="emoji-btn" data-emoji="🌟">🌟</button>
-                            </div>
-                        </div>
+                        <textarea id="new-question-content" class="comment-input" placeholder="Опишите ваш вопрос или ситуацию..." rows="3"></textarea>
                     </div>
                     <div class="question-actions">
                         <div class="action-buttons">
@@ -4771,8 +4667,8 @@ class VerdiktChatApp {
                             <button class="action-btn ${question.isDisliked ? 'disliked' : ''}" data-action="dislike" data-question-id="${question.id}">
                                 <i class="fas fa-thumbs-down"></i> ${question.dislikes}
                             </button>
-                            <button class="action-btn" data-action="toggle-comments" data-question-id="${question.id}">
-                                <i class="fas fa-comment"></i> Комментарии (${question.comments || 0})
+                            <button class="action-btn" data-action="comment" data-question-id="${question.id}">
+                                <i class="fas fa-comment"></i> Ответить
                             </button>
                             ${this.state.isAdmin ? `
                             <button class="action-btn" data-action="admin-delete" data-question-id="${question.id}">
@@ -4783,24 +4679,8 @@ class VerdiktChatApp {
                             </button>
                             ` : ''}
                         </div>
-                    </div>
-                    <div class="comments-section" id="comments-${question.id}" style="display: none;">
-                        <div class="comment-form">
-                            ${this.state.user ? `
-                                <textarea class="comment-input" id="comment-input-${question.id}" placeholder="Напишите комментарий..." rows="3"></textarea>
-                                <button class="action-btn" data-action="submit-comment" data-question-id="${question.id}" style="margin-top: 10px;">
-                                    <i class="fas fa-paper-plane"></i> Отправить
-                                </button>
-                            ` : `
-                                <p style="color: var(--text-tertiary); text-align: center; padding: 10px;">
-                                    Войдите в аккаунт, чтобы оставить комментарий
-                                </p>
-                            `}
-                        </div>
-                        <div class="comments-list" id="comments-list-${question.id}">
-                            <div style="text-align: center; padding: 20px; color: var(--text-tertiary);">
-                                <i class="fas fa-spinner fa-spin"></i> Загрузка комментариев...
-                            </div>
+                        <div class="comments-count">
+                            <i class="fas fa-comments"></i> ${question.comments}
                         </div>
                     </div>
                 </div>
@@ -4822,93 +4702,8 @@ class VerdiktChatApp {
             });
         }
 
-        // Эмодзи-пикер
-        const emojiPickerToggle = document.getElementById('emoji-picker-toggle');
-        const emojiPicker = document.getElementById('emoji-picker');
-        const questionTextarea = document.getElementById('new-question-content');
-
-        if (emojiPickerToggle && emojiPicker && questionTextarea) {
-            emojiPickerToggle.addEventListener('click', (e) => {
-                e.preventDefault();
-                const isVisible = emojiPicker.style.display !== 'none';
-                emojiPicker.style.display = isVisible ? 'none' : 'block';
-            });
-
-            // Закрытие при клике вне пикера
-            document.addEventListener('click', (e) => {
-                if (emojiPicker && emojiPickerToggle && 
-                    !emojiPicker.contains(e.target) && 
-                    !emojiPickerToggle.contains(e.target)) {
-                    emojiPicker.style.display = 'none';
-                }
-            });
-
-            // Обработчики кнопок эмодзи
-            emojiPicker.querySelectorAll('.emoji-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const emoji = btn.getAttribute('data-emoji');
-                    const cursorPos = questionTextarea.selectionStart;
-                    const textBefore = questionTextarea.value.substring(0, cursorPos);
-                    const textAfter = questionTextarea.value.substring(cursorPos);
-                    questionTextarea.value = textBefore + emoji + textAfter;
-                    questionTextarea.focus();
-                    questionTextarea.setSelectionRange(cursorPos + emoji.length, cursorPos + emoji.length);
-                });
-            });
-        }
-
         // Навешиваем обработчики админ-действий по вопросам
         this.attachAdminQuestionHandlers();
-
-        // Обработчики комментариев
-        questionsList.querySelectorAll('[data-action="toggle-comments"]').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const questionId = btn.getAttribute('data-question-id');
-                const commentsSection = document.getElementById(`comments-${questionId}`);
-                if (!commentsSection) return;
-
-                const isVisible = commentsSection.style.display !== 'none';
-                if (!isVisible) {
-                    commentsSection.style.display = 'block';
-                    await this.loadQuestionComments(questionId);
-                } else {
-                    commentsSection.style.display = 'none';
-                }
-            });
-        });
-
-        questionsList.querySelectorAll('[data-action="submit-comment"]').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const questionId = btn.getAttribute('data-question-id');
-                const input = document.getElementById(`comment-input-${questionId}`);
-                if (!input) return;
-
-                const content = input.value.trim();
-                if (!content) {
-                    this.showNotification('Введите текст комментария', 'warning');
-                    return;
-                }
-
-                await this.submitQuestionComment(questionId, content);
-                input.value = '';
-            });
-        });
-
-        // Обработчики лайков/дизлайков
-        questionsList.querySelectorAll('[data-action="like"]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const questionId = btn.getAttribute('data-question-id');
-                this.setQuestionReaction(questionId, 'like');
-            });
-        });
-
-        questionsList.querySelectorAll('[data-action="dislike"]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const questionId = btn.getAttribute('data-question-id');
-                this.setQuestionReaction(questionId, 'dislike');
-            });
-        });
 
         // Обновляем бейджи
         this.updateBadges();
@@ -5004,14 +4799,9 @@ class VerdiktChatApp {
         `).join('');
     }
 
-    /**
-     * Вкладка "Пользователи" в дашборде (только фронтенд, без доп. бэкенда).
-     * Пользователи собираются из списка вопросов this.dashboard.questions.
-     */
     renderAdminUsers() {
         const usersList = document.getElementById('admin-users-list');
         const usersFilterButtons = document.querySelectorAll('.admin-user-filter');
-        const searchInput = document.getElementById('admin-users-search');
 
         if (!usersList) return;
 
@@ -5027,7 +4817,6 @@ class VerdiktChatApp {
             return;
         }
 
-        // Если ещё нет вопросов — не из чего собирать пользователей
         if (!this.dashboard || !this.dashboard.questions || this.dashboard.questions.length === 0) {
             usersList.innerHTML = `
                 <div class="question-card" style="text-align: center; padding: 40px;">
@@ -5039,10 +4828,11 @@ class VerdiktChatApp {
             return;
         }
 
-        // Собираем пользователей из вопросов (чисто фронтенд)
+        // Собираем пользователей из вопросов
         const usersMap = new Map();
-        (this.dashboard.questions || []).forEach(q => {
-            const u = q.user || {};
+
+        this.dashboard.questions.forEach(question => {
+            const u = question.user || {};
             const key = u.email || u.name;
             if (!key) return;
 
@@ -5051,63 +4841,41 @@ class VerdiktChatApp {
                 name: u.name || u.email || 'Пользователь',
                 email: u.email || '',
                 avatar: u.avatar || '👤',
-                // Локальный бан — если какие-то вопросы помечены isBanned
                 isBanned: false,
-                // Локальная роль (user/admin)
                 role: 'user'
             };
 
-            existing.isBanned = existing.isBanned || !!q.isBanned;
+            existing.isBanned = existing.isBanned || !!question.isBanned;
             usersMap.set(key, existing);
         });
 
-        // Применяем локально сохранённые роли (state.adminRoles)
+        // Применяем сохраненные роли
         const roles = this.state.adminRoles || {};
         let users = Array.from(usersMap.values()).map(u => ({
             ...u,
             role: roles[u.key] || u.role
         }));
 
-        // Поиск по email / имени (только фронтенд)
-        const searchQuery = searchInput ? searchInput.value.trim().toLowerCase() : '';
-        if (searchQuery) {
-            users = users.filter(u =>
-                (u.name && u.name.toLowerCase().includes(searchQuery)) ||
-                (u.email && u.email.toLowerCase().includes(searchQuery))
-            );
-        }
-
-        // Обработчик поиска
-        if (searchInput && !searchInput._searchBound) {
-            let searchTimeout;
-            searchInput.addEventListener('input', () => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    this.renderAdminUsers();
-                }, 300);
-            });
-            searchInput._searchBound = true;
-        }
-
         // Фильтрация по типу
         const filter = this.state.adminUserFilter || 'all';
-        let filteredUsers = users;
-        if (filter === 'admins') {
-            filteredUsers = users.filter(u => u.role === 'admin');
+        if (filter === 'banned') {
+            users = users.filter(u => u.isBanned);
+        } else if (filter === 'admins') {
+            users = users.filter(u => u.role === 'admin');
         }
 
-        if (!filteredUsers.length) {
+        if (!users.length) {
             usersList.innerHTML = `
                 <div class="question-card" style="text-align: center; padding: 40px;">
                     <i class="fas fa-users-slash" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
                     <h4>Ничего не найдено</h4>
-                    <p style="color: var(--text-tertiary);">${searchQuery ? 'Попробуйте изменить поисковый запрос' : 'Попробуйте изменить фильтр'}</p>
+                    <p style="color: var(--text-tertiary);">Попробуйте изменить фильтр</p>
                 </div>
             `;
             return;
         }
 
-        usersList.innerHTML = filteredUsers.map(user => `
+        usersList.innerHTML = users.map(user => `
             <div class="question-card" data-user-key="${user.key}">
                 <div class="question-header">
                     <div class="question-avatar">${user.avatar}</div>
@@ -5155,7 +4923,7 @@ class VerdiktChatApp {
                 const key = btn.getAttribute('data-user-key');
                 if (!key) return;
 
-                // Переключаем локальный бан через вопросы
+                // Переключаем бан пользователя через его вопросы
                 const questions = this.dashboard.questions || [];
                 const isCurrentlyBanned = questions.some(q => {
                     const u = q.user || {};
