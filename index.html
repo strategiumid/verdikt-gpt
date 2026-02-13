@@ -1344,6 +1344,16 @@
                         <div class="question-content" style="margin-bottom: 10px;">
                             Здесь отображаются пользователи, собранные из их вопросов и активностей. Все действия пока выполняются локально, без бэкенда.
                         </div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px;">
+                            <div style="flex: 1; min-width: 200px;">
+                                <input
+                                    type="text"
+                                    id="admin-user-search-input"
+                                    placeholder="Поиск по имени или email..."
+                                    style="width: 100%; padding: 8px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-size: 0.9rem;"
+                                >
+                            </div>
+                        </div>
                         <div class="question-actions">
                             <div class="action-buttons admin-users-filters">
                                 <button class="action-btn admin-user-filter" data-filter="all">
@@ -1437,6 +1447,38 @@
                             <p style="color: var(--text-tertiary);">Вопросы пользователей появятся здесь после загрузки дашборда</p>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно комментариев к вопросу дашборда -->
+    <div class="modal" id="question-comments-modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <button class="modal-close" onclick="window.verdiktApp.hideModal('question-comments-modal')">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <h2 style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-comments"></i> Комментарии к вопросу
+            </h2>
+
+            <div class="question-preview" id="question-comments-preview" style="margin-bottom: 15px; font-size: 0.9rem; color: var(--text-secondary);">
+            </div>
+
+            <div class="comments-section">
+                <div class="comment-form">
+                    <textarea
+                        id="question-comment-input"
+                        class="comment-input"
+                        placeholder="Напишите ваш ответ или комментарий..."
+                        rows="3"
+                    ></textarea>
+                    <button class="ios-button" id="question-comment-submit" style="width: 100%;">
+                        <i class="fas fa-paper-plane"></i> Отправить комментарий
+                    </button>
+                </div>
+                <div class="comments-list" id="question-comments-list">
                 </div>
             </div>
         </div>

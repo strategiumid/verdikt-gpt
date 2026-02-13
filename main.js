@@ -87,7 +87,10 @@ class VerdiktChatApp {
             // Фильтры и роли админа
             adminQuestionFilter: 'all',
             adminUserFilter: 'all',
+            adminUserSearchQuery: '',
             adminRoles: {},
+            // Комментарии к вопросам (кеш по questionId)
+            questionComments: {},
             // Пользователь и токен авторизации
             user: null,
             authToken: null,
@@ -1800,6 +1803,27 @@ class VerdiktChatApp {
                 }
                 if (commentBtn) this.showQuestionCommentModal(questionId);
             });
+        }
+
+        // Модалка комментариев к вопросу
+        const commentSubmitBtn = document.getElementById('question-comment-submit');
+        if (commentSubmitBtn && !commentSubmitBtn._bound) {
+            commentSubmitBtn.addEventListener('click', async () => {
+                const textarea = document.getElementById('question-comment-input');
+                const text = textarea ? textarea.value : '';
+                const questionId = this.currentCommentQuestionId;
+                if (!questionId) return;
+
+                await this.submitQuestionComment(questionId, text);
+
+                if (textarea) {
+                    textarea.value = '';
+                }
+
+                await this.loadQuestionComments(questionId, true);
+                this.renderQuestionComments(questionId);
+            });
+            commentSubmitBtn._bound = true;
         }
         
         // Загрузка данных дашборда
@@ -4403,6 +4427,7 @@ class VerdiktChatApp {
                                 id: q.id,
                                 user: {
                                     name: q.authorName || q.authorEmail || 'Пользователь',
+                                    email: q.authorEmail || '',
                                     avatar: '👤'
                                 },
                                 content: q.content,
@@ -4485,6 +4510,7 @@ class VerdiktChatApp {
                 id: question.id,
                 user: {
                     name: question.authorName || question.authorEmail || (this.state.user.name || this.state.user.email || 'Пользователь'),
+                    email: question.authorEmail || this.state.user.email || '',
                     avatar: '👤'
                 },
                 content: question.content,
@@ -4536,31 +4562,141 @@ class VerdiktChatApp {
         }
     }
 
-    showQuestionCommentModal(questionId) {
-        const text = prompt('Введите ваш комментарий:');
-        if (text == null || !text.trim()) return;
-        this.submitQuestionComment(questionId, text.trim());
+    async showQuestionCommentModal(questionId) {
+        if (!this.state.user) {
+            this.showNotification('Войдите в аккаунт, чтобы ответить', 'warning');
+            return;
+        }
+
+        this.currentCommentQuestionId = questionId;
+
+        const modalId = 'question-comments-modal';
+        const question = this.dashboard?.questions?.find(q => String(q.id) === String(questionId));
+
+        const previewEl = document.getElementById('question-comments-preview');
+        if (previewEl) {
+            previewEl.textContent = question ? (question.content || '') : '';
+        }
+
+        const textarea = document.getElementById('question-comment-input');
+        if (textarea) {
+            textarea.value = '';
+        }
+
+        this.showModal(modalId);
+
+        await this.loadQuestionComments(questionId);
+        this.renderQuestionComments(questionId);
     }
 
     async submitQuestionComment(questionId, content) {
         if (!this.state.user) return;
         try {
+            const trimmed = (content || '').trim();
+            if (!trimmed) {
+                this.showNotification('Введите текст комментария', 'warning');
+                return;
+            }
+
             const url = `${this.AUTH_CONFIG.baseUrl}/api/questions/${questionId}/comments`;
             const res = await fetch(url, {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
-                body: JSON.stringify({ content })
+                body: JSON.stringify({ content: trimmed })
             });
             if (!res.ok) throw new Error('Не удалось отправить комментарий');
             const question = this.dashboard?.questions?.find(x => String(x.id) === String(questionId));
             if (question) question.comments = (question.comments || 0) + 1;
+
+            // Инвалидируем кеш комментариев для этого вопроса
+            if (this.state.questionComments && this.state.questionComments[questionId]) {
+                this.state.questionComments[questionId] = null;
+            }
+
             this.renderQuestions();
             this.updateSidebarStats();
             this.showNotification('Комментарий добавлен', 'success');
         } catch (e) {
             this.showNotification(e.message || 'Ошибка отправки комментария', 'error');
         }
+    }
+
+    async loadQuestionComments(questionId, force = false) {
+        if (!this.state.questionComments) {
+            this.state.questionComments = {};
+        }
+
+        if (!force && this.state.questionComments[questionId]) {
+            return this.state.questionComments[questionId];
+        }
+
+        let comments = [];
+
+        try {
+            const url = `${this.AUTH_CONFIG.baseUrl}/api/questions/${questionId}/comments`;
+            const res = await fetch(url, {
+                method: 'GET',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() }
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    comments = data.map(c => ({
+                        id: c.id,
+                        authorName: c.authorName || c.authorEmail || 'Пользователь',
+                        authorEmail: c.authorEmail || '',
+                        content: c.content || '',
+                        createdAt: c.createdAt || c.created_at || null
+                    }));
+                }
+            } else if (res.status !== 404) {
+                console.warn('Не удалось загрузить комментарии', res.status);
+            }
+        } catch (e) {
+            console.error('Error loading question comments:', e);
+        }
+
+        this.state.questionComments[questionId] = comments;
+        return comments;
+    }
+
+    renderQuestionComments(questionId) {
+        const list = document.getElementById('question-comments-list');
+        if (!list) return;
+
+        const comments = (this.state.questionComments && this.state.questionComments[questionId]) || [];
+
+        if (!comments.length) {
+            list.innerHTML = `
+                <div style="color: var(--text-tertiary); font-size: 0.9rem;">
+                    Пока нет комментариев. Будьте первым, кто ответит на этот вопрос.
+                </div>
+            `;
+            return;
+        }
+
+        list.innerHTML = comments.map(c => `
+            <div class="comment-item">
+                <div class="comment-header">
+                    <div class="comment-avatar">
+                        ${(c.authorName || 'П')[0].toUpperCase()}
+                    </div>
+                    <div>
+                        <div style="font-weight: 600;">${c.authorName || 'Пользователь'}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-tertiary);">
+                            ${c.authorEmail || ''}
+                            ${c.createdAt ? ' · ' + this.formatDate(c.createdAt) : ''}
+                        </div>
+                    </div>
+                </div>
+                <div class="comment-content">
+                    ${c.content}
+                </div>
+            </div>
+        `).join('');
     }
 
     generateActivityData() {
@@ -4802,6 +4938,7 @@ class VerdiktChatApp {
     renderAdminUsers() {
         const usersList = document.getElementById('admin-users-list');
         const usersFilterButtons = document.querySelectorAll('.admin-user-filter');
+        const searchInput = document.getElementById('admin-user-search-input');
 
         if (!usersList) return;
 
@@ -4864,12 +5001,22 @@ class VerdiktChatApp {
             users = users.filter(u => u.role === 'admin');
         }
 
+        // Поиск по имени / email
+        const query = (this.state.adminUserSearchQuery || '').trim().toLowerCase();
+        if (query) {
+            users = users.filter(u => {
+                const name = (u.name || '').toLowerCase();
+                const email = (u.email || '').toLowerCase();
+                return name.includes(query) || email.includes(query);
+            });
+        }
+
         if (!users.length) {
             usersList.innerHTML = `
                 <div class="question-card" style="text-align: center; padding: 40px;">
                     <i class="fas fa-users-slash" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
                     <h4>Ничего не найдено</h4>
-                    <p style="color: var(--text-tertiary);">Попробуйте изменить фильтр</p>
+                    <p style="color: var(--text-tertiary);">Попробуйте изменить фильтр или поиск</p>
                 </div>
             `;
             return;
@@ -4916,6 +5063,21 @@ class VerdiktChatApp {
                 btn._adminUserFilterBound = true;
             }
         });
+
+        // Поле поиска пользователей
+        if (searchInput) {
+            if (typeof this.state.adminUserSearchQuery === 'string') {
+                searchInput.value = this.state.adminUserSearchQuery;
+            }
+
+            if (!searchInput._adminUserSearchBound) {
+                searchInput.addEventListener('input', () => {
+                    this.state.adminUserSearchQuery = searchInput.value || '';
+                    this.renderAdminUsers();
+                });
+                searchInput._adminUserSearchBound = true;
+            }
+        }
 
         // Обработчики действий по пользователям
         usersList.querySelectorAll('[data-action="user-ban"]').forEach(btn => {
