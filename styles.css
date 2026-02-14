@@ -381,7 +381,10 @@ body {
     border-radius: 22px;
     line-height: 1.6;
     position: relative;
-    word-wrap: break-word;
+    word-wrap: break-word; /* Перенос длинных слов */
+    word-break: break-word; /* Принудительный перенос */
+    white-space: pre-wrap; /* Сохраняем переносы строк, но переносим при необходимости */
+    overflow-wrap: break-word; /* Современный аналог word-wrap */
     opacity: 0;
     transform: translateY(20px);
     transition: var(--transition);
@@ -471,6 +474,10 @@ body {
 .message-content {
     font-size: 1rem;
     line-height: 1.6;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto; /* Автоматическая расстановка переносов (опционально) */
 }
 
 .message-content pre {
