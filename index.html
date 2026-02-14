@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#ffffff" id="theme-color">
+    <meta name="theme-color" content="#0f172a">
     <title>Verdikt GPT</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
@@ -14,7 +15,7 @@
     <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💕</text></svg>">
     
     <style>
-    /* Стили для бокового меню (оставляем без изменений, они не влияют на основной интерфейс) */
+    /* Стили для бокового меню */
    .sidebar-toggle {
     position: fixed;
     left: 20px;
@@ -48,7 +49,8 @@
         box-shadow: var(--glow);
     }
 
-    @media (max-width: 768px) {
+    /* Адаптивность для мобильных */
+@media (max-width: 768px) {
     .sidebar-toggle {
         left: 15px;
         top: 15px;
@@ -554,6 +556,7 @@
         margin-bottom: 20px;
     }
 
+    /* Адаптивность для бокового меню */
     @media (max-width: 768px) {
         .sidebar {
             width: 280px;
@@ -1020,6 +1023,7 @@
         box-shadow: 0 5px 15px rgba(139, 92, 246, 0.2);
     }
 
+    /* Адаптивность */
     @media (max-width: 768px) {
         .settings-tab {
             min-width: 100px;
@@ -1111,7 +1115,7 @@
     </style>
 </head>
 
-<body class="chat-empty">
+<body>
     <!-- Боковое меню -->
      <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
@@ -1556,7 +1560,7 @@
         </div>
     </div>
 
-    <!-- Фоновые элементы (будут скрыты в теме deepseek) -->
+    <!-- Фоновые элементы -->
     <div class="background-elements">
         <div class="grid-pattern"></div>
         <div class="floating-hearts" id="floating-hearts"></div>
@@ -2304,80 +2308,110 @@
             <div class="chat-area">
                 
                 <!-- Контейнер чата -->
-
-<div class="chat-container">
-    <!-- История сообщений (теперь без шапки) -->
-    <div class="chat-messages" id="chat-messages">
-        <!-- Hero-блок для пустого чата -->
-        <div class="chat-hero" id="chat-hero">
-            <div class="hero-logo">
-                <i class="fas fa-heart"></i>
-            </div>
-            <h1 class="hero-title">Чем я могу помочь?</h1>
-            <div class="hero-suggestions">
-                <button class="suggestion-chip" data-question="Как распознать манипуляцию в отношениях?">
-                    Как распознать манипуляцию?
-                </button>
-                <button class="suggestion-chip" data-question="Как правильно вести себя на первом свидании?">
-                    Первое свидание: советы
-                </button>
-                <button class="suggestion-chip" data-question="Как установить здоровые границы в отношениях?">
-                    Как установить личные границы?
-                </button>
-                <button class="suggestion-chip" data-question="Что делать, если партнер меня игнорирует?">
-                    Что делать при игноре?
-                </button>
-                <button class="suggestion-chip" data-question="Как понять, что отношения токсичны?">
-                    Признаки токсичных отношений
-                </button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Умные подсказки (скрыты по умолчанию) -->
-    <div class="smart-suggestions" id="smart-suggestions">
-        <div class="suggestion-item">Как понять, что мной манипулируют?</div>
-        <div class="suggestion-item">Как правильно знакомиться в интернете?</div>
-        <div class="suggestion-item">Как наладить отношения после ссоры?</div>
-        <div class="suggestion-item">Как распознать токсичные отношения?</div>
-    </div>
-    
-    <!-- Индикатор набора текста -->
-    <div class="typing-indicator" id="typing-indicator">
-        <div class="typing-skeleton">
-            <div class="typing-dots">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Панель ввода (теперь без лишних отступов) -->
-    <div class="input-container-extended">
-        <div class="input-actions-left">
-            <button class="input-icon-button" id="attach-button" title="Прикрепить файл">
-                <i class="fas fa-paperclip"></i>
-            </button>
-            <button class="input-icon-button" id="toggle-chat-history" title="История чатов">
-                <i class="fas fa-history"></i>
-            </button>
-        </div>
-        
-        <div class="input-wrapper">
-            <textarea id="message-input" placeholder="Опишите вашу ситуацию в отношениях, знакомствах или вопросы о манипуляциях..." maxlength="2000" autocomplete="off"></textarea>
-        </div>
-        
-        <div class="input-actions-right">
-            <button class="input-icon-button" id="voice-input" title="Голосовой ввод">
-                <i class="fas fa-microphone"></i>
-            </button>
-            <button class="input-icon-button primary" id="send-button" title="Отправить сообщение">
-                <i class="fas fa-paper-plane"></i>
-            </button>
-        </div>
-    </div>
-</div>
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <div class="chat-header-content">
+                            <div class="ai-avatar">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div class="chat-header-text">
+                                <h2>Verdikt GPT - Эксперт по отношениям</h2>
+                                <p>Специалист в психологии отношений, знакомств и распознавании манипуляций</p>
+                            </div>
+                            <div class="chat-header-controls">
+                                <div class="status-indicator" id="api-status">
+                                    <i class="fas fa-circle"></i> Подключение...
+                                </div>
+                                <button class="chat-action-button" id="dnd-toggle" title="Режим «Не беспокоить»">
+                                    <i class="fas fa-bell"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- История сообщений -->
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="message ai-message" style="opacity: 1; transform: translateY(0);">
+                            <div class="message-actions">
+                                <button class="message-action" onclick="window.verdiktApp.copyMessage('msg-initial')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button class="message-action" onclick="window.verdiktApp.speakMessage('msg-initial')">
+                                    <i class="fas fa-volume-up"></i>
+                                </button>
+                            </div>
+                            <div class="message-sender"><i class="fas fa-heart"></i> Эксперт по отношениям</div>
+                            <div class="message-content">Привет! 👋 Я - эксперт в области психологии отношений, знакомств и распознавания манипуляций. Я специализируюсь на:
+<br><br>
+💕 <strong>Отношениях</strong> - помощь в построении здоровых отношений, решение конфликтов, улучшение коммуникации
+<br><br>
+👥 <strong>Знакомствах</strong> - советы по онлайн и офлайн знакомствам, созданию привлекательного профиля, первому свиданию
+<br><br>
+🛡️ <strong>Манипуляциях</strong> - распознавание психологических манипуляций, защита от эмоционального насилия, установление границ
+<br><br>
+Расскажите, с какой ситуацией вы столкнулись? Я помогу разобраться с профессиональной точки зрения! ✨</div>
+                            <div class="message-time" id="initial-time">Сейчас</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Умные подсказки -->
+                    <div class="smart-suggestions" id="smart-suggestions">
+                        <div class="suggestion-item">Как понять, что мной манипулируют?</div>
+                        <div class="suggestion-item">Как правильно знакомиться в интернете?</div>
+                        <div class="suggestion-item">Как наладить отношения после ссоры?</div>
+                        <div class="suggestion-item">Как распознать токсичные отношения?</div>
+                    </div>
+                    
+                    <!-- Индикатор набора текста -->
+                    <div class="typing-indicator" id="typing-indicator">
+                        <div class="typing-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Примеры вопросов -->
+                    <div class="examples">
+                        <h3><i class="fas fa-bolt"></i> Попробуйте спросить:</h3>
+                        <div class="example-buttons">
+                            <button class="example-button ios-button tertiary" data-question="Как распознать манипуляцию в отношениях?">
+                                <i class="fas fa-shield-alt"></i> Манипуляции
+                            </button>
+                            <button class="example-button ios-button tertiary" data-question="Как правильно вести себя на первом свидании?">
+                                <i class="fas fa-heart"></i> Первое свидание
+                            </button>
+                            <button class="example-button ios-button tertiary" data-question="Как установить здоровые границы в отношениях?">
+                                <i class="fas fa-user-shield"></i> Границы
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Панель ввода -->
+                    <div class="input-container-extended">
+                        <div class="input-actions-left">
+                            <button class="input-icon-button" id="attach-button" title="Прикрепить файл">
+                                <i class="fas fa-paperclip"></i>
+                            </button>
+                            <button class="input-icon-button" id="toggle-chat-history" title="История чатов">
+                                <i class="fas fa-history"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="input-wrapper">
+                            <textarea id="message-input" placeholder="Опишите вашу ситуацию в отношениях, знакомствах или вопросы о манипуляциях..." maxlength="2000" autocomplete="off"></textarea>
+                        </div>
+                        
+                        <div class="input-actions-right">
+                            <button class="input-icon-button" id="voice-input" title="Голосовой ввод">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                            <button class="input-icon-button primary" id="send-button" title="Отправить сообщение">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         

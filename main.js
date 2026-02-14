@@ -820,48 +820,43 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     }
 
     async createNewChat() {
-    const newChatId = 'chat-' + this.chatManager.nextChatId++;
-    
-    this.chatManager.currentChatId = newChatId;
-    
-    // Сбрасываем состояние
-    this.state.conversationHistory = [this.createSystemPromptMessage()];
-    
-    this.state.messageCount = 1;
-    this.state.stats.totalMessages = 1;
-    this.state.stats.userMessages = 0;
-    this.state.stats.aiMessages = 1;
-    this.state.retryCount = 0;
-    
-    // Показываем Hero-блок
-    document.body.classList.add('chat-empty');
-    
-    // Очищаем чат и показываем Hero (ЭТО НОВЫЙ КОД)
-    this.elements.chatMessages.innerHTML = `
-        <div class="chat-hero" id="chat-hero">
-            <div class="hero-logo">
-                <i class="fas fa-heart"></i>
+        const newChatId = 'chat-' + this.chatManager.nextChatId++;
+        
+        this.chatManager.currentChatId = newChatId;
+        
+        // Сбрасываем состояние
+        this.state.conversationHistory = [this.createSystemPromptMessage()];
+        
+        this.state.messageCount = 1;
+        this.state.stats.totalMessages = 1;
+        this.state.stats.userMessages = 0;
+        this.state.stats.aiMessages = 1;
+        this.state.retryCount = 0;
+        
+        // Очищаем чат
+        this.elements.chatMessages.innerHTML = `
+            <div class="message ai-message" style="opacity: 1; transform: translateY(0);">
+                <div class="message-actions">
+                    <button class="message-action" onclick="window.verdiktApp.copyMessage('msg-initial')">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                    <button class="message-action" onclick="window.verdiktApp.speakMessage('msg-initial')">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                </div>
+                <div class="message-sender"><i class="fas fa-heart"></i> Эксперт по отношениям</div>
+                <div class="message-content">Новый чат начат! Я готов помочь с вопросами об отношениях, знакомствах и манипуляциях. Расскажите, что вас беспокоит? 💕</div>
+                <div class="message-time">${this.getCurrentTime()}</div>
             </div>
-            <h1 class="hero-title">Чем я могу помочь?</h1>
-            <div class="hero-suggestions">
-                <button class="suggestion-chip" data-question="Как распознать манипуляцию в отношениях?">
-                    Как распознать манипуляцию?
-                </button>
-                <button class="suggestion-chip" data-question="Как правильно вести себя на первом свидании?">
-                    Первое свидание: советы
-                </button>
-                <button class="suggestion-chip" data-question="Как установить здоровые границы в отношениях?">
-                    Как установить личные границы?
-                </button>
-            </div>
-        </div>
-    `;
-    
-    await this.saveChats();
-    this.showNotification('Новый чат создан 💬', 'success');
-    this.updateUI();
-    this.updateSettingsStats();
-}
+        `;
+        
+        // Сохраняем новый чат
+        await this.saveChats();
+        
+        this.showNotification('Новый чат создан 💬', 'success');
+        this.updateUI();
+        this.updateSettingsStats();
+    }
 
     async loadChat(chatId) {
         const chat = this.chatManager.chats.find(c => c.id === chatId);
@@ -1860,18 +1855,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 mode.classList.add('active');
             });
         });
-
-        document.body.addEventListener('click', (e) => {
-        const chip = e.target.closest('.suggestion-chip');
-        if (chip) {
-            e.preventDefault();
-            const question = chip.dataset.question;
-            if (question) {
-                this.elements.messageInput.value = question;
-                this.elements.messageInput.focus();
-            }
-        }
-    });
         
         // Примеры вопросов
         document.querySelectorAll('.example-button').forEach(btn => {
@@ -2062,7 +2045,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     }
 
     async sendMessage() {
-        document.body.classList.remove('chat-empty');
         const message = this.elements.messageInput.value.trim();
         
         if (!message) {
@@ -2325,36 +2307,29 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     }
 
     clearChat() {
-    if (confirm('Очистить текущий чат? Сообщения будут удалены.')) {
-        this.state.conversationHistory = [this.createSystemPromptMessage()];
-        
-        // Показываем Hero-блок
-        document.body.classList.add('chat-empty');
-        
-        this.elements.chatMessages.innerHTML = `
-            <div class="chat-hero" id="chat-hero">
-                <div class="hero-logo">
-                    <i class="fas fa-heart"></i>
+        if (confirm('Очистить текущий чат? Сообщения будут удалены.')) {
+            this.state.conversationHistory = [this.createSystemPromptMessage()];
+            
+            this.elements.chatMessages.innerHTML = `
+                <div class="message ai-message" style="opacity: 1; transform: translateY(0);">
+                    <div class="message-actions">
+                        <button class="message-action" onclick="window.verdiktApp.copyMessage('msg-initial')">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <button class="message-action" onclick="window.verdiktApp.speakMessage('msg-initial')">
+                            <i class="fas fa-volume-up"></i>
+                        </button>
+                    </div>
+                    <div class="message-sender"><i class="fas fa-heart"></i> Эксперт по отношениям</div>
+                    <div class="message-content">Чат очищен! Я готов помочь с вопросами об отношениях, знакомствах и манипуляциях. Расскажите, что вас беспокоит? 💕</div>
+                    <div class="message-time">${this.getCurrentTime()}</div>
                 </div>
-                <h1 class="hero-title">Чем я могу помочь?</h1>
-                <div class="hero-suggestions">
-                    <button class="suggestion-chip" data-question="Как распознать манипуляцию в отношениях?">
-                        Как распознать манипуляцию?
-                    </button>
-                    <button class="suggestion-chip" data-question="Как правильно вести себя на первом свидании?">
-                        Первое свидание: советы
-                    </button>
-                    <button class="suggestion-chip" data-question="Как установить здоровые границы в отношениях?">
-                        Как установить личные границы?
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        this.saveChats();
-        this.showNotification('Чат очищен 🗑️', 'info');
+            `;
+            
+            this.saveChats();
+            this.showNotification('Чат очищен 🗑️', 'info');
+        }
     }
-}
 
     setAIMode(modeId) {
         if (!this.state.aiModes[modeId]) return;

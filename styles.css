@@ -26,7 +26,7 @@
     --ios-gray: #8E8E93;
     --ios-light-gray: #F2F2F7;
     --ios-card: rgba(255, 255, 255, 0.1);
-    --primary-rgb: 236, 72, 153;
+    --primary-rgb: 236, 72, 153;  /* RGB для primary цвета */
     --secondary-rgb: 139, 92, 246;
 }
 
@@ -193,7 +193,7 @@ body {
     transform: translateY(-2px);
     box-shadow: 
         0 8px 15px rgba(var(--primary-rgb), 0.3),
-        0 0 20px rgba(var(--primary-rgb), 0.4);
+        0 0 20px rgba(var(--primary-rgb), 0.4); /* Свечение */
 }
 
 .ios-button:active {
@@ -212,7 +212,7 @@ body {
 
 .ios-button.secondary:hover {
     background: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2); /* Свечение */
 }
 
 .ios-button.tertiary {
@@ -224,7 +224,7 @@ body {
 
 .ios-button.tertiary:hover {
     background: rgba(var(--primary-rgb, 236, 72, 153), 0.1);
-    box-shadow: 0 0 15px rgba(var(--primary-rgb, 236, 72, 153), 0.3);
+    box-shadow: 0 0 15px rgba(var(--primary-rgb, 236, 72, 153), 0.3); /* Свечение */
 }
 
 .ios-button.small {
@@ -354,10 +354,11 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    background: transparent; /* Убираем фон, чтобы был однородный */
-    border-radius: 0; /* Убираем скругления */
-    box-shadow: none; /* Убираем тень */
-    border: none; /* Убираем границу */
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
     overflow: hidden;
     animation: slideInRight 0.5s ease;
 }
@@ -419,93 +420,24 @@ body {
 /* Сообщения чата */
 .chat-messages {
     flex: 1;
-    padding: 20px 20px 10px 20px;
+    padding: 20px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 20px;
-    max-height: calc(100vh - 180px); /* Динамическая высота */
+    max-height: 500px;
     scroll-behavior: smooth;
-}
-
-/* Hero-блок для пустого чата */
-.chat-hero {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    min-height: 60vh;
-    text-align: center;
-    padding: 20px;
-}
-
-.hero-logo {
-    width: 80px;
-    height: 80px;
-    background: var(--gradient);
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 36px;
-    color: white;
-    margin-bottom: 24px;
-    box-shadow: var(--glow);
-    animation: float 6s infinite ease-in-out;
-}
-
-.hero-title {
-    font-size: 2.5rem;
-    font-weight: 600;
-    margin-bottom: 32px;
-    color: var(--text-primary);
-}
-
-.hero-suggestions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    justify-content: center;
-    max-width: 700px;
-}
-
-.suggestion-chip {
-    background: var(--bg-card-light);
-    border: 1px solid var(--border-color);
-    color: var(--text-secondary);
-    padding: 10px 20px;
-    border-radius: 30px;
-    font-size: 0.95rem;
-    cursor: pointer;
-    transition: var(--transition-fast);
-    box-shadow: var(--shadow-sm);
-    backdrop-filter: blur(10px);
-}
-
-.suggestion-chip:hover {
-    background: var(--primary);
-    color: white;
-    border-color: var(--primary);
-    transform: translateY(-2px);
-    box-shadow: var(--glow);
-}
-
-/* Скрываем Hero, когда есть сообщения */
-body:not(.chat-empty) .chat-hero {
-    display: none;
 }
 
 .message {
     max-width: 80%;
-    padding: 12px 16px;
-    border-radius: 18px;
+    padding: 16px;
+    border-radius: var(--radius-md);
     line-height: 1.6;
     position: relative;
     word-wrap: break-word;
     opacity: 0;
     transform: translateY(20px);
-    box-shadow: none; /* Убираем тени у сообщений */
 }
 
 .message:hover .message-actions {
@@ -513,24 +445,26 @@ body:not(.chat-empty) .chat-hero {
 }
 
 .user-message {
+    align-self: flex-end;
     background: var(--ios-blue);
     color: white;
     border-bottom-right-radius: 4px;
 }
 
 .user-message:hover {
-    box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.4);
+    box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.4); /* Свечение */
 }
 
 .ai-message {
+    align-self: flex-start;
     background: var(--bg-card-light);
     color: var(--text-primary);
-    border: none;
     border-bottom-left-radius: 4px;
+    border: 1px solid var(--border-color);
 }
 
 .ai-message:hover {
-    box-shadow: 0 0 15px rgba(var(--secondary-rgb), 0.3);
+    box-shadow: 0 0 15px rgba(var(--secondary-rgb), 0.3); /* Свечение */
 }
 
 /* Анимации сообщений */
@@ -645,36 +579,32 @@ body:not(.chat-empty) .chat-hero {
 .message-action:hover {
     background: rgba(255, 255, 255, 0.3);
     transform: scale(1.1);
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.4); /* Свечение */
 }
 
-/* Индикатор набора текста (обновленный) */
+/* Индикатор набора текста */
 .typing-indicator {
     display: none;
     align-self: flex-start;
-    width: 80px;
-    margin: 5px 0 10px 20px;
-    animation: slideInLeft 0.3s ease;
-}
-
-.typing-skeleton {
     background: var(--bg-card-light);
-    border: none;
-    border-radius: 18px 18px 18px 4px;
-    padding: 12px 16px;
-    box-shadow: none;
+    padding: 16px;
+    border-radius: var(--radius-md);
+    border-bottom-left-radius: 4px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border-color);
+    width: 100px;
 }
 
 .typing-dots {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .typing-dots span {
     height: 10px;
     width: 10px;
-    background: var(--text-tertiary);
+    background: var(--primary);
     border-radius: 50%;
     display: inline-block;
     animation: typingBounce 1.4s infinite;
@@ -738,13 +668,10 @@ body:not(.chat-empty) .chat-hero {
 .input-container-extended {
     display: flex;
     padding: 16px 20px;
-    background: var(--bg-card-light); /* Добавил фон */
-    border-radius: 30px; /* Сильное скругление как у иконок */
-    border: 1px solid var(--border-color);
+    background: rgba(30, 41, 59, 0.9);
+    border-top: 1px solid var(--border-color);
     gap: 10px;
     align-items: center;
-    margin: 0 20px 20px 20px; /* Отступы со всех сторон */
-    backdrop-filter: blur(10px);
 }
 
 .input-actions-left {
@@ -760,26 +687,28 @@ body:not(.chat-empty) .chat-hero {
 
 #message-input {
     width: 100%;
-    padding: 12px 18px;
+    padding: 14px 18px;
     background: var(--bg-card-light);
-    border: 1px solid var(--border-color);
-    border-radius: 30px; /* Увеличил скругление */
+    border: 2px solid var(--border-color);
+    border-radius: 14px;
     font-size: 1rem;
+    font-family: 'Inter', sans-serif;
     color: var(--text-primary);
+    transition: var(--transition);
     outline: none;
     resize: none;
-    min-height: 48px;
-    max-height: 120px;
-    transition: all 0.2s ease;
+    min-height: 56px;
+    max-height: 180px;
+    line-height: 1.5;
 }
 
 #message-input:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.1);
+    border-color: var(--ios-blue);
+    box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.2);
 }
 
 #message-input:hover {
-    box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.2);
+    box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.2); /* Свечение */
 }
 
 #message-input::placeholder {
@@ -795,23 +724,23 @@ body:not(.chat-empty) .chat-hero {
 .input-icon-button {
     width: 40px;
     height: 40px;
-    border-radius: 20px; /* Круглые */
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
+    border-radius: 10px;
+    background: var(--ios-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
-    transition: all 0.2s ease;
+    font-size: 16px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .input-icon-button:hover {
-    background: var(--bg-card-light);
-    color: var(--text-primary);
+    background: rgba(var(--primary-rgb), 0.1);
     border-color: var(--primary);
-    transform: scale(1.02);
+    transform: scale(1.1);
+    box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.2);
 }
 
 .input-icon-button:active {
@@ -819,14 +748,14 @@ body:not(.chat-empty) .chat-hero {
 }
 
 .input-icon-button.primary {
-    background: var(--primary);
+    background: var(--ios-blue);
     color: white;
     border: none;
 }
 
 .input-icon-button.primary:hover {
     background: var(--primary-dark);
-    border: none;
+    box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.4);
 }
 
 /* Умные подсказки */
@@ -857,7 +786,7 @@ body:not(.chat-empty) .chat-hero {
 
 .suggestion-item:hover {
     background: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.2);
+    box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.2); /* Свечение */
 }
 
 /* Подвал */
@@ -896,7 +825,7 @@ footer {
 
 .footer-links a:hover {
     color: var(--primary-light);
-    text-shadow: 0 0 10px rgba(var(--primary-rgb), 0.5);
+    text-shadow: 0 0 10px rgba(var(--primary-rgb), 0.5); /* Свечение */
 }
 
 /* Модальные окна */
@@ -1060,7 +989,7 @@ footer {
 .modal-close:hover {
     background: rgba(255, 255, 255, 0.1);
     color: var(--text-primary);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3); /* Свечение */
 }
 
 /* Уведомления */
@@ -1458,32 +1387,27 @@ footer {
 /* Темы */
 .theme-selector {
     display: flex;
-    gap: 15px;
+    gap: 10px;
     margin-top: 12px;
 }
 
 .theme-option {
-    width: 100px;
-    height: 100px;
-    border-radius: 12px;
-    border: 2px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 2px solid transparent;
     cursor: pointer;
     transition: var(--transition);
 }
 
 .theme-option:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.3);
+    transform: scale(1.1);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3); /* Свечение */
 }
 
 .theme-option.active {
-    border-color: var(--primary);
-    box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.3);
+    border-color: var(--text-primary);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
 }
 
 .theme-dark {
@@ -1491,27 +1415,7 @@ footer {
 }
 
 .theme-deepseek {
-    background: linear-gradient(135deg, #ffffff, #f8f9fa);
-}
-
-.theme-dark i {
-    color: white;
-    font-size: 24px;
-}
-
-.theme-deepseek i {
-    color: #2d8cff;
-    font-size: 24px;
-}
-
-.theme-dark span {
-    color: white;
-    font-size: 12px;
-}
-
-.theme-deepseek span {
-    color: #1a1a1a;
-    font-size: 12px;
+    background: linear-gradient(135deg, #2d8cff, #22d3ee);
 }
 
 /* Экспорт */
@@ -1536,7 +1440,7 @@ footer {
     background: rgba(255, 255, 255, 0.1);
     border-color: var(--primary);
     transform: translateY(-4px);
-    box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.3);
+    box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.3); /* Свечение */
 }
 
 .export-icon {
@@ -1639,15 +1543,16 @@ footer {
 
 .particle {
     position: absolute;
-    width: 3px;
+    width: 3px; /* базовый размер, в JS переопределяется */
     height: 3px;
     background: rgba(var(--primary-rgb), 0.85);
     border-radius: 50%;
     opacity: 0;
     box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.7);
     mix-blend-mode: screen;
-    --tx: 100;
-    --ty: -100;
+    /* Параметры по умолчанию, которые переопределяются из JS */
+    --tx: 100;      /* смещение по X в пикселях */
+    --ty: -100;     /* смещение по Y в пикселях */
     --scale: 1;
     --alpha: 0.7;
     --duration: 6s;
@@ -2185,21 +2090,6 @@ html.low-motion .grid-pattern {
         max-height: min(500px, 50vh);
         max-height: min(500px, 50dvh);
     }
-
-    .hero-title {
-        font-size: 2rem;
-    }
-
-    .hero-logo {
-        width: 70px;
-        height: 70px;
-        font-size: 30px;
-    }
-
-    .suggestion-chip {
-        padding: 8px 16px;
-        font-size: 0.9rem;
-    }
     
     .message {
         max-width: 90%;
@@ -2387,26 +2277,6 @@ html.low-motion .grid-pattern {
         padding: 12px;
         max-height: min(400px, 45dvh);
     }
-
-    .hero-title {
-        font-size: 1.8rem;
-    }
-
-    .hero-logo {
-        width: 60px;
-        height: 60px;
-        font-size: 26px;
-        margin-bottom: 20px;
-    }
-
-    .hero-suggestions {
-        gap: 8px;
-    }
-
-    .suggestion-chip {
-        padding: 8px 14px;
-        font-size: 0.85rem;
-    }
     
     .message {
         padding: 12px;
@@ -2422,12 +2292,10 @@ html.low-motion .grid-pattern {
         gap: 8px;
     }
     
-    .input-actions-left,
-    .input-actions-right {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-}
+    .input-actions-left, .input-actions-right {
+        width: 100%;
+        justify-content: center;
+    }
     
     .input-wrapper {
         order: 1;
@@ -2509,10 +2377,6 @@ html.low-motion .grid-pattern {
     .chat-messages {
         max-height: min(350px, 40dvh);
     }
-
-    .hero-title {
-        font-size: 1.5rem;
-    }
     
     .example-buttons {
         flex-direction: column;
@@ -2528,86 +2392,4 @@ html.low-motion .grid-pattern {
         padding: 6px;
         font-size: 0.7rem;
     }
-}
-
-/* Hero-блок для пустого чата */
-.chat-hero {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    min-height: 60vh;
-    text-align: center;
-    padding: 20px;
-}
-
-.hero-logo {
-    width: 80px;
-    height: 80px;
-    background: var(--gradient);
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 36px;
-    color: white;
-    margin-bottom: 24px;
-    box-shadow: var(--glow);
-    animation: float 6s infinite ease-in-out;
-}
-
-.hero-title {
-    font-size: 2.5rem;
-    font-weight: 600;
-    margin-bottom: 32px;
-    color: var(--text-primary);
-}
-
-.hero-suggestions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    justify-content: center;
-    max-width: 700px;
-}
-
-.suggestion-chip {
-    background: var(--bg-card-light);
-    border: 1px solid var(--border-color);
-    color: var(--text-secondary);
-    padding: 10px 20px;
-    border-radius: 30px;
-    font-size: 0.95rem;
-    cursor: pointer;
-    transition: var(--transition-fast);
-    box-shadow: var(--shadow-sm);
-    backdrop-filter: blur(10px);
-}
-
-.suggestion-chip:hover {
-    background: var(--primary);
-    color: white;
-    border-color: var(--primary);
-    transform: translateY(-2px);
-    box-shadow: var(--glow);
-}
-
-/* Скрываем Hero, когда есть сообщения */
-body:not(.chat-empty) .chat-hero {
-    display: none;
-}
-
-/* Скругления для панели ввода */
-.input-container-extended {
-    border-radius: 40px !important;
-    margin: 0 20px 20px 20px !important;
-}
-
-.input-icon-button {
-    border-radius: 40px !important;
-}
-
-#message-input {
-    border-radius: 40px !important;
 }
