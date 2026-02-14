@@ -369,7 +369,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    min-height: 0;
+    min-height: 400px;
     scroll-behavior: smooth;
     background: transparent;
 }
