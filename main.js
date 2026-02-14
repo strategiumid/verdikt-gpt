@@ -213,7 +213,7 @@ export class VerdiktChatApp {
 
         // Только одна модель
         this.availableModels = [
-            { id: 'stepfun/step-3.5-flash:free', name: 'Stepfun 3.5 Flash (Бесплатно)', free: true }
+            { id: 'stepfun/step-3.5-flash:free', name: 'Verdikt GPT', free: true }
         ];
         
         // Элементы для вкладок настроек
