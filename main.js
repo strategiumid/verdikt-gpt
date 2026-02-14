@@ -12,7 +12,7 @@ export class VerdiktChatApp {
             model: 'stepfun/step-3.5-flash:free', // Только одна модель
             maxTokens: 1000,
             temperature: 0.7,
-            apiKey: "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"
+            apiKey: "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"
         };
 
         // Конфигурация собственного бэкенда для авторизации пользователей
