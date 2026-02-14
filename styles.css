@@ -283,12 +283,13 @@ body {
     overflow: hidden;
     animation: slideInRight 0.5s ease;
     position: relative;
+    height: 100%; /* Добавляем фиксированную высоту */
     min-height: 0;
 }
 
 /* Hero-блок (пустое состояние) */
 .hero-block {
-    flex: 1;
+    flex: 1 0 auto; /* Изменяем на flex-grow: 1, flex-shrink: 0, flex-basis: auto */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -362,13 +363,13 @@ body {
 
 /* Сообщения чата */
 .chat-messages {
-    flex: 1;
+    flex: 1 1 auto; /* flex-grow: 1, flex-shrink: 1, flex-basis: auto */
     padding: 20px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 20px;
-    max-height: none;
+    max-height: none; /* Убираем ограничение */
     min-height: 0;
     scroll-behavior: smooth;
     background: transparent;
@@ -532,6 +533,7 @@ body {
 
 /* Индикатор набора текста */
 .typing-indicator {
+    flex-shrink: 0; /* Не сжимается */
     display: none;
     align-self: flex-start;
     background: var(--bg-card-light);
@@ -583,14 +585,15 @@ body {
 
 /* Панель ввода */
 .input-container-extended {
+    flex-shrink: 0; /* Не сжимается */
     display: flex;
-    padding: 16px 24px;  /* Убедись, что padding-top не слишком большой */
+    padding: 16px 24px;
     background: var(--bg-card);
     border-radius: 28px 28px 0 0;
     border-top: 1px solid var(--border-color);
     gap: 12px;
     align-items: center;
-    margin-top: 0;  /* Убедись, что margin-top = 0, а не auto */
+    margin-top: 0;
 }
 
 .input-actions-left {
