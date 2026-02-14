@@ -1,4 +1,3 @@
-
 import { APIClient } from './apiClient.js';
 import { ChatStore } from './chatStore.js';
 import { UIManager } from './uiManager.js';
@@ -10,10 +9,10 @@ export class VerdiktChatApp {
     constructor() {
         this.API_CONFIG = {
             url: 'https://openrouter.ai/api/v1/chat/completions',
-            model: 'google/gemini-2.0-flash-exp:free', // Бесплатная модель по умолчанию
+            model: 'stepfun/step-3.5-flash:free', // Бесплатная модель
             maxTokens: 1000,
             temperature: 0.7,
-            apiKey: null // Будет загружено из localStorage
+            apiKey: "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"
         };
 
         // Конфигурация собственного бэкенда для авторизации пользователей
@@ -28,9 +27,7 @@ export class VerdiktChatApp {
         };
 
         this.state = {
-            conversationHistory: [
-                this.createSystemPromptMessage()
-            ],
+            conversationHistory: [],
             currentMode: 'balanced',
             aiModes: {
                 creative: { name: "Эмоциональный", temperature: 0.8, description: "Учет чувств и эмоций" },
@@ -44,6 +41,7 @@ export class VerdiktChatApp {
             isRecording: false,
             isSpeaking: false,
             isModelLoading: false,
+            instructions: '', // Добавлено для хранения инструкций
             achievements: {
                 firstMessage: { unlocked: true, name: "Первый шаг", icon: "🎯", description: "Первая консультация" },
                 activeUser: { unlocked: false, name: "Доверие", icon: "💬", description: "10 личных вопросов" },
@@ -67,20 +65,14 @@ export class VerdiktChatApp {
                 popularTopics: {},
                 totalChats: 1
             },
-            // Локальный флаг админ-режима (пока без проверки на бэкенде)
             isAdmin: false,
-            // Режим "Не беспокоить"
             doNotDisturb: false,
-            // Колесо баланса уже показано автоматически
             balanceShown: false,
-            // Фильтры и роли админа
             adminQuestionFilter: 'all',
             adminUserFilter: 'all',
             adminUserSearchQuery: '',
             adminRoles: {},
-            // Комментарии к вопросам (кеш по questionId)
             questionComments: {},
-            // Пользователь и токен авторизации
             user: null,
             authToken: null,
             currentTheme: 'dark',
@@ -129,19 +121,15 @@ export class VerdiktChatApp {
             typingIndicator: document.getElementById('typing-indicator'),
             achievementNotification: document.getElementById('achievement-notification'),
             dndToggle: document.getElementById('dnd-toggle'),
-            // Админ-режим
             adminModeToggle: document.getElementById('admin-mode-toggle'),
-            // Авторизация
             loginButton: document.getElementById('login-button'),
             authModal: document.getElementById('auth-modal'),
             authClose: document.getElementById('auth-close'),
             
-            // Навигация
             prevSlide: document.getElementById('prev-slide'),
             nextSlide: document.getElementById('next-slide'),
             exitPresentation: document.getElementById('exit-presentation'),
             
-            // Модальные окна
             settingsClose: document.getElementById('settings-close'),
             exportClose: document.getElementById('export-close'),
             exportCancel: document.getElementById('export-cancel'),
@@ -150,13 +138,8 @@ export class VerdiktChatApp {
             temperatureSlider: document.getElementById('temperature-slider'),
             temperatureValue: document.getElementById('temperature-value'),
             
-            // История чатов
             toggleChatHistory: document.getElementById('toggle-chat-history'),
-            importChatBtn: null,
-            exportChatBtn: null,
-            clearChatsBtn: null,
             
-            // Импорт/экспорт
             importModal: document.getElementById('import-modal'),
             importFileInput: document.getElementById('import-file-input'),
             importDropzone: document.getElementById('import-dropzone'),
@@ -226,6 +209,7 @@ export class VerdiktChatApp {
 
         // Список доступных моделей OpenRouter
         this.availableModels = [
+            { id: 'stepfun/step-3.5-flash:free', name: 'Stepfun 3.5 Flash (Бесплатно)', free: true },
             { id: 'google/gemini-2.0-flash-exp:free', name: 'Gemini 2.0 Flash (Бесплатно)', free: true },
             { id: 'meta-llama/llama-3.2-3b-instruct:free', name: 'Llama 3.2 3B (Бесплатно)', free: true },
             { id: 'google/gemini-2.0-flash-thinking-exp:free', name: 'Gemini 2.0 Thinking (Бесплатно)', free: true },
@@ -241,6 +225,8 @@ export class VerdiktChatApp {
     }
 
     createSystemPromptMessage() {
+        const instructions = this.state?.instructions || '';
+        
         return {
             role: "system",
             content: `Ты - Verdikt GPT, эксперт по психологии отношений, знакомств и манипуляций.
@@ -250,7 +236,70 @@ export class VerdiktChatApp {
 👥 Знакомства - советы по свиданиям, профилям
 🛡️ Манипуляции - распознавание, защита, границы
 
-Будь поддерживающим, давай практические советы, используй эмодзи умеренно.`
+${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго следуй этим правилам):\n' + instructions : ''}
+
+Будь поддерживающим, давай практические советы, используй эмодзи умеренно.
+Если пользователь спрашивает о игноре или возврате бывшей, используй эти инструкции как базу для ответов.
+Адаптируй советы под конкретную ситуацию пользователя.
+Определяй тип пользователя: если он был в роли "преследователя" (бегал, унижался, прощал измены) — объясняй, что игнор для него единственный способ стереть старую матрицу.
+Различай сигналы от бывшей: Сигнал №1 (проверка связи) и Сигнал №2 (готовность к действию).
+Предупреждай о провокациях и объясняй временную шкалу её чувств.`
+        };
+    }
+
+    async loadInstructions() {
+        try {
+            const response = await fetch('instructions.txt');
+            if (response.ok) {
+                const instructions = await response.text();
+                
+                // Сохраняем инструкции в состоянии
+                this.state.instructions = instructions;
+                
+                // Обновляем системный промпт с инструкциями
+                this.updateSystemPromptWithInstructions(instructions);
+                
+                console.log('Инструкции успешно загружены');
+                this.showNotification('Инструкции AI загружены ✅', 'success');
+            } else {
+                console.warn('Не удалось загрузить инструкции');
+                this.showNotification('Не удалось загрузить инструкции', 'warning');
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки инструкций:', error);
+            this.showNotification('Ошибка загрузки инструкций', 'error');
+        }
+    }
+
+    updateSystemPromptWithInstructions(instructions) {
+        // Создаем новый системный промпт с инструкциями
+        const systemPrompt = this.createSystemPromptMessage();
+        
+        // Обновляем системный промпт в истории
+        if (this.state.conversationHistory && this.state.conversationHistory.length > 0) {
+            this.state.conversationHistory[0] = systemPrompt;
+        } else {
+            this.state.conversationHistory = [systemPrompt];
+        }
+    }
+
+    analyzeUserType(message) {
+        const messageLower = message.toLowerCase();
+        
+        // Признаки "преследователя"
+        const pursuitIndicators = [
+            'бегал', 'унижал', 'прощал измены', 'умолял', 'выпрашивал',
+            'писал первым', 'звонил', 'добивался', 'уговоры', 'доказательства',
+            'унижался', 'бегаю', 'унижаюсь', 'прощаю измены'
+        ];
+        
+        let isPursuer = pursuitIndicators.some(indicator => messageLower.includes(indicator));
+        
+        return {
+            isPursuer,
+            advice: isPursuer ? 
+                'Ты был в роли преследователя. Сейчас тебе нужно полностью стереть старую матрицу и начать с чистого листа, но уже в новой роли. Игнор для тебя — единственный способ.' : 
+                'Твоя позиция не выглядит как классическое преследование, но стратегия игнора всё равно работает на укрепление твоих позиций.'
         };
     }
 
@@ -264,6 +313,10 @@ export class VerdiktChatApp {
         this.setupAdminMode();
         this.setupSpeechRecognition();
         this.setupBackgroundAnimations();
+        
+        // Загружаем инструкции
+        await this.loadInstructions();
+        
         this.updateUI();
         this.checkApiStatus(); // Проверяем статус API
         this.setupKeyboardShortcuts();
@@ -312,12 +365,14 @@ export class VerdiktChatApp {
         if (savedApiKey) {
             this.API_CONFIG.apiKey = savedApiKey;
         } else {
-            this.API_CONFIG.apiKey = null;
+            this.API_CONFIG.apiKey = "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";
         }
         
         const savedModel = localStorage.getItem('verdikt_openrouter_model');
         if (savedModel) {
             this.API_CONFIG.model = savedModel;
+        } else {
+            this.API_CONFIG.model = "stepfun/step-3.5-flash:free";
         }
     }
 
@@ -772,19 +827,7 @@ export class VerdiktChatApp {
         this.chatManager.currentChatId = newChatId;
         
         // Сбрасываем состояние
-        this.state.conversationHistory = [
-            {
-                role: "system",
-                content: `Ты - Verdikt GPT, эксперт по психологии отношений, знакомств и манипуляций.
-Отвечай на русском языке дружелюбно, но профессионально.
-Специализация:
-💕 Отношения - конфликты, общение, восстановление
-👥 Знакомства - советы по свиданиям, профилям
-🛡️ Манипуляции - распознавание, защита, границы
-
-Будь поддерживающим, давай практические советы, используй эмодзи умеренно.`
-            }
-        ];
+        this.state.conversationHistory = [this.createSystemPromptMessage()];
         
         this.state.messageCount = 1;
         this.state.stats.totalMessages = 1;
@@ -829,17 +872,7 @@ export class VerdiktChatApp {
         
         // Восстанавливаем историю
         this.state.conversationHistory = [
-            {
-                role: "system",
-                content: `Ты - Verdikt GPT, эксперт по психологии отношений, знакомств и манипуляций.
-Отвечай на русском языке дружелюбно, но профессионально.
-Специализация:
-💕 Отношения - конфликты, общение, восстановление
-👥 Знакомства - советы по свиданиям, профилям
-🛡️ Манипуляции - распознавание, защита, границы
-
-Будь поддерживающим, давай практические советы, используй эмодзи умеренно.`
-            },
+            this.createSystemPromptMessage(),
             ...chat.messages
         ];
         
@@ -1425,12 +1458,7 @@ export class VerdiktChatApp {
             this.encryptionState.isLocked = true;
             this.encryptionState.password = null;
             
-            this.state.conversationHistory = [
-                {
-                    role: "system",
-                    content: `Ты - Verdikt GPT, эксперт по психологии отношений...`
-                }
-            ];
+            this.state.conversationHistory = [this.createSystemPromptMessage()];
             
             this.showNotification('Приложение заблокировано 🔒', 'info');
             this.showLockScreen();
@@ -2010,6 +2038,15 @@ export class VerdiktChatApp {
         // Импорт/экспорт
         this.setupImportListeners();
         this.setupExportListeners();
+
+        // Кнопка перезагрузки инструкций
+        const reloadInstructionsBtn = document.getElementById('reload-instructions');
+        if (reloadInstructionsBtn) {
+            reloadInstructionsBtn.addEventListener('click', async () => {
+                await this.loadInstructions();
+                this.showNotification('Инструкции успешно обновлены ✅', 'success');
+            });
+        }
     }
 
     async sendMessage() {
@@ -2046,7 +2083,15 @@ export class VerdiktChatApp {
         }
         
         this.addMessage(message, 'user');
-        this.state.conversationHistory.push({ role: "user", content: message });
+        
+        // Анализируем тип пользователя и добавляем это в контекст
+        const userAnalysis = this.analyzeUserType(message);
+        
+        // Добавляем анализ в сообщение пользователя для контекста
+        const enhancedMessage = message + (userAnalysis.isPursuer ? 
+            '\n\n[Контекст: Пользователь описывает себя как бывшего преследователя. Учти это в ответе.]' : '');
+        
+        this.state.conversationHistory.push({ role: "user", content: enhancedMessage });
         this.state.messageCount++;
         this.state.stats.totalMessages++;
         this.state.stats.userMessages++;
@@ -2140,7 +2185,8 @@ export class VerdiktChatApp {
             'уважен', 'достоинств', 'самооцен', 'психологическ',
             'психолог', 'эмоц', 'чувств', 'общен', 'коммуникац',
             'довери', 'уважен', 'пониман', 'поддерж', 'совет',
-            'помощ', 'консультац', 'эксперт', 'специалист'
+            'помощ', 'консультац', 'эксперт', 'специалист',
+            'игнор', 'бывшая', 'вернуть', 'преследователь', 'слив'
         ];
         
         return relevantTopics.some(topic => messageLower.includes(topic));
@@ -2165,6 +2211,10 @@ export class VerdiktChatApp {
         
         if (messageLower.includes('знакомств') || messageLower.includes('свидан') || messageLower.includes('тинд')) {
             this.state.stats.datingAdvice++;
+        }
+
+        if (messageLower.includes('игнор') || messageLower.includes('бывшая') || messageLower.includes('вернуть')) {
+            this.state.stats.relationshipAdvice++;
         }
     }
 
@@ -2263,19 +2313,7 @@ export class VerdiktChatApp {
 
     clearChat() {
         if (confirm('Очистить текущий чат? Сообщения будут удалены.')) {
-            this.state.conversationHistory = [
-                {
-                    role: "system",
-                    content: `Ты - Verdikt GPT, эксперт по психологии отношений, знакомств и манипуляций.
-Отвечай на русском языке дружелюбно, но профессионально.
-Специализация:
-💕 Отношения - конфликты, общение, восстановление
-👥 Знакомства - советы по свиданиям, профилям
-🛡️ Манипуляции - распознавание, защита, границы
-
-Будь поддерживающим, давай практические советы, используй эмодзи умеренно.`
-                }
-            ];
+            this.state.conversationHistory = [this.createSystemPromptMessage()];
             
             this.elements.chatMessages.innerHTML = `
                 <div class="message ai-message" style="opacity: 1; transform: translateY(0);">
@@ -4784,7 +4822,7 @@ export class VerdiktChatApp {
         if (!this.dashboard || !this.dashboard.questions || this.dashboard.questions.length === 0) {
             adminList.innerHTML = `
                 <div class="question-card" style="text-align: center; padding: 40px;">
-                    <i class="fas fa-tasks" style="font-size: 3rem; color: var(--text-terтиary); margin-bottom: 20px;"></i>
+                    <i class="fas fa-tasks" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
                     <h4>Пока нет вопросов</h4>
                     <p style="color: var(--text-tertiary);">После появления вопросов вы сможете управлять ими здесь</p>
                 </div>
