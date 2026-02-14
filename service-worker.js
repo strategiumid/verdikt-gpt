@@ -37,7 +37,11 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-    // Пропускаем запросы к API
+    // Не кэшировать запросы к нашему бэкенду (чтобы лайки/дизлайки не «пропадали» после обновления)
+    if (event.request.url.includes('/api/')) {
+        return;
+    }
+    // Пропускаем запросы к внешним API
     if (event.request.url.includes('api-inference.huggingface.co')) {
         return;
     }

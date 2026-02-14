@@ -1,0 +1,378 @@
+export class APIClient {
+    constructor(app) {
+        this.app = app;
+    }
+
+    get apiConfig() {
+        return this.app.API_CONFIG;
+    }
+
+    get authConfig() {
+        return this.app.AUTH_CONFIG;
+    }
+
+    get state() {
+        return this.app.state;
+    }
+
+    get elements() {
+        return this.app.elements;
+    }
+
+    get availableModels() {
+        return this.app.availableModels;
+    }
+
+    getAuthHeaders() {
+        return this.app.getAuthHeaders();
+    }
+
+    // ===== OpenRouter =====
+
+    async getAIResponse(messages) {
+        if (!this.apiConfig.apiKey) {
+            throw new Error('API ключ не настроен. Пожалуйста, добавьте ключ OpenRouter в настройках.');
+        }
+
+        try {
+            const response = await fetch(this.apiConfig.url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.apiConfig.apiKey}`,
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': 'https://verdikt-gpt.local',
+                    'X-Title': 'Verdikt GPT'
+                },
+                body: JSON.stringify({
+                    model: this.apiConfig.model,
+                    messages: messages,
+                    max_tokens: this.apiConfig.maxTokens,
+                    temperature: this.apiConfig.temperature,
+                    stream: false
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('OpenRouter API Error:', errorData);
+                
+                let errorMessage = "Ошибка API: ";
+                if (errorData.error?.message) {
+                    errorMessage += errorData.error.message;
+                } else if (response.status === 401) {
+                    errorMessage = "Неверный API ключ. Проверьте ключ в настройках.";
+                } else if (response.status === 429) {
+                    errorMessage = "Превышен лимит запросов. Попробуйте позже.";
+                } else if (response.status === 402) {
+                    errorMessage = "Недостаточно средств на балансе. Пополните счёт на OpenRouter.";
+                } else {
+                    errorMessage += `HTTP ${response.status}`;
+                }
+                
+                throw new Error(errorMessage);
+            }
+
+            const data = await response.json();
+            
+            if (!data.choices || !data.choices[0]?.message?.content) {
+                throw new Error('Неверный формат ответа от API');
+            }
+            
+            return data.choices[0].message.content.trim();
+            
+        } catch (error) {
+            console.error('Error in getAIResponse:', error);
+            
+            if (error.message.includes('API ключ') || error.message.includes('401')) {
+                throw new Error('Пожалуйста, настройте API ключ OpenRouter в настройках приложения.');
+            }
+            
+            throw error;
+        }
+    }
+
+    async checkApiStatus() {
+        if (!this.apiConfig.apiKey) {
+            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> API ключ не настроен';
+            this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
+            this.elements.apiStatus.style.color = '#f87171';
+            this.app.showNotification('Добавьте API ключ OpenRouter в настройках', 'warning');
+            this.state.isApiConnected = false;
+            return;
+        }
+
+        this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> Проверка API ключа...';
+        this.elements.apiStatus.classList.add('api-connecting');
+        
+        try {
+            const response = await fetch('https://openrouter.ai/api/v1/auth/key', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${this.apiConfig.apiKey}`
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const selectedModel = this.availableModels.find(m => m.id === this.apiConfig.model);
+                const modelName = selectedModel ? selectedModel.name : this.apiConfig.model;
+                
+                this.elements.apiStatus.innerHTML = `<i class="fas fa-circle"></i> ${modelName}`;
+                this.elements.apiStatus.classList.remove('api-connecting');
+                this.elements.apiStatus.classList.add('api-connected');
+                this.state.isApiConnected = true;
+                
+                if (data.data?.credits) {
+                    const credits = data.data.credits;
+                    this.app.showNotification(`API ключ активен. Баланс: $${credits.toFixed(2)}`, 'success');
+                    
+                    if (credits < 0.5 && !selectedModel.free) {
+                        this.elements.apiStatus.classList.add('balance-warning');
+                    }
+                } else {
+                    this.app.showNotification('API ключ проверен и активен ✅', 'success');
+                }
+            } else {
+                throw new Error(`HTTP ${response.status}`);
+            }
+        } catch (error) {
+            console.error('API check error:', error);
+            
+            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API ключа';
+            this.elements.apiStatus.classList.remove('api-connecting');
+            this.elements.apiStatus.classList.add('api-error');
+            this.state.isApiConnected = false;
+            this.app.showNotification('Не удалось проверить API ключ. Проверьте его правильность.', 'error');
+        }
+    }
+
+    // ===== Вопросы / дашборд =====
+
+    async loadDashboardData() {
+        try {
+            let questions = [];
+            if (this.state.user) {
+                try {
+                    const url = `${this.authConfig.baseUrl}/api/questions`;
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (Array.isArray(data)) {
+                            questions = data.map(q => ({
+                                id: q.id,
+                                user: {
+                                    name: q.authorName || q.authorEmail || 'Пользователь',
+                                    email: q.authorEmail || '',
+                                    avatar: '👤'
+                                },
+                                content: q.content,
+                                date: q.createdAt,
+                                likes: q.likesCount ?? 0,
+                                dislikes: q.dislikesCount ?? 0,
+                                comments: q.commentsCount ?? 0,
+                                isLiked: q.isLiked ?? false,
+                                isDisliked: q.isDisliked ?? false
+                            }));
+                        }
+                    } else if (response.status !== 404) {
+                        console.warn('Не удалось загрузить вопросы с бэкенда', response.status);
+                    }
+                } catch (e) {
+                    console.error('Error fetching questions from backend:', e);
+                }
+            }
+
+            this.app.dashboard = {
+                questions,
+                stories: this.app.chatManager.chats.map(chat => ({
+                    id: chat.id,
+                    title: chat.title,
+                    preview: chat.messages && chat.messages.length > 0 
+                        ? chat.messages[0].content.substring(0, 100) + '...'
+                        : 'Нет сообщений',
+                    date: new Date(chat.timestamp),
+                    messageCount: chat.messages ? chat.messages.length : 0,
+                    likes: Math.floor(Math.random() * 20),
+                    comments: Math.floor(Math.random() * 10)
+                })),
+                analytics: {
+                    totalResponses: this.state.stats.aiMessages || 0,
+                    helpfulResponses: (this.state.stats.relationshipAdvice || 0)
+                        + (this.state.stats.manipulationRequests || 0)
+                        + (this.state.stats.datingAdvice || 0),
+                    averageRating: 0,
+                    activity: this.app.generateActivityData()
+                }
+            };
+            
+            this.app.renderDashboardData();
+            this.app.updateSidebarStats();
+            
+        } catch (error) {
+            console.error('Error loading dashboard data:', error);
+        }
+    }
+
+    async submitDashboardQuestion(content) {
+        if (!this.state.user) {
+            this.app.showNotification('Войдите в аккаунт, чтобы задать вопрос', 'warning');
+            return;
+        }
+
+        const trimmed = (content || '').trim();
+        if (!trimmed) {
+            this.app.showNotification('Введите текст вопроса', 'warning');
+            return;
+        }
+
+        try {
+            const url = `${this.authConfig.baseUrl}/api/questions`;
+            const response = await fetch(url, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
+                body: JSON.stringify({ content: trimmed })
+            });
+
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                const message = error.message || `Не удалось отправить вопрос (HTTP ${response.status})`;
+                throw new Error(message);
+            }
+
+            const question = await response.json();
+            const mapped = {
+                id: question.id,
+                user: {
+                    name: question.authorName || question.authorEmail || (this.state.user.name || this.state.user.email || 'Пользователь'),
+                    email: question.authorEmail || this.state.user.email || '',
+                    avatar: '👤'
+                },
+                content: question.content,
+                date: question.createdAt,
+                likes: question.likesCount ?? 0,
+                dislikes: question.dislikesCount ?? 0,
+                comments: question.commentsCount ?? 0,
+                isLiked: question.isLiked ?? false,
+                isDisliked: question.isDisliked ?? false
+            };
+
+            if (!this.app.dashboard) {
+                this.app.dashboard = { questions: [], stories: [], analytics: { activity: [] } };
+            }
+
+            this.app.dashboard.questions = [mapped, ...(this.app.dashboard.questions || [])];
+            this.app.renderQuestions();
+            this.app.updateSidebarStats();
+            this.app.showNotification('Вопрос отправлен', 'success');
+        } catch (error) {
+            console.error('submitDashboardQuestion error:', error);
+            this.app.showNotification(error.message || 'Не удалось отправить вопрос', 'error');
+        }
+    }
+
+    async setQuestionReaction(questionId, type) {
+        if (!this.state.user) return;
+        try {
+            const url = `${this.authConfig.baseUrl}/api/questions/${questionId}/reaction`;
+            const res = await fetch(url, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
+                body: JSON.stringify({ type })
+            });
+            if (!res.ok) throw new Error('Не удалось отправить реакцию');
+            const q = await res.json();
+            const question = this.app.dashboard?.questions?.find(x => String(x.id) === String(questionId));
+            if (question) {
+                question.likes = q.likesCount ?? question.likes;
+                question.dislikes = q.dislikesCount ?? question.dislikes;
+                question.isLiked = q.isLiked ?? false;
+                question.isDisliked = q.isDisliked ?? false;
+            }
+            this.app.renderQuestions();
+            this.app.updateSidebarStats();
+        } catch (e) {
+            this.app.showNotification(e.message || 'Ошибка реакции', 'error');
+        }
+    }
+
+    async submitQuestionComment(questionId, content) {
+        if (!this.state.user) return;
+        try {
+            const trimmed = (content || '').trim();
+            if (!trimmed) {
+                this.app.showNotification('Введите текст комментария', 'warning');
+                return;
+            }
+
+            const url = `${this.authConfig.baseUrl}/api/questions/${questionId}/comments`;
+            const res = await fetch(url, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
+                body: JSON.stringify({ content: trimmed })
+            });
+            if (!res.ok) throw new Error('Не удалось отправить комментарий');
+            const question = this.app.dashboard?.questions?.find(x => String(x.id) === String(questionId));
+            if (question) question.comments = (question.comments || 0) + 1;
+
+            if (this.state.questionComments && this.state.questionComments[questionId]) {
+                this.state.questionComments[questionId] = null;
+            }
+
+            this.app.renderQuestions();
+            this.app.updateSidebarStats();
+            this.app.showNotification('Комментарий добавлен', 'success');
+        } catch (e) {
+            this.app.showNotification(e.message || 'Ошибка отправки комментария', 'error');
+        }
+    }
+
+    async loadQuestionComments(questionId, force = false) {
+        if (!this.state.questionComments) {
+            this.state.questionComments = {};
+        }
+
+        if (!force && this.state.questionComments[questionId]) {
+            return this.state.questionComments[questionId];
+        }
+
+        let comments = [];
+
+        try {
+            const url = `${this.authConfig.baseUrl}/api/questions/${questionId}/comments`;
+            const res = await fetch(url, {
+                method: 'GET',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() }
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    comments = data.map(c => ({
+                        id: c.id,
+                        authorName: c.authorName || c.authorEmail || 'Пользователь',
+                        authorEmail: c.authorEmail || '',
+                        content: c.content || '',
+                        createdAt: c.createdAt || c.created_at || null
+                    }));
+                }
+            } else if (res.status !== 404) {
+                console.warn('Не удалось загрузить комментарии', res.status);
+            }
+        } catch (e) {
+            console.error('Error loading question comments:', e);
+        }
+
+        this.state.questionComments[questionId] = comments;
+        return comments;
+    }
+}
+

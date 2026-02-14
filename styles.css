@@ -308,6 +308,11 @@ body {
     transition: var(--transition);
 }
 
+.status-indicator.dnd-active {
+    background: rgba(148, 163, 184, 0.15);
+    color: #9ca3af;
+}
+
 .status-indicator:hover {
     box-shadow: 0 0 15px rgba(34, 197, 94, 0.3);
 }
@@ -433,7 +438,6 @@ body {
     word-wrap: break-word;
     opacity: 0;
     transform: translateY(20px);
-    animation: messageAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .message:hover .message-actions {
@@ -461,6 +465,49 @@ body {
 
 .ai-message:hover {
     box-shadow: 0 0 15px rgba(var(--secondary-rgb), 0.3); /* Свечение */
+}
+
+/* Анимации сообщений */
+.user-message {
+    animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.ai-message {
+    animation: slideInLeft 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.message.error-message {
+    animation: shakeMessage 0.4s ease;
+}
+
+@keyframes slideInRight {
+    0% {
+        opacity: 0;
+        transform: translate3d(40px, 10px, 0);
+    }
+    100% {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@keyframes slideInLeft {
+    0% {
+        opacity: 0;
+        transform: translate3d(-40px, 10px, 0);
+    }
+    100% {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@keyframes shakeMessage {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-4px); }
+    40% { transform: translateX(4px); }
+    60% { transform: translateX(-3px); }
+    80% { transform: translateX(3px); }
 }
 
 .message-sender {
@@ -916,6 +963,11 @@ footer {
     transform: translateY(0) scale(1);
 }
 
+/* Колесо баланса */
+#balance-chart {
+    max-width: 100%;
+}
+
 .modal-close {
     position: absolute;
     top: 18px;
@@ -1119,6 +1171,84 @@ footer {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 12px;
     margin-top: 12px;
+}
+
+/* Дерево навыков (RPG-style) */
+.skills-tree {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-top: 10px;
+}
+
+.skills-branch {
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    padding: 12px 14px;
+}
+
+.skills-branch-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+    color: var(--text-secondary);
+}
+
+.skills-branch-title small {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+}
+
+.skills-nodes {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+}
+
+.skills-nodes::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 4px;
+    bottom: 4px;
+    border-left: 1px dashed rgba(148, 163, 184, 0.6);
+}
+
+.skill-node {
+    position: relative;
+    padding: 6px 10px 6px 24px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    color: var(--text-secondary);
+    cursor: default;
+}
+
+.skill-node::before {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(148, 163, 184, 1);
+    left: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.skill-node.unlocked {
+    background: rgba(236, 72, 153, 0.18);
+    border-color: rgba(236, 72, 153, 0.6);
+    color: var(--text-primary);
+}
+
+.skill-node.unlocked::before {
+    background: #ec4899;
 }
 
 .achievement-item-settings {
@@ -1427,8 +1557,15 @@ footer {
     --alpha: 0.7;
     --duration: 6s;
     animation: 
-        particleFlow var(--duration) linear infinite,
+        particleFlow var(--duration) linear,
         particlePulse 4s ease-in-out infinite;
+}
+
+/* Подсветка области ввода при drag & drop файла */
+.input-container-extended.drag-over {
+    outline: 2px dashed rgba(236, 72, 153, 0.8);
+    outline-offset: 4px;
+    background: rgba(236, 72, 153, 0.05);
 }
 
 /* Основное движение частицы */

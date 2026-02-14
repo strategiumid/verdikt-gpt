@@ -1,20 +1,18 @@
-// main.js - Полная версия с системой истории чатов и OpenRouter API
-document.addEventListener('DOMContentLoaded', function() {
-    hljs.highlightAll();
-    
-    window.verdiktApp = new VerdiktChatApp();
-    window.verdiktApp.init();
-});
+import { APIClient } from './apiClient.js';
+import { ChatStore } from './chatStore.js';
+import { UIManager } from './uiManager.js';
+import { EncryptionService } from './encryptionService.js';
+import { AuthService } from './authService.js';
 
 // Основной класс приложения
-class VerdiktChatApp {
+export class VerdiktChatApp {
     constructor() {
         this.API_CONFIG = {
             url: 'https://openrouter.ai/api/v1/chat/completions',
-            model: 'google/gemini-2.0-flash-exp:free', // Бесплатная модель по умолчанию
+            model: 'stepfun/step-3.5-flash:free', // Только одна модель
             maxTokens: 1000,
             temperature: 0.7,
-            apiKey: null // Будет загружено из localStorage
+            apiKey: "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"
         };
 
         // Конфигурация собственного бэкенда для авторизации пользователей
@@ -23,24 +21,13 @@ class VerdiktChatApp {
             endpoints: {
                 register: '/api/auth/register',
                 login: '/api/auth/login',
-                me: '/api/auth/me'
+                me: '/api/auth/me',
+                logout: '/api/auth/logout'
             }
         };
 
         this.state = {
-            conversationHistory: [
-                {
-                    role: "system",
-                    content: `Ты - Verdikt GPT, эксперт по психологии отношений, знакомств и манипуляций.
-Отвечай на русском языке дружелюбно, но профессионально.
-Специализация:
-💕 Отношения - конфликты, общение, восстановление
-👥 Знакомства - советы по свиданиям, профилям
-🛡️ Манипуляции - распознавание, защита, границы
-
-Будь поддерживающим, давай практические советы, используй эмодзи умеренно.`
-                }
-            ],
+            conversationHistory: [],
             currentMode: 'balanced',
             aiModes: {
                 creative: { name: "Эмоциональный", temperature: 0.8, description: "Учет чувств и эмоций" },
@@ -54,6 +41,8 @@ class VerdiktChatApp {
             isRecording: false,
             isSpeaking: false,
             isModelLoading: false,
+            instructions: '', // Хранилище для инструкций
+            instructionsLoaded: false, // Флаг загрузки инструкций
             achievements: {
                 firstMessage: { unlocked: true, name: "Первый шаг", icon: "🎯", description: "Первая консультация" },
                 activeUser: { unlocked: false, name: "Доверие", icon: "💬", description: "10 личных вопросов" },
@@ -77,9 +66,14 @@ class VerdiktChatApp {
                 popularTopics: {},
                 totalChats: 1
             },
-            // Локальный флаг админ-режима (пока без проверки на бэкенде)
             isAdmin: false,
-            // Пользователь и токен авторизации
+            doNotDisturb: false,
+            balanceShown: false,
+            adminQuestionFilter: 'all',
+            adminUserFilter: 'all',
+            adminUserSearchQuery: '',
+            adminRoles: {},
+            questionComments: {},
             user: null,
             authToken: null,
             currentTheme: 'dark',
@@ -91,8 +85,6 @@ class VerdiktChatApp {
         };
 
         this.crypto = new VerdiktCrypto();
-
-        this._loginClickListener = null;
         
         this.encryptionState = {
             enabled: false,
@@ -129,19 +121,16 @@ class VerdiktChatApp {
             smartSuggestions: document.getElementById('smart-suggestions'),
             typingIndicator: document.getElementById('typing-indicator'),
             achievementNotification: document.getElementById('achievement-notification'),
-            // Админ-режим
+            dndToggle: document.getElementById('dnd-toggle'),
             adminModeToggle: document.getElementById('admin-mode-toggle'),
-            // Авторизация
             loginButton: document.getElementById('login-button'),
             authModal: document.getElementById('auth-modal'),
             authClose: document.getElementById('auth-close'),
             
-            // Навигация
             prevSlide: document.getElementById('prev-slide'),
             nextSlide: document.getElementById('next-slide'),
             exitPresentation: document.getElementById('exit-presentation'),
             
-            // Модальные окна
             settingsClose: document.getElementById('settings-close'),
             exportClose: document.getElementById('export-close'),
             exportCancel: document.getElementById('export-cancel'),
@@ -150,13 +139,8 @@ class VerdiktChatApp {
             temperatureSlider: document.getElementById('temperature-slider'),
             temperatureValue: document.getElementById('temperature-value'),
             
-            // История чатов
             toggleChatHistory: document.getElementById('toggle-chat-history'),
-            importChatBtn: null,
-            exportChatBtn: null,
-            clearChatsBtn: null,
             
-            // Импорт/экспорт
             importModal: document.getElementById('import-modal'),
             importFileInput: document.getElementById('import-file-input'),
             importDropzone: document.getElementById('import-dropzone'),
@@ -208,28 +192,122 @@ class VerdiktChatApp {
             // Настройки профиля элементы
             profileSettingsModal: document.getElementById('profile-settings-modal'),
             profileSettingsClose: document.getElementById('profile-settings-close'),
-            profileSettingsForm: document.getElementById('profile-settings-form')
+            profileSettingsForm: document.getElementById('profile-settings-form'),
+            
+            // Кнопка перезагрузки инструкций
+            reloadInstructions: document.getElementById('reload-instructions')
         };
 
         this.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         this.speechSynthesis = window.speechSynthesis;
         this.recognition = null;
         this.activityChart = null;
+        this.balanceChart = null;
 
-        // Список доступных моделей OpenRouter
+        // Сервисы
+        this.apiClient = new APIClient(this);
+        this.chatStore = new ChatStore(this);
+        this.uiManager = new UIManager(this);
+        this.encryptionService = new EncryptionService(this);
+        this.authService = new AuthService(this);
+
+        // Только одна модель
         this.availableModels = [
-            { id: 'google/gemini-2.0-flash-exp:free', name: 'Gemini 2.0 Flash (Бесплатно)', free: true },
-            { id: 'meta-llama/llama-3.2-3b-instruct:free', name: 'Llama 3.2 3B (Бесплатно)', free: true },
-            { id: 'google/gemini-2.0-flash-thinking-exp:free', name: 'Gemini 2.0 Thinking (Бесплатно)', free: true },
-            { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', free: false },
-            { id: 'openai/gpt-4o', name: 'GPT-4o', free: false },
-            { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', free: false },
-            { id: 'google/gemini-2.0-flash', name: 'Gemini 2.0 Flash', free: false }
+            { id: 'stepfun/step-3.5-flash:free', name: 'Verdikt GPT', free: true }
         ];
         
         // Элементы для вкладок настроек
         this.settingsTabs = null;
         this.settingsTabContents = null;
+    }
+
+    createSystemPromptMessage() {
+        const instructions = this.state?.instructions || '';
+        
+        return {
+            role: "system",
+            content: `Ты - Verdikt GPT, эксперт по психологии отношений, знакомств и манипуляций.
+Отвечай на русском языке дружелюбно, но профессионально.
+Специализация:
+💕 Отношения - конфликты, общение, восстановление
+👥 Знакомства - советы по свиданиям, профилям
+🛡️ Манипуляции - распознавание, защита, границы
+
+${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго следуй этим правилам):\n' + instructions : ''}
+
+Будь поддерживающим, давай практические советы, используй эмодзи умеренно.
+Если пользователь спрашивает о игноре или возврате бывшей, используй эти инструкции как базу для ответов.
+Адаптируй советы под конкретную ситуацию пользователя.
+Определяй тип пользователя: если он был в роли "преследователя" (бегал, унижался, прощал измены) — объясняй, что игнор для него единственный способ стереть старую матрицу.
+Различай сигналы от бывшей: Сигнал №1 (проверка связи) и Сигнал №2 (готовность к действию).
+Предупреждай о провокациях и объясняй временную шкалу её чувств.`
+        };
+    }
+
+    async loadInstructions() {
+        try {
+            console.log('Загрузка инструкций из instructions.txt...');
+            const response = await fetch('instructions.txt?t=' + Date.now()); // Кэш-бастер
+            if (response.ok) {
+                const instructions = await response.text();
+                
+                // Сохраняем инструкции в состоянии
+                this.state.instructions = instructions;
+                this.state.instructionsLoaded = true;
+                
+                // Обновляем системный промпт с инструкциями
+                this.updateSystemPromptWithInstructions(instructions);
+                
+                console.log('✅ Инструкции успешно загружены, длина:', instructions.length);
+                
+                // Показываем уведомление только если это не первый запуск
+                if (this.state.messageCount > 1) {
+                    this.showNotification('Инструкции AI обновлены 📚', 'success');
+                }
+                
+                return true;
+            } else {
+                console.warn('❌ Не удалось загрузить инструкции, статус:', response.status);
+                this.state.instructionsLoaded = false;
+                return false;
+            }
+        } catch (error) {
+            console.error('❌ Ошибка загрузки инструкций:', error);
+            this.state.instructionsLoaded = false;
+            return false;
+        }
+    }
+
+    updateSystemPromptWithInstructions(instructions) {
+        // Создаем новый системный промпт с инструкциями
+        const systemPrompt = this.createSystemPromptMessage();
+        
+        // Обновляем системный промпт в истории
+        if (this.state.conversationHistory && this.state.conversationHistory.length > 0) {
+            this.state.conversationHistory[0] = systemPrompt;
+        } else {
+            this.state.conversationHistory = [systemPrompt];
+        }
+    }
+
+    analyzeUserType(message) {
+        const messageLower = message.toLowerCase();
+        
+        // Признаки "преследователя"
+        const pursuitIndicators = [
+            'бегал', 'унижал', 'прощал измены', 'умолял', 'выпрашивал',
+            'писал первым', 'звонил', 'добивался', 'уговоры', 'доказательства',
+            'унижался', 'бегаю', 'унижаюсь', 'прощаю измены'
+        ];
+        
+        let isPursuer = pursuitIndicators.some(indicator => messageLower.includes(indicator));
+        
+        return {
+            isPursuer,
+            advice: isPursuer ? 
+                'Ты был в роли преследователя. Сейчас тебе нужно полностью стереть старую матрицу и начать с чистого листа, но уже в новой роли. Игнор для тебя — единственный способ.' : 
+                'Твоя позиция не выглядит как классическое преследование, но стратегия игнора всё равно работает на укрепление твоих позиций.'
+        };
     }
 
     async init() {
@@ -238,11 +316,16 @@ class VerdiktChatApp {
         this.setupEventListeners();
         this.loadFromLocalStorage();
         this.loadUserFromStorage();
+        await this.restoreSession();
         this.setupAdminMode();
         this.setupSpeechRecognition();
         this.setupBackgroundAnimations();
+        
+        // Загружаем инструкции при старте (автозагрузка)
+        await this.loadInstructions();
+        
         this.updateUI();
-        this.checkApiStatus(); // Проверяем статус API
+        await this.checkApiStatus(); // Проверяем статус API
         this.setupKeyboardShortcuts();
         this.setupServiceWorker();
         this.setupSettingsTabs();
@@ -260,6 +343,14 @@ class VerdiktChatApp {
         // Загружаем историю чатов
         await this.loadChats();
         
+        // Тема: для авторизованных — с бэкенда, иначе из localStorage
+        if (this.state.user) {
+            await this.loadUserSettings();
+        } else {
+            const savedTheme = localStorage.getItem('verdikt_theme');
+            if (savedTheme) this.setTheme(savedTheme);
+        }
+
         // Статистика
         const currentHour = new Date().getHours();
         this.state.stats.activityByHour[currentHour]++;
@@ -272,34 +363,29 @@ class VerdiktChatApp {
         // Автосохранение
         this.startAutoSave();
         
-        console.log('Verdikt GPT с OpenRouter API и обновленным интерфейсом инициализирован');
+        console.log('✅ Verdikt GPT с OpenRouter API инициализирован');
+        console.log('📚 Инструкции загружены:', this.state.instructionsLoaded);
     }
 
-    // ==================== OPENROTER API ФУНКЦИИ ====================
+    // ==================== OPENROUTER API ФУНКЦИИ ====================
 
     loadApiKey() {
         const savedApiKey = localStorage.getItem('verdikt_openrouter_api_key');
         if (savedApiKey) {
             this.API_CONFIG.apiKey = savedApiKey;
         } else {
-            this.API_CONFIG.apiKey = null;
+            this.API_CONFIG.apiKey = "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";
         }
         
-        const savedModel = localStorage.getItem('verdikt_openrouter_model');
-        if (savedModel) {
-            this.API_CONFIG.model = savedModel;
-        }
+        // Фиксированная модель - всегда stepfun/step-3.5-flash:free
+        this.API_CONFIG.model = "stepfun/step-3.5-flash:free";
+        localStorage.setItem('verdikt_openrouter_model', this.API_CONFIG.model);
     }
 
-    saveApiKey(apiKey, model = null) {
+    saveApiKey(apiKey) {
         if (apiKey) {
             localStorage.setItem('verdikt_openrouter_api_key', apiKey);
             this.API_CONFIG.apiKey = apiKey;
-        }
-        
-        if (model) {
-            localStorage.setItem('verdikt_openrouter_model', model);
-            this.API_CONFIG.model = model;
         }
         
         this.showNotification('Настройки API сохранены ✅', 'success');
@@ -307,121 +393,11 @@ class VerdiktChatApp {
     }
 
     async getAIResponse(messages) {
-        if (!this.API_CONFIG.apiKey) {
-            throw new Error('API ключ не настроен. Пожалуйста, добавьте ключ OpenRouter в настройках.');
-        }
-
-        try {
-            const response = await fetch(this.API_CONFIG.url, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this.API_CONFIG.apiKey}`,
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer': 'https://verdikt-gpt.local',
-                    'X-Title': 'Verdikt GPT'
-                },
-                body: JSON.stringify({
-                    model: this.API_CONFIG.model,
-                    messages: messages,
-                    max_tokens: this.API_CONFIG.maxTokens,
-                    temperature: this.API_CONFIG.temperature,
-                    stream: false
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                console.error('OpenRouter API Error:', errorData);
-                
-                let errorMessage = "Ошибка API: ";
-                if (errorData.error?.message) {
-                    errorMessage += errorData.error.message;
-                } else if (response.status === 401) {
-                    errorMessage = "Неверный API ключ. Проверьте ключ в настройках.";
-                } else if (response.status === 429) {
-                    errorMessage = "Превышен лимит запросов. Попробуйте позже.";
-                } else if (response.status === 402) {
-                    errorMessage = "Недостаточно средств на балансе. Пополните счёт на OpenRouter.";
-                } else {
-                    errorMessage += `HTTP ${response.status}`;
-                }
-                
-                throw new Error(errorMessage);
-            }
-
-            const data = await response.json();
-            
-            if (!data.choices || !data.choices[0]?.message?.content) {
-                throw new Error('Неверный формат ответа от API');
-            }
-            
-            return data.choices[0].message.content.trim();
-            
-        } catch (error) {
-            console.error('Error in getAIResponse:', error);
-            
-            if (error.message.includes('API ключ') || error.message.includes('401')) {
-                throw new Error('Пожалуйста, настройте API ключ OpenRouter в настройках приложения.');
-            }
-            
-            throw error;
-        }
+        return this.apiClient.getAIResponse(messages);
     }
 
     async checkApiStatus() {
-        if (!this.API_CONFIG.apiKey) {
-            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> API ключ не настроен';
-            this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
-            this.elements.apiStatus.style.color = '#f87171';
-            this.showNotification('Добавьте API ключ OpenRouter в настройках', 'warning');
-            this.state.isApiConnected = false;
-            return;
-        }
-
-        this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> Проверка API ключа...';
-        this.elements.apiStatus.classList.add('api-connecting');
-        
-        try {
-            const response = await fetch('https://openrouter.ai/api/v1/auth/key', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${this.API_CONFIG.apiKey}`
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                const selectedModel = this.availableModels.find(m => m.id === this.API_CONFIG.model);
-                const modelName = selectedModel ? selectedModel.name : this.API_CONFIG.model;
-                
-                this.elements.apiStatus.innerHTML = `<i class="fas fa-circle"></i> ${modelName}`;
-                this.elements.apiStatus.classList.remove('api-connecting');
-                this.elements.apiStatus.classList.add('api-connected');
-                this.state.isApiConnected = true;
-                
-                if (data.data?.credits) {
-                    const credits = data.data.credits;
-                    this.showNotification(`API ключ активен. Баланс: $${credits.toFixed(2)}`, 'success');
-                    
-                    if (credits < 0.5 && !selectedModel.free) {
-                        this.elements.apiStatus.classList.add('balance-warning');
-                    }
-                } else {
-                    this.showNotification('API ключ проверен и активен ✅', 'success');
-                }
-            } else {
-                throw new Error(`HTTP ${response.status}`);
-            }
-        } catch (error) {
-            console.error('API check error:', error);
-            
-            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API ключа';
-            this.elements.apiStatus.classList.remove('api-connecting');
-            this.elements.apiStatus.classList.add('api-error');
-            
-            this.state.isApiConnected = false;
-            this.showNotification('Не удалось проверить API ключ. Проверьте его правильность.', 'error');
-        }
+        return this.apiClient.checkApiStatus();
     }
 
     setupApiSettingsListeners() {
@@ -468,51 +444,51 @@ class VerdiktChatApp {
                             Получите ключ на <a href="https://openrouter.ai/keys" target="_blank" style="color: var(--ios-blue);">openrouter.ai/keys</a>
                         </div>
                         
-                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">
-                            Модель:
-                        </label>
-                        <select id="api-model-select" style="
-                            width: 100%; padding: 12px; border-radius: 8px;
-                            background: var(--bg-card); border: 1px solid var(--border-color);
-                            color: var(--text-primary); font-family: inherit;
-                            margin-bottom: 20px;
-                        ">
-                            ${this.availableModels.map(model => `
-                                <option value="${model.id}" 
-                                        ${model.id === this.API_CONFIG.model ? 'selected' : ''}
-                                        data-free="${model.free}">
-                                    ${model.name} ${model.free ? '🆓' : '💳'}
-                                </option>
-                            `).join('')}
-                        </select>
-                        
                         <div style="
-                            background: rgba(236, 72, 153, 0.1);
-                            border-left: 3px solid var(--primary);
-                            padding: 12px;
-                            border-radius: var(--radius-sm);
-                            margin-top: 15px;
+                            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
+                            border-left: 3px solid #10b981;
+                            padding: 15px;
+                            border-radius: var(--radius-md);
+                            margin: 20px 0;
                         ">
-                            <p style="font-size: 0.9rem;">
-                                <i class="fas fa-info-circle"></i> 
-                                Бесплатные модели (🆓) имеют ограничения. 
-                                Для платных моделей (💳) необходим баланс на OpenRouter.
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+                                <div style="
+                                    width: 40px;
+                                    height: 40px;
+                                    background: linear-gradient(135deg, #10b981, #059669);
+                                    border-radius: 10px;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    color: white;
+                                    font-size: 18px;
+                                ">
+                                    <i class="fas fa-robot"></i>
+                                </div>
+                                <div>
+                                    <h4 style="margin: 0; font-size: 1.1rem;">Активная модель</h4>
+                                    <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">Verdikt GPT v0.1</p>
+                                </div>
+                            </div>
+                            <p style="font-size: 0.9rem; margin: 0; color: var(--text-secondary);">
+                                <i class="fas fa-check-circle" style="color: #10b981;"></i> 
+                                Бесплатная модель с хорошей производительностью. Другие модели недоступны.
                             </p>
                         </div>
+                        
+                        <div id="api-test-result" style="
+                            display: none;
+                            padding: 12px;
+                            border-radius: var(--radius-sm);
+                            margin-bottom: 15px;
+                            font-size: 0.9rem;
+                        "></div>
                     </div>
-                    
-                    <div id="api-test-result" style="
-                        display: none;
-                        padding: 12px;
-                        border-radius: var(--radius-sm);
-                        margin-bottom: 15px;
-                        font-size: 0.9rem;
-                    "></div>
                 </div>
                 
                 <div class="modal-buttons" style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <button class="ios-button secondary" id="test-api-key" style="flex: 1;">
-                        <i class="fas fa-vial"></i> Проверить
+                        <i class="fas fa-vial"></i> Проверить ключ
                     </button>
                     <button class="ios-button" id="save-api-settings" style="flex: 1;">
                         <i class="fas fa-save"></i> Сохранить
@@ -520,6 +496,10 @@ class VerdiktChatApp {
                     <button class="ios-button tertiary" id="api-settings-cancel" style="width: 100%;">
                         <i class="fas fa-times"></i> Отмена
                     </button>
+                </div>
+                
+                <div style="margin-top: 15px; font-size: 0.8rem; color: var(--text-tertiary); text-align: center;">
+                    <i class="fas fa-info-circle"></i> Используется только модель Verdikt GPT
                 </div>
             </div>
         </div>
@@ -530,12 +510,10 @@ class VerdiktChatApp {
         modal.classList.add('active');
         
         const apiKeyInput = document.getElementById('api-key-input');
-        const modelSelect = document.getElementById('api-model-select');
         const testResult = document.getElementById('api-test-result');
         
         document.getElementById('test-api-key').addEventListener('click', async () => {
             const apiKey = apiKeyInput.value.trim();
-            const modelId = modelSelect.value;
             
             if (!apiKey) {
                 testResult.innerHTML = '<span style="color: #ef4444;">Введите API ключ</span>';
@@ -559,18 +537,12 @@ class VerdiktChatApp {
                 
                 if (response.ok) {
                     const data = await response.json();
-                    const selectedModel = this.availableModels.find(m => m.id === modelId);
-                    const modelName = selectedModel ? selectedModel.name : modelId;
                     
                     let resultHTML = `<span style="color: #10b981;">✅ Ключ активен</span><br>`;
-                    resultHTML += `<small>Модель: ${modelName}</small><br>`;
+                    resultHTML += `<small>Модель: stepfun/step-3.5-flash:free (бесплатно)</small><br>`;
                     
                     if (data.data?.credits !== undefined) {
                         resultHTML += `<small>Баланс: $${data.data.credits.toFixed(2)}</small>`;
-                        
-                        if (data.data.credits < 1 && !selectedModel.free) {
-                            resultHTML += `<br><small style="color: #f59e0b;">⚠️ Низкий баланс для платных моделей</small>`;
-                        }
                     }
                     
                     testResult.innerHTML = resultHTML;
@@ -592,7 +564,6 @@ class VerdiktChatApp {
         
         document.getElementById('save-api-settings').addEventListener('click', () => {
             const apiKey = apiKeyInput.value.trim();
-            const modelId = modelSelect.value;
             
             if (!apiKey) {
                 testResult.innerHTML = '<span style="color: #ef4444;">Введите API ключ</span>';
@@ -601,7 +572,7 @@ class VerdiktChatApp {
                 return;
             }
             
-            this.saveApiKey(apiKey, modelId);
+            this.saveApiKey(apiKey);
             modal.remove();
             this.hideModal('settings-modal');
         });
@@ -690,6 +661,43 @@ class VerdiktChatApp {
                 element.textContent = value;
             }
         });
+
+        // Обновляем дерево навыков
+        this.updateSkillsTree();
+    }
+
+    updateSkillsTree() {
+        const total = this.state.stats.totalMessages || 0;
+        const empathyBase = this.state.stats.relationshipAdvice || 0;
+        const protectionBase = this.state.stats.manipulationRequests || 0;
+        const wisdomBase = this.state.stats.sessions || 0;
+
+        const empathyLevel = Math.min(3, Math.floor(empathyBase / 5));
+        const protectionLevel = Math.min(3, Math.floor(protectionBase / 3));
+        const wisdomLevel = Math.min(3, Math.floor(total / 30));
+
+        const empathyLabel = document.getElementById('skill-empathy-level');
+        const protectionLabel = document.getElementById('skill-protection-level');
+        const wisdomLabel = document.getElementById('skill-wisdom-level');
+
+        if (empathyLabel) empathyLabel.textContent = `Уровень ${empathyLevel}`;
+        if (protectionLabel) protectionLabel.textContent = `Уровень ${protectionLevel}`;
+        if (wisdomLabel) wisdomLabel.textContent = `Уровень ${wisdomLevel}`;
+
+        const setNodes = (branch, level) => {
+            const nodes = document.querySelectorAll(`.skill-node[data-skill^="${branch}-"]`);
+            nodes.forEach((node, index) => {
+                if (index < level) {
+                    node.classList.add('unlocked');
+                } else {
+                    node.classList.remove('unlocked');
+                }
+            });
+        };
+
+        setNodes('empathy', empathyLevel);
+        setNodes('protection', protectionLevel);
+        setNodes('wisdom', wisdomLevel);
     }
 
     updateSettingsAchievements() {
@@ -767,90 +775,15 @@ class VerdiktChatApp {
     }
 
     async saveChats() {
-        try {
-            // Сохраняем текущий чат
-            await this.saveCurrentChat();
-            
-            // Сохраняем список всех чатов
-            if (this.encryptionState.enabled && !this.encryptionState.isLocked) {
-                await this.saveEncryptedChats();
-            } else {
-                localStorage.setItem('verdikt_chats', JSON.stringify(this.chatManager.chats));
-            }
-            
-            // Сохраняем ID последнего активного чата
-            if (this.chatManager.currentChatId) {
-                localStorage.setItem('verdikt_last_active_chat', this.chatManager.currentChatId);
-            }
-            
-            // Обновляем статистику в настройках
-            this.updateSettingsStats();
-            
-        } catch (error) {
-            console.error('Error saving chats:', error);
-        }
+        return this.chatStore.saveChats();
     }
 
     async saveEncryptedChats() {
-        try {
-            const encryptedData = localStorage.getItem('verdikt_encrypted_data');
-            let decryptedData = {};
-            
-            if (encryptedData) {
-                decryptedData = await this.crypto.decrypt(encryptedData, this.encryptionState.password);
-            }
-            
-            decryptedData.chats = this.chatManager.chats;
-            
-            const reencryptedData = await this.crypto.encrypt(
-                decryptedData, 
-                this.encryptionState.password
-            );
-            
-            localStorage.setItem('verdikt_encrypted_data', reencryptedData);
-            
-        } catch (error) {
-            console.error('Error saving encrypted chats:', error);
-            throw error;
-        }
+        return this.chatStore.saveEncryptedChats();
     }
 
     async saveCurrentChat() {
-        if (!this.chatManager.currentChatId) return;
-        
-        const chatData = {
-            id: this.chatManager.currentChatId,
-            title: this.generateChatTitle(),
-            messages: this.state.conversationHistory.filter(msg => msg.role !== 'system'),
-            timestamp: Date.now(),
-            mode: this.state.currentMode,
-            stats: {
-                totalMessages: this.state.stats.totalMessages,
-                userMessages: this.state.stats.userMessages,
-                aiMessages: this.state.stats.aiMessages,
-                savedChats: this.state.stats.savedChats
-            },
-            theme: this.state.currentTheme
-        };
-        
-        // Находим или создаем запись чата
-        const existingIndex = this.chatManager.chats.findIndex(chat => chat.id === chatData.id);
-        
-        if (existingIndex >= 0) {
-            this.chatManager.chats[existingIndex] = chatData;
-        } else {
-            this.chatManager.chats.push(chatData);
-            
-            // Ограничиваем количество сохраненных чатов
-            if (this.chatManager.chats.length > this.chatManager.maxChats) {
-                this.chatManager.chats = this.chatManager.chats.slice(-this.chatManager.maxChats);
-            }
-            
-            // Достижение за создание чатов
-            if (this.chatManager.chats.length >= 5 && !this.state.achievements.chatHistorian.unlocked) {
-                this.unlockAchievement('chatHistorian');
-            }
-        }
+        return this.chatStore.saveCurrentChat();
     }
 
     generateChatTitle() {
@@ -878,6 +811,8 @@ class VerdiktChatApp {
                 title = '👥 ' + title;
             } else if (firstMessage.toLowerCase().includes('манипуляц') || firstMessage.toLowerCase().includes('токсичн')) {
                 title = '🛡️ ' + title;
+            } else if (firstMessage.toLowerCase().includes('игнор') || firstMessage.toLowerCase().includes('бывшая') || firstMessage.toLowerCase().includes('вернуть')) {
+                title = '🔄 ' + title;
             }
         }
         
@@ -890,19 +825,7 @@ class VerdiktChatApp {
         this.chatManager.currentChatId = newChatId;
         
         // Сбрасываем состояние
-        this.state.conversationHistory = [
-            {
-                role: "system",
-                content: `Ты - Verdikt GPT, эксперт по психологии отношений, знакомств и манипуляций.
-Отвечай на русском языке дружелюбно, но профессионально.
-Специализация:
-💕 Отношения - конфликты, общение, восстановление
-👥 Знакомства - советы по свиданиям, профилям
-🛡️ Манипуляции - распознавание, защита, границы
-
-Будь поддерживающим, давай практические советы, используй эмодзи умеренно.`
-            }
-        ];
+        this.state.conversationHistory = [this.createSystemPromptMessage()];
         
         this.state.messageCount = 1;
         this.state.stats.totalMessages = 1;
@@ -947,17 +870,7 @@ class VerdiktChatApp {
         
         // Восстанавливаем историю
         this.state.conversationHistory = [
-            {
-                role: "system",
-                content: `Ты - Verdikt GPT, эксперт по психологии отношений, знакомств и манипуляций.
-Отвечай на русском языке дружелюбно, но профессионально.
-Специализация:
-💕 Отношения - конфликты, общение, восстановление
-👥 Знакомства - советы по свиданиям, профилям
-🛡️ Манипуляции - распознавание, защита, границы
-
-Будь поддерживающим, давай практические советы, используй эмодзи умеренно.`
-            },
+            this.createSystemPromptMessage(),
             ...chat.messages
         ];
         
@@ -1543,12 +1456,7 @@ class VerdiktChatApp {
             this.encryptionState.isLocked = true;
             this.encryptionState.password = null;
             
-            this.state.conversationHistory = [
-                {
-                    role: "system",
-                    content: `Ты - Verdikt GPT, эксперт по психологии отношений...`
-                }
-            ];
+            this.state.conversationHistory = [this.createSystemPromptMessage()];
             
             this.showNotification('Приложение заблокировано 🔒', 'info');
             this.showLockScreen();
@@ -1558,133 +1466,119 @@ class VerdiktChatApp {
     // ==================== ФУНКЦИИ БОКОВОГО МЕНЮ ====================
 
     setupSidebar() {
-    // Открытие/закрытие бокового меню - ИСПРАВЛЕНО
-    if (this.elements.sidebarToggle) {
-        this.elements.sidebarToggle.addEventListener('click', () => {
-            this.toggleSidebar();
-        });
-    }
-
-    if (this.elements.sidebarOverlay) {
-        this.elements.sidebarOverlay.addEventListener('click', () => {
-            this.hideSidebar();
-        });
-    }
-
-    // Навигация в боковом меню
-    if (this.elements.navDashboard) {
-        this.elements.navDashboard.addEventListener('click', () => {
-            this.showDashboardModal();
-            this.hideSidebar();
-        });
-    }
-
-    if (this.elements.navProfile) {
-        this.elements.navProfile.addEventListener('click', () => {
-            this.showProfileSettingsModal();
-            this.hideSidebar();
-        });
-    }
-
-    if (this.elements.navSettings) {
-        this.elements.navSettings.addEventListener('click', () => {
-            this.showProfileSettingsModal();
-            this.hideSidebar();
-        });
-    }
-
-    if (this.elements.navQuestions) {
-        this.elements.navQuestions.addEventListener('click', () => {
-            this.showDashboardModal();
-            this.switchDashboardTab('questions');
-            this.hideSidebar();
-        });
-    }
-
-    if (this.elements.navLikes) {
-        this.elements.navLikes.addEventListener('click', () => {
-            this.showDashboardModal();
-            this.switchDashboardTab('activity');
-            this.hideSidebar();
-        });
-    }
-
-    if (this.elements.navComments) {
-        this.elements.navComments.addEventListener('click', () => {
-            this.showDashboardModal();
-            this.switchDashboardTab('activity');
-            this.hideSidebar();
-        });
-    }
-
-    if (this.elements.navStories) {
-        this.elements.navStories.addEventListener('click', () => {
-            this.showDashboardModal();
-            this.switchDashboardTab('stories');
-            this.hideSidebar();
-        });
-    }
-
-    // Выход из аккаунта
-    if (this.elements.logoutSidebar) {
-        this.elements.logoutSidebar.addEventListener('click', () => {
-            this.logout();
-            this.hideSidebar();
-        });
-    }
-
-    // Обновление информации в боковом меню
-    this.updateSidebarInfo();
-}
-
-toggleSidebar() {
-    // ИСПРАВЛЕНО: используем правильные имена элементов
-    if (!this.elements.sidebar) return;
-    
-    const isActive = this.elements.sidebar.classList.contains('active');
-    if (isActive) {
-        this.hideSidebar();
-    } else {
-        this.showSidebar();
-    }
-}
-
-showSidebar() {
-    // ИСПРАВЛЕНО: используем правильные имена элементов
-    if (this.elements.sidebar) {
-        this.elements.sidebar.classList.add('active');
-    }
-    if (this.elements.sidebarOverlay) {
-        this.elements.sidebarOverlay.classList.add('active');
-    }
-    document.body.style.overflow = 'hidden';
-}
-
-hideSidebar() {
-    // ИСПРАВЛЕНО: используем правильные имена элементов
-    if (this.elements.sidebar) {
-        this.elements.sidebar.classList.remove('active');
-    }
-    if (this.elements.sidebarOverlay) {
-        this.elements.sidebarOverlay.classList.remove('active');
-    }
-    document.body.style.overflow = '';
-}
-
-updateSidebarInfo() {
-    if (!this.elements.sidebarUsername) return;
-    
-    if (this.state.user) {
-        this.elements.sidebarUsername.textContent = this.state.user.name || this.state.user.email || 'Пользователь';
-        this.elements.sidebarUseremail.innerHTML = `<i class="fas fa-envelope"></i> ${this.state.user.email || 'В аккаунте'}`;
-        
-        if (this.elements.dashboardUsername) {
-            this.elements.dashboardUsername.textContent = this.state.user.name || this.state.user.email || 'Пользователь';
+        // Открытие/закрытие бокового меню
+        if (this.elements.sidebarToggle) {
+            this.elements.sidebarToggle.addEventListener('click', () => {
+                this.toggleSidebar();
+            });
         }
+
+        if (this.elements.sidebarOverlay) {
+            this.elements.sidebarOverlay.addEventListener('click', () => {
+                this.hideSidebar();
+            });
+        }
+
+        // Навигация в боковом меню
+        if (this.elements.navDashboard) {
+            this.elements.navDashboard.addEventListener('click', () => {
+                this.showDashboardModal();
+                this.hideSidebar();
+            });
+        }
+
+        if (this.elements.navProfile) {
+            this.elements.navProfile.addEventListener('click', () => {
+                this.showProfileSettingsModal();
+                this.hideSidebar();
+            });
+        }
+
+        if (this.elements.navSettings) {
+            this.elements.navSettings.addEventListener('click', () => {
+                this.showProfileSettingsModal();
+                this.hideSidebar();
+            });
+        }
+
+        if (this.elements.navQuestions) {
+            this.elements.navQuestions.addEventListener('click', () => {
+                this.showDashboardModal();
+                this.switchDashboardTab('questions');
+                this.hideSidebar();
+            });
+        }
+
+        if (this.elements.navLikes) {
+            this.elements.navLikes.addEventListener('click', () => {
+                this.showDashboardModal();
+                this.switchDashboardTab('activity');
+                this.hideSidebar();
+            });
+        }
+
+        if (this.elements.navComments) {
+            this.elements.navComments.addEventListener('click', () => {
+                this.showDashboardModal();
+                this.switchDashboardTab('activity');
+                this.hideSidebar();
+            });
+        }
+
+        if (this.elements.navStories) {
+            this.elements.navStories.addEventListener('click', () => {
+                this.showDashboardModal();
+                this.switchDashboardTab('stories');
+                this.hideSidebar();
+            });
+        }
+
+        // Выход из аккаунта
+        if (this.elements.logoutSidebar) {
+            this.elements.logoutSidebar.addEventListener('click', () => {
+                this.logout();
+                this.hideSidebar();
+            });
+        }
+
+        // Обновление информации в боковом меню
+        this.updateSidebarInfo();
+    }
+
+    toggleSidebar() {
+        const isActive = this.elements.sidebar.classList.contains('active');
+        if (isActive) {
+            this.hideSidebar();
+        } else {
+            this.showSidebar();
+        }
+    }
+
+    showSidebar() {
+        this.elements.sidebar.classList.add('active');
+        this.elements.sidebarOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    hideSidebar() {
+        this.elements.sidebar.classList.remove('active');
+        this.elements.sidebarOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    updateSidebarInfo() {
+        if (!this.elements.sidebarUsername) return;
         
-        // Обновление аватара
-        const avatarIcon = this.elements.userAvatar?.querySelector('i');
-        if (this.elements.userAvatar) {
+        if (this.state.user) {
+            this.elements.sidebarUsername.textContent = this.state.user.name || this.state.user.email || 'Пользователь';
+            this.elements.sidebarUseremail.textContent = this.state.user.email || 'В аккаунте';
+            
+            if (this.elements.dashboardUsername) {
+                this.elements.dashboardUsername.textContent = this.state.user.name || this.state.user.email || 'Пользователь';
+            }
+            
+            // Обновление аватара
+            const avatarIcon = this.elements.userAvatar.querySelector('i');
             if (this.state.user.avatar) {
                 this.elements.userAvatar.style.backgroundImage = `url(${this.state.user.avatar})`;
                 this.elements.userAvatar.style.backgroundSize = 'cover';
@@ -1694,59 +1588,25 @@ updateSidebarInfo() {
                 this.elements.userAvatar.style.backgroundImage = '';
                 if (avatarIcon) avatarIcon.style.display = 'flex';
             }
-        }
-        
-        // Показываем кнопку выхода
-        if (this.elements.logoutSidebar) {
-            this.elements.logoutSidebar.style.display = 'flex';
-        }
-        
-        // Скрываем приглашение к входу
-        if (this.elements.sidebarUseremail) {
-            this.elements.sidebarUseremail.style.cursor = 'default';
-            this.elements.sidebarUseremail.removeEventListener('click', this._loginClickListener);
-        }
-        
-    } else {
-        this.elements.sidebarUsername.textContent = 'Гость';
-        
-        // ИСПРАВЛЕНО: перемещаем иконку "Войти" прямо в sidebarUseremail
-        this.elements.sidebarUseremail.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="width: 32px; height: 32px; border-radius: 8px; background: var(--gradient); display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-sign-in-alt" style="color: white;"></i>
-                </div>
-                <div>
-                    <div style="font-weight: 600;">Войти в аккаунт</div>
-                </div>
-            </div>
-        `;
-        
-        this.elements.sidebarUseremail.style.cursor = 'pointer';
-        
-        // Удаляем предыдущий обработчик, если был
-        if (this._loginClickListener) {
-            this.elements.sidebarUseremail.removeEventListener('click', this._loginClickListener);
-        }
-        
-        // Создаем новый обработчик и сохраняем ссылку на него
-        this._loginClickListener = () => {
-            this.hideSidebar();
-            this.showModal('auth-modal');
-        };
-        
-        this.elements.sidebarUseremail.addEventListener('click', this._loginClickListener);
-        
-        if (this.elements.dashboardUsername) {
-            this.elements.dashboardUsername.textContent = 'Гость';
-        }
-        
-        // Скрываем кнопку выхода для гостей
-        if (this.elements.logoutSidebar) {
-            this.elements.logoutSidebar.style.display = 'none';
+            
+            // Показываем кнопку выхода
+            if (this.elements.logoutSidebar) {
+                this.elements.logoutSidebar.style.display = 'flex';
+            }
+        } else {
+            this.elements.sidebarUsername.textContent = 'Гость';
+            this.elements.sidebarUseremail.textContent = 'Войдите в аккаунт';
+            
+            if (this.elements.dashboardUsername) {
+                this.elements.dashboardUsername.textContent = 'Гость';
+            }
+            
+            // Скрываем кнопку выхода для гостей
+            if (this.elements.logoutSidebar) {
+                this.elements.logoutSidebar.style.display = 'none';
+            }
         }
     }
-}
 
     // ==================== ДАШБОРД ====================
 
@@ -1769,6 +1629,55 @@ updateSidebarInfo() {
             this.elements.dashboardClose.addEventListener('click', () => {
                 this.hideModal('dashboard-modal');
             });
+        }
+
+        // Лайк / дизлайк / комментарий / ветка комментариев (делегирование на модалке дашборда)
+        const dashboardModal = document.getElementById('dashboard-modal');
+        if (dashboardModal) {
+            dashboardModal.addEventListener('click', async (e) => {
+                const likeBtn = e.target.closest('[data-action="like"]');
+                const dislikeBtn = e.target.closest('[data-action="dislike"]');
+                const commentBtn = e.target.closest('[data-action="comment"]');
+                const commentsBlock = e.target.closest('.comments-count');
+                const sourceEl = likeBtn || dislikeBtn || commentBtn || commentsBlock;
+                const cardEl = e.target.closest('.question-card[data-question-id]');
+                const questionId = sourceEl?.getAttribute('data-question-id') || cardEl?.getAttribute('data-question-id');
+                if (!questionId) return;
+                if (!this.state.user) {
+                    if (commentBtn || commentsBlock) this.showNotification('Войдите в аккаунт, чтобы ответить', 'warning');
+                    return;
+                }
+                if (likeBtn) {
+                    await this.setQuestionReaction(questionId, 'like');
+                    return;
+                }
+                if (dislikeBtn) {
+                    await this.setQuestionReaction(questionId, 'dislike');
+                    return;
+                }
+                if (commentBtn || commentsBlock) this.showQuestionCommentModal(questionId);
+            });
+        }
+
+        // Модалка комментариев к вопросу
+        const commentSubmitBtn = document.getElementById('question-comment-submit');
+        if (commentSubmitBtn && !commentSubmitBtn._bound) {
+            commentSubmitBtn.addEventListener('click', async () => {
+                const textarea = document.getElementById('question-comment-input');
+                const text = textarea ? textarea.value : '';
+                const questionId = this.currentCommentQuestionId;
+                if (!questionId) return;
+
+                await this.submitQuestionComment(questionId, text);
+
+                if (textarea) {
+                    textarea.value = '';
+                }
+
+                await this.loadQuestionComments(questionId, true);
+                this.renderQuestionComments(questionId);
+            });
+            commentSubmitBtn._bound = true;
         }
         
         // Загрузка данных дашборда
@@ -1887,7 +1796,7 @@ updateSidebarInfo() {
                 return;
             }
             
-            if (!this.state.authToken) {
+            if (!this.state.user) {
                 this.showNotification('Войдите в аккаунт для сохранения профиля', 'warning');
                 return;
             }
@@ -1895,10 +1804,8 @@ updateSidebarInfo() {
             const url = `${this.AUTH_CONFIG.baseUrl}/api/users/me`;
             const response = await fetch(url, {
                 method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...this.getAuthHeaders()
-                },
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
                 body: JSON.stringify(profileData)
             });
             
@@ -1909,7 +1816,7 @@ updateSidebarInfo() {
             }
             
             const data = await response.json();
-            this.setUser(data, this.state.authToken);
+            this.setUser(data);
             
             this.hideModal('profile-settings-modal');
             this.showNotification('Профиль обновлен ✅', 'success');
@@ -1968,6 +1875,90 @@ updateSidebarInfo() {
         this.elements.toggleChatHistory.addEventListener('click', () => {
             this.showChatHistoryModal();
         });
+
+        // Режим "Не беспокоить"
+        if (this.elements.dndToggle) {
+            this.elements.dndToggle.addEventListener('click', () => {
+                this.state.doNotDisturb = !this.state.doNotDisturb;
+                const enabled = this.state.doNotDisturb;
+
+                this.elements.dndToggle.innerHTML = enabled
+                    ? '<i class="fas fa-bell-slash"></i>'
+                    : '<i class="fas fa-bell"></i>';
+
+                const status = this.elements.apiStatus;
+                if (status) {
+                    status.classList.toggle('dnd-active', enabled);
+                }
+
+                this.showNotification(
+                    enabled ? 'Режим «Не беспокоить» включен' : 'Режим «Не беспокоить» выключен',
+                    'info'
+                );
+            });
+        }
+
+        // Drag & drop файлов прямо в область ввода сообщения
+        const messageInput = this.elements.messageInput;
+        if (messageInput) {
+            const inputContainer = messageInput.closest('.input-container-extended') || messageInput;
+
+            const preventDefaults = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            };
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                inputContainer.addEventListener(eventName, preventDefaults);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                inputContainer.addEventListener(eventName, () => {
+                    inputContainer.classList.add('drag-over');
+                });
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                inputContainer.addEventListener(eventName, () => {
+                    inputContainer.classList.remove('drag-over');
+                });
+            });
+
+            inputContainer.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const file = dt && dt.files && dt.files[0];
+                if (!file) return;
+
+                const allowedTypes = [
+                    'text/plain',
+                    'application/json'
+                ];
+                const isAllowed =
+                    allowedTypes.includes(file.type) ||
+                    file.name.endsWith('.txt') ||
+                    file.name.endsWith('.json');
+
+                if (!isAllowed) {
+                    this.showNotification('Можно перетащить только .txt или .json файл', 'warning');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const text = reader.result || '';
+                    if (!text) return;
+
+                    const current = messageInput.value || '';
+                    const separator = current && !current.endsWith('\n') ? '\n\n' : '';
+                    messageInput.value = current + separator + String(text);
+                    messageInput.focus();
+                };
+                reader.onerror = () => {
+                    this.showNotification('Не удалось прочитать файл', 'error');
+                };
+                reader.readAsText(file, 'utf-8');
+            });
+        }
         
         // Настройки
         this.elements.temperatureSlider.addEventListener('input', (e) => {
@@ -2024,9 +2015,7 @@ updateSidebarInfo() {
         // Футер ссылки
         document.getElementById('model-info').addEventListener('click', (e) => {
             e.preventDefault();
-            const selectedModel = this.availableModels.find(m => m.id === this.API_CONFIG.model);
-            const modelName = selectedModel ? selectedModel.name : this.API_CONFIG.model;
-            this.showNotification(`Используется: ${modelName} через OpenRouter API`, 'info');
+            this.showNotification('Используется: stepfun/step-3.5-flash:free через OpenRouter API', 'info');
         });
         
         document.getElementById('privacy-policy').addEventListener('click', (e) => {
@@ -2045,6 +2034,14 @@ updateSidebarInfo() {
         // Импорт/экспорт
         this.setupImportListeners();
         this.setupExportListeners();
+
+        // Кнопка перезагрузки инструкций
+        if (this.elements.reloadInstructions) {
+            this.elements.reloadInstructions.addEventListener('click', async () => {
+                await this.loadInstructions();
+                this.showNotification('Инструкции успешно обновлены ✅', 'success');
+            });
+        }
     }
 
     async sendMessage() {
@@ -2081,7 +2078,15 @@ updateSidebarInfo() {
         }
         
         this.addMessage(message, 'user');
-        this.state.conversationHistory.push({ role: "user", content: message });
+        
+        // Анализируем тип пользователя и добавляем это в контекст
+        const userAnalysis = this.analyzeUserType(message);
+        
+        // Добавляем анализ в сообщение пользователя для контекста
+        const enhancedMessage = message + (userAnalysis.isPursuer ? 
+            '\n\n[Контекст: Пользователь описывает себя как бывшего преследователя. Учти это в ответе.]' : '');
+        
+        this.state.conversationHistory.push({ role: "user", content: enhancedMessage });
         this.state.messageCount++;
         this.state.stats.totalMessages++;
         this.state.stats.userMessages++;
@@ -2120,9 +2125,18 @@ updateSidebarInfo() {
             }
             
             this.showNotification(`Ответ получен за ${responseTime.toFixed(1)}с ✅`, 'success');
+
+            // Легкая вибрация на мобильных устройствах при ответе AI
+            this.triggerHapticFeedback();
             this.updateUI();
             this.updateSettingsStats();
             await this.saveChats();
+
+            // Автоматический показ "Колеса баланса" после 10 ответов AI
+            if (this.state.stats.aiMessages >= 10 && !this.state.balanceShown) {
+                this.state.balanceShown = true;
+                this.showBalanceModal(true);
+            }
             
             this.state.retryCount = 0;
             
@@ -2166,7 +2180,8 @@ updateSidebarInfo() {
             'уважен', 'достоинств', 'самооцен', 'психологическ',
             'психолог', 'эмоц', 'чувств', 'общен', 'коммуникац',
             'довери', 'уважен', 'пониман', 'поддерж', 'совет',
-            'помощ', 'консультац', 'эксперт', 'специалист'
+            'помощ', 'консультац', 'эксперт', 'специалист',
+            'игнор', 'бывшая', 'вернуть', 'преследователь', 'слив'
         ];
         
         return relevantTopics.some(topic => messageLower.includes(topic));
@@ -2191,6 +2206,10 @@ updateSidebarInfo() {
         
         if (messageLower.includes('знакомств') || messageLower.includes('свидан') || messageLower.includes('тинд')) {
             this.state.stats.datingAdvice++;
+        }
+
+        if (messageLower.includes('игнор') || messageLower.includes('бывшая') || messageLower.includes('вернуть')) {
+            this.state.stats.relationshipAdvice++;
         }
     }
 
@@ -2225,10 +2244,6 @@ updateSidebarInfo() {
         `;
         
         this.elements.chatMessages.appendChild(messageElement);
-        
-        setTimeout(() => {
-            messageElement.style.animation = 'messageAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards';
-        }, 10);
         
         setTimeout(() => {
             hljs.highlightAll();
@@ -2293,19 +2308,7 @@ updateSidebarInfo() {
 
     clearChat() {
         if (confirm('Очистить текущий чат? Сообщения будут удалены.')) {
-            this.state.conversationHistory = [
-                {
-                    role: "system",
-                    content: `Ты - Verdikt GPT, эксперт по психологии отношений, знакомств и манипуляций.
-Отвечай на русском языке дружелюбно, но профессионально.
-Специализация:
-💕 Отношения - конфликты, общение, восстановление
-👥 Знакомства - советы по свиданиям, профилям
-🛡️ Манипуляции - распознавание, защита, границы
-
-Будь поддерживающим, давай практические советы, используй эмодзи умеренно.`
-                }
-            ];
+            this.state.conversationHistory = [this.createSystemPromptMessage()];
             
             this.elements.chatMessages.innerHTML = `
                 <div class="message ai-message" style="opacity: 1; transform: translateY(0);">
@@ -2363,24 +2366,61 @@ updateSidebarInfo() {
         }
     }
 
-    setTheme(theme) {
+    setTheme(theme, options = {}) {
+        const { fromServer = false } = options;
         this.state.currentTheme = theme;
         document.body.setAttribute('data-theme', theme);
         
-        // Обновляем активный класс
         document.querySelectorAll('.theme-option').forEach(opt => opt.classList.remove('active'));
         const activeTheme = document.querySelector(`.theme-option[data-theme="${theme}"]`);
         if (activeTheme) {
             activeTheme.classList.add('active');
         }
         
+        localStorage.setItem('verdikt_theme', theme);
         this.saveChats();
-        this.showNotification(`Тема изменена: ${theme}`, 'info');
+        if (this.state.user && !fromServer) {
+            const url = `${this.AUTH_CONFIG.baseUrl}/api/users/me/settings`;
+            fetch(url, {
+                method: 'PATCH',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ theme })
+            }).catch(() => {});
+        }
+        if (!fromServer) {
+            this.showNotification(`Тема изменена: ${theme}`, 'info');
+        }
+    }
+
+    /**
+     * Загружает настройки пользователя (тема) с бэкенда и применяет тему.
+     */
+    async loadUserSettings() {
+        if (!this.state.user) return;
+        try {
+            const url = `${this.AUTH_CONFIG.baseUrl}/api/users/me/settings`;
+            const response = await fetch(url, { credentials: 'include' });
+            if (response.ok) {
+                const data = await response.json();
+                if (data.theme) {
+                    this.setTheme(data.theme, { fromServer: true });
+                }
+            }
+        } catch (e) {
+            const savedTheme = localStorage.getItem('verdikt_theme');
+            if (savedTheme) this.setTheme(savedTheme, { fromServer: true });
+        }
     }
 
     // ==================== СИСТЕМА УВЕДОМЛЕНИЙ ====================
 
     showNotification(text, type = 'info') {
+        // В режиме "Не беспокоить" не показываем всплывающие уведомления
+        if (this.state.doNotDisturb) {
+            return;
+        }
+
         this.elements.notificationText.textContent = text;
     
         // Убираем inline-стили
@@ -2492,6 +2532,11 @@ updateSidebarInfo() {
                     : 'Админ-режим выключен',
                 'info'
             );
+
+            // Перерисовываем зависящие от админ-режима части
+            this.renderQuestions();
+            this.renderAdminQuestions();
+            this.renderAdminUsers();
         });
     }
 
@@ -2509,6 +2554,7 @@ updateSidebarInfo() {
                 this.dashboard.questions = this.dashboard.questions.filter(q => String(q.id) !== String(id));
                 this.renderQuestions();
                 this.renderAdminQuestions();
+                this.renderAdminUsers();
                 this.updateSidebarStats();
                 this.showNotification('Вопрос удален (локально)', 'info');
             });
@@ -2525,6 +2571,7 @@ updateSidebarInfo() {
                 question.isBanned = true;
                 this.showNotification(`Пользователь ${userEmail} помечен как забаненный (локально)`, 'warning');
                 this.renderAdminQuestions();
+                this.renderAdminUsers();
             });
         });
     }
@@ -2536,64 +2583,89 @@ updateSidebarInfo() {
     loadUserFromStorage() {
         try {
             const userJson = localStorage.getItem('verdikt_user');
-            const token = localStorage.getItem('verdikt_token');
-            if (userJson && token) {
+            if (userJson) {
                 this.state.user = JSON.parse(userJson);
-                this.state.authToken = token;
             }
+            this.state.authToken = null;
         } catch (e) {
             console.warn('Не удалось загрузить пользователя из localStorage', e);
         }
     }
 
-    saveUserToStorage() {
-        if (this.state.user && this.state.authToken) {
-            localStorage.setItem('verdikt_user', JSON.stringify(this.state.user));
-            localStorage.setItem('verdikt_token', this.state.authToken);
-        } else {
-            localStorage.removeItem('verdikt_user');
-            localStorage.removeItem('verdikt_token');
+    /**
+     * Проверяет сессию по HttpOnly cookie: при 200 обновляет state.user, при 401 очищает вход.
+     */
+    async restoreSession() {
+        try {
+            const url = `${this.AUTH_CONFIG.baseUrl}${this.AUTH_CONFIG.endpoints.me}`;
+            const response = await fetch(url, { credentials: 'include' });
+            if (response.ok) {
+                const user = await response.json();
+                this.state.user = user;
+                this.saveUserToStorage();
+                this.updateAuthUI();
+                this.updateSidebarInfo();
+            } else {
+                this.state.user = null;
+                this.state.authToken = null;
+                this.saveUserToStorage();
+                this.updateAuthUI();
+                this.updateSidebarInfo();
+            }
+        } catch (e) {
+            this.state.user = null;
+            this.state.authToken = null;
+            this.saveUserToStorage();
+            this.updateAuthUI();
+            this.updateSidebarInfo();
         }
     }
 
-    setUser(user, token) {
+    saveUserToStorage() {
+        if (this.state.user) {
+            localStorage.setItem('verdikt_user', JSON.stringify(this.state.user));
+        } else {
+            localStorage.removeItem('verdikt_user');
+        }
+        localStorage.removeItem('verdikt_token');
+    }
+
+    setUser(user, _token) {
         this.state.user = user;
-        this.state.authToken = token || this.state.authToken;
+        this.state.authToken = null;
         this.saveUserToStorage();
         this.updateAuthUI();
         this.updateSidebarInfo();
-        
-        // Загружаем данные дашборда для нового пользователя
         if (user) {
             setTimeout(() => this.loadDashboardData(), 1000);
         }
     }
 
-    logout() {
+    async logout() {
+        try {
+            const url = `${this.AUTH_CONFIG.baseUrl}${this.AUTH_CONFIG.endpoints.logout}`;
+            await fetch(url, { method: 'POST', credentials: 'include' });
+        } catch (e) {
+            // игнорируем ошибку сети — всё равно очищаем локальное состояние
+        }
         this.state.user = null;
         this.state.authToken = null;
         this.saveUserToStorage();
         this.updateAuthUI();
         this.updateSidebarInfo();
-        
         this.showNotification('Вы вышли из аккаунта', 'info');
     }
 
     getAuthHeaders() {
-        const headers = {};
-        if (this.state.authToken) {
-            headers['Authorization'] = `Bearer ${this.state.authToken}`;
-        }
-        return headers;
+        return {};
     }
 
     async registerUser({ name, email, password }) {
         const url = `${this.AUTH_CONFIG.baseUrl}${this.AUTH_CONFIG.endpoints.register}`;
         const response = await fetch(url, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, email, password })
         });
 
@@ -2604,17 +2676,15 @@ updateSidebarInfo() {
         }
 
         const data = await response.json();
-        // Ожидаем формат { user, token }
-        this.setUser(data.user, data.token);
+        this.setUser(data);
     }
 
     async loginUser({ email, password }) {
         const url = `${this.AUTH_CONFIG.baseUrl}${this.AUTH_CONFIG.endpoints.login}`;
         const response = await fetch(url, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
 
@@ -2625,7 +2695,7 @@ updateSidebarInfo() {
         }
 
         const data = await response.json();
-        this.setUser(data.user, data.token);
+        this.setUser(data.user);
     }
 
     setupAuthUI() {
@@ -2710,32 +2780,29 @@ updateSidebarInfo() {
     }
 
     updateAuthUI() {
-    const userAuth = document.getElementById('user-auth');
-    const label = userAuth?.querySelector('.user-auth-label');
-    const userInfo = document.getElementById('auth-user-info');    
-    const userNameLabel = document.getElementById('auth-user-name');
+        const userAuth = document.getElementById('user-auth');
+        const label = userAuth?.querySelector('.user-auth-label');
+        const userInfo = document.getElementById('auth-user-info');
+        const userNameLabel = document.getElementById('auth-user-name');
 
-    if (!userAuth || !label) return;
+        if (!userAuth || !label) return;
 
-    if (this.state.user) {
-        const name = this.state.user.name || this.state.user.email || 'Аккаунт';
-        label.textContent = name;
-        userAuth.classList.add('user-auth-logged-in');
-        if (userInfo && userNameLabel) {
-            userNameLabel.textContent = name;
-            userInfo.style.display = 'flex';
-        }
-    } else {
-        label.textContent = 'Войти';
-        userAuth.classList.remove('user-auth-logged-in');
-        if (userInfo) {
-            userInfo.style.display = 'none';
+        if (this.state.user) {
+            const name = this.state.user.name || this.state.user.email || 'Аккаунт';
+            label.textContent = name;
+            userAuth.classList.add('user-auth-logged-in');
+            if (userInfo && userNameLabel) {
+                userNameLabel.textContent = name;
+                userInfo.style.display = 'flex';
+            }
+        } else {
+            label.textContent = 'Войти';
+            userAuth.classList.remove('user-auth-logged-in');
+            if (userInfo) {
+                userInfo.style.display = 'none';
+            }
         }
     }
-    
-    // 🚫 НИЧЕГО НЕ ТРОГАЕМ В САЙДБАРЕ!
-    // Вся работа с sidebarUseremail ТОЛЬКО в updateSidebarInfo()
-}
 
     getCurrentTime() {
         const now = new Date();
@@ -2749,6 +2816,8 @@ updateSidebarInfo() {
     }
 
     showTypingIndicator() {
+        // В режиме "Не беспокоить" не показываем индикатор набора
+        if (this.state.doNotDisturb) return;
         this.elements.typingIndicator.style.display = 'block';
         this.scrollToBottom();
     }
@@ -2920,9 +2989,30 @@ updateSidebarInfo() {
                     <i class="fas fa-times"></i>
                 </button>
                 
-                <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <h2 style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
                     <i class="fas fa-history"></i> История чатов
                 </h2>
+
+                <div class="modal-section" style="margin-bottom: 12px;">
+                    <input 
+                        type="text" 
+                        id="chat-history-search" 
+                        placeholder="Поиск по названию и содержимому..." 
+                        style="
+                            width: 100%;
+                            padding: 10px 12px;
+                            border-radius: var(--radius-md);
+                            border: 1px solid var(--border-color);
+                            background: var(--bg-card);
+                            color: var(--text-primary);
+                            font-size: 0.9rem;
+                            margin-bottom: 4px;
+                        "
+                    />
+                    <div style="font-size: 0.75rem; color: var(--text-tertiary);">
+                        Поиск учитывает имя чата и первые сообщения в нём
+                    </div>
+                </div>
                 
                 <div class="modal-section">
                     <div id="chat-history-list" style="max-height: 300px; overflow-y: auto;">
@@ -2973,15 +3063,26 @@ updateSidebarInfo() {
             this.clearAllChats();
             this.hideModal('chat-history-modal');
         });
+
+        // Поиск по истории
+        const searchInput = document.getElementById('chat-history-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', () => {
+                const query = searchInput.value.trim().toLowerCase();
+                this.updateHistoryModalContent(query);
+            });
+        }
     }
 
-    updateHistoryModalContent() {
+    updateHistoryModalContent(searchQuery = '') {
         const historyList = document.getElementById('chat-history-list');
         if (!historyList) return;
         
         historyList.innerHTML = '';
         
-        if (this.chatManager.chats.length === 0) {
+        const chats = this.chatManager.chats || [];
+
+        if (chats.length === 0) {
             historyList.innerHTML = `
                 <div class="chat-history-empty" style="text-align: center; padding: 30px; color: var(--text-tertiary);">
                     Нет сохраненных чатов
@@ -2991,7 +3092,29 @@ updateSidebarInfo() {
         }
         
         // Сортируем чаты по времени (новые сверху)
-        const sortedChats = [...this.chatManager.chats].sort((a, b) => b.timestamp - a.timestamp);
+        let sortedChats = [...chats].sort((a, b) => b.timestamp - a.timestamp);
+
+        // Фильтруем по поисковому запросу (заголовок + первые сообщения)
+        const q = (searchQuery || '').toLowerCase();
+        if (q) {
+            sortedChats = sortedChats.filter(chat => {
+                const title = (chat.title || '').toLowerCase();
+                const messagesText = (chat.messages || [])
+                    .slice(0, 10)
+                    .map(m => (m.content || '').toLowerCase())
+                    .join(' ');
+                return title.includes(q) || messagesText.includes(q);
+            });
+        }
+
+        if (!sortedChats.length) {
+            historyList.innerHTML = `
+                <div class="chat-history-empty" style="text-align: center; padding: 30px; color: var(--text-tertiary);">
+                    Ничего не найдено. Попробуйте изменить запрос.
+                </div>
+            `;
+            return;
+        }
         
         sortedChats.forEach(chat => {
             const chatItem = document.createElement('div');
@@ -3137,6 +3260,14 @@ updateSidebarInfo() {
                 // Небольшая вариация масштаба (ещё один уровень глубины)
                 const scale = 0.7 + Math.random() * 1.3;
                 particle.style.setProperty('--scale', scale.toFixed(2));
+
+                // После окончания основного цикла анимации удаляем элемент, чтобы не засорять DOM.
+                // Используем onanimationend только для анимации particleFlow (без infinite в CSS).
+                particle.addEventListener('animationend', (e) => {
+                    if (e.animationName === 'particleFlow') {
+                        particle.remove();
+                    }
+                });
 
                 particlesContainer.appendChild(particle);
             }
@@ -3482,15 +3613,12 @@ updateSidebarInfo() {
                 extension = 'html';
                 break;
             case 'json':
-                const selectedModel = this.availableModels.find(m => m.id === this.API_CONFIG.model);
-                const modelName = selectedModel ? selectedModel.name : this.API_CONFIG.model;
-                
                 content = JSON.stringify({
                     chat: this.state.conversationHistory.filter(msg => msg.role !== 'system'),
                     metadata: {
                         exported: new Date().toISOString(),
                         totalMessages: this.state.stats.totalMessages,
-                        model: modelName,
+                        model: 'stepfun/step-3.5-flash:free',
                         api: 'OpenRouter',
                         topics: {
                             manipulations: this.state.stats.manipulationRequests,
@@ -3519,9 +3647,6 @@ updateSidebarInfo() {
     }
 
     exportAllChats() {
-        const selectedModel = this.availableModels.find(m => m.id === this.API_CONFIG.model);
-        const modelName = selectedModel ? selectedModel.name : this.API_CONFIG.model;
-        
         const allChatsData = {
             version: '2.1',
             timestamp: new Date().toISOString(),
@@ -3529,7 +3654,7 @@ updateSidebarInfo() {
             metadata: {
                 totalChats: this.chatManager.chats.length,
                 totalMessages: this.state.stats.totalMessages,
-                model: modelName,
+                model: 'stepfun/step-3.5-flash:free',
                 api: 'OpenRouter'
             }
         };
@@ -4138,134 +4263,86 @@ updateSidebarInfo() {
     }
 
     async loadDashboardData() {
-        try {
-            // Загружаем вопросы из бэкенда (только для авторизованных пользователей)
-            let questions = [];
-            if (this.state.user && this.state.authToken) {
-                try {
-                    const url = `${this.AUTH_CONFIG.baseUrl}/api/questions`;
-                    const response = await fetch(url, {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...this.getAuthHeaders()
-                        }
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (Array.isArray(data)) {
-                            questions = data.map(q => ({
-                                id: q.id,
-                                user: {
-                                    name: q.authorName || q.authorEmail || 'Пользователь',
-                                    avatar: '👤'
-                                },
-                                content: q.content,
-                                date: q.createdAt,
-                                likes: 0,
-                                dislikes: 0,
-                                comments: 0,
-                                isLiked: false,
-                                isDisliked: false
-                            }));
-                        }
-                    } else if (response.status !== 404) {
-                        console.warn('Не удалось загрузить вопросы с бэкенда', response.status);
-                    }
-                } catch (e) {
-                    console.error('Error fetching questions from backend:', e);
-                }
-            }
-
-            this.dashboard = {
-                questions,
-                stories: this.chatManager.chats.map(chat => ({
-                    id: chat.id,
-                    title: chat.title,
-                    preview: chat.messages && chat.messages.length > 0 
-                        ? chat.messages[0].content.substring(0, 100) + '...'
-                        : 'Нет сообщений',
-                    date: new Date(chat.timestamp),
-                    messageCount: chat.messages ? chat.messages.length : 0,
-                    likes: Math.floor(Math.random() * 20),
-                    comments: Math.floor(Math.random() * 10)
-                })),
-                analytics: {
-                    totalResponses: this.state.stats.aiMessages || 0,
-                    helpfulResponses: (this.state.stats.relationshipAdvice || 0)
-                        + (this.state.stats.manipulationRequests || 0)
-                        + (this.state.stats.datingAdvice || 0),
-                    averageRating: 0,
-                    activity: this.generateActivityData()
-                }
-            };
-            
-            this.renderDashboardData();
-            this.updateSidebarStats();
-            
-        } catch (error) {
-            console.error('Error loading dashboard data:', error);
-        }
+        return this.apiClient.loadDashboardData();
     }
 
     async submitDashboardQuestion(content) {
-        if (!this.state.user || !this.state.authToken) {
-            this.showNotification('Войдите в аккаунт, чтобы задать вопрос', 'warning');
+        return this.apiClient.submitDashboardQuestion(content);
+    }
+
+    async setQuestionReaction(questionId, type) {
+        return this.apiClient.setQuestionReaction(questionId, type);
+    }
+
+    async showQuestionCommentModal(questionId) {
+        if (!this.state.user) {
+            this.showNotification('Войдите в аккаунт, чтобы ответить', 'warning');
             return;
         }
 
-        const trimmed = (content || '').trim();
-        if (!trimmed) {
-            this.showNotification('Введите текст вопроса', 'warning');
+        this.currentCommentQuestionId = questionId;
+
+        const modalId = 'question-comments-modal';
+        const question = this.dashboard?.questions?.find(q => String(q.id) === String(questionId));
+
+        const previewEl = document.getElementById('question-comments-preview');
+        if (previewEl) {
+            previewEl.textContent = question ? (question.content || '') : '';
+        }
+
+        const textarea = document.getElementById('question-comment-input');
+        if (textarea) {
+            textarea.value = '';
+        }
+
+        this.showModal(modalId);
+
+        await this.loadQuestionComments(questionId);
+        this.renderQuestionComments(questionId);
+    }
+
+    async submitQuestionComment(questionId, content) {
+        return this.apiClient.submitQuestionComment(questionId, content);
+    }
+
+    async loadQuestionComments(questionId, force = false) {
+        return this.apiClient.loadQuestionComments(questionId, force);
+    }
+
+    renderQuestionComments(questionId) {
+        const list = document.getElementById('question-comments-list');
+        if (!list) return;
+
+        const comments = (this.state.questionComments && this.state.questionComments[questionId]) || [];
+
+        if (!comments.length) {
+            list.innerHTML = `
+                <div style="color: var(--text-tertiary); font-size: 0.9rem;">
+                    Пока нет комментариев. Будьте первым, кто ответит на этот вопрос.
+                </div>
+            `;
             return;
         }
 
-        try {
-            const url = `${this.AUTH_CONFIG.baseUrl}/api/questions`;
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...this.getAuthHeaders()
-                },
-                body: JSON.stringify({ content: trimmed })
-            });
-
-            if (!response.ok) {
-                const error = await response.json().catch(() => ({}));
-                const message = error.message || `Не удалось отправить вопрос (HTTP ${response.status})`;
-                throw new Error(message);
-            }
-
-            const question = await response.json();
-            const mapped = {
-                id: question.id,
-                user: {
-                    name: question.authorName || question.authorEmail || (this.state.user.name || this.state.user.email || 'Пользователь'),
-                    avatar: '👤'
-                },
-                content: question.content,
-                date: question.createdAt,
-                likes: 0,
-                dislikes: 0,
-                comments: 0,
-                isLiked: false,
-                isDisliked: false
-            };
-
-            if (!this.dashboard) {
-                this.dashboard = { questions: [], stories: [], analytics: { activity: [] } };
-            }
-
-            this.dashboard.questions = [mapped, ...(this.dashboard.questions || [])];
-            this.renderQuestions();
-            this.updateSidebarStats();
-            this.showNotification('Вопрос отправлен', 'success');
-        } catch (error) {
-            console.error('submitDashboardQuestion error:', error);
-            this.showNotification(error.message || 'Не удалось отправить вопрос', 'error');
-        }
+        list.innerHTML = comments.map(c => `
+            <div class="comment-item">
+                <div class="comment-header">
+                    <div class="comment-avatar">
+                        ${(c.authorName || 'П')[0].toUpperCase()}
+                    </div>
+                    <div>
+                        <div style="font-weight: 600;">${c.authorName || 'Пользователь'}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-tertiary);">
+                            ${c.authorEmail || ''}
+                            ${c.createdAt ? ' · ' + this.formatDate(c.createdAt) : ''}
+                        </div>
+                    </div>
+                </div>
+                <div class="comment-content">
+                    ${c.content}
+                </div>
+            </div>
+        `).join('');
     }
 
     generateActivityData() {
@@ -4303,6 +4380,7 @@ updateSidebarInfo() {
 
         // Рендерим админ-вкладку (если есть права)
         this.renderAdminQuestions();
+        this.renderAdminUsers();
     }
 
     renderQuestions() {
@@ -4383,7 +4461,7 @@ updateSidebarInfo() {
                             </button>
                             ` : ''}
                         </div>
-                        <div class="comments-count">
+                        <div class="comments-count" data-question-id="${question.id}">
                             <i class="fas fa-comments"></i> ${question.comments}
                         </div>
                     </div>
@@ -4503,6 +4581,208 @@ updateSidebarInfo() {
         `).join('');
     }
 
+    renderAdminUsers() {
+        const usersList = document.getElementById('admin-users-list');
+        const usersFilterButtons = document.querySelectorAll('.admin-user-filter');
+        const searchInput = document.getElementById('admin-user-search-input');
+
+        if (!usersList) return;
+
+        // Если админ-режим выключен — просто показываем заглушку
+        if (!this.state.isAdmin) {
+            usersList.innerHTML = `
+                <div class="question-card" style="text-align: center; padding: 40px;">
+                    <i class="fas fa-lock" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
+                    <h4>Нет доступа</h4>
+                    <p style="color: var(--text-tertiary);">Управление пользователями доступно только в админ-режиме</p>
+                </div>
+            `;
+            return;
+        }
+
+        if (!this.dashboard || !this.dashboard.questions || this.dashboard.questions.length === 0) {
+            usersList.innerHTML = `
+                <div class="question-card" style="text-align: center; padding: 40px;">
+                    <i class="fas fa-users" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
+                    <h4>Пока нет пользователей</h4>
+                    <p style="color: var(--text-tertiary);">Пользователи появятся здесь после того, как начнут задавать вопросы</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Собираем пользователей из вопросов
+        const usersMap = new Map();
+
+        this.dashboard.questions.forEach(question => {
+            const u = question.user || {};
+            const key = u.email || u.name;
+            if (!key) return;
+
+            const existing = usersMap.get(key) || {
+                key,
+                name: u.name || u.email || 'Пользователь',
+                email: u.email || '',
+                avatar: u.avatar || '👤',
+                isBanned: false,
+                role: 'user'
+            };
+
+            existing.isBanned = existing.isBanned || !!question.isBanned;
+            usersMap.set(key, existing);
+        });
+
+        // Применяем сохраненные роли
+        const roles = this.state.adminRoles || {};
+        let users = Array.from(usersMap.values()).map(u => ({
+            ...u,
+            role: roles[u.key] || u.role
+        }));
+
+        // Фильтрация по типу
+        const filter = this.state.adminUserFilter || 'all';
+        if (filter === 'banned') {
+            users = users.filter(u => u.isBanned);
+        } else if (filter === 'admins') {
+            users = users.filter(u => u.role === 'admin');
+        }
+
+        // Поиск по имени / email
+        const query = (this.state.adminUserSearchQuery || '').trim().toLowerCase();
+        if (query) {
+            users = users.filter(u => {
+                const name = (u.name || '').toLowerCase();
+                const email = (u.email || '').toLowerCase();
+                return name.includes(query) || email.includes(query);
+            });
+        }
+
+        if (!users.length) {
+            usersList.innerHTML = `
+                <div class="question-card" style="text-align: center; padding: 40px;">
+                    <i class="fas fa-users-slash" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
+                    <h4>Ничего не найдено</h4>
+                    <p style="color: var(--text-tertiary);">Попробуйте изменить фильтр или поиск</p>
+                </div>
+            `;
+            return;
+        }
+
+        usersList.innerHTML = users.map(user => `
+            <div class="question-card" data-user-key="${user.key}">
+                <div class="question-header">
+                    <div class="question-avatar">${user.avatar}</div>
+                    <div class="question-meta">
+                        <h5>${user.name}</h5>
+                        <div class="date">
+                            ${user.email ? user.email + ' · ' : ''}${user.role === 'admin' ? 'Админ' : 'Пользователь'}
+                        </div>
+                    </div>
+                </div>
+                <div class="question-actions">
+                    <div class="action-buttons">
+                        <button class="action-btn" data-action="user-ban" data-user-key="${user.key}">
+                            <i class="fas fa-${user.isBanned ? 'user-check' : 'user-slash'}"></i>
+                            ${user.isBanned ? 'Разбанить' : 'Забанить'}
+                        </button>
+                        <button class="action-btn" data-action="user-role" data-user-key="${user.key}">
+                            <i class="fas fa-${user.role === 'admin' ? 'user' : 'user-shield'}"></i>
+                            ${user.role === 'admin' ? 'Сделать пользователем' : 'Сделать админом'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        // Фильтры по пользователям
+        usersFilterButtons.forEach(btn => {
+            const value = btn.getAttribute('data-filter');
+            if (!value) return;
+
+            btn.classList.toggle('active', value === this.state.adminUserFilter);
+
+            if (!btn._adminUserFilterBound) {
+                btn.addEventListener('click', () => {
+                    this.state.adminUserFilter = value;
+                    this.renderAdminUsers();
+                });
+                btn._adminUserFilterBound = true;
+            }
+        });
+
+        // Поле поиска пользователей
+        if (searchInput) {
+            if (typeof this.state.adminUserSearchQuery === 'string') {
+                searchInput.value = this.state.adminUserSearchQuery;
+            }
+
+            if (!searchInput._adminUserSearchBound) {
+                searchInput.addEventListener('input', () => {
+                    this.state.adminUserSearchQuery = searchInput.value || '';
+                    this.renderAdminUsers();
+                });
+                searchInput._adminUserSearchBound = true;
+            }
+        }
+
+        // Обработчики действий по пользователям
+        usersList.querySelectorAll('[data-action="user-ban"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const key = btn.getAttribute('data-user-key');
+                if (!key) return;
+
+                // Переключаем бан пользователя через его вопросы
+                const questions = this.dashboard.questions || [];
+                const isCurrentlyBanned = questions.some(q => {
+                    const u = q.user || {};
+                    const k = u.email || u.name;
+                    return k === key && q.isBanned;
+                });
+
+                questions.forEach(q => {
+                    const u = q.user || {};
+                    const k = u.email || u.name;
+                    if (k === key) {
+                        q.isBanned = !isCurrentlyBanned;
+                    }
+                });
+
+                this.showNotification(
+                    isCurrentlyBanned ? 'Пользователь разбанен (локально)' : 'Пользователь забанен (локально)',
+                    isCurrentlyBanned ? 'success' : 'warning'
+                );
+
+                this.renderQuestions();
+                this.renderAdminQuestions();
+                this.renderAdminUsers();
+            });
+        });
+
+        usersList.querySelectorAll('[data-action="user-role"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const key = btn.getAttribute('data-user-key');
+                if (!key) return;
+
+                const currentRole = this.state.adminRoles?.[key] || 'user';
+                const newRole = currentRole === 'admin' ? 'user' : 'admin';
+
+                this.state.adminRoles = {
+                    ...(this.state.adminRoles || {}),
+                    [key]: newRole
+                };
+
+                this.showNotification(
+                    newRole === 'admin'
+                        ? 'Пользователь отмечен как админ (локально)'
+                        : 'Права админа сняты (локально)',
+                    'info'
+                );
+
+                this.renderAdminUsers();
+            });
+        });
+    }
+
     renderAdminQuestions() {
         const adminTabButton = document.querySelector('.dashboard-tab[data-tab="admin"]');
         const adminList = document.getElementById('admin-questions-list');
@@ -4531,7 +4811,7 @@ updateSidebarInfo() {
         if (!this.dashboard || !this.dashboard.questions || this.dashboard.questions.length === 0) {
             adminList.innerHTML = `
                 <div class="question-card" style="text-align: center; padding: 40px;">
-                    <i class="fas fa-tasks" style="font-size: 3rem; color: var(--text-terтиary); margin-bottom: 20px;"></i>
+                    <i class="fas fa-tasks" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
                     <h4>Пока нет вопросов</h4>
                     <p style="color: var(--text-tertiary);">После появления вопросов вы сможете управлять ими здесь</p>
                 </div>
@@ -4539,7 +4819,21 @@ updateSidebarInfo() {
             return;
         }
 
-        const html = this.dashboard.questions.map(question => `
+        // Применяем фильтры по статусу
+        const filter = this.state.adminQuestionFilter || 'all';
+        let questions = [...this.dashboard.questions];
+
+        if (filter === 'unresolved') {
+            questions = questions.filter(q => !q.isResolved);
+        } else if (filter === 'resolved') {
+            questions = questions.filter(q => q.isResolved);
+        } else if (filter === 'banned') {
+            questions = questions.filter(q => q.isBanned);
+        } else if (filter === 'not-banned') {
+            questions = questions.filter(q => !q.isBanned);
+        }
+
+        const html = questions.map(question => `
             <div class="question-card" data-question-id="${question.id}">
                 <div class="question-header">
                     <div class="question-avatar">${question.user.avatar}</div>
@@ -4568,7 +4862,7 @@ updateSidebarInfo() {
                             <i class="fas fa-check"></i> Отметить как решенный
                         </button>
                     </div>
-                    <div class="comments-count">
+                    <div class="comments-count" data-question-id="${question.id}">
                         <i class="fas fa-comments"></i> ${question.comments}
                     </div>
                 </div>
@@ -4586,6 +4880,7 @@ updateSidebarInfo() {
                 this.renderQuestions();
                 this.renderAdminQuestions();
                 this.updateSidebarStats();
+                this.renderAdminUsers();
                 this.showNotification('Вопрос удален (локально)', 'info');
             });
         });
@@ -4600,6 +4895,7 @@ updateSidebarInfo() {
                 question.isBanned = true;
                 this.showNotification(`Пользователь ${userEmail} помечен как забаненный (локально)`, 'warning');
                 this.renderAdminQuestions();
+                this.renderAdminUsers();
             });
         });
 
@@ -4613,6 +4909,23 @@ updateSidebarInfo() {
                 this.showNotification('Вопрос отмечен как решенный (локально)', 'success');
                 this.renderAdminQuestions();
             });
+        });
+
+        // Обработчики фильтров по вопросам
+        const filterButtons = document.querySelectorAll('.admin-question-filter');
+        filterButtons.forEach(btn => {
+            const value = btn.getAttribute('data-filter');
+            if (!value) return;
+
+            btn.classList.toggle('active', value === this.state.adminQuestionFilter);
+
+            if (!btn._adminFilterBound) {
+                btn.addEventListener('click', () => {
+                    this.state.adminQuestionFilter = value;
+                    this.renderAdminQuestions();
+                });
+                btn._adminFilterBound = true;
+            }
         });
     }
 
@@ -4634,6 +4947,17 @@ updateSidebarInfo() {
             case 'chat': return '💕';
             default: return '📝';
         }
+    }
+
+    triggerHapticFeedback() {
+        // Вибрация только на мобильных устройствах, если поддерживается
+        if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
+        const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent || '');
+        if (!isMobile) return;
+        if (!navigator.vibrate) return;
+
+        // Мягкий короткий паттерн
+        navigator.vibrate(30);
     }
 
     createAnalyticsChart() {
@@ -4704,6 +5028,174 @@ updateSidebarInfo() {
                 }
             }
         });
+    }
+
+    getBalanceData() {
+        const stats = this.state.stats;
+        const total = stats.totalMessages || 0;
+
+        // Базируемся на уже считаемых темах
+        const trustConcerns = stats.relationshipAdvice || 0;
+        const communicationConcerns = stats.relationshipAdvice || 0;
+        const boundariesConcerns = stats.manipulationRequests || 0;
+        const passionConcerns = stats.datingAdvice || 0;
+
+        const clampScore = (concerns, maxImpact = 5) => {
+            const impact = Math.min(concerns, maxImpact);
+            const score = 10 - impact; // больше проблем -> ниже балл
+            return Math.max(2, Math.min(10, score));
+        };
+
+        const trust = clampScore(trustConcerns, 6);
+        const passion = clampScore(passionConcerns, 5);
+        const communication = clampScore(communicationConcerns, 6);
+        const boundaries = clampScore(boundariesConcerns, 6);
+        const selfEsteem = clampScore(boundariesConcerns + trustConcerns, 8);
+        const conflicts = clampScore(trustConcerns, 6);
+        const support = Math.min(10, 5 + Math.floor(total / 15));
+        const independence = Math.min(10, 6 + Math.floor(stats.sessions / 2));
+
+        const labels = [
+            'Доверие',
+            'Страсть',
+            'Коммуникация',
+            'Границы',
+            'Самоценность',
+            'Конфликты',
+            'Поддержка',
+            'Самостоятельность',
+        ];
+
+        const values = [
+            trust,
+            passion,
+            communication,
+            boundaries,
+            selfEsteem,
+            conflicts,
+            support,
+            independence,
+        ];
+
+        return { labels, values };
+    }
+
+    showBalanceModal(auto = false) {
+        const modal = document.getElementById('balance-modal');
+        const canvas = document.getElementById('balance-chart');
+        if (!modal || !canvas) return;
+
+        const { labels, values } = this.getBalanceData();
+
+        // Рисуем радар-чарт
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        if (this.balanceChart) {
+            this.balanceChart.destroy();
+        }
+
+        this.balanceChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Баланс отношений',
+                    data: values,
+                    backgroundColor: 'rgba(236, 72, 153, 0.18)',
+                    borderColor: '#ec4899',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#ec4899',
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                }],
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    r: {
+                        suggestedMin: 0,
+                        suggestedMax: 10,
+                        ticks: {
+                            display: false,
+                        },
+                        grid: {
+                            color: 'rgba(148, 163, 184, 0.4)',
+                        },
+                        angleLines: {
+                            color: 'rgba(148, 163, 184, 0.4)',
+                        },
+                        pointLabels: {
+                            color: 'var(--text-secondary)',
+                            font: {
+                                size: 11,
+                            },
+                        },
+                    },
+                },
+                plugins: {
+                    legend: {
+                        display: false,
+                    },
+                },
+            },
+        });
+
+        // Текстовый анализ
+        const summaryEl = document.getElementById('balance-summary');
+        const recsEl = document.getElementById('balance-recommendations');
+
+        if (summaryEl && recsEl) {
+            const pairs = labels.map((label, idx) => ({ label, value: values[idx] }));
+            const sorted = [...pairs].sort((a, b) => a.value - b.value);
+            const weakest = sorted.slice(0, 2);
+            const strongest = sorted.slice(-2).reverse();
+
+            summaryEl.innerHTML = `
+                Сильные стороны сейчас: <strong>${strongest.map(s => s.label).join(', ')}</strong>.<br>
+                Зоны напряжения: <strong>${weakest.map(w => w.label).join(', ')}</strong>.
+            `;
+
+            const recs = [];
+            weakest.forEach(({ label }) => {
+                switch (label) {
+                    case 'Доверие':
+                        recs.push('Больше проговаривайте ожидания и страхи, договоритесь о прозрачности в важных темах.');
+                        break;
+                    case 'Коммуникация':
+                        recs.push('Вводите привычку «спокойных разговоров»: обсуждать сложные темы отдельно от ссор.');
+                        break;
+                    case 'Границы':
+                        recs.push('Определите, что для вас недопустимо, и проговорите это партнёру в спокойной форме.');
+                        break;
+                    case 'Страсть':
+                        recs.push('Запланируйте совместные тёплые активности: свидания, ритуалы близости, общие впечатления.');
+                        break;
+                    case 'Самоценность':
+                        recs.push('Отслеживайте, где вы поступаетесь собой ради партнёра, и постепенно выравнивайте баланс.');
+                        break;
+                    case 'Конфликты':
+                        recs.push('Договоритесь об общих правилах ссор: без оскорблений, с паузами и возвращением к диалогу.');
+                        break;
+                    case 'Поддержка':
+                        recs.push('Попросите партнёра о конкретной поддержке и сами интересуйтесь его состоянием чаще.');
+                        break;
+                    case 'Самостоятельность':
+                        recs.push('Сохраните свои личные интересы и друзей — это укрепляет, а не рушит отношения.');
+                        break;
+                }
+            });
+
+            recsEl.innerHTML = recs.map(r => `<li>${r}</li>`).join('');
+        }
+
+        this.showModal('balance-modal');
+
+        const closeBtn = document.getElementById('balance-close');
+        if (closeBtn && !closeBtn._balanceBound) {
+            closeBtn.addEventListener('click', () => this.hideModal('balance-modal'));
+            closeBtn._balanceBound = true;
+        }
     }
 
     updateSidebarStats() {

@@ -1251,6 +1251,9 @@
                 <button class="dashboard-tab" data-tab="activity">
                     <i class="fas fa-bolt"></i> Активность
                 </button>
+                <button class="dashboard-tab" data-tab="users">
+                    <i class="fas fa-users-cog"></i> Пользователи
+                </button>
                 <!-- Вкладка админ-панели отображается только в админ-режиме (через CSS/JS) -->
                 <button class="dashboard-tab admin-only" data-tab="admin" style="display: none;">
                     <i class="fas fa-user-shield"></i> Админ
@@ -1323,6 +1326,59 @@
                 </div>
             </div>
 
+            <!-- Вкладка пользователей -->
+            <div class="dashboard-tab-content" id="users-tab">
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-users-cog"></i> Пользователи
+                    </h3>
+
+                    <div class="question-card" style="margin-bottom: 15px;">
+                        <div class="question-header">
+                            <div class="question-avatar">👥</div>
+                            <div class="question-meta">
+                                <h5>Управление пользователями</h5>
+                                <div class="date">Баны, разморозка и права</div>
+                            </div>
+                        </div>
+                        <div class="question-content" style="margin-bottom: 10px;">
+                            Здесь отображаются пользователи, собранные из их вопросов и активностей. Все действия пока выполняются локально, без бэкенда.
+                        </div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px;">
+                            <div style="flex: 1; min-width: 200px;">
+                                <input
+                                    type="text"
+                                    id="admin-user-search-input"
+                                    placeholder="Поиск по имени или email..."
+                                    style="width: 100%; padding: 8px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-size: 0.9rem;"
+                                >
+                            </div>
+                        </div>
+                        <div class="question-actions">
+                            <div class="action-buttons admin-users-filters">
+                                <button class="action-btn admin-user-filter" data-filter="all">
+                                    <i class="fas fa-list"></i> Все
+                                </button>
+                                <button class="action-btn admin-user-filter" data-filter="banned">
+                                    <i class="fas fa-user-slash"></i> Забаненные
+                                </button>
+                                <button class="action-btn admin-user-filter" data-filter="admins">
+                                    <i class="fas fa-user-shield"></i> Админы
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="questions-grid" id="admin-users-list">
+                        <div class="question-card" style="text-align: center; padding: 40px;">
+                            <i class="fas fa-users" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
+                            <h4>Нет данных</h4>
+                            <p style="color: var(--text-tertiary);">Пользователи появятся здесь после появления вопросов в системе</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Админ-панель (вкладка) -->
             <div class="dashboard-tab-content" id="admin-tab">
                 <div style="margin-bottom: 20px;">
@@ -1353,6 +1409,36 @@
                         </div>
                     </div>
 
+                    <!-- Фильтры по вопросам -->
+                    <div class="question-card" style="margin-bottom: 15px;">
+                        <div class="question-header">
+                            <div class="question-avatar">🔍</div>
+                            <div class="question-meta">
+                                <h5>Фильтры вопросов</h5>
+                                <div class="date">Быстрая навигация по статусам</div>
+                            </div>
+                        </div>
+                        <div class="question-actions">
+                            <div class="action-buttons admin-question-filters">
+                                <button class="action-btn admin-question-filter" data-filter="all">
+                                    <i class="fas fa-list"></i> Все
+                                </button>
+                                <button class="action-btn admin-question-filter" data-filter="unresolved">
+                                    <i class="fas fa-exclamation-circle"></i> Незакрытые
+                                </button>
+                                <button class="action-btn admin-question-filter" data-filter="resolved">
+                                    <i class="fas fa-check-circle"></i> Решенные
+                                </button>
+                                <button class="action-btn admin-question-filter" data-filter="banned">
+                                    <i class="fas fa-user-slash"></i> Забаненные
+                                </button>
+                                <button class="action-btn admin-question-filter" data-filter="not-banned">
+                                    <i class="fas fa-user-check"></i> Не забаненные
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Админ-список вопросов -->
                     <div class="questions-grid" id="admin-questions-list">
                         <div class="question-card" style="text-align: center; padding: 40px;">
@@ -1361,6 +1447,38 @@
                             <p style="color: var(--text-tertiary);">Вопросы пользователей появятся здесь после загрузки дашборда</p>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно комментариев к вопросу дашборда -->
+    <div class="modal" id="question-comments-modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <button class="modal-close" onclick="window.verdiktApp.hideModal('question-comments-modal')">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <h2 style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-comments"></i> Комментарии к вопросу
+            </h2>
+
+            <div class="question-preview" id="question-comments-preview" style="margin-bottom: 15px; font-size: 0.9rem; color: var(--text-secondary);">
+            </div>
+
+            <div class="comments-section">
+                <div class="comment-form">
+                    <textarea
+                        id="question-comment-input"
+                        class="comment-input"
+                        placeholder="Напишите ваш ответ или комментарий..."
+                        rows="3"
+                    ></textarea>
+                    <button class="ios-button" id="question-comment-submit" style="width: 100%;">
+                        <i class="fas fa-paper-plane"></i> Отправить комментарий
+                    </button>
+                </div>
+                <div class="comments-list" id="question-comments-list">
                 </div>
             </div>
         </div>
@@ -1623,6 +1741,66 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Дерево навыков отношений -->
+                <div class="settings-section">
+                    <h4><i class="fas fa-project-diagram"></i> Дерево навыков</h4>
+                    <div class="skills-tree" id="skills-tree">
+                        <div class="skills-branch">
+                            <div class="skills-branch-title">
+                                <span>🌸 Эмпатия</span>
+                                <small id="skill-empathy-level">Уровень 0</small>
+                            </div>
+                            <div class="skills-nodes">
+                                <div class="skill-node" data-skill="empathy-1">
+                                    Слушатель
+                                </div>
+                                <div class="skill-node" data-skill="empathy-2">
+                                    Поддержка
+                                </div>
+                                <div class="skill-node" data-skill="empathy-3">
+                                    Глубокое понимание
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="skills-branch">
+                            <div class="skills-branch-title">
+                                <span>🛡️ Защита</span>
+                                <small id="skill-protection-level">Уровень 0</small>
+                            </div>
+                            <div class="skills-nodes">
+                                <div class="skill-node" data-skill="protection-1">
+                                    Замечает триггеры
+                                </div>
+                                <div class="skill-node" data-skill="protection-2">
+                                    Читает манипуляции
+                                </div>
+                                <div class="skill-node" data-skill="protection-3">
+                                    Сильные границы
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="skills-branch">
+                            <div class="skills-branch-title">
+                                <span>🧠 Мудрость</span>
+                                <small id="skill-wisdom-level">Уровень 0</small>
+                            </div>
+                            <div class="skills-nodes">
+                                <div class="skill-node" data-skill="wisdom-1">
+                                    Рефлексия
+                                </div>
+                                <div class="skill-node" data-skill="wisdom-2">
+                                    Выводы
+                                </div>
+                                <div class="skill-node" data-skill="wisdom-3">
+                                    Стратегия отношений
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="settings-tab-content" id="stats-tab">
@@ -1863,6 +2041,37 @@
         </div>
     </div>
 
+    <!-- Модальное окно "Колесо баланса" -->
+    <div class="modal" id="balance-modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <button class="modal-close" id="balance-close">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <h2 style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-balance-scale"></i> Колесо баланса отношений
+            </h2>
+
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 15px;">
+                На основе последних сообщений построен профиль по ключевым сферам отношений. 
+                Восприятие строится по тем запросам, с которыми вы обращались.
+            </p>
+            
+            <div style="background: rgba(255, 255, 255, 0.05); border-radius: var(--radius-md); padding: 16px; margin-bottom: 18px;">
+                <canvas id="balance-chart" style="width: 100%; height: 260px;"></canvas>
+            </div>
+
+            <h3 style="margin-bottom: 8px;">Сильные и слабые стороны</h3>
+            <div id="balance-summary" style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 10px;">
+                Анализируется...
+            </div>
+
+            <h3 style="margin-bottom: 8px;">Рекомендации</h3>
+            <ul id="balance-recommendations" style="font-size: 0.9rem; color: var(--text-secondary); padding-left: 18px; margin: 0;">
+            </ul>
+        </div>
+    </div>
+
     <!-- Модальное окно экспорта чата с шифрованием -->
     <div class="modal" id="export-chat-modal">
         <div class="modal-content" style="max-width: 500px;">
@@ -2020,6 +2229,14 @@
                     <i class="fas fa-user-shield"></i>
                 </button>
                 
+                <!-- Авторизация пользователя -->
+                <div class="user-auth" id="user-auth">
+                    <button class="ios-button secondary" id="login-button" title="Войти">
+                        <i class="fas fa-user"></i>
+                        <span class="user-auth-label">Войти</span>
+                    </button>
+                </div>
+                
                 <div class="developers-dropdown">
                     <button class="ios-button secondary" id="developers-btn" title="Команда разработки">
                         <i class="fas fa-users"></i>
@@ -2101,8 +2318,13 @@
                                 <h2>Verdikt GPT - Эксперт по отношениям</h2>
                                 <p>Специалист в психологии отношений, знакомств и распознавании манипуляций</p>
                             </div>
-                            <div class="status-indicator" id="api-status">
-                                <i class="fas fa-circle"></i> Подключение...
+                            <div class="chat-header-controls">
+                                <div class="status-indicator" id="api-status">
+                                    <i class="fas fa-circle"></i> Подключение...
+                                </div>
+                                <button class="chat-action-button" id="dnd-toggle" title="Режим «Не беспокоить»">
+                                    <i class="fas fa-bell"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -2274,6 +2496,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="crypto.js"></script>
     <script>window.VERDIKT_BACKEND_URL = 'http://localhost:8080';</script>
-    <script src="main.js"></script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
