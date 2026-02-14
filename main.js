@@ -499,7 +499,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 </div>
                 
                 <div style="margin-top: 15px; font-size: 0.8rem; color: var(--text-tertiary); text-align: center;">
-                    <i class="fas fa-info-circle"></i> Используется только модель stepfun/step-3.5-flash:free
+                    <i class="fas fa-info-circle"></i> Используется только модель Verdikt GPT
                 </div>
             </div>
         </div>
