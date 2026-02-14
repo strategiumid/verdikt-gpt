@@ -12,7 +12,7 @@ export class VerdiktChatApp {
             model: 'stepfun/step-3.5-flash:free', // Только одна модель
             maxTokens: 1000,
             temperature: 0.7,
-            apiKey: "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"
+            apiKey: "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"
         };
 
         // Конфигурация собственного бэкенда для авторизации пользователей
@@ -195,10 +195,7 @@ export class VerdiktChatApp {
             profileSettingsForm: document.getElementById('profile-settings-form'),
             
             // Кнопка перезагрузки инструкций
-            reloadInstructions: document.getElementById('reload-instructions'),
-
-            // Hero-блок
-            chatHero: document.getElementById('chat-hero')
+            reloadInstructions: document.getElementById('reload-instructions')
         };
 
         this.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -823,57 +820,48 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     }
 
     async createNewChat() {
-        const newChatId = 'chat-' + this.chatManager.nextChatId++;
-        
-        this.chatManager.currentChatId = newChatId;
-        
-        // Сбрасываем состояние
-        this.state.conversationHistory = [this.createSystemPromptMessage()];
-        
-        this.state.messageCount = 1;
-        this.state.stats.totalMessages = 1;
-        this.state.stats.userMessages = 0;
-        this.state.stats.aiMessages = 1;
-        this.state.retryCount = 0;
-        
-        // Показываем Hero-блок
-        document.body.classList.add('chat-empty');
-        
-        // Очищаем чат и показываем Hero
-        this.elements.chatMessages.innerHTML = `
-            <!-- Hero-блок для пустого чата (как у DeepSeek) -->
-            <div class="chat-hero" id="chat-hero">
-                <div class="hero-logo">
-                    <i class="fas fa-heart"></i>
-                </div>
-                <h1 class="hero-title">Чем я могу помочь?</h1>
-                <div class="hero-suggestions">
-                    <button class="suggestion-chip" data-question="Как распознать манипуляцию в отношениях?">
-                        Как распознать манипуляцию?
-                    </button>
-                    <button class="suggestion-chip" data-question="Как правильно вести себя на первом свидании?">
-                        Первое свидание: советы
-                    </button>
-                    <button class="suggestion-chip" data-question="Как установить здоровые границы в отношениях?">
-                        Как установить личные границы?
-                    </button>
-                    <button class="suggestion-chip" data-question="Что делать, если партнер меня игнорирует?">
-                        Что делать при игноре?
-                    </button>
-                    <button class="suggestion-chip" data-question="Как понять, что отношения токсичны?">
-                        Признаки токсичных отношений
-                    </button>
-                </div>
+    const newChatId = 'chat-' + this.chatManager.nextChatId++;
+    
+    this.chatManager.currentChatId = newChatId;
+    
+    // Сбрасываем состояние
+    this.state.conversationHistory = [this.createSystemPromptMessage()];
+    
+    this.state.messageCount = 1;
+    this.state.stats.totalMessages = 1;
+    this.state.stats.userMessages = 0;
+    this.state.stats.aiMessages = 1;
+    this.state.retryCount = 0;
+    
+    // Показываем Hero-блок
+    document.body.classList.add('chat-empty');
+    
+    // Очищаем чат и показываем Hero (ЭТО НОВЫЙ КОД)
+    this.elements.chatMessages.innerHTML = `
+        <div class="chat-hero" id="chat-hero">
+            <div class="hero-logo">
+                <i class="fas fa-heart"></i>
             </div>
-        `;
-        
-        // Сохраняем новый чат
-        await this.saveChats();
-        
-        this.showNotification('Новый чат создан 💬', 'success');
-        this.updateUI();
-        this.updateSettingsStats();
-    }
+            <h1 class="hero-title">Чем я могу помочь?</h1>
+            <div class="hero-suggestions">
+                <button class="suggestion-chip" data-question="Как распознать манипуляцию в отношениях?">
+                    Как распознать манипуляцию?
+                </button>
+                <button class="suggestion-chip" data-question="Как правильно вести себя на первом свидании?">
+                    Первое свидание: советы
+                </button>
+                <button class="suggestion-chip" data-question="Как установить здоровые границы в отношениях?">
+                    Как установить личные границы?
+                </button>
+            </div>
+        </div>
+    `;
+    
+    await this.saveChats();
+    this.showNotification('Новый чат создан 💬', 'success');
+    this.updateUI();
+    this.updateSettingsStats();
+}
 
     async loadChat(chatId) {
         const chat = this.chatManager.chats.find(c => c.id === chatId);
@@ -907,9 +895,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         if (chat.theme) {
             this.setTheme(chat.theme);
         }
-        
-        // Скрываем Hero-блок (есть сообщения)
-        document.body.classList.remove('chat-empty');
         
         // Очищаем и перерисовываем сообщения
         this.elements.chatMessages.innerHTML = '';
@@ -1875,18 +1860,27 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 mode.classList.add('active');
             });
         });
-        
-        // Примеры вопросов (чипсы в Hero-блоке)
+
         document.body.addEventListener('click', (e) => {
-            const chip = e.target.closest('.suggestion-chip');
-            if (chip) {
-                e.preventDefault();
-                const question = chip.dataset.question;
-                if (question) {
-                    this.elements.messageInput.value = question;
-                    this.elements.messageInput.focus();
-                }
+        const chip = e.target.closest('.suggestion-chip');
+        if (chip) {
+            e.preventDefault();
+            const question = chip.dataset.question;
+            if (question) {
+                this.elements.messageInput.value = question;
+                this.elements.messageInput.focus();
             }
+        }
+    });
+        
+        // Примеры вопросов
+        document.querySelectorAll('.example-button').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const question = e.currentTarget.dataset.question;
+                this.elements.messageInput.value = question;
+                this.elements.messageInput.focus();
+            });
         });
         
         // Кнопки управления
@@ -2068,6 +2062,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     }
 
     async sendMessage() {
+        document.body.classList.remove('chat-empty');
         const message = this.elements.messageInput.value.trim();
         
         if (!message) {
@@ -2099,9 +2094,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             this.checkApiStatus();
             return;
         }
-        
-        // Скрываем Hero-блок при отправке первого сообщения
-        document.body.classList.remove('chat-empty');
         
         this.addMessage(message, 'user');
         
@@ -2333,43 +2325,36 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     }
 
     clearChat() {
-        if (confirm('Очистить текущий чат? Сообщения будут удалены.')) {
-            this.state.conversationHistory = [this.createSystemPromptMessage()];
-            
-            // Показываем Hero-блок
-            document.body.classList.add('chat-empty');
-            
-            this.elements.chatMessages.innerHTML = `
-                <!-- Hero-блок для пустого чата (как у DeepSeek) -->
-                <div class="chat-hero" id="chat-hero">
-                    <div class="hero-logo">
-                        <i class="fas fa-heart"></i>
-                    </div>
-                    <h1 class="hero-title">Чем я могу помочь?</h1>
-                    <div class="hero-suggestions">
-                        <button class="suggestion-chip" data-question="Как распознать манипуляцию в отношениях?">
-                            Как распознать манипуляцию?
-                        </button>
-                        <button class="suggestion-chip" data-question="Как правильно вести себя на первом свидании?">
-                            Первое свидание: советы
-                        </button>
-                        <button class="suggestion-chip" data-question="Как установить здоровые границы в отношениях?">
-                            Как установить личные границы?
-                        </button>
-                        <button class="suggestion-chip" data-question="Что делать, если партнер меня игнорирует?">
-                            Что делать при игноре?
-                        </button>
-                        <button class="suggestion-chip" data-question="Как понять, что отношения токсичны?">
-                            Признаки токсичных отношений
-                        </button>
-                    </div>
+    if (confirm('Очистить текущий чат? Сообщения будут удалены.')) {
+        this.state.conversationHistory = [this.createSystemPromptMessage()];
+        
+        // Показываем Hero-блок
+        document.body.classList.add('chat-empty');
+        
+        this.elements.chatMessages.innerHTML = `
+            <div class="chat-hero" id="chat-hero">
+                <div class="hero-logo">
+                    <i class="fas fa-heart"></i>
                 </div>
-            `;
-            
-            this.saveChats();
-            this.showNotification('Чат очищен 🗑️', 'info');
-        }
+                <h1 class="hero-title">Чем я могу помочь?</h1>
+                <div class="hero-suggestions">
+                    <button class="suggestion-chip" data-question="Как распознать манипуляцию в отношениях?">
+                        Как распознать манипуляцию?
+                    </button>
+                    <button class="suggestion-chip" data-question="Как правильно вести себя на первом свидании?">
+                        Первое свидание: советы
+                    </button>
+                    <button class="suggestion-chip" data-question="Как установить здоровые границы в отношениях?">
+                        Как установить личные границы?
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        this.saveChats();
+        this.showNotification('Чат очищен 🗑️', 'info');
     }
+}
 
     setAIMode(modeId) {
         if (!this.state.aiModes[modeId]) return;
@@ -2411,16 +2396,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         this.state.currentTheme = theme;
         document.body.setAttribute('data-theme', theme);
         
-        // Обновляем meta theme-color
-        const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-        if (metaThemeColor) {
-            if (theme === 'deepseek') {
-                metaThemeColor.setAttribute('content', '#ffffff');
-            } else {
-                metaThemeColor.setAttribute('content', '#0f172a');
-            }
-        }
-        
         document.querySelectorAll('.theme-option').forEach(opt => opt.classList.remove('active'));
         const activeTheme = document.querySelector(`.theme-option[data-theme="${theme}"]`);
         if (activeTheme) {
@@ -2439,7 +2414,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             }).catch(() => {});
         }
         if (!fromServer) {
-            this.showNotification(`Тема изменена: ${theme === 'deepseek' ? 'Светлая' : 'Тёмная'}`, 'info');
+            this.showNotification(`Тема изменена: ${theme}`, 'info');
         }
     }
 

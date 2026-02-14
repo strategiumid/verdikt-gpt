@@ -2529,3 +2529,85 @@ html.low-motion .grid-pattern {
         font-size: 0.7rem;
     }
 }
+
+/* Hero-блок для пустого чата */
+.chat-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 60vh;
+    text-align: center;
+    padding: 20px;
+}
+
+.hero-logo {
+    width: 80px;
+    height: 80px;
+    background: var(--gradient);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    color: white;
+    margin-bottom: 24px;
+    box-shadow: var(--glow);
+    animation: float 6s infinite ease-in-out;
+}
+
+.hero-title {
+    font-size: 2.5rem;
+    font-weight: 600;
+    margin-bottom: 32px;
+    color: var(--text-primary);
+}
+
+.hero-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    max-width: 700px;
+}
+
+.suggestion-chip {
+    background: var(--bg-card-light);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+    backdrop-filter: blur(10px);
+}
+
+.suggestion-chip:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: var(--glow);
+}
+
+/* Скрываем Hero, когда есть сообщения */
+body:not(.chat-empty) .chat-hero {
+    display: none;
+}
+
+/* Скругления для панели ввода */
+.input-container-extended {
+    border-radius: 40px !important;
+    margin: 0 20px 20px 20px !important;
+}
+
+.input-icon-button {
+    border-radius: 40px !important;
+}
+
+#message-input {
+    border-radius: 40px !important;
+}
