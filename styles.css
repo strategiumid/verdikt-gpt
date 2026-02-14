@@ -582,13 +582,13 @@ body {
 /* Панель ввода */
 .input-container-extended {
     display: flex;
-    padding: 16px 24px;
+    padding: 16px 24px;  /* Убедись, что padding-top не слишком большой */
     background: var(--bg-card);
-    border-radius: 28px 28px 0 0; /* Скругление сверху */
+    border-radius: 28px 28px 0 0;
     border-top: 1px solid var(--border-color);
     gap: 12px;
     align-items: center;
-    margin-top: auto;
+    margin-top: 0;  /* Убедись, что margin-top = 0, а не auto */
 }
 
 .input-actions-left {
