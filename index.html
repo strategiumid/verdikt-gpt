@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -983,46 +982,6 @@
         box-shadow: 0 0 20px rgba(236, 72, 153, 0.4);
     }
 
-    /* Примеры вопросов */
-    .examples {
-        padding: 15px 30px;
-        background: var(--bg-card);
-        border-top: 1px solid var(--border-color);
-    }
-
-    .examples h3 {
-        font-size: 1rem;
-        margin-bottom: 12px;
-        color: var(--text-secondary);
-        font-weight: 600;
-    }
-
-    .example-buttons {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-
-    .example-button {
-        padding: 10px 16px;
-        background: rgba(139, 92, 246, 0.1);
-        color: var(--secondary);
-        border: 1px solid rgba(139, 92, 246, 0.3);
-        border-radius: var(--radius-md);
-        font-size: 0.9rem;
-        cursor: pointer;
-        transition: var(--transition);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .example-button:hover {
-        background: rgba(139, 92, 246, 0.2);
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(139, 92, 246, 0.2);
-    }
-
     /* Адаптивность */
     @media (max-width: 768px) {
         .settings-tab {
@@ -1061,15 +1020,6 @@
             width: 40px;
             height: 40px;
             font-size: 16px;
-        }
-
-        .examples {
-            padding: 12px 20px;
-        }
-
-        .example-button {
-            padding: 8px 14px;
-            font-size: 0.85rem;
         }
     }
 
@@ -2209,9 +2159,11 @@
                     <div class="logo-icon">
                         <i class="fas fa-heart"></i>
                     </div>
-                    <div class="app-title">
-                        <h1>Verdikt GPT</h1>
-                    </div>
+                </div>
+                
+                <!-- Индикатор статуса API в шапке -->
+                <div class="status-indicator" id="api-status">
+                    <i class="fas fa-circle"></i> Подключение...
                 </div>
             </div>
             
@@ -2224,9 +2176,14 @@
                     <i class="fas fa-cog"></i>
                 </button>
                 
-                <!-- Локальная кнопка админ-режима (пока без проверки на бэкенде) -->
+                <!-- Локальная кнопка админ-режима -->
                 <button class="ios-button secondary" id="admin-mode-toggle" title="Войти в админ-режим">
                     <i class="fas fa-user-shield"></i>
+                </button>
+                
+                <!-- Кнопка "Не беспокоить" теперь в шапке, стилизована под ios-button secondary -->
+                <button class="ios-button secondary" id="dnd-toggle" title="Режим «Не беспокоить»">
+                    <i class="fas fa-bell"></i>
                 </button>
                 
                 <!-- Авторизация пользователя -->
@@ -2309,21 +2266,32 @@
                 
                 <!-- Контейнер чата -->
                 <div class="chat-container">
-                    <div class="chat-header">
-                        <div class="chat-header-content">
-                            <div class="ai-avatar">
+                    
+                    <!-- Hero-блок (виден только при пустом диалоге) -->
+                    <div class="hero-block" id="hero-block">
+                        <div class="hero-content">
+                            <div class="hero-icon">
                                 <i class="fas fa-heart"></i>
                             </div>
-                            <div class="chat-header-text">
-                                <h2>Verdikt GPT - Эксперт по отношениям</h2>
-                                <p>Специалист в психологии отношений, знакомств и распознавании манипуляций</p>
-                            </div>
-                            <div class="chat-header-controls">
-                                <div class="status-indicator" id="api-status">
-                                    <i class="fas fa-circle"></i> Подключение...
-                                </div>
-                                <button class="chat-action-button" id="dnd-toggle" title="Режим «Не беспокоить»">
-                                    <i class="fas fa-bell"></i>
+                            <h2 class="hero-title">Чем я могу помочь?</h2>
+                            <div class="hero-chips" id="hero-chips">
+                                <button class="hero-chip" data-question="Как распознать манипуляцию в отношениях?">
+                                    <i class="fas fa-shield-alt"></i> Как распознать манипуляцию?
+                                </button>
+                                <button class="hero-chip" data-question="Как правильно вести себя на первом свидании?">
+                                    <i class="fas fa-heart"></i> Первое свидание
+                                </button>
+                                <button class="hero-chip" data-question="Как установить здоровые границы в отношениях?">
+                                    <i class="fas fa-user-shield"></i> Установить границы
+                                </button>
+                                <button class="hero-chip" data-question="Как понять, что мной манипулируют?">
+                                    <i class="fas fa-question-circle"></i> Признаки манипуляции
+                                </button>
+                                <button class="hero-chip" data-question="Как вернуть бывшую после расставания?">
+                                    <i class="fas fa-undo-alt"></i> Вернуть бывшую
+                                </button>
+                                <button class="hero-chip" data-question="Что такое игнор и как он работает?">
+                                    <i class="fas fa-volume-mute"></i> Стратегия игнора
                                 </button>
                             </div>
                         </div>
@@ -2331,36 +2299,9 @@
                     
                     <!-- История сообщений -->
                     <div class="chat-messages" id="chat-messages">
-                        <div class="message ai-message" style="opacity: 1; transform: translateY(0);">
-                            <div class="message-actions">
-                                <button class="message-action" onclick="window.verdiktApp.copyMessage('msg-initial')">
-                                    <i class="fas fa-copy"></i>
-                                </button>
-                                <button class="message-action" onclick="window.verdiktApp.speakMessage('msg-initial')">
-                                    <i class="fas fa-volume-up"></i>
-                                </button>
-                            </div>
-                            <div class="message-sender"><i class="fas fa-heart"></i> Эксперт по отношениям</div>
-                            <div class="message-content">Привет! 👋 Я - эксперт в области психологии отношений, знакомств и распознавания манипуляций. Я специализируюсь на:
-<br><br>
-💕 <strong>Отношениях</strong> - помощь в построении здоровых отношений, решение конфликтов, улучшение коммуникации
-<br><br>
-👥 <strong>Знакомствах</strong> - советы по онлайн и офлайн знакомствам, созданию привлекательного профиля, первому свиданию
-<br><br>
-🛡️ <strong>Манипуляциях</strong> - распознавание психологических манипуляций, защита от эмоционального насилия, установление границ
-<br><br>
-Расскажите, с какой ситуацией вы столкнулись? Я помогу разобраться с профессиональной точки зрения! ✨</div>
-                            <div class="message-time" id="initial-time">Сейчас</div>
-                        </div>
+                        <!-- Сообщения будут добавляться сюда динамически -->
                     </div>
                     
-                    <!-- Умные подсказки -->
-                    <div class="smart-suggestions" id="smart-suggestions">
-                        <div class="suggestion-item">Как понять, что мной манипулируют?</div>
-                        <div class="suggestion-item">Как правильно знакомиться в интернете?</div>
-                        <div class="suggestion-item">Как наладить отношения после ссоры?</div>
-                        <div class="suggestion-item">Как распознать токсичные отношения?</div>
-                    </div>
                     
                     <!-- Индикатор набора текста -->
                     <div class="typing-indicator" id="typing-indicator">
@@ -2368,22 +2309,6 @@
                             <span></span>
                             <span></span>
                             <span></span>
-                        </div>
-                    </div>
-                    
-                    <!-- Примеры вопросов -->
-                    <div class="examples">
-                        <h3><i class="fas fa-bolt"></i> Попробуйте спросить:</h3>
-                        <div class="example-buttons">
-                            <button class="example-button ios-button tertiary" data-question="Как распознать манипуляцию в отношениях?">
-                                <i class="fas fa-shield-alt"></i> Манипуляции
-                            </button>
-                            <button class="example-button ios-button tertiary" data-question="Как правильно вести себя на первом свидании?">
-                                <i class="fas fa-heart"></i> Первое свидание
-                            </button>
-                            <button class="example-button ios-button tertiary" data-question="Как установить здоровые границы в отношениях?">
-                                <i class="fas fa-user-shield"></i> Границы
-                            </button>
                         </div>
                     </div>
                     
@@ -2399,7 +2324,7 @@
                         </div>
                         
                         <div class="input-wrapper">
-                            <textarea id="message-input" placeholder="Опишите вашу ситуацию в отношениях, знакомствах или вопросы о манипуляциях..." maxlength="2000" autocomplete="off"></textarea>
+                            <textarea id="message-input" placeholder="Отправить сообщение..." maxlength="2000" autocomplete="off"></textarea>
                         </div>
                         
                         <div class="input-actions-right">

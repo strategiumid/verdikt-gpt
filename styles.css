@@ -26,7 +26,7 @@
     --ios-gray: #8E8E93;
     --ios-light-gray: #F2F2F7;
     --ios-card: rgba(255, 255, 255, 0.1);
-    --primary-rgb: 236, 72, 153;  /* RGB для primary цвета */
+    --primary-rgb: 236, 72, 153;
     --secondary-rgb: 139, 92, 246;
 }
 
@@ -113,14 +113,13 @@ body {
 .logo {
     display: flex;
     align-items: center;
-    gap: 12px;
 }
 
 .logo-icon {
     width: 44px;
     height: 44px;
     background: var(--gradient);
-    border-radius: 10px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -129,15 +128,8 @@ body {
     animation: pulse 2s infinite;
 }
 
-.app-title h1 {
-    font-size: 1.8rem;
-    font-weight: 800;
-    background: var(--gradient);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    margin-bottom: 0;
-    letter-spacing: -0.5px;
+.logo-icon i {
+    color: white;
 }
 
 .header-right {
@@ -193,7 +185,7 @@ body {
     transform: translateY(-2px);
     box-shadow: 
         0 8px 15px rgba(var(--primary-rgb), 0.3),
-        0 0 20px rgba(var(--primary-rgb), 0.4); /* Свечение */
+        0 0 20px rgba(var(--primary-rgb), 0.4);
 }
 
 .ios-button:active {
@@ -212,7 +204,7 @@ body {
 
 .ios-button.secondary:hover {
     background: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2); /* Свечение */
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
 }
 
 .ios-button.tertiary {
@@ -224,7 +216,7 @@ body {
 
 .ios-button.tertiary:hover {
     background: rgba(var(--primary-rgb, 236, 72, 153), 0.1);
-    box-shadow: 0 0 15px rgba(var(--primary-rgb, 236, 72, 153), 0.3); /* Свечение */
+    box-shadow: 0 0 15px rgba(var(--primary-rgb, 236, 72, 153), 0.3);
 }
 
 .ios-button.small {
@@ -240,7 +232,6 @@ body {
 
 .presentation-mode .app-header,
 .presentation-mode .sidebar,
-.presentation-mode .examples,
 .presentation-mode footer {
     display: none !important;
 }
@@ -282,139 +273,90 @@ body {
     gap: 15px;
 }
 
-/* Управление чатом */
-.chat-header-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 20px;
-    background: var(--bg-header, var(--bg-card));
-    backdrop-filter: blur(20px);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-sm);
-}
-
-.status-indicator {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 14px;
-    background: rgba(34, 197, 94, 0.1);
-    color: #4ade80;
-    border-radius: 18px;
-    font-size: 0.85rem;
-    font-weight: 500;
-    transition: var(--transition);
-}
-
-.status-indicator.dnd-active {
-    background: rgba(148, 163, 184, 0.15);
-    color: #9ca3af;
-}
-
-.status-indicator:hover {
-    box-shadow: 0 0 15px rgba(34, 197, 94, 0.3);
-}
-
-.chat-actions {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-.chat-action-button {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--ios-card);
-    border: 1px solid var(--border-color);
-    color: var(--text-primary);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.chat-action-button:hover {
-    background: rgba(236, 72, 153, 0.1);
-    border-color: var(--primary);
-    transform: scale(1.1);
-    box-shadow: 0 0 15px rgba(236, 72, 153, 0.3);
-}
-
-.chat-action-button:active {
-    transform: scale(0.95);
-}
-
 /* Контейнер чата */
 .chat-container {
     flex: 1;
     display: flex;
     flex-direction: column;
-    background: var(--bg-card);
-    backdrop-filter: blur(20px);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow);
-    border: 1px solid var(--border-color);
-    overflow: hidden;
+    background: transparent;
+    border-radius: 28px; /* Добавлено скругление для всего контейнера */
+    overflow: hidden; /* Важно! Чтобы внутренние элементы не вылезали за скругленные углы */
     animation: slideInRight 0.5s ease;
+    position: relative;
 }
 
-/* Заголовок чата */
-.chat-header {
-    background: var(--bg-card);
-    padding: 18px 24px;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.chat-header-content {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+/* Hero-блок (пустое состояние) */
+.hero-block {
     flex: 1;
-}
-
-.ai-avatar {
-    width: 44px;
-    height: 44px;
-    background: var(--gradient);
-    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    min-height: 400px;
+    padding: 20px;
+}
+
+.hero-content {
+    max-width: 600px;
+    width: 100%;
+    text-align: center;
+}
+
+.hero-icon {
+    width: 80px;
+    height: 80px;
+    background: var(--gradient);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    color: white;
+    margin: 0 auto 24px;
     box-shadow: var(--glow);
     animation: float 6s infinite ease-in-out;
-    flex-shrink: 0;
 }
 
-.chat-header-text {
-    flex: 1;
-    min-width: 0;
-}
-
-.chat-header-text h2 {
-    font-size: 1.3rem;
-    font-weight: 700;
-    margin-bottom: 3px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+.hero-title {
+    font-size: 2rem;
+    font-weight: 600;
+    margin-bottom: 32px;
     color: var(--text-primary);
+    letter-spacing: -0.02em;
 }
 
-.chat-header-text p {
-    color: var(--text-secondary);
-    font-size: 0.85rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+.hero-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+}
+
+.hero-chip {
+    padding: 12px 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 40px;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    backdrop-filter: blur(10px);
+}
+
+.hero-chip:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(var(--primary-rgb), 0.2);
+}
+
+.hero-chip i {
+    color: var(--primary);
+    font-size: 14px;
 }
 
 /* Сообщения чата */
@@ -427,17 +369,20 @@ body {
     gap: 20px;
     max-height: 500px;
     scroll-behavior: smooth;
+    background: transparent;
 }
 
 .message {
-    max-width: 80%;
-    padding: 16px;
-    border-radius: var(--radius-md);
+    max-width: 85%;
+    padding: 16px 20px;
+    border-radius: 22px;
     line-height: 1.6;
     position: relative;
     word-wrap: break-word;
     opacity: 0;
     transform: translateY(20px);
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
 }
 
 .message:hover .message-actions {
@@ -446,25 +391,26 @@ body {
 
 .user-message {
     align-self: flex-end;
-    background: var(--ios-blue);
+    background: var(--primary);
     color: white;
-    border-bottom-right-radius: 4px;
+    border-bottom-right-radius: 6px;
 }
 
 .user-message:hover {
-    box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.4); /* Свечение */
+    box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.3);
 }
 
 .ai-message {
     align-self: flex-start;
     background: var(--bg-card-light);
     color: var(--text-primary);
-    border-bottom-left-radius: 4px;
     border: 1px solid var(--border-color);
+    border-bottom-left-radius: 6px;
+    backdrop-filter: blur(10px);
 }
 
 .ai-message:hover {
-    box-shadow: 0 0 15px rgba(var(--secondary-rgb), 0.3); /* Свечение */
+    box-shadow: 0 0 20px rgba(var(--secondary-rgb), 0.2);
 }
 
 /* Анимации сообщений */
@@ -579,7 +525,7 @@ body {
 .message-action:hover {
     background: rgba(255, 255, 255, 0.3);
     transform: scale(1.1);
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.4); /* Свечение */
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
 }
 
 /* Индикатор набора текста */
@@ -587,12 +533,15 @@ body {
     display: none;
     align-self: flex-start;
     background: var(--bg-card-light);
-    padding: 16px;
-    border-radius: var(--radius-md);
-    border-bottom-left-radius: 4px;
+    padding: 16px 20px;
+    border-radius: 22px;
+    border-bottom-left-radius: 6px;
     margin-bottom: 8px;
+    margin-left: 20px;
     border: 1px solid var(--border-color);
-    width: 100px;
+    width: auto;
+    min-width: 80px;
+    backdrop-filter: blur(10px);
 }
 
 .typing-dots {
@@ -607,7 +556,8 @@ body {
     background: var(--primary);
     border-radius: 50%;
     display: inline-block;
-    animation: typingBounce 1.4s infinite;
+    animation: typingPulse 1.4s infinite;
+    opacity: 0.5;
 }
 
 .typing-dots span:nth-child(2) {
@@ -618,60 +568,27 @@ body {
     animation-delay: 0.4s;
 }
 
-/* Примеры вопросов */
-.examples {
-    padding: 16px 20px;
-    background: var(--bg-card);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-sm);
-}
-
-.examples h3 {
-    font-size: 0.95rem;
-    margin-bottom: 12px;
-    color: var(--text-secondary);
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.example-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.example-button {
-    padding: 8px 14px;
-    background: rgba(var(--secondary-rgb), 0.1);
-    color: var(--secondary);
-    border: 1px solid rgba(var(--secondary-rgb), 0.3);
-    border-radius: var(--radius-sm);
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: var(--transition);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-weight: 500;
-}
-
-.example-button:hover {
-    background: rgba(var(--secondary-rgb), 0.2);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(var(--secondary-rgb), 0.2);
+@keyframes typingPulse {
+    0%, 60%, 100% { 
+        transform: scale(1);
+        opacity: 0.5;
+    }
+    30% { 
+        transform: scale(1.2);
+        opacity: 1;
+    }
 }
 
 /* Панель ввода */
 .input-container-extended {
     display: flex;
-    padding: 16px 20px;
-    background: rgba(30, 41, 59, 0.9);
+    padding: 16px 24px;
+    background: var(--bg-card);
+    border-radius: 28px 28px 0 0; /* Скругление сверху */
     border-top: 1px solid var(--border-color);
-    gap: 10px;
+    gap: 12px;
     align-items: center;
+    margin-top: auto;
 }
 
 .input-actions-left {
@@ -688,9 +605,9 @@ body {
 #message-input {
     width: 100%;
     padding: 14px 18px;
-    background: var(--bg-card-light);
+    background: var(--bg-card);
     border: 2px solid var(--border-color);
-    border-radius: 14px;
+    border-radius: 28px;
     font-size: 1rem;
     font-family: 'Inter', sans-serif;
     color: var(--text-primary);
@@ -700,15 +617,16 @@ body {
     min-height: 56px;
     max-height: 180px;
     line-height: 1.5;
+    backdrop-filter: blur(10px);
 }
 
 #message-input:focus {
-    border-color: var(--ios-blue);
-    box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.2);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1);
 }
 
 #message-input:hover {
-    box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.2); /* Свечение */
+    border-color: rgba(var(--primary-rgb), 0.3);
 }
 
 #message-input::placeholder {
@@ -722,24 +640,25 @@ body {
 }
 
 .input-icon-button {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    background: var(--ios-card);
+    width: 44px;
+    height: 44px;
+    border-radius: 22px;
+    background: var(--bg-card);
     border: 1px solid var(--border-color);
     color: var(--text-primary);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 18px;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(10px);
 }
 
 .input-icon-button:hover {
-    background: rgba(var(--primary-rgb), 0.1);
+    background: rgba(255, 255, 255, 0.15);
     border-color: var(--primary);
-    transform: scale(1.1);
+    transform: scale(1.05);
     box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.2);
 }
 
@@ -748,7 +667,7 @@ body {
 }
 
 .input-icon-button.primary {
-    background: var(--ios-blue);
+    background: var(--primary);
     color: white;
     border: none;
 }
@@ -758,35 +677,33 @@ body {
     box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.4);
 }
 
-/* Умные подсказки */
-.smart-suggestions {
-    position: absolute;
-    bottom: 100%;
-    left: 0;
-    right: 0;
-    background: var(--bg-card-light);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-color);
-    box-shadow: var(--shadow);
-    display: none;
-    z-index: 10;
-}
-
-.suggestion-item {
-    padding: 10px 16px;
-    cursor: pointer;
-    transition: var(--transition);
-    border-bottom: 1px solid var(--border-color);
+/* Индикатор статуса API */
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 24px;
     font-size: 0.9rem;
+    font-weight: 500;
+    transition: var(--transition);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    backdrop-filter: blur(10px);
 }
 
-.suggestion-item:last-child {
-    border-bottom: none;
+.status-indicator i {
+    font-size: 10px;
+    color: #4ade80;
 }
 
-.suggestion-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.2); /* Свечение */
+.status-indicator.dnd-active i {
+    color: #9ca3af;
+}
+
+.status-indicator:hover {
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
 }
 
 /* Подвал */
@@ -825,7 +742,7 @@ footer {
 
 .footer-links a:hover {
     color: var(--primary-light);
-    text-shadow: 0 0 10px rgba(var(--primary-rgb), 0.5); /* Свечение */
+    text-shadow: 0 0 10px rgba(var(--primary-rgb), 0.5);
 }
 
 /* Модальные окна */
@@ -989,7 +906,7 @@ footer {
 .modal-close:hover {
     background: rgba(255, 255, 255, 0.1);
     color: var(--text-primary);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3); /* Свечение */
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
 }
 
 /* Уведомления */
@@ -1402,7 +1319,7 @@ footer {
 
 .theme-option:hover {
     transform: scale(1.1);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3); /* Свечение */
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
 }
 
 .theme-option.active {
@@ -1440,7 +1357,7 @@ footer {
     background: rgba(255, 255, 255, 0.1);
     border-color: var(--primary);
     transform: translateY(-4px);
-    box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.3); /* Свечение */
+    box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.3);
 }
 
 .export-icon {
@@ -1474,9 +1391,9 @@ footer {
     to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes typingBounce {
-    0%, 60%, 100% { transform: translateY(0); }
-    30% { transform: translateY(-8px); }
+@keyframes typingPulse {
+    0%, 60%, 100% { transform: scale(1); opacity: 0.5; }
+    30% { transform: scale(1.2); opacity: 1; }
 }
 
 @keyframes gridMove {
@@ -1543,16 +1460,15 @@ footer {
 
 .particle {
     position: absolute;
-    width: 3px; /* базовый размер, в JS переопределяется */
+    width: 3px;
     height: 3px;
     background: rgba(var(--primary-rgb), 0.85);
     border-radius: 50%;
     opacity: 0;
     box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.7);
     mix-blend-mode: screen;
-    /* Параметры по умолчанию, которые переопределяются из JS */
-    --tx: 100;      /* смещение по X в пикселях */
-    --ty: -100;     /* смещение по Y в пикселях */
+    --tx: 100;
+    --ty: -100;
     --scale: 1;
     --alpha: 0.7;
     --duration: 6s;
@@ -1566,6 +1482,7 @@ footer {
     outline: 2px dashed rgba(236, 72, 153, 0.8);
     outline-offset: 4px;
     background: rgba(236, 72, 153, 0.05);
+    border-radius: 28px;
 }
 
 /* Основное движение частицы */
@@ -2040,46 +1957,7 @@ html.low-motion .grid-pattern {
         padding: 8px;
     }
     
-    .app-title h1 {
-        font-size: 1.5rem;
-    }
-    
     .logo-icon {
-        width: 40px;
-        height: 40px;
-        font-size: 18px;
-    }
-    
-    .chat-header-controls {
-        padding: 10px 16px;
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .chat-action-button {
-        width: 34px;
-        height: 34px;
-        font-size: 13px;
-    }
-    
-    .chat-header {
-        padding: 14px 16px;
-        gap: 12px;
-    }
-    
-    .chat-header-content {
-        gap: 10px;
-    }
-    
-    .chat-header-text h2 {
-        font-size: 1.1rem;
-    }
-    
-    .chat-header-text p {
-        font-size: 0.8rem;
-    }
-    
-    .ai-avatar {
         width: 40px;
         height: 40px;
         font-size: 18px;
@@ -2093,41 +1971,48 @@ html.low-motion .grid-pattern {
     
     .message {
         max-width: 90%;
-        padding: 14px;
+        padding: 14px 18px;
     }
     
     .message-content {
         font-size: 0.95rem;
     }
     
+    .hero-block {
+        min-height: 300px;
+    }
+    
+    .hero-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 28px;
+    }
+    
+    .hero-title {
+        font-size: 1.6rem;
+        margin-bottom: 24px;
+    }
+    
+    .hero-chip {
+        padding: 10px 16px;
+        font-size: 0.9rem;
+    }
+    
     .input-container-extended {
-        padding: 12px 16px;
+        padding: 12px 20px;
         gap: 8px;
     }
     
     .input-icon-button {
-        width: 36px;
-        height: 36px;
-        font-size: 15px;
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
     }
     
     #message-input {
         font-size: 16px;
         min-height: 48px;
         padding: 12px 16px;
-    }
-    
-    .examples {
-        padding: 12px 16px;
-    }
-    
-    .examples h3 {
-        font-size: 0.9rem;
-    }
-    
-    .example-button {
-        padding: 7px 12px;
-        font-size: 0.82rem;
     }
     
     .modal-content {
@@ -2250,27 +2135,18 @@ html.low-motion .grid-pattern {
         font-size: 16px;
     }
     
-    .app-title h1 {
-        font-size: 1.3rem;
+    .header-left {
+        gap: 10px;
+    }
+    
+    .status-indicator {
+        padding: 6px 12px;
+        font-size: 0.8rem;
     }
     
     #new-chat {
         padding: 8px 12px;
         font-size: 13px;
-    }
-    
-    .chat-header-text h2 {
-        font-size: 1rem;
-    }
-    
-    .chat-header-text p {
-        display: none;
-    }
-    
-    .ai-avatar {
-        width: 36px;
-        height: 36px;
-        font-size: 16px;
     }
     
     .chat-messages {
@@ -2279,7 +2155,7 @@ html.low-motion .grid-pattern {
     }
     
     .message {
-        padding: 12px;
+        padding: 12px 16px;
         max-width: 95%;
     }
     
@@ -2287,9 +2163,36 @@ html.low-motion .grid-pattern {
         font-size: 0.9rem;
     }
     
+    .hero-block {
+        min-height: 250px;
+        padding: 16px;
+    }
+    
+    .hero-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 24px;
+        margin-bottom: 16px;
+    }
+    
+    .hero-title {
+        font-size: 1.4rem;
+        margin-bottom: 20px;
+    }
+    
+    .hero-chips {
+        gap: 8px;
+    }
+    
+    .hero-chip {
+        padding: 8px 14px;
+        font-size: 0.85rem;
+    }
+    
     .input-container-extended {
         flex-wrap: wrap;
         gap: 8px;
+        padding: 10px 16px;
     }
     
     .input-actions-left, .input-actions-right {
@@ -2303,8 +2206,8 @@ html.low-motion .grid-pattern {
     }
     
     .input-icon-button {
-        width: 34px;
-        height: 34px;
+        width: 36px;
+        height: 36px;
         font-size: 14px;
     }
     
@@ -2364,8 +2267,12 @@ html.low-motion .grid-pattern {
 
 /* Очень узкие экраны (небольшие телефоны) */
 @media (max-width: 380px) {
-    .app-title h1 {
-        font-size: 1.15rem;
+    .header-left {
+        gap: 8px;
+    }
+    
+    .status-indicator {
+        display: none;
     }
     
     .header-right .ios-button {
@@ -2376,15 +2283,6 @@ html.low-motion .grid-pattern {
     
     .chat-messages {
         max-height: min(350px, 40dvh);
-    }
-    
-    .example-buttons {
-        flex-direction: column;
-    }
-    
-    .example-button {
-        width: 100%;
-        justify-content: center;
     }
     
     .settings-tab {

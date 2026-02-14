@@ -44,44 +44,77 @@
     background: var(--secondary);
 }
 
+[data-theme="deepseek"] .hero-icon {
+    background: var(--gradient);
+    box-shadow: 0 0 30px rgba(45, 140, 255, 0.3);
+}
+
+[data-theme="deepseek"] .hero-icon i {
+    color: white;
+}
+
+[data-theme="deepseek"] .hero-chip {
+    background: white;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+[data-theme="deepseek"] .hero-chip:hover {
+    background: rgba(45, 140, 255, 0.05);
+    border-color: var(--primary);
+    box-shadow: 0 8px 20px rgba(45, 140, 255, 0.15);
+}
+
+[data-theme="deepseek"] .hero-chip i {
+    color: var(--primary);
+}
+
 [data-theme="deepseek"] .message.ai-message {
     background: white;
     border: 1px solid rgba(45, 140, 255, 0.1);
-    border-left: 3px solid var(--secondary);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
 [data-theme="deepseek"] .message.user-message {
     background: var(--primary);
     color: white;
-    border-right: 3px solid var(--primary-light);
     box-shadow: 0 2px 8px rgba(45, 140, 255, 0.2);
 }
 
 [data-theme="deepseek"] .message.user-message:hover {
-    box-shadow: 0 0 15px rgba(45, 140, 255, 0.3);
+    box-shadow: 0 0 20px rgba(45, 140, 255, 0.3);
 }
 
 [data-theme="deepseek"] .message.ai-message:hover {
-    box-shadow: 0 0 15px rgba(34, 211, 238, 0.2);
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.15);
 }
 
 [data-theme="deepseek"] .logo-icon,
 [data-theme="deepseek"] .ai-avatar {
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    background: var(--gradient);
     box-shadow: 0 0 20px rgba(45, 140, 255, 0.3);
 }
 
+[data-theme="deepseek"] .typing-indicator {
+    background: white;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
 [data-theme="deepseek"] .typing-dots span {
-    background: var(--secondary);
+    background: var(--primary);
 }
 
 [data-theme="deepseek"] .notification,
 [data-theme="deepseek"] .achievement-notification {
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    background: var(--gradient);
 }
 
-[data-theme="deepseek"] .chat-container,
+[data-theme="deepseek"] .chat-container {
+    background: transparent;
+}
+
 [data-theme="deepseek"] .settings-section,
 [data-theme="deepseek"] .modal-content {
     border: 1px solid rgba(45, 140, 255, 0.1);
@@ -104,6 +137,24 @@
     background: white;
     border: 1px solid var(--border-color);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    color: var(--text-primary);
+}
+
+[data-theme="deepseek"] .input-icon-button:hover {
+    background: rgba(45, 140, 255, 0.05);
+    border-color: var(--primary);
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.15);
+}
+
+[data-theme="deepseek"] .input-icon-button.primary {
+    background: var(--primary);
+    color: white;
+    border: none;
+}
+
+[data-theme="deepseek"] .input-icon-button.primary:hover {
+    background: var(--primary-dark);
+    box-shadow: 0 0 20px rgba(45, 140, 255, 0.4);
 }
 
 [data-theme="deepseek"] #message-input {
@@ -114,22 +165,21 @@
 
 [data-theme="deepseek"] #message-input:focus {
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(45, 140, 255, 0.15);
+    box-shadow: 0 0 0 4px rgba(45, 140, 255, 0.15);
 }
 
 [data-theme="deepseek"] #message-input:hover {
-    box-shadow: 0 0 15px rgba(45, 140, 255, 0.1);
+    border-color: rgba(45, 140, 255, 0.3);
 }
 
-[data-theme="deepseek"] .example-button {
-    background: rgba(45, 140, 255, 0.08);
-    color: var(--primary);
-    border: 1px solid rgba(45, 140, 255, 0.2);
+[data-theme="deepseek"] .status-indicator {
+    background: rgba(45, 140, 255, 0.05);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
 }
 
-[data-theme="deepseek"] .example-button:hover {
-    background: rgba(45, 140, 255, 0.12);
-    box-shadow: 0 5px 15px rgba(45, 140, 255, 0.15);
+[data-theme="deepseek"] .status-indicator i {
+    color: #10b981;
 }
 
 [data-theme="deepseek"] .settings-tab {
@@ -137,12 +187,12 @@
 }
 
 [data-theme="deepseek"] .settings-tab:hover {
-    background: rgba(45, 140, 255, 0.08);
+    background: rgba(45, 140, 255, 0.05);
     color: var(--text-primary);
 }
 
 [data-theme="deepseek"] .settings-tab.active {
-    background: rgba(45, 140, 255, 0.15);
+    background: rgba(45, 140, 255, 0.1);
     color: var(--primary);
     box-shadow: 0 0 15px rgba(45, 140, 255, 0.1);
 }
@@ -158,129 +208,129 @@
 }
 
 [data-theme="deepseek"] .mode-item-settings.active {
-    background: rgba(45, 140, 255, 0.1);
+    background: rgba(45, 140, 255, 0.05);
     border-color: var(--primary);
 }
 
 [data-theme="deepseek"] .achievement-item-settings.unlocked {
-    background: rgba(45, 140, 255, 0.1);
+    background: rgba(45, 140, 255, 0.05);
     border-color: var(--primary);
 }
 
 /* Индикатор статуса API */
 [data-theme="deepseek"] .status-indicator {
-    background: rgba(34, 197, 94, 0.08);
+    background: rgba(34, 197, 94, 0.05);
     color: #16a34a;
+    border-color: rgba(34, 197, 94, 0.2);
 }
 
 [data-theme="deepseek"] .status-indicator:hover {
     box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
 }
 
+[data-theme="deepseek"] .status-indicator.dnd-active {
+    background: rgba(148, 163, 184, 0.05);
+    color: #6b7280;
+    border-color: rgba(148, 163, 184, 0.2);
+}
+
+[data-theme="deepseek"] .status-indicator.dnd-active i {
+    color: #9ca3af;
+}
+
 /* Дополнительные стили для DeepSeek темы - переопределение свечений */
 [data-theme="deepseek"] .chat-action-button:hover {
-    background: rgba(45, 140, 255, 0.1);
-    border-color: var(--primary);
-    box-shadow: 0 0 15px rgba(45, 140, 255, 0.3);
-}
-
-[data-theme="deepseek"] .input-icon-button:hover {
-    background: rgba(45, 140, 255, 0.1);
+    background: rgba(45, 140, 255, 0.05);
     border-color: var(--primary);
     box-shadow: 0 0 15px rgba(45, 140, 255, 0.2);
-}
-
-[data-theme="deepseek"] .input-icon-button.primary:hover {
-    background: var(--primary-dark);
-    box-shadow: 0 0 20px rgba(45, 140, 255, 0.4);
 }
 
 [data-theme="deepseek"] .footer-links a:hover {
     color: var(--primary);
-    text-shadow: 0 0 10px rgba(45, 140, 255, 0.3);
+    text-shadow: 0 0 10px rgba(45, 140, 255, 0.2);
 }
 
 [data-theme="deepseek"] .modal-close:hover {
-    background: rgba(45, 140, 255, 0.1);
-    box-shadow: 0 0 15px rgba(45, 140, 255, 0.2);
+    background: rgba(45, 140, 255, 0.05);
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.15);
 }
 
 [data-theme="deepseek"] .suggestion-item:hover {
-    background: rgba(45, 140, 255, 0.08);
-    box-shadow: 0 0 10px rgba(45, 140, 255, 0.15);
+    background: rgba(45, 140, 255, 0.05);
+    box-shadow: 0 0 10px rgba(45, 140, 255, 0.1);
 }
 
 [data-theme="deepseek"] .ios-button:hover {
     box-shadow: 
         0 8px 15px rgba(45, 140, 255, 0.2),
-        0 0 20px rgba(45, 140, 255, 0.3);
+        0 0 20px rgba(45, 140, 255, 0.25);
 }
 
 [data-theme="deepseek"] .ios-button.secondary:hover {
-    box-shadow: 0 0 15px rgba(45, 140, 255, 0.2);
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.15);
 }
 
 [data-theme="deepseek"] .ios-button.tertiary:hover {
-    background: rgba(45, 140, 255, 0.08);
-    box-shadow: 0 0 15px rgba(45, 140, 255, 0.2);
+    background: rgba(45, 140, 255, 0.05);
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.15);
 }
 
 [data-theme="deepseek"] .message-action:hover {
-    box-shadow: 0 0 10px rgba(45, 140, 255, 0.4);
+    box-shadow: 0 0 10px rgba(45, 140, 255, 0.3);
 }
 
 [data-theme="deepseek"] .theme-option:hover {
-    box-shadow: 0 0 15px rgba(45, 140, 255, 0.3);
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.2);
 }
 
 [data-theme="deepseek"] .mode-item-settings:hover {
-    box-shadow: 0 5px 15px rgba(45, 140, 255, 0.2);
+    box-shadow: 0 5px 15px rgba(45, 140, 255, 0.1);
 }
 
 [data-theme="deepseek"] .mode-item-settings.active {
-    box-shadow: 0 0 15px rgba(45, 140, 255, 0.2);
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.15);
 }
 
 [data-theme="deepseek"] .achievement-item-settings.unlocked {
-    box-shadow: 0 0 15px rgba(45, 140, 255, 0.2);
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.15);
 }
 
 [data-theme="deepseek"] .stat-card-settings:hover {
-    box-shadow: 0 5px 15px rgba(45, 140, 255, 0.15);
+    box-shadow: 0 5px 15px rgba(45, 140, 255, 0.1);
 }
 
 [data-theme="deepseek"] .shortcut-item:hover {
-    background: rgba(45, 140, 255, 0.08);
+    background: rgba(45, 140, 255, 0.05);
     box-shadow: 0 2px 8px rgba(45, 140, 255, 0.1);
 }
 
 [data-theme="deepseek"] .export-option:hover {
-    box-shadow: 0 0 20px rgba(45, 140, 255, 0.2);
+    box-shadow: 0 0 20px rgba(45, 140, 255, 0.15);
 }
 
 [data-theme="deepseek"] .cookie-text a:hover {
-    text-shadow: 0 0 10px rgba(45, 140, 255, 0.3);
+    text-shadow: 0 0 10px rgba(45, 140, 255, 0.2);
 }
 
 [data-theme="deepseek"] .encryption-option:hover {
-    background: rgba(45, 140, 255, 0.08);
+    background: rgba(45, 140, 255, 0.05);
     box-shadow: 0 2px 8px rgba(45, 140, 255, 0.1);
 }
 
 [data-theme="deepseek"] .encryption-option.active {
-    background: rgba(45, 140, 255, 0.1);
+    background: rgba(45, 140, 255, 0.05);
     border-color: var(--primary);
 }
 
 /* Аватары разработчиков */
 [data-theme="deepseek"] .dev-dropdown-item:hover {
-    background: rgba(45, 140, 255, 0.08);
+    background: rgba(45, 140, 255, 0.05);
     border-color: var(--primary);
-    box-shadow: 0 4px 12px rgba(45, 140, 255, 0.15);
+    box-shadow: 0 4px 12px rgba(45, 140, 255, 0.1);
 }
 
 [data-theme="deepseek"] .dev-dropdown-item:hover .dev-dropdown-telegram {
-    background: rgba(45, 140, 255, 0.15);
+    background: rgba(45, 140, 255, 0.1);
 }
 
 [data-theme="deepseek"] .brain-avatar {
@@ -301,11 +351,11 @@
 [data-theme="deepseek"] [class*="button"]:hover,
 [data-theme="deepseek"] [class*="action"]:hover,
 [data-theme="deepseek"] [class*="icon"]:hover {
-    --glow: 0 0 20px rgba(45, 140, 255, 0.3);
+    --glow: 0 0 20px rgba(45, 140, 255, 0.2);
 }
 
 [data-theme="deepseek"] [class*="primary"]:hover {
-    --glow: 0 0 20px rgba(45, 140, 255, 0.4);
+    --glow: 0 0 20px rgba(45, 140, 255, 0.3);
 }
 
 :root, [data-theme="dark"] {
@@ -326,14 +376,14 @@
 [data-theme="deepseek"] .ios-button:hover {
     background: var(--primary-dark) !important;
     box-shadow: 
-        0 8px 15px rgba(var(--primary-rgb), 0.3),
-        0 0 20px rgba(var(--primary-rgb), 0.4) !important;
+        0 8px 15px rgba(var(--primary-rgb), 0.25),
+        0 0 20px rgba(var(--primary-rgb), 0.3) !important;
 }
 
 [data-theme="deepseek"] .ios-button:active {
     background: var(--primary-dark) !important;
     box-shadow: 
-        0 2px 4px -1px rgba(var(--primary-rgb), 0.2),
+        0 2px 4px -1px rgba(var(--primary-rgb), 0.15),
         0 1px 2px -1px rgba(var(--primary-rgb), 0.1) !important;
 }
 
@@ -343,7 +393,7 @@
 
 [data-theme="deepseek"] .ios-button.secondary:hover {
     background: rgba(255, 255, 255, 0.15) !important;
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2) !important;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.15) !important;
 }
 
 [data-theme="deepseek"] .ios-button.tertiary {
@@ -352,8 +402,8 @@
 }
 
 [data-theme="deepseek"] .ios-button.tertiary:hover {
-    background: rgba(var(--primary-rgb), 0.1) !important;
-    box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.3) !important;
+    background: rgba(var(--primary-rgb), 0.05) !important;
+    box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.2) !important;
 }
 
 [data-theme="deepseek"] {
@@ -381,9 +431,9 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 14px;
-    border-radius: 18px;
-    font-size: 0.85rem;
+    padding: 8px 16px;
+    border-radius: 24px;
+    font-size: 0.9rem;
     font-weight: 500;
     transition: var(--transition);
     background: var(--api-status-bg, rgba(59, 130, 246, 0.1));
@@ -392,7 +442,7 @@
 }
 
 .status-indicator:hover {
-    box-shadow: var(--api-status-glow, 0 0 15px rgba(59, 130, 246, 0.3));
+    box-shadow: var(--api-status-glow, 0 0 15px rgba(59, 130, 246, 0.2));
 }
 
 /* Статусы API */
@@ -426,14 +476,14 @@
 
 /* DeepSeek тема - цвета статуса API */
 [data-theme="deepseek"] {
-    --api-status-connected-bg: rgba(34, 197, 94, 0.1);
+    --api-status-connected-bg: rgba(34, 197, 94, 0.05);
     --api-status-connected-color: #16a34a;
-    --api-status-connected-border: rgba(34, 197, 94, 0.2);
-    --api-status-glow: 0 0 15px rgba(34, 197, 94, 0.2);
+    --api-status-connected-border: rgba(34, 197, 94, 0.15);
+    --api-status-glow: 0 0 15px rgba(34, 197, 94, 0.15);
     
-    --api-status-error-bg: rgba(239, 68, 68, 0.1);
+    --api-status-error-bg: rgba(239, 68, 68, 0.05);
     --api-status-error-color: #dc2626;
-    --api-status-error-border: rgba(239, 68, 68, 0.2);
+    --api-status-error-border: rgba(239, 68, 68, 0.15);
 }
 
 /* Уведомления */
@@ -528,36 +578,31 @@
     }
 }
 
-[data-theme="deepseek"] .logo-icon {
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
+[data-theme="deepseek"] .logo-icon,
+[data-theme="deepseek"] .hero-icon {
+    background: var(--gradient);
     box-shadow: 0 0 20px rgba(45, 140, 255, 0.3);
 }
 
-[data-theme="deepseek"] .logo-icon i {
+[data-theme="deepseek"] .logo-icon i,
+[data-theme="deepseek"] .hero-icon i,
+[data-theme="deepseek"] .ai-avatar i,
+[data-theme="deepseek"] .message .message-sender i.fa-heart {
     color: white !important;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-}
-
-[data-theme="deepseek"] .logo-icon i.fa-heart,
-[data-theme="deepseek"] .ai-avatar i.fa-heart,
-[data-theme="deepseek"] .message .message-sender i.fa-heart,
-[data-theme="deepseek"] .chat-header-content .ai-avatar i,
-[data-theme="deepseek"] .chat-header .ai-avatar i.fa-heart {
-    color: white !important;
-    text-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
 }
 
 /* Исправление для быстрых команд в теме DeepSeek */
 [data-theme="deepseek"] .command-item-settings {
-    background: rgba(45, 140, 255, 0.08) !important;
+    background: rgba(45, 140, 255, 0.05) !important;
     color: #2d8cff !important;
-    border: 1px solid rgba(45, 140, 255, 0.2) !important;
+    border: 1px solid rgba(45, 140, 255, 0.15) !important;
 }
 
 [data-theme="deepseek"] .command-item-settings:hover {
-    background: rgba(45, 140, 255, 0.12) !important;
-    border-color: rgba(45, 140, 255, 0.4) !important;
-    box-shadow: 0 4px 12px rgba(45, 140, 255, 0.15) !important;
+    background: rgba(45, 140, 255, 0.08) !important;
+    border-color: rgba(45, 140, 255, 0.3) !important;
+    box-shadow: 0 4px 12px rgba(45, 140, 255, 0.1) !important;
 }
 
 /* Простой вариант */
@@ -610,7 +655,7 @@
 
 .theme-option.active {
     border-color: var(--primary);
-    box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.3);
+    box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.2);
 }
 
 /* Стили для вкладок авторизации в светлой теме DeepSeek */
@@ -621,19 +666,19 @@
 
 [data-theme="deepseek"] .auth-tab {
     background: transparent;
-    color: #4a5568; /* Серый текст */
+    color: #4a5568;
     border: 1px solid transparent;
 }
 
 [data-theme="deepseek"] .auth-tab:hover {
-    background: rgba(45, 140, 255, 0.08);
+    background: rgba(45, 140, 255, 0.05);
     color: #1a1a1a;
 }
 
 [data-theme="deepseek"] .auth-tab.active {
-    background: rgba(45, 140, 255, 0.12);
-    color: var(--primary); /* Синий цвет текста */
-    border-color: rgba(45, 140, 255, 0.2);
+    background: rgba(45, 140, 255, 0.08);
+    color: var(--primary);
+    border-color: rgba(45, 140, 255, 0.15);
     box-shadow: 0 2px 8px rgba(45, 140, 255, 0.1);
 }
 
@@ -662,7 +707,7 @@
 }
 
 [data-theme="deepseek"] .auth-tabs {
-    background: rgba(45, 140, 255, 0.05);
+    background: rgba(45, 140, 255, 0.04);
     border: 1px solid rgba(45, 140, 255, 0.1);
 }
 
@@ -671,14 +716,14 @@
 }
 
 [data-theme="deepseek"] .auth-tab:hover {
-    background: rgba(45, 140, 255, 0.08);
+    background: rgba(45, 140, 255, 0.05);
     color: var(--text-primary);
 }
 
 [data-theme="deepseek"] .auth-tab.active {
-    background: rgba(45, 140, 255, 0.12);
+    background: rgba(45, 140, 255, 0.08);
     color: var(--primary);
-    box-shadow: 0 0 15px rgba(45, 140, 255, 0.2);
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.15);
 }
 
 /* Поля ввода - убираем розовое свечение, добавляем голубое */
@@ -691,12 +736,12 @@
 
 [data-theme="deepseek"] .auth-field input:hover {
     border-color: rgba(45, 140, 255, 0.3);
-    box-shadow: 0 0 0 2px rgba(45, 140, 255, 0.1);
+    box-shadow: 0 0 0 2px rgba(45, 140, 255, 0.05);
 }
 
 [data-theme="deepseek"] .auth-field input:focus {
     border-color: var(--primary);
-    box-shadow: 0 0 0 4px rgba(45, 140, 255, 0.2);
+    box-shadow: 0 0 0 4px rgba(45, 140, 255, 0.1);
 }
 
 [data-theme="deepseek"] .auth-field input::placeholder {
@@ -714,19 +759,19 @@
 [data-theme="deepseek"] #register-submit:hover {
     background: var(--primary-dark);
     box-shadow: 
-        0 8px 15px rgba(45, 140, 255, 0.3),
-        0 0 20px rgba(45, 140, 255, 0.4);
+        0 8px 15px rgba(45, 140, 255, 0.2),
+        0 0 20px rgba(45, 140, 255, 0.25);
 }
 
 [data-theme="deepseek"] #logout-button {
-    background: rgba(45, 140, 255, 0.1);
+    background: rgba(45, 140, 255, 0.05);
     color: var(--primary);
-    border: 1px solid rgba(45, 140, 255, 0.2);
+    border: 1px solid rgba(45, 140, 255, 0.15);
 }
 
 [data-theme="deepseek"] #logout-button:hover {
-    background: rgba(45, 140, 255, 0.2);
-    box-shadow: 0 0 15px rgba(45, 140, 255, 0.2);
+    background: rgba(45, 140, 255, 0.1);
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.15);
 }
 
 /* Заголовок окна авторизации */
@@ -756,25 +801,25 @@
 [data-theme="deepseek"] input[type="password"]:focus,
 [data-theme="deepseek"] input[type="text"]:focus {
     border-color: #2d8cff !important;
-    box-shadow: 0 0 0 4px rgba(45, 140, 255, 0.2) !important;
+    box-shadow: 0 0 0 4px rgba(45, 140, 255, 0.1) !important;
 }
 
 [data-theme="deepseek"] input[type="email"]:hover,
 [data-theme="deepseek"] input[type="password"]:hover,
 [data-theme="deepseek"] input[type="text"]:hover {
     border-color: rgba(45, 140, 255, 0.3) !important;
-    box-shadow: 0 0 0 2px rgba(45, 140, 255, 0.1) !important;
+    box-shadow: 0 0 0 2px rgba(45, 140, 255, 0.05) !important;
 }
 
 /* Переопределяем общие стили для кнопок в светлой теме */
 [data-theme="deepseek"] .ios-button:hover {
     box-shadow: 
-        0 8px 15px rgba(45, 140, 255, 0.3),
-        0 0 20px rgba(45, 140, 255, 0.4) !important;
+        0 8px 15px rgba(45, 140, 255, 0.2),
+        0 0 20px rgba(45, 140, 255, 0.25) !important;
 }
 
 [data-theme="deepseek"] .ios-button.secondary:hover {
-    box-shadow: 0 0 15px rgba(45, 140, 255, 0.2) !important;
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.15) !important;
 }
 
 /* Исправляем цвета для режимов AI в светлой теме */
@@ -787,14 +832,14 @@
 [data-theme="deepseek"] .mode-item-settings:hover {
     background: rgba(255, 255, 255, 0.95);
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(45, 140, 255, 0.15);
+    box-shadow: 0 5px 15px rgba(45, 140, 255, 0.1);
 }
 
 [data-theme="deepseek"] .mode-item-settings.active {
-    background: rgba(45, 140, 255, 0.1);
+    background: rgba(45, 140, 255, 0.05);
     border-color: var(--primary);
     color: var(--text-primary);
-    box-shadow: 0 0 15px rgba(45, 140, 255, 0.2);
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.15);
 }
 
 [data-theme="deepseek"] .mode-info-settings h5 {
@@ -815,21 +860,20 @@
 
 /* Стили для кнопки сайдбара в теме DeepSeek */
 [data-theme="deepseek"] .sidebar-toggle {
-    background: linear-gradient(135deg, #2d8cff, #22d3ee);
+    background: var(--gradient);
     color: white;
     border: none;
-    box-shadow: 0 4px 12px rgba(45, 140, 255, 0.3);
+    box-shadow: 0 4px 12px rgba(45, 140, 255, 0.2);
 }
 
 [data-theme="deepseek"] .sidebar-toggle:hover {
-    background: linear-gradient(135deg, #1c7df6, #06b6d4);
-    box-shadow: 0 0 20px rgba(45, 140, 255, 0.5);
+    background: var(--gradient);
+    box-shadow: 0 0 20px rgba(45, 140, 255, 0.3);
     transform: scale(1.1);
 }
 
 [data-theme="deepseek"] .sidebar-toggle i {
     color: white;
-    text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
 }
 
 /* Стили для сайдбара в теме DeepSeek */
@@ -845,8 +889,8 @@
 }
 
 [data-theme="deepseek"] .user-avatar {
-    background: linear-gradient(135deg, #2d8cff, #22d3ee);
-    box-shadow: 0 0 15px rgba(45, 140, 255, 0.3);
+    background: var(--gradient);
+    box-shadow: 0 0 15px rgba(45, 140, 255, 0.2);
 }
 
 [data-theme="deepseek"] .user-info h3 {
@@ -867,15 +911,15 @@
 }
 
 [data-theme="deepseek"] .nav-item:hover {
-    background: rgba(45, 140, 255, 0.08);
+    background: rgba(45, 140, 255, 0.05);
     color: #1a1a1a;
-    border-color: rgba(45, 140, 255, 0.2);
+    border-color: rgba(45, 140, 255, 0.15);
 }
 
 [data-theme="deepseek"] .nav-item.active {
-    background: rgba(45, 140, 255, 0.12);
+    background: rgba(45, 140, 255, 0.08);
     color: #2d8cff;
-    border-color: rgba(45, 140, 255, 0.3);
+    border-color: rgba(45, 140, 255, 0.2);
 }
 
 [data-theme="deepseek"] .sidebar-footer {
@@ -889,8 +933,8 @@
 
 [data-theme="deepseek"] .stat-mini:hover {
     background: white;
-    border-color: rgba(45, 140, 255, 0.3);
-    box-shadow: 0 5px 15px rgba(45, 140, 255, 0.15);
+    border-color: rgba(45, 140, 255, 0.2);
+    box-shadow: 0 5px 15px rgba(45, 140, 255, 0.1);
 }
 
 [data-theme="deepseek"] .stat-mini-label {
@@ -899,7 +943,7 @@
 
 /* Оверлей сайдбара в теме DeepSeek */
 [data-theme="deepseek"] .sidebar-overlay {
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.2);
     backdrop-filter: blur(5px);
 }
 
@@ -909,7 +953,7 @@
     display: inline-block;
     width: 20px;
     height: 20px;
-    font-size: 0; /* Скрываем текст иконки */
+    font-size: 0;
 }
 
 /* Квадрат */
@@ -935,17 +979,17 @@
     background: white;
     border-radius: 1px;
     top: 50%;
-    left: calc(50% - 4px); /* 1/3 от левого края квадрата */
+    left: calc(50% - 4px);
     transform: translateY(-50%);
 }
 
 /* Анимация при наведении для всех тем */
 .sidebar-toggle:hover i.fa-bars::before {
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
 }
 
 .sidebar-toggle:hover i.fa-bars::after {
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
 }
 
 /* Темная тема - цвета */
@@ -973,5 +1017,5 @@
 
 /* Альтернативный вариант если нужно скрыть стандартные полоски иконки */
 .fa-bars::before {
-    content: '' !important; /* Перезаписываем иконку FontAwesome */
+    content: '' !important;
 }
