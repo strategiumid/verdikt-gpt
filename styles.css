@@ -382,6 +382,8 @@ body {
     line-height: 1.6;
     position: relative;
     word-wrap: break-word;
+    word-break: break-word; /* Добавь эту строку */
+    overflow-wrap: break-word; /* И эту строку */
     opacity: 0;
     transform: translateY(20px);
     transition: var(--transition);
