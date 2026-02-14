@@ -339,9 +339,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         
         // Инициализация настроек профиля
         this.setupProfileSettings();
-
-        // Расширение поля
-        this.setupAutoResizeTextarea();
         
         // Загружаем историю чатов
         await this.loadChats();
@@ -838,24 +835,20 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         
         // Очищаем чат
         this.elements.chatMessages.innerHTML = `
-    <div class="message ai-message" style="opacity: 1; transform: translateY(0);">
-        <div class="message-actions">
-            <button class="message-action" onclick="window.verdiktApp.copyMessage('msg-initial')">
-                <i class="fas fa-copy"></i>
-            </button>
-            <button class="message-action" onclick="window.verdiktApp.speakMessage('msg-initial')">
-                <i class="fas fa-volume-up"></i>
-            </button>
-        </div>
-        <div class="message-sender"><i class="fas fa-heart"></i> Эксперт по отношениям</div>
-        <div class="message-content">
-            👋 Привет! Я эксперт по отношениям, знакомствам и манипуляциям.
-            <br><br>
-            💬 Расскажите о своей ситуации — я помогу разобраться.
-        </div>
-        <div class="message-time">${this.getCurrentTime()}</div>
-    </div>
-`;
+            <div class="message ai-message" style="opacity: 1; transform: translateY(0);">
+                <div class="message-actions">
+                    <button class="message-action" onclick="window.verdiktApp.copyMessage('msg-initial')">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                    <button class="message-action" onclick="window.verdiktApp.speakMessage('msg-initial')">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                </div>
+                <div class="message-sender"><i class="fas fa-heart"></i> Эксперт по отношениям</div>
+                <div class="message-content">Новый чат начат! Я готов помочь с вопросами об отношениях, знакомствах и манипуляциях. Расскажите, что вас беспокоит? 💕</div>
+                <div class="message-time">${this.getCurrentTime()}</div>
+            </div>
+        `;
         
         // Сохраняем новый чат
         await this.saveChats();
@@ -2221,86 +2214,52 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     }
 
     addMessage(content, sender) {
-    const messageId = 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
-    const time = this.getCurrentTime();
-    
-    const messageElement = document.createElement('div');
-    messageElement.className = `message ${sender}-message`;
-    messageElement.id = messageId;
-    messageElement.setAttribute('data-timestamp', Date.now());
-    
-    // Форматируем контент с поддержкой длинного текста
-    const formattedContent = this.formatMessage(content);
-    
-    messageElement.innerHTML = `
-        <div class="message-actions">
-            <button class="message-action" onclick="window.verdiktApp?.copyMessage('${messageId}')">
-                <i class="fas fa-copy"></i>
-            </button>
-            <button class="message-action" onclick="window.verdiktApp?.speakMessage('${messageId}')">
-                <i class="fas fa-volume-up"></i>
-            </button>
-            <button class="message-action" onclick="window.verdiktApp?.regenerateMessage('${messageId}')">
-                <i class="fas fa-redo"></i>
-            </button>
-        </div>
-        <div class="message-sender">
-            <i class="fas fa-${sender === 'user' ? 'user' : 'heart'}"></i>
-            ${sender === 'user' ? 'Вы' : 'Эксперт по отношениям'}
-        </div>
-        <div class="message-content">${formattedContent}</div>
-        <div class="message-time">${time}</div>
-    `;
-    
-    this.elements.chatMessages.appendChild(messageElement);
-    
-    // Применяем подсветку синтаксиса если есть
-    setTimeout(() => {
-        if (window.hljs) {
-            messageElement.querySelectorAll('pre code').forEach(block => {
-                hljs.highlightElement(block);
-            });
-        }
-    }, 50);
-    
-    this.scrollToBottom();
-    
-    // Небольшая анимация появления
-    requestAnimationFrame(() => {
-        messageElement.style.opacity = '1';
-        messageElement.style.transform = 'translateY(0)';
-    });
-}
+        const messageId = 'msg-' + Date.now();
+        const time = this.getCurrentTime();
+        
+        const messageElement = document.createElement('div');
+        messageElement.className = `message ${sender}-message`;
+        messageElement.id = messageId;
+        messageElement.style.opacity = '0';
+        messageElement.style.transform = 'translateY(20px)';
+        
+        messageElement.innerHTML = `
+            <div class="message-actions">
+                <button class="message-action" onclick="window.verdiktApp.copyMessage('${messageId}')">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <button class="message-action" onclick="window.verdiktApp.speakMessage('${messageId}')">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+                <button class="message-action" onclick="window.verdiktApp.regenerateMessage('${messageId}')">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+            <div class="message-sender">
+                <i class="fas fa-${sender === 'user' ? 'user' : 'heart'}"></i>
+                ${sender === 'user' ? 'Вы' : 'Эксперт по отношениям'}
+            </div>
+            <div class="message-content">${this.formatMessage(content)}</div>
+            <div class="message-time">${time}</div>
+        `;
+        
+        this.elements.chatMessages.appendChild(messageElement);
+        
+        setTimeout(() => {
+            hljs.highlightAll();
+        }, 100);
+        
+        this.scrollToBottom();
+    }
 
     formatMessage(text) {
-    if (!text) return '';
-    
-    // Экранируем HTML только если это не код
-    let formatted = text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    
-    // Обрабатываем markdown
-    formatted = formatted
-        // Жирный текст
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        // Курсив
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        // Код блоки
-        .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
-        // Инлайн код
-        .replace(/`([^`]+)`/g, '<code>$1</code>')
-        // Списки
-        .replace(/^• (.*)$/gm, '<li>• $1</li>')
-        .replace(/^- (.*)$/gm, '<li>• $1</li>')
-        // Переносы строк
-        .replace(/\n/g, '<br>');
-    
-    return formatted;
-}
+        return text
+            .replace(/\n/g, '<br>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/`{3}([\s\S]*?)`{3}/g, '<pre><code>$1</code></pre>')
+            .replace(/`([^`]+)`/g, '<code>$1</code>');
+    }
 
     handleCommand(command) {
         const parts = command.split(' ');
@@ -2850,40 +2809,11 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     }
 
-    setupAutoResizeTextarea() {
-    const textarea = this.elements.messageInput;
-    if (!textarea) return;
-    
-    const resizeTextarea = () => {
-        textarea.style.height = 'auto';
-        const newHeight = Math.min(textarea.scrollHeight, 200);
-        textarea.style.height = newHeight + 'px';
-    };
-    
-    textarea.addEventListener('input', resizeTextarea);
-    
-    // Сбрасываем высоту при отправке
-    const originalSend = this.sendMessage.bind(this);
-    this.sendMessage = async () => {
-        await originalSend();
-        textarea.style.height = 'auto';
-    };
-}
-
-    scrollToBottom(smooth = true) {
-    const messages = this.elements.chatMessages;
-    if (!messages) return;
-    
-    const scrollOptions = {
-        top: messages.scrollHeight,
-        behavior: smooth ? 'smooth' : 'auto'
-    };
-    
-    // Используем requestAnimationFrame для плавности
-    requestAnimationFrame(() => {
-        messages.scrollTo(scrollOptions);
-    });
-}
+    scrollToBottom() {
+        setTimeout(() => {
+            this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
+        }, 100);
+    }
 
     showTypingIndicator() {
         // В режиме "Не беспокоить" не показываем индикатор набора
