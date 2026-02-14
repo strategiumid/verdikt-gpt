@@ -1019,3 +1019,16 @@
 .fa-bars::before {
     content: '' !important;
 }
+
+/* Красивый скролл для DeepSeek темы */
+[data-theme="deepseek"] .chat-messages::-webkit-scrollbar-thumb {
+    background: rgba(45, 140, 255, 0.2);
+}
+
+[data-theme="deepseek"] .chat-messages::-webkit-scrollbar-thumb:hover {
+    background: rgba(45, 140, 255, 0.4);
+}
+
+[data-theme="deepseek"] .chat-messages {
+    scrollbar-color: rgba(45, 140, 255, 0.2) transparent;
+}
