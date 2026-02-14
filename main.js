@@ -336,6 +336,8 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         
         // Инициализация дашборда
         this.setupDashboard();
+
+        this.setupHeroChips();
         
         // Инициализация настроек профиля
         this.setupProfileSettings();
@@ -832,6 +834,12 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         this.state.stats.userMessages = 0;
         this.state.stats.aiMessages = 1;
         this.state.retryCount = 0;
+
+        // Показываем Hero-блок для нового чата
+    const heroBlock = document.getElementById('hero-block');
+    if (heroBlock) {
+        heroBlock.style.display = 'flex';
+    }
         
         // Очищаем чат
         this.elements.chatMessages.innerHTML = `
@@ -2042,6 +2050,20 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 this.showNotification('Инструкции успешно обновлены ✅', 'success');
             });
         }
+
+        const chips = document.querySelectorAll('.hero-chip');
+    chips.forEach(chip => {
+        chip.addEventListener('click', (e) => {
+            const question = chip.dataset.question;
+            if (question) {
+                this.elements.messageInput.value = question;
+                this.elements.messageInput.focus();
+                // Опционально: автоматически увеличить высоту поля ввода
+                this.elements.messageInput.style.height = 'auto';
+                this.elements.messageInput.style.height = Math.min(this.elements.messageInput.scrollHeight, 200) + 'px';
+            }
+        });
+    });
     }
 
     async sendMessage() {
@@ -2250,6 +2272,12 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         }, 100);
         
         this.scrollToBottom();
+
+        // Скрываем Hero-блок при первом сообщении
+    const heroBlock = document.getElementById('hero-block');
+    if (heroBlock) {
+        heroBlock.style.display = 'none';
+    }
     }
 
     formatMessage(text) {
