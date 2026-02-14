@@ -279,10 +279,11 @@ body {
     display: flex;
     flex-direction: column;
     background: transparent;
-    border-radius: 28px; /* Добавлено скругление для всего контейнера */
-    overflow: hidden; /* Важно! Чтобы внутренние элементы не вылезали за скругленные углы */
+    border-radius: 28px;
+    overflow: hidden;
     animation: slideInRight 0.5s ease;
     position: relative;
+    min-height: 0;
 }
 
 /* Hero-блок (пустое состояние) */
@@ -291,7 +292,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 400px;
+    min-height: 0;
     padding: 20px;
 }
 
@@ -367,7 +368,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    max-height: 500px;
+    max-height: none;
+    min-height: 0;
     scroll-behavior: smooth;
     background: transparent;
 }
