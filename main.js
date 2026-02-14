@@ -12,7 +12,7 @@ export class VerdiktChatApp {
             model: 'stepfun/step-3.5-flash:free', // Только одна модель
             maxTokens: 1000,
             temperature: 0.7,
-            apiKey: "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"
+            apiKey: "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"
         };
 
         // Конфигурация собственного бэкенда для авторизации пользователей
@@ -1856,21 +1856,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             });
         });
         
-        // Автовысота текстового поля с плавностью
-this.elements.messageInput.addEventListener('input', () => {
-    const textarea = this.elements.messageInput;
-    textarea.style.height = 'auto';
-    const newHeight = Math.min(textarea.scrollHeight, 200);
-    textarea.style.height = newHeight + 'px';
-    
-    // Плавный скролл если текст выходит за пределы
-    if (newHeight >= 200) {
-        textarea.style.overflowY = 'auto';
-    } else {
-        textarea.style.overflowY = 'hidden';
-    }
-});
-
         // Примеры вопросов
         document.querySelectorAll('.example-button').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -2229,57 +2214,43 @@ this.elements.messageInput.addEventListener('input', () => {
     }
 
     addMessage(content, sender) {
-    const messageId = 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-    const time = this.getCurrentTime();
-    
-    const messageElement = document.createElement('div');
-    messageElement.className = `message ${sender}-message`;
-    messageElement.id = messageId;
-    messageElement.style.opacity = '0';
-    messageElement.style.transform = 'translateY(20px)';
-    
-    // Форматируем контент с поддержкой длинных текстов
-    const formattedContent = this.formatMessage(content);
-    
-    messageElement.innerHTML = `
-        <div class="message-actions">
-            <button class="message-action" onclick="window.verdiktApp.copyMessage('${messageId}')" title="Копировать">
-                <i class="fas fa-copy"></i>
-            </button>
-            <button class="message-action" onclick="window.verdiktApp.speakMessage('${messageId}')" title="Озвучить">
-                <i class="fas fa-volume-up"></i>
-            </button>
-            <button class="message-action" onclick="window.verdiktApp.regenerateMessage('${messageId}')" title="Перегенерировать">
-                <i class="fas fa-redo"></i>
-            </button>
-        </div>
-        <div class="message-sender">
-            <i class="fas fa-${sender === 'user' ? 'user' : 'heart'}"></i>
-            ${sender === 'user' ? 'Вы' : 'Эксперт по отношениям'}
-        </div>
-        <div class="message-content">${formattedContent}</div>
-        <div class="message-time">${time}</div>
-    `;
-    
-    this.elements.chatMessages.appendChild(messageElement);
-    
-    // Подсветка кода если есть
-    setTimeout(() => {
-        if (typeof hljs !== 'undefined') {
-            messageElement.querySelectorAll('pre code').forEach((block) => {
-                hljs.highlightElement(block);
-            });
-        }
-    }, 100);
-    
-    // Анимация появления
-    setTimeout(() => {
-        messageElement.style.opacity = '1';
-        messageElement.style.transform = 'translateY(0)';
-    }, 10);
-    
-    this.scrollToBottom();
-}
+        const messageId = 'msg-' + Date.now();
+        const time = this.getCurrentTime();
+        
+        const messageElement = document.createElement('div');
+        messageElement.className = `message ${sender}-message`;
+        messageElement.id = messageId;
+        messageElement.style.opacity = '0';
+        messageElement.style.transform = 'translateY(20px)';
+        
+        messageElement.innerHTML = `
+            <div class="message-actions">
+                <button class="message-action" onclick="window.verdiktApp.copyMessage('${messageId}')">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <button class="message-action" onclick="window.verdiktApp.speakMessage('${messageId}')">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+                <button class="message-action" onclick="window.verdiktApp.regenerateMessage('${messageId}')">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+            <div class="message-sender">
+                <i class="fas fa-${sender === 'user' ? 'user' : 'heart'}"></i>
+                ${sender === 'user' ? 'Вы' : 'Эксперт по отношениям'}
+            </div>
+            <div class="message-content">${this.formatMessage(content)}</div>
+            <div class="message-time">${time}</div>
+        `;
+        
+        this.elements.chatMessages.appendChild(messageElement);
+        
+        setTimeout(() => {
+            hljs.highlightAll();
+        }, 100);
+        
+        this.scrollToBottom();
+    }
 
     formatMessage(text) {
         return text
@@ -2838,16 +2809,11 @@ this.elements.messageInput.addEventListener('input', () => {
         return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     }
 
-    scrollToBottom(smooth = true) {
-    setTimeout(() => {
-        if (this.elements.chatMessages) {
-            this.elements.chatMessages.scrollTo({
-                top: this.elements.chatMessages.scrollHeight,
-                behavior: smooth ? 'smooth' : 'auto'
-            });
-        }
-    }, 100);
-}
+    scrollToBottom() {
+        setTimeout(() => {
+            this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
+        }, 100);
+    }
 
     showTypingIndicator() {
         // В режиме "Не беспокоить" не показываем индикатор набора
