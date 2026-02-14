@@ -467,7 +467,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                                 </div>
                                 <div>
                                     <h4 style="margin: 0; font-size: 1.1rem;">Активная модель</h4>
-                                    <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">stepfun/step-3.5-flash:free</p>
+                                    <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">Verdikt GPT v0.1</p>
                                 </div>
                             </div>
                             <p style="font-size: 0.9rem; margin: 0; color: var(--text-secondary);">
