@@ -342,6 +342,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         
         // Загружаем историю чатов
         await this.loadChats();
+        this.showWelcomeMessage();
         
         // Тема: для авторизованных — с бэкенда, иначе из localStorage
         if (this.state.user) {
@@ -1856,21 +1857,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             });
         });
         
-        // Автовысота текстового поля с плавностью
-this.elements.messageInput.addEventListener('input', () => {
-    const textarea = this.elements.messageInput;
-    textarea.style.height = 'auto';
-    const newHeight = Math.min(textarea.scrollHeight, 200);
-    textarea.style.height = newHeight + 'px';
-    
-    // Плавный скролл если текст выходит за пределы
-    if (newHeight >= 200) {
-        textarea.style.overflowY = 'auto';
-    } else {
-        textarea.style.overflowY = 'hidden';
-    }
-});
-
         // Примеры вопросов
         document.querySelectorAll('.example-button').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -1884,7 +1870,6 @@ this.elements.messageInput.addEventListener('input', () => {
         // Кнопки управления
         this.elements.newChat.addEventListener('click', () => this.createNewChat());
         this.elements.settingsButton.addEventListener('click', () => this.showSettingsModal());
-        this.elements.presentationMode.addEventListener('click', () => this.togglePresentationMode());
         
         // История чатов
         this.elements.toggleChatHistory.addEventListener('click', () => {
@@ -2229,7 +2214,7 @@ this.elements.messageInput.addEventListener('input', () => {
     }
 
     addMessage(content, sender) {
-    const messageId = 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    const messageId = 'msg-' + Date.now();
     const time = this.getCurrentTime();
     
     const messageElement = document.createElement('div');
@@ -2238,24 +2223,24 @@ this.elements.messageInput.addEventListener('input', () => {
     messageElement.style.opacity = '0';
     messageElement.style.transform = 'translateY(20px)';
     
-    // Форматируем контент с поддержкой длинных текстов
+    // Форматируем контент для правильного отображения
     const formattedContent = this.formatMessage(content);
     
     messageElement.innerHTML = `
         <div class="message-actions">
-            <button class="message-action" onclick="window.verdiktApp.copyMessage('${messageId}')" title="Копировать">
+            <button class="message-action" onclick="window.verdiktApp.copyMessage('${messageId}')">
                 <i class="fas fa-copy"></i>
             </button>
-            <button class="message-action" onclick="window.verdiktApp.speakMessage('${messageId}')" title="Озвучить">
+            <button class="message-action" onclick="window.verdiktApp.speakMessage('${messageId}')">
                 <i class="fas fa-volume-up"></i>
             </button>
-            <button class="message-action" onclick="window.verdiktApp.regenerateMessage('${messageId}')" title="Перегенерировать">
+            <button class="message-action" onclick="window.verdiktApp.regenerateMessage('${messageId}')">
                 <i class="fas fa-redo"></i>
             </button>
         </div>
         <div class="message-sender">
             <i class="fas fa-${sender === 'user' ? 'user' : 'heart'}"></i>
-            ${sender === 'user' ? 'Вы' : 'Эксперт по отношениям'}
+            ${sender === 'user' ? 'Вы' : 'Verdikt GPT'}
         </div>
         <div class="message-content">${formattedContent}</div>
         <div class="message-time">${time}</div>
@@ -2263,32 +2248,37 @@ this.elements.messageInput.addEventListener('input', () => {
     
     this.elements.chatMessages.appendChild(messageElement);
     
-    // Подсветка кода если есть
-    setTimeout(() => {
-        if (typeof hljs !== 'undefined') {
-            messageElement.querySelectorAll('pre code').forEach((block) => {
-                hljs.highlightElement(block);
-            });
-        }
-    }, 100);
+    // Удаляем первое приветственное сообщение после первого ответа пользователя
+    if (sender === 'user' && this.state.messageCount === 1) {
+        this.removeWelcomeMessage();
+    }
     
-    // Анимация появления
     setTimeout(() => {
-        messageElement.style.opacity = '1';
-        messageElement.style.transform = 'translateY(0)';
-    }, 10);
+        hljs.highlightAll();
+    }, 100);
     
     this.scrollToBottom();
 }
 
     formatMessage(text) {
-        return text
-            .replace(/\n/g, '<br>')
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/`{3}([\s\S]*?)`{3}/g, '<pre><code>$1</code></pre>')
-            .replace(/`([^`]+)`/g, '<code>$1</code>');
-    }
+    if (!text) return '';
+    
+    // Экранируем HTML теги
+    let escaped = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    
+    // Применяем форматирование
+    return escaped
+        .replace(/\n/g, '<br>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`{3}([\s\S]*?)`{3}/g, '<pre><code>$1</code></pre>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>');
+}
 
     handleCommand(command) {
         const parts = command.split(' ');
@@ -2838,16 +2828,11 @@ this.elements.messageInput.addEventListener('input', () => {
         return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     }
 
-    scrollToBottom(smooth = true) {
-    setTimeout(() => {
-        if (this.elements.chatMessages) {
-            this.elements.chatMessages.scrollTo({
-                top: this.elements.chatMessages.scrollHeight,
-                behavior: smooth ? 'smooth' : 'auto'
-            });
-        }
-    }, 100);
-}
+    scrollToBottom() {
+        setTimeout(() => {
+            this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
+        }, 100);
+    }
 
     showTypingIndicator() {
         // В режиме "Не беспокоить" не показываем индикатор набора
@@ -5364,4 +5349,34 @@ this.elements.messageInput.addEventListener('input', () => {
             });
         });
     }
+
+    removeWelcomeMessage() {
+    const welcomeMessage = document.getElementById('welcome-message');
+    if (welcomeMessage) {
+        welcomeMessage.remove();
+    }
 }
+
+showWelcomeMessage() {
+    const welcomeHTML = `
+        <div class="message ai-message" id="welcome-message" style="opacity: 1; transform: translateY(0);">
+            <div class="message-sender">
+                <i class="fas fa-heart"></i> Verdikt GPT
+            </div>
+            <div class="message-content">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <span style="font-size: 1.2rem;">💬</span>
+                    <span style="font-size: 1.1rem; font-weight: 500;">Чем могу помочь?</span>
+                </div>
+                <div style="font-size: 0.9rem; color: var(--text-secondary);">
+                    Я эксперт по отношениям, знакомствам и манипуляциям. Задайте любой вопрос.
+                </div>
+            </div>
+            <div class="message-time">${this.getCurrentTime()}</div>
+        </div>
+    `;
+    
+    this.elements.chatMessages.innerHTML = welcomeHTML;
+}
+}
+

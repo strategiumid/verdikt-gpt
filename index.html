@@ -2216,9 +2216,6 @@
             </div>
             
             <div class="header-right">
-                <button class="ios-button secondary" id="presentation-mode" title="Режим презентации">
-                    <i class="fas fa-expand"></i>
-                </button>
                 
                 <button class="ios-button secondary" id="settings-button" title="Настройки">
                     <i class="fas fa-cog"></i>
@@ -2306,7 +2303,7 @@
         <div class="main-content">
             <!-- Основная область чата -->
 <div class="chat-area">
-    <!-- Контейнер чата -->
+    <!-- Контейнер чата - стиль DeepSeek -->
     <div class="chat-container">
         <div class="chat-header">
             <div class="chat-header-content">
@@ -2314,8 +2311,8 @@
                     <i class="fas fa-heart"></i>
                 </div>
                 <div class="chat-header-text">
-                    <h2>Verdikt GPT - Эксперт по отношениям</h2>
-                    <p>Специалист в психологии отношений, знакомств и распознавании манипуляций</p>
+                    <h2>Verdikt GPT</h2>
+                    <p>Эксперт по отношениям, знакомствам и манипуляциям</p>
                 </div>
                 <div class="chat-header-controls">
                     <div class="status-indicator" id="api-status">
@@ -2328,9 +2325,17 @@
             </div>
         </div>
         
-        <!-- История сообщений с красивым скроллом -->
+        <!-- История сообщений -->
         <div class="chat-messages" id="chat-messages">
-            <!-- Сообщения будут добавляться сюда -->
+            <!-- Приветственное сообщение будет добавлено через JavaScript -->
+        </div>
+        
+        <!-- Умные подсказки (скрыты по умолчанию) -->
+        <div class="smart-suggestions" id="smart-suggestions" style="display: none;">
+            <div class="suggestion-item">Как понять, что мной манипулируют?</div>
+            <div class="suggestion-item">Как правильно знакомиться в интернете?</div>
+            <div class="suggestion-item">Как наладить отношения после ссоры?</div>
+            <div class="suggestion-item">Как распознать токсичные отношения?</div>
         </div>
         
         <!-- Индикатор набора текста -->
@@ -2341,46 +2346,30 @@
                 <span></span>
             </div>
         </div>
-    </div>
-    
-    <!-- Панель ввода под чатом -->
-    <div class="input-container-extended">
-        <div class="input-actions-left">
-            <button class="input-icon-button" id="attach-button" title="Прикрепить файл">
-                <i class="fas fa-paperclip"></i>
-            </button>
-            <button class="input-icon-button" id="toggle-chat-history" title="История чатов">
-                <i class="fas fa-history"></i>
-            </button>
-        </div>
         
-        <div class="input-wrapper">
-            <textarea id="message-input" placeholder="Опишите вашу ситуацию в отношениях, знакомствах или вопросы о манипуляциях..." maxlength="5000" autocomplete="off"></textarea>
-        </div>
-        
-        <div class="input-actions-right">
-            <button class="input-icon-button" id="voice-input" title="Голосовой ввод">
-                <i class="fas fa-microphone"></i>
-            </button>
-            <button class="input-icon-button primary" id="send-button" title="Отправить сообщение (Ctrl+Enter)">
-                <i class="fas fa-paper-plane"></i>
-            </button>
-        </div>
-    </div>
-    
-    <!-- Примеры вопросов -->
-    <div class="examples">
-        <h3><i class="fas fa-bolt"></i> Попробуйте спросить:</h3>
-        <div class="example-buttons">
-            <button class="example-button ios-button tertiary" data-question="Как распознать манипуляцию в отношениях?">
-                <i class="fas fa-shield-alt"></i> Манипуляции
-            </button>
-            <button class="example-button ios-button tertiary" data-question="Как правильно вести себя на первом свидании?">
-                <i class="fas fa-heart"></i> Первое свидание
-            </button>
-            <button class="example-button ios-button tertiary" data-question="Как установить здоровые границы в отношениях?">
-                <i class="fas fa-user-shield"></i> Границы
-            </button>
+        <!-- Панель ввода -->
+        <div class="input-container-extended">
+            <div class="input-actions-left">
+                <button class="input-icon-button" id="attach-button" title="Прикрепить файл">
+                    <i class="fas fa-paperclip"></i>
+                </button>
+                <button class="input-icon-button" id="toggle-chat-history" title="История чатов">
+                    <i class="fas fa-history"></i>
+                </button>
+            </div>
+            
+            <div class="input-wrapper">
+                <textarea id="message-input" placeholder="Чем могу помочь?" maxlength="2000" autocomplete="off"></textarea>
+            </div>
+            
+            <div class="input-actions-right">
+                <button class="input-icon-button" id="voice-input" title="Голосовой ввод">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                <button class="input-icon-button primary" id="send-button" title="Отправить сообщение">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
         </div>
     </div>
 </div>
