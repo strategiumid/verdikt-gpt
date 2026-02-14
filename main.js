@@ -195,7 +195,10 @@ export class VerdiktChatApp {
             profileSettingsForm: document.getElementById('profile-settings-form'),
             
             // Кнопка перезагрузки инструкций
-            reloadInstructions: document.getElementById('reload-instructions')
+            reloadInstructions: document.getElementById('reload-instructions'),
+
+            // Hero-блок
+            chatHero: document.getElementById('chat-hero')
         };
 
         this.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -833,20 +836,34 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         this.state.stats.aiMessages = 1;
         this.state.retryCount = 0;
         
-        // Очищаем чат
+        // Показываем Hero-блок
+        document.body.classList.add('chat-empty');
+        
+        // Очищаем чат и показываем Hero
         this.elements.chatMessages.innerHTML = `
-            <div class="message ai-message" style="opacity: 1; transform: translateY(0);">
-                <div class="message-actions">
-                    <button class="message-action" onclick="window.verdiktApp.copyMessage('msg-initial')">
-                        <i class="fas fa-copy"></i>
+            <!-- Hero-блок для пустого чата (как у DeepSeek) -->
+            <div class="chat-hero" id="chat-hero">
+                <div class="hero-logo">
+                    <i class="fas fa-heart"></i>
+                </div>
+                <h1 class="hero-title">Чем я могу помочь?</h1>
+                <div class="hero-suggestions">
+                    <button class="suggestion-chip" data-question="Как распознать манипуляцию в отношениях?">
+                        Как распознать манипуляцию?
                     </button>
-                    <button class="message-action" onclick="window.verdiktApp.speakMessage('msg-initial')">
-                        <i class="fas fa-volume-up"></i>
+                    <button class="suggestion-chip" data-question="Как правильно вести себя на первом свидании?">
+                        Первое свидание: советы
+                    </button>
+                    <button class="suggestion-chip" data-question="Как установить здоровые границы в отношениях?">
+                        Как установить личные границы?
+                    </button>
+                    <button class="suggestion-chip" data-question="Что делать, если партнер меня игнорирует?">
+                        Что делать при игноре?
+                    </button>
+                    <button class="suggestion-chip" data-question="Как понять, что отношения токсичны?">
+                        Признаки токсичных отношений
                     </button>
                 </div>
-                <div class="message-sender"><i class="fas fa-heart"></i> Эксперт по отношениям</div>
-                <div class="message-content">Новый чат начат! Я готов помочь с вопросами об отношениях, знакомствах и манипуляциях. Расскажите, что вас беспокоит? 💕</div>
-                <div class="message-time">${this.getCurrentTime()}</div>
             </div>
         `;
         
@@ -890,6 +907,9 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         if (chat.theme) {
             this.setTheme(chat.theme);
         }
+        
+        // Скрываем Hero-блок (есть сообщения)
+        document.body.classList.remove('chat-empty');
         
         // Очищаем и перерисовываем сообщения
         this.elements.chatMessages.innerHTML = '';
@@ -1856,14 +1876,17 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             });
         });
         
-        // Примеры вопросов
-        document.querySelectorAll('.example-button').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+        // Примеры вопросов (чипсы в Hero-блоке)
+        document.body.addEventListener('click', (e) => {
+            const chip = e.target.closest('.suggestion-chip');
+            if (chip) {
                 e.preventDefault();
-                const question = e.currentTarget.dataset.question;
-                this.elements.messageInput.value = question;
-                this.elements.messageInput.focus();
-            });
+                const question = chip.dataset.question;
+                if (question) {
+                    this.elements.messageInput.value = question;
+                    this.elements.messageInput.focus();
+                }
+            }
         });
         
         // Кнопки управления
@@ -2076,6 +2099,9 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             this.checkApiStatus();
             return;
         }
+        
+        // Скрываем Hero-блок при отправке первого сообщения
+        document.body.classList.remove('chat-empty');
         
         this.addMessage(message, 'user');
         
@@ -2310,19 +2336,33 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         if (confirm('Очистить текущий чат? Сообщения будут удалены.')) {
             this.state.conversationHistory = [this.createSystemPromptMessage()];
             
+            // Показываем Hero-блок
+            document.body.classList.add('chat-empty');
+            
             this.elements.chatMessages.innerHTML = `
-                <div class="message ai-message" style="opacity: 1; transform: translateY(0);">
-                    <div class="message-actions">
-                        <button class="message-action" onclick="window.verdiktApp.copyMessage('msg-initial')">
-                            <i class="fas fa-copy"></i>
+                <!-- Hero-блок для пустого чата (как у DeepSeek) -->
+                <div class="chat-hero" id="chat-hero">
+                    <div class="hero-logo">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <h1 class="hero-title">Чем я могу помочь?</h1>
+                    <div class="hero-suggestions">
+                        <button class="suggestion-chip" data-question="Как распознать манипуляцию в отношениях?">
+                            Как распознать манипуляцию?
                         </button>
-                        <button class="message-action" onclick="window.verdiktApp.speakMessage('msg-initial')">
-                            <i class="fas fa-volume-up"></i>
+                        <button class="suggestion-chip" data-question="Как правильно вести себя на первом свидании?">
+                            Первое свидание: советы
+                        </button>
+                        <button class="suggestion-chip" data-question="Как установить здоровые границы в отношениях?">
+                            Как установить личные границы?
+                        </button>
+                        <button class="suggestion-chip" data-question="Что делать, если партнер меня игнорирует?">
+                            Что делать при игноре?
+                        </button>
+                        <button class="suggestion-chip" data-question="Как понять, что отношения токсичны?">
+                            Признаки токсичных отношений
                         </button>
                     </div>
-                    <div class="message-sender"><i class="fas fa-heart"></i> Эксперт по отношениям</div>
-                    <div class="message-content">Чат очищен! Я готов помочь с вопросами об отношениях, знакомствах и манипуляциях. Расскажите, что вас беспокоит? 💕</div>
-                    <div class="message-time">${this.getCurrentTime()}</div>
                 </div>
             `;
             
@@ -2371,6 +2411,16 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         this.state.currentTheme = theme;
         document.body.setAttribute('data-theme', theme);
         
+        // Обновляем meta theme-color
+        const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+        if (metaThemeColor) {
+            if (theme === 'deepseek') {
+                metaThemeColor.setAttribute('content', '#ffffff');
+            } else {
+                metaThemeColor.setAttribute('content', '#0f172a');
+            }
+        }
+        
         document.querySelectorAll('.theme-option').forEach(opt => opt.classList.remove('active'));
         const activeTheme = document.querySelector(`.theme-option[data-theme="${theme}"]`);
         if (activeTheme) {
@@ -2389,7 +2439,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             }).catch(() => {});
         }
         if (!fromServer) {
-            this.showNotification(`Тема изменена: ${theme}`, 'info');
+            this.showNotification(`Тема изменена: ${theme === 'deepseek' ? 'Светлая' : 'Тёмная'}`, 'info');
         }
     }
 
