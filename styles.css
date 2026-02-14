@@ -87,8 +87,8 @@ body {
     padding-bottom: max(20px, env(safe-area-inset-bottom));
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
-    min-height: 100dvh;
+    height: 100vh; /* Фиксированная высота вместо min-height */
+    height: 100dvh;
     gap: 0;
     position: relative;
     z-index: 1;
@@ -263,6 +263,8 @@ body {
     flex: 1;
     margin-bottom: 0;
     animation: fadeInUp 1s ease 0.3s both;
+    min-height: 0; /* Важно для flex-детей */
+    height: 100%; /* Добавляем */
 }
 
 /* Основная область чата */
@@ -271,7 +273,10 @@ body {
     display: flex;
     flex-direction: column;
     gap: 15px;
+    min-height: 0; /* Важно */
+    height: 100%; /* Добавляем */
 }
+
 
 /* Контейнер чата */
 .chat-container {
@@ -280,10 +285,10 @@ body {
     flex-direction: column;
     background: transparent;
     border-radius: 28px;
-    overflow: hidden; /* Это важно! */
+    overflow: hidden;
     animation: slideInRight 0.5s ease;
     position: relative;
-    height: 100%;
+    height: 100%; /* Фиксируем высоту */
     min-height: 0;
 }
 
@@ -365,11 +370,12 @@ body {
 .chat-messages {
     flex: 1 1 auto;
     padding: 20px;
-    overflow-y: auto; /* Скролл появится когда нужно */
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 20px;
-    min-height: 400px;
+    min-height: 0; /* Важно */
+    max-height: 100%; /* Ограничиваем */
     scroll-behavior: smooth;
     background: transparent;
 }
