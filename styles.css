@@ -261,7 +261,7 @@ body {
 .main-content {
     display: flex;
     flex: 1;
-    margin-bottom: 20px;
+    margin-bottom: 0;
     animation: fadeInUp 1s ease 0.3s both;
 }
 
