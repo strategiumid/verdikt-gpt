@@ -420,24 +420,26 @@ body {
 /* Сообщения чата */
 .chat-messages {
     flex: 1;
-    padding: 20px;
+    padding: 24px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 20px;
-    max-height: 500px;
+    max-height: none;
     scroll-behavior: smooth;
 }
 
 .message {
-    max-width: 80%;
-    padding: 16px;
+    max-width: 85%;
+    margin-bottom: 16px;
+    padding: 16px 20px;
     border-radius: var(--radius-md);
     line-height: 1.6;
     position: relative;
     word-wrap: break-word;
     opacity: 0;
     transform: translateY(20px);
+    font-size: 15px;
 }
 
 .message:hover .message-actions {
@@ -520,8 +522,13 @@ body {
 }
 
 .message-content {
-    font-size: 1rem;
+    margin-top: 8px;
+    font-size: 15px;
     line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    letter-spacing: -0.01em;
 }
 
 .message-content pre {
@@ -557,7 +564,7 @@ body {
     right: 8px;
     display: flex;
     gap: 4px;
-    opacity: 0;
+    opacity: 0.3;
     transition: opacity 0.2s ease;
 }
 
@@ -572,7 +579,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
+    font-size: 12px;
     transition: all 0.2s ease;
 }
 
@@ -696,10 +703,10 @@ body {
     color: var(--text-primary);
     transition: var(--transition);
     outline: none;
-    resize: none;
-    min-height: 56px;
-    max-height: 180px;
     line-height: 1.5;
+    min-height: 50px;
+    max-height: 150px;
+    resize: vertical;
 }
 
 #message-input:focus {
@@ -2391,5 +2398,126 @@ html.low-motion .grid-pattern {
         min-width: 60px;
         padding: 6px;
         font-size: 0.7rem;
+    }
+}
+
+/* ИСПРАВЛЕНИЯ ДЛЯ ПРАВИЛЬНОЙ ВЫСОТЫ ЧАТА */
+.main-content {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+    height: 100%;
+    margin-bottom: 0;
+}
+
+.chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+}
+
+.chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.chat-header {
+    flex-shrink: 0;
+    background: var(--bg-card);
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.examples {
+    flex-shrink: 0;
+    padding: 16px 20px;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border-color);
+    border-radius: 0;
+    box-shadow: none;
+    margin-top: auto;
+}
+
+.smart-suggestions {
+    flex-shrink: 0;
+    padding: 15px 30px;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border-color);
+}
+
+.typing-indicator {
+    flex-shrink: 0;
+    padding: 10px 30px;
+}
+
+.input-container-extended {
+    flex-shrink: 0;
+    display: flex;
+    padding: 16px 20px;
+    background: rgba(30, 41, 59, 0.9);
+    border-top: 1px solid var(--border-color);
+    gap: 10px;
+    align-items: center;
+}
+
+/* Исправляем высоту для мобильных */
+@media (max-width: 768px) {
+    .container {
+        height: 100vh;
+        height: 100dvh;
+        padding: 12px;
+    }
+    
+    .chat-header {
+        padding: 14px 16px;
+    }
+    
+    .chat-messages {
+        padding: 16px;
+    }
+    
+    .input-container-extended {
+        padding: 12px 16px;
+    }
+    
+    .examples {
+        padding: 12px 16px;
+    }
+    
+    .smart-suggestions {
+        padding: 12px 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .chat-header {
+        padding: 12px 14px;
+    }
+    
+    .chat-messages {
+        padding: 12px 14px;
+    }
+    
+    .input-container-extended {
+        padding: 10px 14px;
+    }
+    
+    .examples {
+        padding: 10px 14px;
+    }
+    
+    .smart-suggestions {
+        padding: 10px 14px;
     }
 }
