@@ -9,7 +9,7 @@ export class VerdiktChatApp {
     constructor() {
         this.API_CONFIG = {
             url: 'https://openrouter.ai/api/v1/chat/completions',
-            model: 'stepfun/step-3.5-flash:free', // Бесплатная модель
+            model: 'stepfun/step-3.5-flash:free', // Только одна модель
             maxTokens: 1000,
             temperature: 0.7,
             apiKey: "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"
@@ -41,7 +41,8 @@ export class VerdiktChatApp {
             isRecording: false,
             isSpeaking: false,
             isModelLoading: false,
-            instructions: '', // Добавлено для хранения инструкций
+            instructions: '', // Хранилище для инструкций
+            instructionsLoaded: false, // Флаг загрузки инструкций
             achievements: {
                 firstMessage: { unlocked: true, name: "Первый шаг", icon: "🎯", description: "Первая консультация" },
                 activeUser: { unlocked: false, name: "Доверие", icon: "💬", description: "10 личных вопросов" },
@@ -191,7 +192,10 @@ export class VerdiktChatApp {
             // Настройки профиля элементы
             profileSettingsModal: document.getElementById('profile-settings-modal'),
             profileSettingsClose: document.getElementById('profile-settings-close'),
-            profileSettingsForm: document.getElementById('profile-settings-form')
+            profileSettingsForm: document.getElementById('profile-settings-form'),
+            
+            // Кнопка перезагрузки инструкций
+            reloadInstructions: document.getElementById('reload-instructions')
         };
 
         this.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -207,16 +211,9 @@ export class VerdiktChatApp {
         this.encryptionService = new EncryptionService(this);
         this.authService = new AuthService(this);
 
-        // Список доступных моделей OpenRouter
+        // Только одна модель
         this.availableModels = [
-            { id: 'stepfun/step-3.5-flash:free', name: 'Stepfun 3.5 Flash (Бесплатно)', free: true },
-            { id: 'google/gemini-2.0-flash-exp:free', name: 'Gemini 2.0 Flash (Бесплатно)', free: true },
-            { id: 'meta-llama/llama-3.2-3b-instruct:free', name: 'Llama 3.2 3B (Бесплатно)', free: true },
-            { id: 'google/gemini-2.0-flash-thinking-exp:free', name: 'Gemini 2.0 Thinking (Бесплатно)', free: true },
-            { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', free: false },
-            { id: 'openai/gpt-4o', name: 'GPT-4o', free: false },
-            { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', free: false },
-            { id: 'google/gemini-2.0-flash', name: 'Gemini 2.0 Flash', free: false }
+            { id: 'stepfun/step-3.5-flash:free', name: 'Stepfun 3.5 Flash (Бесплатно)', free: true }
         ];
         
         // Элементы для вкладок настроек
@@ -249,25 +246,35 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
 
     async loadInstructions() {
         try {
-            const response = await fetch('instructions.txt');
+            console.log('Загрузка инструкций из instructions.txt...');
+            const response = await fetch('instructions.txt?t=' + Date.now()); // Кэш-бастер
             if (response.ok) {
                 const instructions = await response.text();
                 
                 // Сохраняем инструкции в состоянии
                 this.state.instructions = instructions;
+                this.state.instructionsLoaded = true;
                 
                 // Обновляем системный промпт с инструкциями
                 this.updateSystemPromptWithInstructions(instructions);
                 
-                console.log('Инструкции успешно загружены');
-                this.showNotification('Инструкции AI загружены ✅', 'success');
+                console.log('✅ Инструкции успешно загружены, длина:', instructions.length);
+                
+                // Показываем уведомление только если это не первый запуск
+                if (this.state.messageCount > 1) {
+                    this.showNotification('Инструкции AI обновлены 📚', 'success');
+                }
+                
+                return true;
             } else {
-                console.warn('Не удалось загрузить инструкции');
-                this.showNotification('Не удалось загрузить инструкции', 'warning');
+                console.warn('❌ Не удалось загрузить инструкции, статус:', response.status);
+                this.state.instructionsLoaded = false;
+                return false;
             }
         } catch (error) {
-            console.error('Ошибка загрузки инструкций:', error);
-            this.showNotification('Ошибка загрузки инструкций', 'error');
+            console.error('❌ Ошибка загрузки инструкций:', error);
+            this.state.instructionsLoaded = false;
+            return false;
         }
     }
 
@@ -314,11 +321,11 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         this.setupSpeechRecognition();
         this.setupBackgroundAnimations();
         
-        // Загружаем инструкции
+        // Загружаем инструкции при старте (автозагрузка)
         await this.loadInstructions();
         
         this.updateUI();
-        this.checkApiStatus(); // Проверяем статус API
+        await this.checkApiStatus(); // Проверяем статус API
         this.setupKeyboardShortcuts();
         this.setupServiceWorker();
         this.setupSettingsTabs();
@@ -335,6 +342,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         
         // Загружаем историю чатов
         await this.loadChats();
+        
         // Тема: для авторизованных — с бэкенда, иначе из localStorage
         if (this.state.user) {
             await this.loadUserSettings();
@@ -355,10 +363,11 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         // Автосохранение
         this.startAutoSave();
         
-        console.log('Verdikt GPT с OpenRouter API и обновленным интерфейсом инициализирован');
+        console.log('✅ Verdikt GPT с OpenRouter API инициализирован');
+        console.log('📚 Инструкции загружены:', this.state.instructionsLoaded);
     }
 
-    // ==================== OPENROTER API ФУНКЦИИ ====================
+    // ==================== OPENROUTER API ФУНКЦИИ ====================
 
     loadApiKey() {
         const savedApiKey = localStorage.getItem('verdikt_openrouter_api_key');
@@ -368,23 +377,15 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             this.API_CONFIG.apiKey = "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";
         }
         
-        const savedModel = localStorage.getItem('verdikt_openrouter_model');
-        if (savedModel) {
-            this.API_CONFIG.model = savedModel;
-        } else {
-            this.API_CONFIG.model = "stepfun/step-3.5-flash:free";
-        }
+        // Фиксированная модель - всегда stepfun/step-3.5-flash:free
+        this.API_CONFIG.model = "stepfun/step-3.5-flash:free";
+        localStorage.setItem('verdikt_openrouter_model', this.API_CONFIG.model);
     }
 
-    saveApiKey(apiKey, model = null) {
+    saveApiKey(apiKey) {
         if (apiKey) {
             localStorage.setItem('verdikt_openrouter_api_key', apiKey);
             this.API_CONFIG.apiKey = apiKey;
-        }
-        
-        if (model) {
-            localStorage.setItem('verdikt_openrouter_model', model);
-            this.API_CONFIG.model = model;
         }
         
         this.showNotification('Настройки API сохранены ✅', 'success');
@@ -443,51 +444,51 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                             Получите ключ на <a href="https://openrouter.ai/keys" target="_blank" style="color: var(--ios-blue);">openrouter.ai/keys</a>
                         </div>
                         
-                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">
-                            Модель:
-                        </label>
-                        <select id="api-model-select" style="
-                            width: 100%; padding: 12px; border-radius: 8px;
-                            background: var(--bg-card); border: 1px solid var(--border-color);
-                            color: var(--text-primary); font-family: inherit;
-                            margin-bottom: 20px;
-                        ">
-                            ${this.availableModels.map(model => `
-                                <option value="${model.id}" 
-                                        ${model.id === this.API_CONFIG.model ? 'selected' : ''}
-                                        data-free="${model.free}">
-                                    ${model.name} ${model.free ? '🆓' : '💳'}
-                                </option>
-                            `).join('')}
-                        </select>
-                        
                         <div style="
-                            background: rgba(236, 72, 153, 0.1);
-                            border-left: 3px solid var(--primary);
-                            padding: 12px;
-                            border-radius: var(--radius-sm);
-                            margin-top: 15px;
+                            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
+                            border-left: 3px solid #10b981;
+                            padding: 15px;
+                            border-radius: var(--radius-md);
+                            margin: 20px 0;
                         ">
-                            <p style="font-size: 0.9rem;">
-                                <i class="fas fa-info-circle"></i> 
-                                Бесплатные модели (🆓) имеют ограничения. 
-                                Для платных моделей (💳) необходим баланс на OpenRouter.
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+                                <div style="
+                                    width: 40px;
+                                    height: 40px;
+                                    background: linear-gradient(135deg, #10b981, #059669);
+                                    border-radius: 10px;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    color: white;
+                                    font-size: 18px;
+                                ">
+                                    <i class="fas fa-robot"></i>
+                                </div>
+                                <div>
+                                    <h4 style="margin: 0; font-size: 1.1rem;">Активная модель</h4>
+                                    <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">stepfun/step-3.5-flash:free</p>
+                                </div>
+                            </div>
+                            <p style="font-size: 0.9rem; margin: 0; color: var(--text-secondary);">
+                                <i class="fas fa-check-circle" style="color: #10b981;"></i> 
+                                Бесплатная модель с хорошей производительностью. Другие модели недоступны.
                             </p>
                         </div>
+                        
+                        <div id="api-test-result" style="
+                            display: none;
+                            padding: 12px;
+                            border-radius: var(--radius-sm);
+                            margin-bottom: 15px;
+                            font-size: 0.9rem;
+                        "></div>
                     </div>
-                    
-                    <div id="api-test-result" style="
-                        display: none;
-                        padding: 12px;
-                        border-radius: var(--radius-sm);
-                        margin-bottom: 15px;
-                        font-size: 0.9rem;
-                    "></div>
                 </div>
                 
                 <div class="modal-buttons" style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <button class="ios-button secondary" id="test-api-key" style="flex: 1;">
-                        <i class="fas fa-vial"></i> Проверить
+                        <i class="fas fa-vial"></i> Проверить ключ
                     </button>
                     <button class="ios-button" id="save-api-settings" style="flex: 1;">
                         <i class="fas fa-save"></i> Сохранить
@@ -495,6 +496,10 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                     <button class="ios-button tertiary" id="api-settings-cancel" style="width: 100%;">
                         <i class="fas fa-times"></i> Отмена
                     </button>
+                </div>
+                
+                <div style="margin-top: 15px; font-size: 0.8rem; color: var(--text-tertiary); text-align: center;">
+                    <i class="fas fa-info-circle"></i> Используется только модель stepfun/step-3.5-flash:free
                 </div>
             </div>
         </div>
@@ -505,12 +510,10 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         modal.classList.add('active');
         
         const apiKeyInput = document.getElementById('api-key-input');
-        const modelSelect = document.getElementById('api-model-select');
         const testResult = document.getElementById('api-test-result');
         
         document.getElementById('test-api-key').addEventListener('click', async () => {
             const apiKey = apiKeyInput.value.trim();
-            const modelId = modelSelect.value;
             
             if (!apiKey) {
                 testResult.innerHTML = '<span style="color: #ef4444;">Введите API ключ</span>';
@@ -534,18 +537,12 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 
                 if (response.ok) {
                     const data = await response.json();
-                    const selectedModel = this.availableModels.find(m => m.id === modelId);
-                    const modelName = selectedModel ? selectedModel.name : modelId;
                     
                     let resultHTML = `<span style="color: #10b981;">✅ Ключ активен</span><br>`;
-                    resultHTML += `<small>Модель: ${modelName}</small><br>`;
+                    resultHTML += `<small>Модель: stepfun/step-3.5-flash:free (бесплатно)</small><br>`;
                     
                     if (data.data?.credits !== undefined) {
                         resultHTML += `<small>Баланс: $${data.data.credits.toFixed(2)}</small>`;
-                        
-                        if (data.data.credits < 1 && !selectedModel.free) {
-                            resultHTML += `<br><small style="color: #f59e0b;">⚠️ Низкий баланс для платных моделей</small>`;
-                        }
                     }
                     
                     testResult.innerHTML = resultHTML;
@@ -567,7 +564,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         
         document.getElementById('save-api-settings').addEventListener('click', () => {
             const apiKey = apiKeyInput.value.trim();
-            const modelId = modelSelect.value;
             
             if (!apiKey) {
                 testResult.innerHTML = '<span style="color: #ef4444;">Введите API ключ</span>';
@@ -576,7 +572,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 return;
             }
             
-            this.saveApiKey(apiKey, modelId);
+            this.saveApiKey(apiKey);
             modal.remove();
             this.hideModal('settings-modal');
         });
@@ -815,6 +811,8 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 title = '👥 ' + title;
             } else if (firstMessage.toLowerCase().includes('манипуляц') || firstMessage.toLowerCase().includes('токсичн')) {
                 title = '🛡️ ' + title;
+            } else if (firstMessage.toLowerCase().includes('игнор') || firstMessage.toLowerCase().includes('бывшая') || firstMessage.toLowerCase().includes('вернуть')) {
+                title = '🔄 ' + title;
             }
         }
         
@@ -2017,9 +2015,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         // Футер ссылки
         document.getElementById('model-info').addEventListener('click', (e) => {
             e.preventDefault();
-            const selectedModel = this.availableModels.find(m => m.id === this.API_CONFIG.model);
-            const modelName = selectedModel ? selectedModel.name : this.API_CONFIG.model;
-            this.showNotification(`Используется: ${modelName} через OpenRouter API`, 'info');
+            this.showNotification('Используется: stepfun/step-3.5-flash:free через OpenRouter API', 'info');
         });
         
         document.getElementById('privacy-policy').addEventListener('click', (e) => {
@@ -2040,9 +2036,8 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         this.setupExportListeners();
 
         // Кнопка перезагрузки инструкций
-        const reloadInstructionsBtn = document.getElementById('reload-instructions');
-        if (reloadInstructionsBtn) {
-            reloadInstructionsBtn.addEventListener('click', async () => {
+        if (this.elements.reloadInstructions) {
+            this.elements.reloadInstructions.addEventListener('click', async () => {
                 await this.loadInstructions();
                 this.showNotification('Инструкции успешно обновлены ✅', 'success');
             });
@@ -3618,15 +3613,12 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 extension = 'html';
                 break;
             case 'json':
-                const selectedModel = this.availableModels.find(m => m.id === this.API_CONFIG.model);
-                const modelName = selectedModel ? selectedModel.name : this.API_CONFIG.model;
-                
                 content = JSON.stringify({
                     chat: this.state.conversationHistory.filter(msg => msg.role !== 'system'),
                     metadata: {
                         exported: new Date().toISOString(),
                         totalMessages: this.state.stats.totalMessages,
-                        model: modelName,
+                        model: 'stepfun/step-3.5-flash:free',
                         api: 'OpenRouter',
                         topics: {
                             manipulations: this.state.stats.manipulationRequests,
@@ -3655,9 +3647,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     }
 
     exportAllChats() {
-        const selectedModel = this.availableModels.find(m => m.id === this.API_CONFIG.model);
-        const modelName = selectedModel ? selectedModel.name : this.API_CONFIG.model;
-        
         const allChatsData = {
             version: '2.1',
             timestamp: new Date().toISOString(),
@@ -3665,7 +3654,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             metadata: {
                 totalChats: this.chatManager.chats.length,
                 totalMessages: this.state.stats.totalMessages,
-                model: modelName,
+                model: 'stepfun/step-3.5-flash:free',
                 api: 'OpenRouter'
             }
         };
