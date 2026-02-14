@@ -588,7 +588,7 @@ body {
     border-top: 1px solid var(--border-color);
     gap: 12px;
     align-items: center;
-    margin-top: auto;
+    margin-top: 0;
 }
 
 .input-actions-left {
