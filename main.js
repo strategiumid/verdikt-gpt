@@ -369,18 +369,18 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         console.log('📚 Инструкции загружены:', this.state.instructionsLoaded);
     }
 
-    // ==================== OPENROUTER API ФУНКЦИИ ====================
+    
 
     loadApiKey() {
         const savedApiKey = localStorage.getItem('verdikt_openrouter_api_key');
         if (savedApiKey) {
             this.API_CONFIG.apiKey = savedApiKey;
         } else {
-            this.API_CONFIG.apiKey = "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";
+            this.API_CONFIG.apiKey = "sk-ayshgI6SUUplUxB0ocKzEQ1IK73mbdql";
         }
         
         // Фиксированная модель - всегда stepfun/step-3.5-flash:free
-        this.API_CONFIG.model = "stepfun/step-3.5-flash:free";
+        this.API_CONFIG.model = "stepfun/step-3.5-flash";
         localStorage.setItem('verdikt_openrouter_model', this.API_CONFIG.model);
     }
 
