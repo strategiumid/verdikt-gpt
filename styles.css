@@ -387,12 +387,14 @@ body {
     line-height: 1.6;
     position: relative;
     word-wrap: break-word;
-    word-break: break-word; /* Добавь эту строку */
-    overflow-wrap: break-word; /* И эту строку */
+    word-break: break-word;
+    overflow-wrap: break-word;
     opacity: 0;
     transform: translateY(20px);
     transition: var(--transition);
     box-shadow: var(--shadow-sm);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .message:hover .message-actions {
@@ -401,26 +403,34 @@ body {
 
 .user-message {
     align-self: flex-end;
-    background: var(--primary);
-    color: white;
+    background: rgba(236, 72, 153, 0.15);
+    border: 1px solid rgba(236, 72, 153, 0.3);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: var(--text-primary);
     border-bottom-right-radius: 6px;
 }
 
 .user-message:hover {
-    box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.3);
+    background: rgba(236, 72, 153, 0.2);
+    border-color: rgba(236, 72, 153, 0.5);
+    box-shadow: 0 0 20px rgba(236, 72, 153, 0.2);
 }
 
 .ai-message {
     align-self: flex-start;
-    background: var(--bg-card-light);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
-    border-bottom-left-radius: 6px;
+    background: rgba(139, 92, 246, 0.15);
+    border: 1px solid rgba(139, 92, 246, 0.3);
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: var(--text-primary);
+    border-bottom-left-radius: 6px;
 }
 
 .ai-message:hover {
-    box-shadow: 0 0 20px rgba(var(--secondary-rgb), 0.2);
+    background: rgba(139, 92, 246, 0.2);
+    border-color: rgba(139, 92, 246, 0.5);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
 }
 
 /* Анимации сообщений */
@@ -473,11 +483,15 @@ body {
     display: flex;
     align-items: center;
     gap: 6px;
+    color: var(--text-primary);
+    opacity: 0.9;
 }
 
 .message-content {
     font-size: 1rem;
     line-height: 1.6;
+    color: var(--text-primary);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .message-content pre {
@@ -500,10 +514,11 @@ body {
 
 .message-time {
     font-size: 0.75rem;
-    opacity: 0.7;
+    opacity: 0.6;
     margin-top: 10px;
     text-align: right;
     font-family: 'JetBrains Mono', monospace;
+    color: var(--text-primary);
 }
 
 /* Действия с сообщениями */
@@ -2341,108 +2356,4 @@ html.low-motion .grid-pattern {
 .chat-messages {
     scrollbar-width: thin;
     scrollbar-color: rgba(var(--primary-rgb), 0.3) transparent;
-}
-/* Подписки */
-.subscription-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 20px;
-    margin-top: 20px;
-}
-
-.subscription-card {
-    background: var(--bg-card);
-    border-radius: var(--radius-lg);
-    padding: 24px 20px;
-    border: 2px solid transparent;
-    transition: var(--transition);
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    backdrop-filter: blur(10px);
-    box-shadow: var(--shadow-sm);
-}
-
-.subscription-card:hover {
-    transform: translateY(-8px);
-    box-shadow: var(--shadow);
-}
-
-.subscription-card.free {
-    border-color: var(--text-tertiary);
-}
-
-.subscription-card.lite {
-    border-color: var(--text-secondary);
-}
-
-.subscription-card.pro {
-    border-color: #10b981;
-    background: linear-gradient(145deg, var(--bg-card), rgba(16, 185, 129, 0.1));
-}
-
-.subscription-card.ultimate {
-    border-color: #f59e0b;
-    background: linear-gradient(145deg, var(--bg-card), rgba(245, 158, 11, 0.1));
-}
-
-.card-header {
-    text-align: center;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 16px;
-}
-
-.card-header h3 {
-    font-size: 1.4rem;
-    margin-bottom: 8px;
-}
-
-.price {
-    font-size: 2rem;
-    font-weight: 700;
-}
-
-.price span {
-    font-size: 0.9rem;
-    font-weight: normal;
-    color: var(--text-tertiary);
-}
-
-.card-features ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.card-features li {
-    margin: 10px 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.9rem;
-}
-
-.card-features i.fa-check {
-    color: #10b981;
-}
-
-.card-features i.fa-times {
-    color: #ef4444;
-}
-
-.card-pros-cons {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    background: rgba(0,0,0,0.2);
-    border-radius: var(--radius-sm);
-    padding: 12px;
-    margin: 8px 0;
-}
-
-.card-pros-cons p {
-    margin: 4px 0;
-}
-
-.subscription-card .ios-button {
-    margin-top: auto;
 }
