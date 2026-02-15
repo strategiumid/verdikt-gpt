@@ -213,7 +213,7 @@ export class VerdiktChatApp {
 
         // Только одна модель
         this.availableModels = [
-            { id: 'stepfun/step-3.5-flash:free', name: 'Verdikt GPT', free: true }
+            { id: 'stepfun/step-3.5-flash', name: 'Verdikt GPT', free: true }
         ];
         
         // Элементы для вкладок настроек
@@ -379,7 +379,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             this.API_CONFIG.apiKey = "sk-ayshgI6SUUplUxB0ocKzEQ1IK73mbdql";
         }
         
-        // Фиксированная модель - всегда stepfun/step-3.5-flash:free
+        
         this.API_CONFIG.model = "stepfun/step-3.5-flash";
         localStorage.setItem('verdikt_openrouter_model', this.API_CONFIG.model);
     }
@@ -2023,7 +2023,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         // Футер ссылки
         document.getElementById('model-info').addEventListener('click', (e) => {
             e.preventDefault();
-            this.showNotification('Используется: stepfun/step-3.5-flash:free через OpenRouter API', 'info');
+            this.showNotification('Используется: Verdikt GPT-b v0.01', 'info');
         });
         
         document.getElementById('privacy-policy').addEventListener('click', (e) => {
@@ -3646,7 +3646,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                     metadata: {
                         exported: new Date().toISOString(),
                         totalMessages: this.state.stats.totalMessages,
-                        model: 'stepfun/step-3.5-flash:free',
+                        model: 'stepfun/step-3.5-flash',
                         api: 'OpenRouter',
                         topics: {
                             manipulations: this.state.stats.manipulationRequests,
