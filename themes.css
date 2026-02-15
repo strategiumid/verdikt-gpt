@@ -26,6 +26,10 @@
     /* iOS элементы */
     --ios-blue: var(--primary);
     --ios-card: rgba(255, 255, 255, 0.9);
+    
+    /* RGB значения для primary */
+    --primary-rgb: 45, 140, 255;
+    --secondary-rgb: 34, 211, 238;
 }
 
 /* Дополнительные элементы стиля для DeepSeek темы */
@@ -69,20 +73,6 @@
 [data-theme="deepseek"] .hero-chip i {
     color: var(--primary);
 }
-
-/* УДАЛЯЕМ эти конфликтующие правила 
-[data-theme="deepseek"] .message.ai-message {
-    background: white;
-    border: 1px solid rgba(45, 140, 255, 0.1);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-}
-
-[data-theme="deepseek"] .message.user-message {
-    background: var(--primary);
-    color: white;
-    box-shadow: 0 2px 8px rgba(45, 140, 255, 0.2);
-}
-*/
 
 [data-theme="deepseek"] .logo-icon,
 [data-theme="deepseek"] .ai-avatar {
