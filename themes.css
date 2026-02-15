@@ -1033,27 +1033,31 @@
     scrollbar-color: rgba(45, 140, 255, 0.2) transparent;
 }
 
-/* DeepSeek тема - синее стекло */
+/* DeepSeek тема - синее стекло (очень тонкое) */
 [data-theme="deepseek"] .user-message {
-    background: rgba(45, 140, 255, 0.1);
-    border: 1px solid rgba(45, 140, 255, 0.2);
+    background: rgba(45, 140, 255, 0.04); /* Едва заметный синий */
+    border: 1px solid rgba(45, 140, 255, 0.1);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     color: var(--text-primary);
 }
 
 [data-theme="deepseek"] .user-message:hover {
-    background: rgba(45, 140, 255, 0.15);
-    border-color: rgba(45, 140, 255, 0.4);
-    box-shadow: 0 0 20px rgba(45, 140, 255, 0.2);
+    background: rgba(45, 140, 255, 0.06);
+    border-color: rgba(45, 140, 255, 0.15);
+    box-shadow: 0 0 20px rgba(45, 140, 255, 0.05);
 }
 
 [data-theme="deepseek"] .ai-message {
-    background: rgba(34, 211, 238, 0.1);
-    border: 1px solid rgba(34, 211, 238, 0.2);
+    background: rgba(34, 211, 238, 0.04); /* Едва заметный бирюзовый */
+    border: 1px solid rgba(34, 211, 238, 0.1);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     color: var(--text-primary);
 }
 
 [data-theme="deepseek"] .ai-message:hover {
-    background: rgba(34, 211, 238, 0.15);
-    border-color: rgba(34, 211, 238, 0.4);
-    box-shadow: 0 0 20px rgba(34, 211, 238, 0.2);
+    background: rgba(34, 211, 238, 0.06);
+    border-color: rgba(34, 211, 238, 0.15);
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.05);
 }
