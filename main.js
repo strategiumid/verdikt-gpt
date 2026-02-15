@@ -8,14 +8,14 @@ import { AuthService } from './authService.js';
 export class VerdiktChatApp {
     constructor() {
         this.API_CONFIG = {
-            url: 'https://openrouter.ai/api/v1/chat/completions',
-            model: 'stepfun/step-3.5-flash:free', // Только одна модель
-            maxTokens: 1000,
-            temperature: 0.7,
-            apiKey: "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"
+            url: 'https://routerai.ru/api/v1/chat/completions',
+            model: 'stepfun/step-3.5-flash', 
+            maxTokens: 1300,
+            temperature: 0.5,
+            apiKey: "sk-ayshgI6SUUplUxB0ocKzEQ1IK73mbdql"
         };
 
-        // Конфигурация собственного бэкенда для авторизации пользователей
+    
         this.AUTH_CONFIG = {
             baseUrl: (window && window.VERDIKT_BACKEND_URL) || window.location.origin,
             endpoints: {
