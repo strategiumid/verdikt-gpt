@@ -127,18 +127,15 @@ export class APIClient {
         aiResponse = aiResponse.replace(/#{1,6}\s*/g, '**'); // Заменяем заголовки с # на жирный текст
         
         // Проверяем, не оборван ли ответ (не заканчивается на знак препинания или многоточие)
-        aiResponse = aiResponse.replace(/#{1,6}\s*/g, '**'); // Заменяем заголовки с # на жирный текст
-
-// Проверяем, не оборван ли ответ (не заканчивается на знак препинания или многоточие)
-// const lastChar = aiResponse[aiResponse.length - 1];
-// const endsProperly = /[.!?…]/.test(lastChar) || lastChar === '"' || lastChar === "'" || lastChar === ')' || lastChar === ']' || lastChar === '}';
-//
-// if (!endsProperly && aiResponse.length > 50) {
-//     // Если ответ явно оборван, добавляем многоточие и сообщение
-//     aiResponse += '...\n\n*Извините, ответ был обрезан из-за ограничения по длине. Пожалуйста, задайте уточняющий вопрос, и я продолжу.*';
-// }
-
-return aiResponse;
+        const lastChar = aiResponse[aiResponse.length - 1];
+        const endsProperly = /[.!?…]/.test(lastChar) || lastChar === '"' || lastChar === "'" || lastChar === ')' || lastChar === ']' || lastChar === '}';
+        
+        if (!endsProperly && aiResponse.length > 50) {
+            // Если ответ явно оборван, добавляем многоточие и сообщение
+            aiResponse += '...\n\n*Извините, ответ был обрезан из-за ограничения по длине. Пожалуйста, задайте уточняющий вопрос, и я продолжу.*';
+        }
+        
+        return aiResponse;
         
     } catch (error) {
         console.error('Error in getAIResponse:', error);
