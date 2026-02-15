@@ -398,11 +398,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 </h2>
                 
                
-                               placeholder="sk-..." 
-                               value="${this.API_CONFIG.apiKey || ''}"
-                               style="width: 100%; padding: 12px; border-radius: 8px; 
-                                      background: var(--bg-card); border: 1px solid var(--border-color);
-                                      color: var(--text-primary); margin-bottom: 5px;">
+                               
                         
                         <div style="
                             background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
