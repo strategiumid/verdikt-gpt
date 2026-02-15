@@ -419,8 +419,8 @@ body {
 
 .ai-message {
     align-self: flex-start;
-    background: rgba(139, 92, 246, 0.08); /* Очень прозрачный фиолетовый */
-    border: 1px solid rgba(139, 92, 246, 0.15);
+    background: rgba(139, 92, 246, 0.04); /* Едва заметный фиолетовый */
+    border: 1px solid rgba(139, 92, 246, 0.1); /* Очень тонкая граница */
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     color: var(--text-primary);
@@ -428,9 +428,9 @@ body {
 }
 
 .ai-message:hover {
-    background: rgba(139, 92, 246, 0.12);
-    border-color: rgba(139, 92, 246, 0.25);
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.1);
+    background: rgba(139, 92, 246, 0.06); /* Чуть плотнее */
+    border-color: rgba(139, 92, 246, 0.15);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.05);
 }
 
 /* Анимации сообщений */
