@@ -1029,29 +1029,29 @@
 
 /* DeepSeek тема - синее стекло (всегда видимое) */
 [data-theme="deepseek"] .user-message {
-    background: rgba(34, 211, 238, 0.08); /* Бирюзовый для твоих сообщений */
-    border: 1px solid rgba(34, 211, 238, 0.2);
+    background: rgba(34, 211, 238, 0.03); /* Очень прозрачный бирюзовый */
+    border: 1px solid rgba(34, 211, 238, 0.1);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     color: var(--text-primary);
 }
 
 [data-theme="deepseek"] .user-message:hover {
-    background: rgba(34, 211, 238, 0.12);
-    border-color: rgba(34, 211, 238, 0.3);
-    box-shadow: 0 0 20px rgba(34, 211, 238, 0.15);
+    background: rgba(34, 211, 238, 0.06); /* Чуть плотнее при наведении */
+    border-color: rgba(34, 211, 238, 0.15);
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.05);
 }
 
 [data-theme="deepseek"] .ai-message {
-    background: rgba(45, 140, 255, 0.06); /* Синий для сообщений AI */
-    border: 1px solid rgba(45, 140, 255, 0.15);
+    background: rgba(45, 140, 255, 0.02); /* Едва заметный синий */
+    border: 1px solid rgba(45, 140, 255, 0.08);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     color: var(--text-primary);
 }
 
 [data-theme="deepseek"] .ai-message:hover {
-    background: rgba(45, 140, 255, 0.1);
-    border-color: rgba(45, 140, 255, 0.25);
-    box-shadow: 0 0 20px rgba(45, 140, 255, 0.1);
+    background: rgba(45, 140, 255, 0.04);
+    border-color: rgba(45, 140, 255, 0.12);
+    box-shadow: 0 0 20px rgba(45, 140, 255, 0.03);
 }
