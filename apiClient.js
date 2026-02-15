@@ -30,93 +30,123 @@ export class APIClient {
     // ===== routerai.ru API =====
 
     async getAIResponse(messages) {
-        if (!this.apiConfig.apiKey) {
-            throw new Error('API ключ не настроен. Пожалуйста, добавьте ключ в настройках.');
+    if (!this.apiConfig.apiKey) {
+        throw new Error('API ключ не настроен. Пожалуйста, добавьте ключ в настройках.');
+    }
+
+    try {
+        console.log('Отправка запроса к API...', {
+            url: this.apiConfig.url,
+            model: this.apiConfig.model,
+            messagesCount: messages.length
+        });
+
+        // Добавляем инструкцию по форматированию в последнее сообщение
+        const enhancedMessages = [...messages];
+        
+        // Проверяем, есть ли уже инструкция в последнем сообщении пользователя
+        const lastUserMessageIndex = [...enhancedMessages].reverse().findIndex(m => m.role === 'user');
+        if (lastUserMessageIndex !== -1) {
+            const actualIndex = enhancedMessages.length - 1 - lastUserMessageIndex;
+            const lastUserMsg = enhancedMessages[actualIndex];
+            
+            // Добавляем инструкцию по длине ответа, если её ещё нет
+            if (!lastUserMsg.content.includes('[ФОРМАТИРОВАНИЕ]')) {
+                enhancedMessages[actualIndex] = {
+                    ...lastUserMsg,
+                    content: lastUserMsg.content + `\n\n[ФОРМАТИРОВАНИЕ: Не используй символ #. Для заголовков используй **жирный текст**. Для списков используй • или -. Обязательно закончи ответ полным предложением, не обрывай на полуслове.]`
+                };
+            }
         }
 
-        try {
-            console.log('Отправка запроса к API...', {
-                url: this.apiConfig.url,
+        const response = await fetch(this.apiConfig.url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.apiConfig.apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
                 model: this.apiConfig.model,
-                messagesCount: messages.length
-            });
+                messages: enhancedMessages,
+                max_tokens: this.apiConfig.maxTokens,
+                temperature: this.apiConfig.temperature,
+                stream: false
+            })
+        });
 
-            const response = await fetch(this.apiConfig.url, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this.apiConfig.apiKey}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: this.apiConfig.model,
-                    messages: messages,
-                    max_tokens: this.apiConfig.maxTokens,
-                    temperature: this.apiConfig.temperature,
-                    stream: false
-                })
-            });
+        console.log('Статус ответа:', response.status);
 
-            console.log('Статус ответа:', response.status);
-
-            if (!response.ok) {
-                let errorMessage = "Ошибка API: ";
-                
-                try {
-                    const errorData = await response.json();
-                    console.error('API Error:', errorData);
-                    if (errorData.error?.message) {
-                        errorMessage += errorData.error.message;
-                    } else {
-                        errorMessage += `HTTP ${response.status}`;
-                    }
-                } catch {
+        if (!response.ok) {
+            let errorMessage = "Ошибка API: ";
+            
+            try {
+                const errorData = await response.json();
+                console.error('API Error:', errorData);
+                if (errorData.error?.message) {
+                    errorMessage += errorData.error.message;
+                } else {
                     errorMessage += `HTTP ${response.status}`;
                 }
-                
-                if (response.status === 401) {
-                    errorMessage = "Неверный API ключ. Проверьте ключ в настройках.";
-                } else if (response.status === 429) {
-                    errorMessage = "Превышен лимит запросов. Попробуйте позже.";
-                } else if (response.status === 503) {
-                    errorMessage = "Сервер временно недоступен. Попробуйте позже.";
-                }
-                
-                throw new Error(errorMessage);
-            }
-
-            const data = await response.json();
-            console.log('Ответ API получен:', data);
-            
-            // Проверяем различные форматы ответа
-            if (data.choices && data.choices[0]?.message?.content) {
-                // Стандартный формат OpenAI
-                return data.choices[0].message.content.trim();
-            } else if (data.choices && data.choices[0]?.text) {
-                // Формат для некоторых моделей
-                return data.choices[0].text.trim();
-            } else if (data.response) {
-                // Альтернативный формат
-                return data.response.trim();
-            } else if (data.content) {
-                // Еще один формат
-                return data.content.trim();
-            } else if (data.message?.content) {
-                return data.message.content.trim();
-            } else {
-                console.error('Неизвестный формат ответа:', data);
-                throw new Error('Неверный формат ответа от API');
+            } catch {
+                errorMessage += `HTTP ${response.status}`;
             }
             
-        } catch (error) {
-            console.error('Error in getAIResponse:', error);
-            
-            if (error.message.includes('API ключ') || error.message.includes('401')) {
-                throw new Error('Пожалуйста, настройте API ключ в настройках приложения.');
+            if (response.status === 401) {
+                errorMessage = "Неверный API ключ. Проверьте ключ в настройках.";
+            } else if (response.status === 429) {
+                errorMessage = "Превышен лимит запросов. Попробуйте позже.";
+            } else if (response.status === 503) {
+                errorMessage = "Сервер временно недоступен. Попробуйте позже.";
             }
             
-            throw error;
+            throw new Error(errorMessage);
         }
+
+        const data = await response.json();
+        console.log('Ответ API получен:', data);
+        
+        let aiResponse = '';
+        
+        // Проверяем различные форматы ответа
+        if (data.choices && data.choices[0]?.message?.content) {
+            aiResponse = data.choices[0].message.content.trim();
+        } else if (data.choices && data.choices[0]?.text) {
+            aiResponse = data.choices[0].text.trim();
+        } else if (data.response) {
+            aiResponse = data.response.trim();
+        } else if (data.content) {
+            aiResponse = data.content.trim();
+        } else if (data.message?.content) {
+            aiResponse = data.message.content.trim();
+        } else {
+            console.error('Неизвестный формат ответа:', data);
+            throw new Error('Неверный формат ответа от API');
+        }
+        
+        // Пост-обработка ответа: удаляем решетки, если вдруг появились
+        aiResponse = aiResponse.replace(/#{1,6}\s*/g, '**'); // Заменяем заголовки с # на жирный текст
+        
+        // Проверяем, не оборван ли ответ (не заканчивается на знак препинания или многоточие)
+        const lastChar = aiResponse[aiResponse.length - 1];
+        const endsProperly = /[.!?…]/.test(lastChar) || lastChar === '"' || lastChar === "'" || lastChar === ')' || lastChar === ']' || lastChar === '}';
+        
+        if (!endsProperly && aiResponse.length > 50) {
+            // Если ответ явно оборван, добавляем многоточие и сообщение
+            aiResponse += '...\n\n*Извините, ответ был обрезан из-за ограничения по длине. Пожалуйста, задайте уточняющий вопрос, и я продолжу.*';
+        }
+        
+        return aiResponse;
+        
+    } catch (error) {
+        console.error('Error in getAIResponse:', error);
+        
+        if (error.message.includes('API ключ') || error.message.includes('401')) {
+            throw new Error('Пожалуйста, настройте API ключ в настройках приложения.');
+        }
+        
+        throw error;
     }
+}
 
     async checkApiStatus() {
         if (!this.apiConfig.apiKey) {
