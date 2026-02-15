@@ -27,11 +27,11 @@ export class APIClient {
         return this.app.getAuthHeaders();
     }
 
-    // ===== OpenRouter =====
+    // ===== routerai.ru API =====
 
     async getAIResponse(messages) {
         if (!this.apiConfig.apiKey) {
-            throw new Error('API ключ не настроен. Пожалуйста, добавьте ключ OpenRouter в настройках.');
+            throw new Error('API ключ не настроен. Пожалуйста, добавьте ключ в настройках.');
         }
 
         try {
@@ -39,9 +39,7 @@ export class APIClient {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${this.apiConfig.apiKey}`,
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer': 'https://verdikt-gpt.local',
-                    'X-Title': 'Verdikt GPT'
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     model: this.apiConfig.model,
@@ -53,20 +51,26 @@ export class APIClient {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                console.error('OpenRouter API Error:', errorData);
-                
                 let errorMessage = "Ошибка API: ";
-                if (errorData.error?.message) {
-                    errorMessage += errorData.error.message;
-                } else if (response.status === 401) {
+                
+                try {
+                    const errorData = await response.json();
+                    console.error('API Error:', errorData);
+                    if (errorData.error?.message) {
+                        errorMessage += errorData.error.message;
+                    } else {
+                        errorMessage += `HTTP ${response.status}`;
+                    }
+                } catch {
+                    errorMessage += `HTTP ${response.status}`;
+                }
+                
+                if (response.status === 401) {
                     errorMessage = "Неверный API ключ. Проверьте ключ в настройках.";
                 } else if (response.status === 429) {
                     errorMessage = "Превышен лимит запросов. Попробуйте позже.";
-                } else if (response.status === 402) {
-                    errorMessage = "Недостаточно средств на балансе. Пополните счёт на OpenRouter.";
-                } else {
-                    errorMessage += `HTTP ${response.status}`;
+                } else if (response.status === 503) {
+                    errorMessage = "Сервер временно недоступен. Попробуйте позже.";
                 }
                 
                 throw new Error(errorMessage);
@@ -84,7 +88,7 @@ export class APIClient {
             console.error('Error in getAIResponse:', error);
             
             if (error.message.includes('API ключ') || error.message.includes('401')) {
-                throw new Error('Пожалуйста, настройте API ключ OpenRouter в настройках приложения.');
+                throw new Error('Пожалуйста, настройте API ключ в настройках приложения.');
             }
             
             throw error;
@@ -96,7 +100,7 @@ export class APIClient {
             this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> API ключ не настроен';
             this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
             this.elements.apiStatus.style.color = '#f87171';
-            this.app.showNotification('Добавьте API ключ OpenRouter в настройках', 'warning');
+            this.app.showNotification('Добавьте API ключ в настройках', 'warning');
             this.state.isApiConnected = false;
             return;
         }
@@ -105,15 +109,22 @@ export class APIClient {
         this.elements.apiStatus.classList.add('api-connecting');
         
         try {
-            const response = await fetch('https://openrouter.ai/api/v1/auth/key', {
-                method: 'GET',
+            // Отправляем тестовый запрос с минимальным потреблением токенов
+            const response = await fetch(this.apiConfig.url, {
+                method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${this.apiConfig.apiKey}`
-                }
+                    'Authorization': `Bearer ${this.apiConfig.apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: this.apiConfig.model,
+                    messages: [{ role: 'user', content: 'test' }],
+                    max_tokens: 5,
+                    temperature: 0.5
+                })
             });
 
             if (response.ok) {
-                const data = await response.json();
                 const selectedModel = this.availableModels.find(m => m.id === this.apiConfig.model);
                 const modelName = selectedModel ? selectedModel.name : this.apiConfig.model;
                 
@@ -122,16 +133,7 @@ export class APIClient {
                 this.elements.apiStatus.classList.add('api-connected');
                 this.state.isApiConnected = true;
                 
-                if (data.data?.credits) {
-                    const credits = data.data.credits;
-                    this.app.showNotification(`API ключ активен. Баланс: $${credits.toFixed(2)}`, 'success');
-                    
-                    if (credits < 0.5 && !selectedModel.free) {
-                        this.elements.apiStatus.classList.add('balance-warning');
-                    }
-                } else {
-                    this.app.showNotification('API ключ проверен и активен ✅', 'success');
-                }
+                this.app.showNotification('API ключ проверен и активен ✅', 'success');
             } else {
                 throw new Error(`HTTP ${response.status}`);
             }
@@ -375,4 +377,3 @@ export class APIClient {
         return comments;
     }
 }
-
