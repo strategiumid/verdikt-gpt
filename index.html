@@ -1100,6 +1100,11 @@
                     <i class="fas fa-history"></i>
                     <span>Истории</span>
                 </div>
+                <!-- НОВЫЙ ПУНКТ: План подписок -->
+                <div class="nav-item" id="nav-subscription">
+                    <i class="fas fa-crown"></i>
+                    <span>План подписок</span>
+                </div>
             </div>
 
             <div class="nav-section">
@@ -2134,6 +2139,100 @@
                 <button class="ios-button" id="import-confirm" disabled>
                     <i class="fas fa-upload"></i> Импортировать
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- НОВОЕ МОДАЛЬНОЕ ОКНО: План подписок -->
+    <div class="modal" id="subscription-modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <button class="modal-close" id="subscription-close">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <h2 style="margin-bottom: 25px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-crown" style="color: #fbbf24;"></i> Выберите ваш план
+            </h2>
+
+            <div class="subscription-grid">
+                <!-- FREE -->
+                <div class="subscription-card free">
+                    <div class="card-header">
+                        <h3>Verdikt-GPT FREE</h3>
+                        <div class="price">0 ₽</div>
+                    </div>
+                    <div class="card-features">
+                        <ul>
+                            <li><i class="fas fa-check"></i> 5 запросов (сгорают)</li>
+                            <li><i class="fas fa-times"></i> Без ограничений по времени</li>
+                        </ul>
+                    </div>
+                    <div class="card-pros-cons">
+                        <p><strong>Выгода:</strong> Бесплатно, можно попробовать.</p>
+                        <p><strong>Недостаток:</strong> Мало запросов, сгорают.</p>
+                    </div>
+                    <button class="ios-button secondary">Текущий план</button>
+                </div>
+
+                <!-- LITE -->
+                <div class="subscription-card lite">
+                    <div class="card-header">
+                        <h3>Verdikt-GPT Lite</h3>
+                        <div class="price">199 ₽ <span>/мес</span></div>
+                    </div>
+                    <div class="card-features">
+                        <ul>
+                            <li><i class="fas fa-check"></i> 20 запросов в месяц</li>
+                            <li><i class="fas fa-check"></i> Доступ к базовым функциям</li>
+                        </ul>
+                    </div>
+                    <div class="card-pros-cons">
+                        <p><strong>Выгода:</strong> Недорого, достаточно для редких консультаций.</p>
+                        <p><strong>Недостаток:</strong> Может не хватить при активном использовании.</p>
+                    </div>
+                    <button class="ios-button secondary">Выбрать</button>
+                </div>
+
+                <!-- PRO (изумрудный) -->
+                <div class="subscription-card pro">
+                    <div class="card-header">
+                        <h3>Verdikt-GPT Pro</h3>
+                        <div class="price">299 ₽ <span>/мес</span></div>
+                    </div>
+                    <div class="card-features">
+                        <ul>
+                            <li><i class="fas fa-check"></i> 100 запросов в месяц</li>
+                            <li><i class="fas fa-check"></i> Расширенная аналитика</li>
+                            <li><i class="fas fa-check"></i> Приоритетная поддержка</li>
+                        </ul>
+                    </div>
+                    <div class="card-pros-cons">
+                        <p><strong>Выгода:</strong> Оптимальное соотношение цены и количества запросов.</p>
+                        <p><strong>Недостаток:</strong> Меньше, чем в Ultimate.</p>
+                    </div>
+                    <button class="ios-button">Выбрать</button>
+                </div>
+
+                <!-- ULTIMATE (золотой) -->
+                <div class="subscription-card ultimate">
+                    <div class="card-header">
+                        <h3>Verdikt-GPT Ultimate</h3>
+                        <div class="price">599 ₽ <span>/мес</span></div>
+                    </div>
+                    <div class="card-features">
+                        <ul>
+                            <li><i class="fas fa-check"></i> 300 запросов в месяц</li>
+                            <li><i class="fas fa-check"></i> Все функции Pro</li>
+                            <li><i class="fas fa-check"></i> Эксклюзивные режимы AI</li>
+                            <li><i class="fas fa-check"></i> Ранний доступ к новинкам</li>
+                        </ul>
+                    </div>
+                    <div class="card-pros-cons">
+                        <p><strong>Выгода:</strong> Максимум возможностей, премиум-статус.</p>
+                        <p><strong>Недостаток:</strong> Дороже других планов.</p>
+                    </div>
+                    <button class="ios-button">Выбрать</button>
+                </div>
             </div>
         </div>
     </div>

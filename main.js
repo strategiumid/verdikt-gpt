@@ -168,6 +168,8 @@ export class VerdiktChatApp {
             navSettings: document.getElementById('nav-settings'),
             navSecurity: document.getElementById('nav-security'),
             navNotifications: document.getElementById('nav-notifications'),
+            // НОВЫЙ ПУНКТ
+            navSubscription: document.getElementById('nav-subscription'),
             questionsBadge: document.getElementById('questions-badge'),
             likesBadge: document.getElementById('likes-badge'),
             commentsBadge: document.getElementById('comments-badge'),
@@ -188,7 +190,10 @@ export class VerdiktChatApp {
             profileSettingsClose: document.getElementById('profile-settings-close'),
             profileSettingsForm: document.getElementById('profile-settings-form'),
             
-            reloadInstructions: document.getElementById('reload-instructions')
+            reloadInstructions: document.getElementById('reload-instructions'),
+
+            // НОВЫЙ ЭЛЕМЕНТ ДЛЯ ЗАКРЫТИЯ ПОДПИСОК
+            subscriptionClose: document.getElementById('subscription-close')
         };
 
         this.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -368,6 +373,9 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (строго следуй эт�
         }, 1000);
         
         this.startAutoSave();
+
+        // НОВЫЙ ВЫЗОВ
+        this.setupSubscriptionModal();
         
         console.log('✅ Verdikt GPT инициализирован');
         console.log('📚 Инструкции загружены:', this.state.instructionsLoaded);
@@ -1489,6 +1497,14 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (строго следуй эт�
             });
         }
 
+        // НОВЫЙ ОБРАБОТЧИК ДЛЯ ПОДПИСОК
+        if (this.elements.navSubscription) {
+            this.elements.navSubscription.addEventListener('click', () => {
+                this.showSubscriptionModal();
+                this.hideSidebar();
+            });
+        }
+
         if (this.elements.logoutSidebar) {
             this.elements.logoutSidebar.addEventListener('click', () => {
                 this.logout();
@@ -1968,6 +1984,13 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (строго следуй эт�
                 }
             });
         });
+
+        // НОВЫЙ ОБРАБОТЧИК ДЛЯ ЗАКРЫТИЯ ПОДПИСОК
+        if (this.elements.subscriptionClose) {
+            this.elements.subscriptionClose.addEventListener('click', () => {
+                this.hideModal('subscription-modal');
+            });
+        }
     }
 
     async sendMessage() {
@@ -5174,5 +5197,24 @@ hideTypingIndicator() {
     setupHeroChips() {
         // Этот метод вызывается в init(), но не определен
         console.log('Hero chips initialized');
+    }
+
+    // НОВЫЙ МЕТОД ДЛЯ ПОДПИСОК
+    showSubscriptionModal() {
+        this.showModal('subscription-modal');
+    }
+
+    // НОВЫЙ МЕТОД ДЛЯ НАСТРОЙКИ КНОПОК В МОДАЛЬНОМ ОКНЕ ПОДПИСОК
+    setupSubscriptionModal() {
+        const modal = document.getElementById('subscription-modal');
+        if (!modal) return;
+        modal.querySelectorAll('.ios-button').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const card = e.target.closest('.subscription-card');
+                const plan = card?.querySelector('h3')?.textContent || 'Неизвестный план';
+                this.showNotification(`Вы выбрали план: ${plan} (функционал в разработке)`, 'info');
+            });
+        });
     }
 }
