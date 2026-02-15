@@ -51,14 +51,13 @@ export class APIClient {
             const lastUserMsg = enhancedMessages[actualIndex];
             
             // Добавляем инструкцию по длине ответа, если её ещё нет
-            if (!lastUserMsg.content.includes('[ФОРМАТИРОВАНИЕ]')) {
-                enhancedMessages[actualIndex] = {
-                    ...lastUserMsg,
-                    content: lastUserMsg.content + `\n\n[ФОРМАТИРОВАНИЕ: Не используй символ #. Для заголовков используй **жирный текст**. Для списков используй • или -. Обязательно закончи ответ полным предложением, не обрывай на полуслове.]`
-                };
-            }
-        }
-
+             if (!lastUserMsg.content.includes('[ФОРМАТИРОВАНИЕ]')) {
+        enhancedMessages[actualIndex] = {
+            ...lastUserMsg,
+            content: lastUserMsg.content + `\n\n[ФОРМАТИРОВАНИЕ: Не используй символ #. Для заголовков используй **жирный текст**. Для списков используй • или -. **Обязательно закончи ответ полным предложением, не обрывай на полуслове. Если не хватает места, сократи, но заверши мысль.**]`
+        };
+    }
+}
         const response = await fetch(this.apiConfig.url, {
             method: 'POST',
             headers: {
