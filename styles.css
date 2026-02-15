@@ -540,8 +540,8 @@ body {
 
 /* Индикатор набора текста */
 .typing-indicator {
-    flex-shrink: 0; /* Не сжимается */
-    display: none;
+    flex-shrink: 0;
+    display: flex;
     align-self: flex-start;
     background: var(--bg-card-light);
     padding: 16px 20px;
@@ -553,12 +553,22 @@ body {
     width: auto;
     min-width: 80px;
     backdrop-filter: blur(10px);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
+}
+
+.typing-indicator.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
 }
 
 .typing-dots {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
 }
 
 .typing-dots span {
@@ -567,8 +577,9 @@ body {
     background: var(--primary);
     border-radius: 50%;
     display: inline-block;
-    animation: typingPulse 1.4s infinite;
-    opacity: 0.5;
+    animation: typingWave 1.4s infinite ease-in-out;
+    box-shadow: 0 0 8px var(--primary);
+    opacity: 0.8;
 }
 
 .typing-dots span:nth-child(2) {
@@ -579,14 +590,16 @@ body {
     animation-delay: 0.4s;
 }
 
-@keyframes typingPulse {
-    0%, 60%, 100% { 
-        transform: scale(1);
-        opacity: 0.5;
+@keyframes typingWave {
+    0%, 60%, 100% {
+        transform: translateY(0) scale(1);
+        background: var(--primary);
+        box-shadow: 0 0 8px var(--primary);
     }
-    30% { 
-        transform: scale(1.2);
-        opacity: 1;
+    30% {
+        transform: translateY(-6px) scale(1.2);
+        background: var(--secondary);
+        box-shadow: 0 0 16px var(--secondary);
     }
 }
 

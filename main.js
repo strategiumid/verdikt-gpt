@@ -2716,14 +2716,20 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (строго следуй эт�
     }
 
     showTypingIndicator() {
-        if (this.state.doNotDisturb) return;
-        this.elements.typingIndicator.style.display = 'block';
+    if (this.state.doNotDisturb) return;
+    const indicator = this.elements.typingIndicator;
+    if (indicator) {
+        indicator.classList.add('visible');
         this.scrollToBottom();
     }
+}
 
-    hideTypingIndicator() {
-        this.elements.typingIndicator.style.display = 'none';
+hideTypingIndicator() {
+    const indicator = this.elements.typingIndicator;
+    if (indicator) {
+        indicator.classList.remove('visible');
     }
+}
 
     updateUI() {
         this.updateSettingsStats();
