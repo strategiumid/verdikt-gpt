@@ -403,8 +403,8 @@ body {
 
 .user-message {
     align-self: flex-end;
-    background: rgba(236, 72, 153, 0.08); /* Очень прозрачный розовый */
-    border: 1px solid rgba(236, 72, 153, 0.15); /* Тонкая граница */
+    background: transparent; /* Полностью прозрачный */
+    border: 1px solid rgba(236, 72, 153, 0.3); /* Границы оставляем */
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     color: var(--text-primary);
@@ -412,15 +412,15 @@ body {
 }
 
 .user-message:hover {
-    background: rgba(236, 72, 153, 0.12); /* Чуть плотнее при наведении */
-    border-color: rgba(236, 72, 153, 0.25);
-    box-shadow: 0 0 20px rgba(236, 72, 153, 0.1);
+    background: transparent; /* Прозрачный */
+    border-color: rgba(236, 72, 153, 0.5);
+    box-shadow: 0 0 20px rgba(236, 72, 153, 0.2);
 }
 
 .ai-message {
     align-self: flex-start;
-    background: rgba(139, 92, 246, 0.04); /* Едва заметный фиолетовый */
-    border: 1px solid rgba(139, 92, 246, 0.1); /* Очень тонкая граница */
+    background: transparent; /* Полностью прозрачный */
+    border: 1px solid rgba(139, 92, 246, 0.3); /* Границы оставляем */
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     color: var(--text-primary);
@@ -428,9 +428,9 @@ body {
 }
 
 .ai-message:hover {
-    background: rgba(139, 92, 246, 0.06); /* Чуть плотнее */
-    border-color: rgba(139, 92, 246, 0.15);
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.05);
+    background: transparent;
+    border-color: rgba(139, 92, 246, 0.5);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
 }
 
 /* Анимации сообщений */
