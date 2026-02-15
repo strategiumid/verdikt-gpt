@@ -1978,10 +1978,10 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (строго следуй эт�
             }
         }
         
-        if (!this.isTopicRelevant(message)) {
+        //if (!this.isTopicRelevant(message)) {
             this.showNotification('Я специализируюсь только на отношениях, знакомствах и манипуляциях.', 'warning');
-            return;
-        }
+            //return;
+        //}
 
         if (!this.API_CONFIG.apiKey) {
             this.showNotification('Пожалуйста, настройте API ключ в настройках', 'error');
