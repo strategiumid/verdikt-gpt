@@ -15,7 +15,6 @@ export class VerdiktChatApp {
             apiKey: "sk-ayshgI6SUUplUxB0ocKzEQ1IK73mbdql"
         };
 
-    
         this.AUTH_CONFIG = {
             baseUrl: (window && window.VERDIKT_BACKEND_URL) || window.location.origin,
             endpoints: {
@@ -41,8 +40,8 @@ export class VerdiktChatApp {
             isRecording: false,
             isSpeaking: false,
             isModelLoading: false,
-            instructions: '', // Хранилище для инструкций
-            instructionsLoaded: false, // Флаг загрузки инструкций
+            instructions: '',
+            instructionsLoaded: false,
             achievements: {
                 firstMessage: { unlocked: true, name: "Первый шаг", icon: "🎯", description: "Первая консультация" },
                 activeUser: { unlocked: false, name: "Доверие", icon: "💬", description: "10 личных вопросов" },
@@ -95,7 +94,6 @@ export class VerdiktChatApp {
             lockTimer: null
         };
 
-        // Система управления чатами
         this.chatManager = {
             chats: [],
             currentChatId: null,
@@ -107,7 +105,6 @@ export class VerdiktChatApp {
         };
 
         this.elements = {
-            // Основные элементы
             chatMessages: document.getElementById('chat-messages'),
             messageInput: document.getElementById('message-input'),
             sendButton: document.getElementById('send-button'),
@@ -156,7 +153,6 @@ export class VerdiktChatApp {
             exportChatModalClose: document.getElementById('export-chat-modal-close'),
             encryptionNote: document.getElementById('encryption-note'),
 
-            // Боковое меню элементы
             sidebarToggle: document.getElementById('sidebar-toggle'),
             sidebarOverlay: document.getElementById('sidebar-overlay'),
             sidebar: document.getElementById('sidebar'),
@@ -181,7 +177,6 @@ export class VerdiktChatApp {
             statHelpful: document.getElementById('stat-helpful'),
             logoutSidebar: document.getElementById('logout-sidebar'),
 
-            // Дашборд элементы
             dashboardModal: document.getElementById('dashboard-modal'),
             dashboardClose: document.getElementById('dashboard-close'),
             dashboardUsername: document.getElementById('dashboard-username'),
@@ -189,12 +184,10 @@ export class VerdiktChatApp {
             dashboardTabs: document.querySelectorAll('.dashboard-tab'),
             dashboardTabContents: document.querySelectorAll('.dashboard-tab-content'),
 
-            // Настройки профиля элементы
             profileSettingsModal: document.getElementById('profile-settings-modal'),
             profileSettingsClose: document.getElementById('profile-settings-close'),
             profileSettingsForm: document.getElementById('profile-settings-form'),
             
-            // Кнопка перезагрузки инструкций
             reloadInstructions: document.getElementById('reload-instructions')
         };
 
@@ -204,19 +197,16 @@ export class VerdiktChatApp {
         this.activityChart = null;
         this.balanceChart = null;
 
-        // Сервисы
         this.apiClient = new APIClient(this);
         this.chatStore = new ChatStore(this);
         this.uiManager = new UIManager(this);
         this.encryptionService = new EncryptionService(this);
         this.authService = new AuthService(this);
 
-        // Только одна модель
         this.availableModels = [
             { id: 'stepfun/step-3.5-flash', name: 'Verdikt GPT', free: true }
         ];
         
-        // Элементы для вкладок настроек
         this.settingsTabs = null;
         this.settingsTabContents = null;
     }
@@ -247,20 +237,14 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     async loadInstructions() {
         try {
             console.log('Загрузка инструкций из instructions.txt...');
-            const response = await fetch('instructions.txt?t=' + Date.now()); // Кэш-бастер
+            const response = await fetch('instructions.txt?t=' + Date.now());
             if (response.ok) {
                 const instructions = await response.text();
-                
-                // Сохраняем инструкции в состоянии
                 this.state.instructions = instructions;
                 this.state.instructionsLoaded = true;
-                
-                // Обновляем системный промпт с инструкциями
                 this.updateSystemPromptWithInstructions(instructions);
-                
                 console.log('✅ Инструкции успешно загружены, длина:', instructions.length);
                 
-                // Показываем уведомление только если это не первый запуск
                 if (this.state.messageCount > 1) {
                     this.showNotification('Инструкции AI обновлены 📚', 'success');
                 }
@@ -279,10 +263,8 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     }
 
     updateSystemPromptWithInstructions(instructions) {
-        // Создаем новый системный промпт с инструкциями
         const systemPrompt = this.createSystemPromptMessage();
         
-        // Обновляем системный промпт в истории
         if (this.state.conversationHistory && this.state.conversationHistory.length > 0) {
             this.state.conversationHistory[0] = systemPrompt;
         } else {
@@ -293,7 +275,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     analyzeUserType(message) {
         const messageLower = message.toLowerCase();
         
-        // Признаки "преследователя"
         const pursuitIndicators = [
             'бегал', 'унижал', 'прощал измены', 'умолял', 'выпрашивал',
             'писал первым', 'звонил', 'добивался', 'уговоры', 'доказательства',
@@ -312,7 +293,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
 
     async init() {
         this.setupCookieNotification();
-        this.loadApiKey(); // Загружаем API ключ
+        this.loadApiKey();
         this.setupEventListeners();
         this.loadFromLocalStorage();
         this.loadUserFromStorage();
@@ -321,31 +302,22 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         this.setupSpeechRecognition();
         this.setupBackgroundAnimations();
         
-        // Загружаем инструкции при старте (автозагрузка)
         await this.loadInstructions();
         
         this.updateUI();
-        await this.checkApiStatus(); // Проверяем статус API
+        await this.checkApiStatus();
         this.setupKeyboardShortcuts();
         this.setupServiceWorker();
         this.setupSettingsTabs();
         this.setupAuthUI();
         
-        // Инициализация бокового меню
         this.setupSidebar();
-        
-        // Инициализация дашборда
         this.setupDashboard();
-
         this.setupHeroChips();
-        
-        // Инициализация настроек профиля
         this.setupProfileSettings();
         
-        // Загружаем историю чатов
         await this.loadChats();
         
-        // Тема: для авторизованных — с бэкенда, иначе из localStorage
         if (this.state.user) {
             await this.loadUserSettings();
         } else {
@@ -353,40 +325,34 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             if (savedTheme) this.setTheme(savedTheme);
         }
 
-        // Статистика
         const currentHour = new Date().getHours();
         this.state.stats.activityByHour[currentHour]++;
         
-        // Шифрование
         setTimeout(async () => {
             await this.setupEncryption();
         }, 1000);
         
-        // Автосохранение
         this.startAutoSave();
         
-        console.log('✅ Verdikt GPT с OpenRouter API инициализирован');
+        console.log('✅ Verdikt GPT инициализирован');
         console.log('📚 Инструкции загружены:', this.state.instructionsLoaded);
     }
 
-    
-
     loadApiKey() {
-        const savedApiKey = localStorage.getItem('verdikt_openrouter_api_key');
+        const savedApiKey = localStorage.getItem('verdikt_api_key');
         if (savedApiKey) {
             this.API_CONFIG.apiKey = savedApiKey;
         } else {
             this.API_CONFIG.apiKey = "sk-ayshgI6SUUplUxB0ocKzEQ1IK73mbdql";
         }
         
-        
         this.API_CONFIG.model = "stepfun/step-3.5-flash";
-        localStorage.setItem('verdikt_openrouter_model', this.API_CONFIG.model);
+        localStorage.setItem('verdikt_model', this.API_CONFIG.model);
     }
 
     saveApiKey(apiKey) {
         if (apiKey) {
-            localStorage.setItem('verdikt_openrouter_api_key', apiKey);
+            localStorage.setItem('verdikt_api_key', apiKey);
             this.API_CONFIG.apiKey = apiKey;
         }
         
@@ -428,23 +394,20 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 </button>
                 
                 <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-key"></i> Настройки OpenRouter API
+                    <i class="fas fa-key"></i> Настройки API
                 </h2>
                 
                 <div class="modal-section">
                     <div style="margin-bottom: 20px;">
                         <label style="display: block; margin-bottom: 8px; font-weight: 500;">
-                            API ключ OpenRouter:
+                            API ключ:
                         </label>
                         <input type="password" id="api-key-input" 
-                               placeholder="sk-or-v1-..." 
+                               placeholder="sk-..." 
                                value="${this.API_CONFIG.apiKey || ''}"
                                style="width: 100%; padding: 12px; border-radius: 8px; 
                                       background: var(--bg-card); border: 1px solid var(--border-color);
                                       color: var(--text-primary); margin-bottom: 5px;">
-                        <div style="font-size: 0.85rem; color: var(--text-tertiary); margin-bottom: 15px;">
-                            Получите ключ на <a href="https://openrouter.ai/keys" target="_blank" style="color: var(--ios-blue);">openrouter.ai/keys</a>
-                        </div>
                         
                         <div style="
                             background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
@@ -469,12 +432,12 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                                 </div>
                                 <div>
                                     <h4 style="margin: 0; font-size: 1.1rem;">Активная модель</h4>
-                                    <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">Verdikt GPT v0.1</p>
+                                    <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">stepfun/step-3.5-flash</p>
                                 </div>
                             </div>
                             <p style="font-size: 0.9rem; margin: 0; color: var(--text-secondary);">
                                 <i class="fas fa-check-circle" style="color: #10b981;"></i> 
-                                Бесплатная модель с хорошей производительностью. Другие модели недоступны.
+                                Бесплатная модель с хорошей производительностью.
                             </p>
                         </div>
                         
@@ -498,10 +461,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                     <button class="ios-button tertiary" id="api-settings-cancel" style="width: 100%;">
                         <i class="fas fa-times"></i> Отмена
                     </button>
-                </div>
-                
-                <div style="margin-top: 15px; font-size: 0.8rem; color: var(--text-tertiary); text-align: center;">
-                    <i class="fas fa-info-circle"></i> Используется только модель Verdikt GPT
                 </div>
             </div>
         </div>
@@ -530,27 +489,23 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             testBtn.disabled = true;
             
             try {
-                const response = await fetch('https://openrouter.ai/api/v1/auth/key', {
-                    method: 'GET',
+                const response = await fetch('https://routerai.ru/api/v1/chat/completions', {
+                    method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${apiKey}`
-                    }
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: 'stepfun/step-3.5-flash',
+                        messages: [{ role: 'user', content: 'test' }],
+                        max_tokens: 5
+                    })
                 });
                 
                 if (response.ok) {
-                    const data = await response.json();
-                    
-                    let resultHTML = `<span style="color: #10b981;">✅ Ключ активен</span><br>`;
-                    resultHTML += `<small>Модель: stepfun/step-3.5-flash:free (бесплатно)</small><br>`;
-                    
-                    if (data.data?.credits !== undefined) {
-                        resultHTML += `<small>Баланс: $${data.data.credits.toFixed(2)}</small>`;
-                    }
-                    
-                    testResult.innerHTML = resultHTML;
+                    testResult.innerHTML = '<span style="color: #10b981;">✅ Ключ активен</span>';
                     testResult.style.display = 'block';
                     testResult.style.background = 'rgba(16, 185, 129, 0.1)';
-                    
                 } else {
                     throw new Error(`HTTP ${response.status}`);
                 }
@@ -612,13 +567,11 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             });
         });
         
-        // Загружаем статистику в настройки
         this.updateSettingsStats();
         this.updateSettingsAchievements();
     }
 
     switchSettingsTab(tabId) {
-        // Убираем активный класс со всех вкладок и содержимого
         this.settingsTabs.forEach(tab => {
             tab.classList.remove('active');
         });
@@ -627,14 +580,12 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             content.classList.remove('active');
         });
         
-        // Добавляем активный класс выбранной вкладке и содержимому
         const activeTab = document.querySelector(`.settings-tab[data-tab="${tabId}"]`);
         const activeContent = document.getElementById(`${tabId}-tab`);
         
         if (activeTab) activeTab.classList.add('active');
         if (activeContent) activeContent.classList.add('active');
         
-        // Обновляем данные при переключении на определенные вкладки
         if (tabId === 'stats') {
             this.updateSettingsStats();
         } else if (tabId === 'achievements') {
@@ -643,7 +594,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     }
 
     updateSettingsStats() {
-        // Обновляем статистику в настройках
         const statsElements = {
             'stats-total-messages': this.state.stats.totalMessages,
             'stats-user-messages': this.state.stats.userMessages,
@@ -664,7 +614,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             }
         });
 
-        // Обновляем дерево навыков
         this.updateSkillsTree();
     }
 
@@ -703,7 +652,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     }
 
     updateSettingsAchievements() {
-        // Обновляем достижения в настройках
         const achievementItems = document.querySelectorAll('.achievement-item-settings');
         
         achievementItems.forEach(item => {
@@ -740,13 +688,11 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             if (chatsData && Array.isArray(chatsData)) {
                 this.chatManager.chats = chatsData;
                 
-                // Восстанавливаем следующий ID
                 const maxId = Math.max(...this.chatManager.chats.map(chat => 
                     parseInt(chat.id.replace('chat-', '')) || 0
                 ));
                 this.chatManager.nextChatId = maxId + 1;
                 
-                // Загружаем последний активный чат
                 const lastActiveId = localStorage.getItem('verdikt_last_active_chat');
                 if (lastActiveId) {
                     const chat = this.chatManager.chats.find(c => c.id === lastActiveId);
@@ -756,7 +702,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                     }
                 }
                 
-                // Если есть сохраненные чаты, загружаем последний
                 if (this.chatManager.chats.length > 0) {
                     const lastChat = this.chatManager.chats[this.chatManager.chats.length - 1];
                     await this.loadChat(lastChat.id);
@@ -767,7 +712,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 this.createNewChat();
             }
             
-            // Обновляем статистику
             this.state.stats.totalChats = this.chatManager.chats.length;
             
         } catch (error) {
@@ -798,7 +742,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         if (userMessages.length > 0) {
             const firstMessage = userMessages[0];
             
-            // Извлекаем первые слова как заголовок
             const words = firstMessage.split(' ').slice(0, 5);
             title = words.join(' ');
             
@@ -806,7 +749,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 title = title.substring(0, 37) + '...';
             }
             
-            // Добавляем эмодзи в зависимости от темы
             if (firstMessage.toLowerCase().includes('отношен') || firstMessage.toLowerCase().includes('любов')) {
                 title = '💕 ' + title;
             } else if (firstMessage.toLowerCase().includes('знакомств') || firstMessage.toLowerCase().includes('свидан')) {
@@ -826,7 +768,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         
         this.chatManager.currentChatId = newChatId;
         
-        // Сбрасываем состояние
         this.state.conversationHistory = [this.createSystemPromptMessage()];
         
         this.state.messageCount = 1;
@@ -835,13 +776,11 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         this.state.stats.aiMessages = 1;
         this.state.retryCount = 0;
 
-        // Показываем Hero-блок для нового чата
-    const heroBlock = document.getElementById('hero-block');
-    if (heroBlock) {
-        heroBlock.style.display = 'flex';
-    }
+        const heroBlock = document.getElementById('hero-block');
+        if (heroBlock) {
+            heroBlock.style.display = 'flex';
+        }
         
-        // Очищаем чат
         this.elements.chatMessages.innerHTML = `
             <div class="message ai-message" style="opacity: 1; transform: translateY(0);">
                 <div class="message-actions">
@@ -858,7 +797,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             </div>
         `;
         
-        // Сохраняем новый чат
         await this.saveChats();
         
         this.showNotification('Новый чат создан 💬', 'success');
@@ -876,30 +814,25 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         
         this.chatManager.currentChatId = chatId;
         
-        // Восстанавливаем историю
         this.state.conversationHistory = [
             this.createSystemPromptMessage(),
             ...chat.messages
         ];
         
-        // Восстанавливаем статистику
         if (chat.stats) {
             Object.assign(this.state.stats, chat.stats);
         }
         
         this.state.messageCount = chat.messages.length + 1;
         
-        // Восстанавливаем режим
         if (chat.mode) {
             this.setAIMode(chat.mode);
         }
         
-        // Восстанавливаем тему
         if (chat.theme) {
             this.setTheme(chat.theme);
         }
         
-        // Очищаем и перерисовываем сообщения
         this.elements.chatMessages.innerHTML = '';
         
         chat.messages.forEach((msg, index) => {
@@ -955,7 +888,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             if (index >= 0) {
                 this.chatManager.chats.splice(index, 1);
                 
-                // Если удалили текущий чат, загружаем другой
                 if (chatId === this.chatManager.currentChatId) {
                     if (this.chatManager.chats.length > 0) {
                         await this.loadChat(this.chatManager.chats[0].id);
@@ -991,19 +923,16 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         const date = new Date(timestamp);
         const now = new Date();
         
-        // Сегодня
         if (date.toDateString() === now.toDateString()) {
             return `Сегодня ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
         }
         
-        // Вчера
         const yesterday = new Date(now);
         yesterday.setDate(now.getDate() - 1);
         if (date.toDateString() === yesterday.toDateString()) {
             return `Вчера ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
         }
         
-        // На этой неделе
         const weekAgo = new Date(now);
         weekAgo.setDate(now.getDate() - 7);
         if (date > weekAgo) {
@@ -1011,7 +940,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             return `${days[date.getDay()]} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
         }
         
-        // Старые сообщения
         return `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear()}`;
     }
 
@@ -1416,18 +1344,15 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             
             const decryptedData = await this.crypto.decrypt(encryptedData, password);
             
-            // Загружаем чаты
             if (decryptedData.chats) {
                 this.chatManager.chats = decryptedData.chats;
                 this.state.stats.totalChats = this.chatManager.chats.length;
             }
             
-            // Загружаем статистику
             if (decryptedData.stats) {
                 Object.assign(this.state.stats, decryptedData.stats);
             }
             
-            // Загружаем достижения
             if (decryptedData.achievements) {
                 Object.keys(decryptedData.achievements).forEach(key => {
                     if (this.state.achievements[key]) {
@@ -1436,7 +1361,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 });
             }
             
-            // Загружаем настройки
             if (decryptedData.settings?.theme) {
                 this.setTheme(decryptedData.settings.theme);
             }
@@ -1474,7 +1398,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     // ==================== ФУНКЦИИ БОКОВОГО МЕНЮ ====================
 
     setupSidebar() {
-        // Открытие/закрытие бокового меню
         if (this.elements.sidebarToggle) {
             this.elements.sidebarToggle.addEventListener('click', () => {
                 this.toggleSidebar();
@@ -1487,7 +1410,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             });
         }
 
-        // Навигация в боковом меню
         if (this.elements.navDashboard) {
             this.elements.navDashboard.addEventListener('click', () => {
                 this.showDashboardModal();
@@ -1541,7 +1463,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             });
         }
 
-        // Выход из аккаунта
         if (this.elements.logoutSidebar) {
             this.elements.logoutSidebar.addEventListener('click', () => {
                 this.logout();
@@ -1549,7 +1470,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             });
         }
 
-        // Обновление информации в боковом меню
         this.updateSidebarInfo();
     }
 
@@ -1585,7 +1505,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 this.elements.dashboardUsername.textContent = this.state.user.name || this.state.user.email || 'Пользователь';
             }
             
-            // Обновление аватара
             const avatarIcon = this.elements.userAvatar.querySelector('i');
             if (this.state.user.avatar) {
                 this.elements.userAvatar.style.backgroundImage = `url(${this.state.user.avatar})`;
@@ -1597,7 +1516,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 if (avatarIcon) avatarIcon.style.display = 'flex';
             }
             
-            // Показываем кнопку выхода
             if (this.elements.logoutSidebar) {
                 this.elements.logoutSidebar.style.display = 'flex';
             }
@@ -1609,7 +1527,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 this.elements.dashboardUsername.textContent = 'Гость';
             }
             
-            // Скрываем кнопку выхода для гостей
             if (this.elements.logoutSidebar) {
                 this.elements.logoutSidebar.style.display = 'none';
             }
@@ -1619,7 +1536,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     // ==================== ДАШБОРД ====================
 
     setupDashboard() {
-        // Вкладки дашборда
         this.elements.dashboardTabs = document.querySelectorAll('.dashboard-tab');
         this.elements.dashboardTabContents = document.querySelectorAll('.dashboard-tab-content');
         
@@ -1632,14 +1548,12 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             });
         });
         
-        // Закрытие дашборда
         if (this.elements.dashboardClose) {
             this.elements.dashboardClose.addEventListener('click', () => {
                 this.hideModal('dashboard-modal');
             });
         }
 
-        // Лайк / дизлайк / комментарий / ветка комментариев (делегирование на модалке дашборда)
         const dashboardModal = document.getElementById('dashboard-modal');
         if (dashboardModal) {
             dashboardModal.addEventListener('click', async (e) => {
@@ -1667,7 +1581,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             });
         }
 
-        // Модалка комментариев к вопросу
         const commentSubmitBtn = document.getElementById('question-comment-submit');
         if (commentSubmitBtn && !commentSubmitBtn._bound) {
             commentSubmitBtn.addEventListener('click', async () => {
@@ -1688,14 +1601,12 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             commentSubmitBtn._bound = true;
         }
         
-        // Загрузка данных дашборда
         this.loadDashboardData();
     }
 
     switchDashboardTab(tabId) {
         if (!this.elements.dashboardTabs) return;
         
-        // Убираем активный класс со всех вкладок и содержимого
         this.elements.dashboardTabs.forEach(tab => {
             tab.classList.remove('active');
         });
@@ -1704,14 +1615,12 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             content.classList.remove('active');
         });
         
-        // Добавляем активный класс выбранной вкладке и содержимому
         const activeTab = document.querySelector(`.dashboard-tab[data-tab="${tabId}"]`);
         const activeContent = document.getElementById(`${tabId}-tab`);
         
         if (activeTab) activeTab.classList.add('active');
         if (activeContent) activeContent.classList.add('active');
         
-        // Обновляем данные при переключении на определенные вкладки
         if (tabId === 'analytics') {
             this.renderAnalytics();
         }
@@ -1723,7 +1632,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             return;
         }
         
-        // Обновляем данные перед показом
         this.loadDashboardData();
         this.showModal('dashboard-modal');
     }
@@ -1731,14 +1639,12 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     // ==================== НАСТРОЙКИ ПРОФИЛЯ ====================
 
     setupProfileSettings() {
-        // Закрытие модального окна
         if (this.elements.profileSettingsClose) {
             this.elements.profileSettingsClose.addEventListener('click', () => {
                 this.hideModal('profile-settings-modal');
             });
         }
         
-        // Обработка формы
         if (this.elements.profileSettingsForm) {
             this.elements.profileSettingsForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -1753,19 +1659,16 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             return;
         }
         
-        // Заполняем форму текущими данными
         document.getElementById('profile-name').value = this.state.user.name || '';
         document.getElementById('profile-email').value = this.state.user.email || '';
         document.getElementById('profile-bio').value = this.state.user.bio || '';
         
-        // Сбрасываем выбор экспертизы
         const expertiseSelect = document.getElementById('profile-expertise');
         if (expertiseSelect) {
             Array.from(expertiseSelect.options).forEach(option => {
                 option.selected = false;
             });
             
-            // Устанавливаем сохраненную экспертизу
             if (this.state.user.expertise && Array.isArray(this.state.user.expertise)) {
                 this.state.user.expertise.forEach(exp => {
                     const option = expertiseSelect.querySelector(`option[value="${exp}"]`);
@@ -1774,7 +1677,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             }
         }
         
-        // Устанавливаем настройки приватности
         const privacySelect = document.getElementById('profile-privacy');
         if (privacySelect) {
             privacySelect.value = this.state.user.privacy || 'public';
@@ -1838,7 +1740,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     // ==================== ОСНОВНЫЕ ФУНКЦИИ ЧАТА ====================
 
     setupEventListeners() {
-        // Отправка сообщений
         this.elements.sendButton.addEventListener('click', () => this.sendMessage());
         this.elements.messageInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.ctrlKey) {
@@ -1847,16 +1748,13 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             }
         });
         
-        // Голосовые функции
         this.elements.voiceInput.addEventListener('click', () => this.toggleVoiceRecording());
         
-        // Режимы AI в настройках
         document.querySelectorAll('.mode-item-settings').forEach(mode => {
             mode.addEventListener('click', (e) => {
                 const modeId = e.currentTarget.dataset.mode;
                 this.setAIMode(modeId);
                 
-                // Обновляем активный класс
                 document.querySelectorAll('.mode-item-settings').forEach(item => {
                     item.classList.remove('active');
                 });
@@ -1864,7 +1762,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             });
         });
         
-        // Примеры вопросов
         document.querySelectorAll('.example-button').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -1874,17 +1771,14 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             });
         });
         
-        // Кнопки управления
         this.elements.newChat.addEventListener('click', () => this.createNewChat());
         this.elements.settingsButton.addEventListener('click', () => this.showSettingsModal());
         this.elements.presentationMode.addEventListener('click', () => this.togglePresentationMode());
         
-        // История чатов
         this.elements.toggleChatHistory.addEventListener('click', () => {
             this.showChatHistoryModal();
         });
 
-        // Режим "Не беспокоить"
         if (this.elements.dndToggle) {
             this.elements.dndToggle.addEventListener('click', () => {
                 this.state.doNotDisturb = !this.state.doNotDisturb;
@@ -1906,7 +1800,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             });
         }
 
-        // Drag & drop файлов прямо в область ввода сообщения
         const messageInput = this.elements.messageInput;
         if (messageInput) {
             const inputContainer = messageInput.closest('.input-container-extended') || messageInput;
@@ -1968,26 +1861,22 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             });
         }
         
-        // Настройки
         this.elements.temperatureSlider.addEventListener('input', (e) => {
             const value = e.target.value;
             this.elements.temperatureValue.textContent = value;
             this.API_CONFIG.temperature = parseFloat(value);
         });
         
-        // Темы
         document.querySelectorAll('.theme-option').forEach(theme => {
             theme.addEventListener('click', (e) => {
                 const themeName = e.currentTarget.dataset.theme;
                 this.setTheme(themeName);
                 
-                // Обновляем активный класс
                 document.querySelectorAll('.theme-option').forEach(opt => opt.classList.remove('active'));
                 theme.classList.add('active');
             });
         });
         
-        // Экспорт
         document.querySelectorAll('#export-modal .export-option').forEach(option => {
             option.addEventListener('click', (e) => {
                 const format = e.currentTarget.dataset.format;
@@ -1995,32 +1884,26 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             });
         });
         
-        // Модальные окна
         this.elements.settingsClose.addEventListener('click', () => this.hideModal('settings-modal'));
         this.elements.exportClose.addEventListener('click', () => this.hideModal('export-modal'));
         this.elements.exportCancel.addEventListener('click', () => this.hideModal('export-modal'));
         this.elements.statsClose.addEventListener('click', () => this.hideModal('stats-modal'));
         this.elements.saveSettings.addEventListener('click', () => this.saveSettings());
         
-        // Презентация
         this.elements.prevSlide.addEventListener('click', () => this.prevSlide());
         this.elements.nextSlide.addEventListener('click', () => this.nextSlide());
         this.elements.exitPresentation.addEventListener('click', () => this.togglePresentationMode());
         
-        // Автовысота текстового поля
         this.elements.messageInput.addEventListener('input', () => {
             this.elements.messageInput.style.height = 'auto';
             this.elements.messageInput.style.height = Math.min(this.elements.messageInput.scrollHeight, 200) + 'px';
         });
         
-        // Сетевое соединение
         window.addEventListener('online', () => this.updateOnlineStatus(true));
         window.addEventListener('offline', () => this.updateOnlineStatus(false));
         
-        // Сохранение при закрытии
         window.addEventListener('beforeunload', () => this.saveToLocalStorage());
         
-        // Футер ссылки
         document.getElementById('model-info').addEventListener('click', (e) => {
             e.preventDefault();
             this.showNotification('Используется: Verdikt GPT-b v0.01', 'info');
@@ -2031,19 +1914,15 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             this.showNotification('Данные чатов хранятся локально в вашем браузере', 'info');
         });
         
-        // Управление шифрованием
         document.getElementById('encryption-manager')?.addEventListener('click', () => {
             this.showEncryptionManager();
         });
 
-        // Настройки API
         this.setupApiSettingsListeners();
         
-        // Импорт/экспорт
         this.setupImportListeners();
         this.setupExportListeners();
 
-        // Кнопка перезагрузки инструкций
         if (this.elements.reloadInstructions) {
             this.elements.reloadInstructions.addEventListener('click', async () => {
                 await this.loadInstructions();
@@ -2052,18 +1931,17 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         }
 
         const chips = document.querySelectorAll('.hero-chip');
-    chips.forEach(chip => {
-        chip.addEventListener('click', (e) => {
-            const question = chip.dataset.question;
-            if (question) {
-                this.elements.messageInput.value = question;
-                this.elements.messageInput.focus();
-                // Опционально: автоматически увеличить высоту поля ввода
-                this.elements.messageInput.style.height = 'auto';
-                this.elements.messageInput.style.height = Math.min(this.elements.messageInput.scrollHeight, 200) + 'px';
-            }
+        chips.forEach(chip => {
+            chip.addEventListener('click', (e) => {
+                const question = chip.dataset.question;
+                if (question) {
+                    this.elements.messageInput.value = question;
+                    this.elements.messageInput.focus();
+                    this.elements.messageInput.style.height = 'auto';
+                    this.elements.messageInput.style.height = Math.min(this.elements.messageInput.scrollHeight, 200) + 'px';
+                }
+            });
         });
-    });
     }
 
     async sendMessage() {
@@ -2086,9 +1964,8 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             return;
         }
 
-        // Проверяем наличие API ключа
         if (!this.API_CONFIG.apiKey) {
-            this.showNotification('Пожалуйста, настройте API ключ OpenRouter в настройках', 'error');
+            this.showNotification('Пожалуйста, настройте API ключ в настройках', 'error');
             this.showApiSettingsModal();
             return;
         }
@@ -2101,10 +1978,8 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         
         this.addMessage(message, 'user');
         
-        // Анализируем тип пользователя и добавляем это в контекст
         const userAnalysis = this.analyzeUserType(message);
         
-        // Добавляем анализ в сообщение пользователя для контекста
         const enhancedMessage = message + (userAnalysis.isPursuer ? 
             '\n\n[Контекст: Пользователь описывает себя как бывшего преследователя. Учти это в ответе.]' : '');
         
@@ -2148,13 +2023,11 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             
             this.showNotification(`Ответ получен за ${responseTime.toFixed(1)}с ✅`, 'success');
 
-            // Легкая вибрация на мобильных устройствах при ответе AI
             this.triggerHapticFeedback();
             this.updateUI();
             this.updateSettingsStats();
             await this.saveChats();
 
-            // Автоматический показ "Колеса баланса" после 10 ответов AI
             if (this.state.stats.aiMessages >= 10 && !this.state.balanceShown) {
                 this.state.balanceShown = true;
                 this.showBalanceModal(true);
@@ -2273,11 +2146,10 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         
         this.scrollToBottom();
 
-        // Скрываем Hero-блок при первом сообщении
-    const heroBlock = document.getElementById('hero-block');
-    if (heroBlock) {
-        heroBlock.style.display = 'none';
-    }
+        const heroBlock = document.getElementById('hero-block');
+        if (heroBlock) {
+            heroBlock.style.display = 'none';
+        }
     }
 
     formatMessage(text) {
@@ -2365,7 +2237,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         this.state.currentMode = modeId;
         this.API_CONFIG.temperature = this.state.aiModes[modeId].temperature;
         
-        // Обновляем активный класс в настройках
         document.querySelectorAll('.mode-item-settings').forEach(item => {
             item.classList.remove('active');
         });
@@ -2421,9 +2292,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         }
     }
 
-    /**
-     * Загружает настройки пользователя (тема) с бэкенда и применяет тему.
-     */
     async loadUserSettings() {
         if (!this.state.user) return;
         try {
@@ -2444,19 +2312,16 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     // ==================== СИСТЕМА УВЕДОМЛЕНИЙ ====================
 
     showNotification(text, type = 'info') {
-        // В режиме "Не беспокоить" не показываем всплывающие уведомления
         if (this.state.doNotDisturb) {
             return;
         }
 
         this.elements.notificationText.textContent = text;
     
-        // Убираем inline-стили
         const notification = this.elements.notification;
         notification.style.background = '';
         notification.style.color = '';
         
-        // Добавляем только класс
         notification.className = 'notification';
         notification.classList.add(type);
         
@@ -2518,7 +2383,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             }
         }
 
-        // Локальное хранение статуса админ-режима (пока без проверки на бэкенде)
         const adminMode = localStorage.getItem('verdikt_admin_mode');
         if (adminMode === '1') {
             this.state.isAdmin = true;
@@ -2530,7 +2394,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         await this.saveChats();
     }
 
-    // ==================== АДМИН-РЕЖИМ (ЛОКАЛЬНЫЙ) ====================
+    // ==================== АДМИН-РЕЖИМ ====================
 
     setupAdminMode() {
         const btn = this.elements.adminModeToggle;
@@ -2548,8 +2412,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         applyStateToUI();
 
         btn.addEventListener('click', () => {
-            // Пока что просто локальный переключатель.
-            // В будущем здесь можно добавить запрос к бэкенду (например, /api/admin/login)
             this.state.isAdmin = !this.state.isAdmin;
             localStorage.setItem('verdikt_admin_mode', this.state.isAdmin ? '1' : '0');
             applyStateToUI();
@@ -2561,7 +2423,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 'info'
             );
 
-            // Перерисовываем зависящие от админ-режима части
             this.renderQuestions();
             this.renderAdminQuestions();
             this.renderAdminUsers();
@@ -2578,7 +2439,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             btn.addEventListener('click', () => {
                 const id = btn.getAttribute('data-question-id');
                 if (!id) return;
-                // Пока удаляем только на клиенте. В будущем здесь будет запрос к бэкенду.
                 this.dashboard.questions = this.dashboard.questions.filter(q => String(q.id) !== String(id));
                 this.renderQuestions();
                 this.renderAdminQuestions();
@@ -2595,7 +2455,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 const question = this.dashboard.questions.find(q => String(q.id) === String(id));
                 const userEmail = question?.user?.email || question?.user?.name || 'пользователь';
 
-                // Пока просто показываем уведомление и помечаем вопрос как "забаненный".
                 question.isBanned = true;
                 this.showNotification(`Пользователь ${userEmail} помечен как забаненный (локально)`, 'warning');
                 this.renderAdminQuestions();
@@ -2604,9 +2463,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         });
     }
 
-    // ==================== ПОЛЕЗНЫЕ ФУНКЦИИ ====================
-
-    // ==================== АВТОРИЗАЦИЯ ПОЛЬЗОВАТЕЛЯ ====================
+    // ==================== АВТОРИЗАЦИЯ ====================
 
     loadUserFromStorage() {
         try {
@@ -2620,9 +2477,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         }
     }
 
-    /**
-     * Проверяет сессию по HttpOnly cookie: при 200 обновляет state.user, при 401 очищает вход.
-     */
     async restoreSession() {
         try {
             const url = `${this.AUTH_CONFIG.baseUrl}${this.AUTH_CONFIG.endpoints.me}`;
@@ -2674,7 +2528,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             const url = `${this.AUTH_CONFIG.baseUrl}${this.AUTH_CONFIG.endpoints.logout}`;
             await fetch(url, { method: 'POST', credentials: 'include' });
         } catch (e) {
-            // игнорируем ошибку сети — всё равно очищаем локальное состояние
         }
         this.state.user = null;
         this.state.authToken = null;
@@ -2844,7 +2697,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     }
 
     showTypingIndicator() {
-        // В режиме "Не беспокоить" не показываем индикатор набора
         if (this.state.doNotDisturb) return;
         this.elements.typingIndicator.style.display = 'block';
         this.scrollToBottom();
@@ -3092,7 +2944,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             this.hideModal('chat-history-modal');
         });
 
-        // Поиск по истории
         const searchInput = document.getElementById('chat-history-search');
         if (searchInput) {
             searchInput.addEventListener('input', () => {
@@ -3119,10 +2970,8 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             return;
         }
         
-        // Сортируем чаты по времени (новые сверху)
         let sortedChats = [...chats].sort((a, b) => b.timestamp - a.timestamp);
 
-        // Фильтруем по поисковому запросу (заголовок + первые сообщения)
         const q = (searchQuery || '').toLowerCase();
         if (q) {
             sortedChats = sortedChats.filter(chat => {
@@ -3194,7 +3043,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 this.hideModal('chat-history-modal');
             });
             
-            // Контекстное меню для удаления
             chatItem.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 this.deleteChat(chat.id);
@@ -3236,7 +3084,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     setupBackgroundAnimations() {
         const profile = this.getPerformanceProfile ? this.getPerformanceProfile() : { isLowEnd: false, reducedMotion: false };
 
-        // В режиме "меньше движения" полностью отключаем фоновые частицы
         if (profile.reducedMotion) {
             const particlesContainer = document.getElementById('connection-particles');
             if (particlesContainer) {
@@ -3254,30 +3101,24 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 const particle = document.createElement('div');
                 particle.className = 'particle';
 
-                // Случайный размер частицы (имитация глубины)
                 const size = 1.5 + Math.random() * 3.5;
                 particle.style.width = `${size}px`;
                 particle.style.height = `${size}px`;
 
-                // Случайное положение
                 particle.style.left = `${Math.random() * 100}%`;
                 particle.style.top = `${Math.random() * 100}%`;
 
-                // Вариативная скорость и задержка анимации
                 const delay = Math.random() * 6;
                 const duration = 4 + Math.random() * 6;
                 particle.style.animationDelay = `${delay}s`;
                 particle.style.setProperty('--duration', `${duration}s`);
 
-                // Лёгкий разброс яркости
                 const alpha = 0.25 + Math.random() * 0.6;
                 particle.style.opacity = alpha.toFixed(2);
                 particle.style.setProperty('--alpha', alpha.toFixed(2));
 
-                // Случайное направление и дистанция движения
-                // Угол преимущественно вверх, с небольшим разбросом влево/вправо
-                const baseAngle = -Math.PI / 2; // вверх
-                const angleSpread = Math.PI / 3; // разброс
+                const baseAngle = -Math.PI / 2;
+                const angleSpread = Math.PI / 3;
                 const angle = baseAngle + (Math.random() - 0.5) * angleSpread;
                 const distance = 80 + Math.random() * 180;
                 const tx = Math.cos(angle) * distance;
@@ -3285,12 +3126,9 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 particle.style.setProperty('--tx', tx.toFixed(1));
                 particle.style.setProperty('--ty', ty.toFixed(1));
 
-                // Небольшая вариация масштаба (ещё один уровень глубины)
                 const scale = 0.7 + Math.random() * 1.3;
                 particle.style.setProperty('--scale', scale.toFixed(2));
 
-                // После окончания основного цикла анимации удаляем элемент, чтобы не засорять DOM.
-                // Используем onanimationend только для анимации particleFlow (без infinite в CSS).
                 particle.addEventListener('animationend', (e) => {
                     if (e.animationName === 'particleFlow') {
                         particle.remove();
@@ -3313,7 +3151,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
 
         const isLowEnd = cores <= 4;
 
-        // Проставляем класс для CSS-оптимизаций
         if (typeof document !== 'undefined' && (reducedMotion || isLowEnd)) {
             document.documentElement.classList.add('low-motion');
         }
@@ -3647,7 +3484,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                         exported: new Date().toISOString(),
                         totalMessages: this.state.stats.totalMessages,
                         model: 'stepfun/step-3.5-flash',
-                        api: 'OpenRouter',
+                        api: 'routerai.ru',
                         topics: {
                             manipulations: this.state.stats.manipulationRequests,
                             relationships: this.state.stats.relationshipAdvice,
@@ -3682,8 +3519,8 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             metadata: {
                 totalChats: this.chatManager.chats.length,
                 totalMessages: this.state.stats.totalMessages,
-                model: 'stepfun/step-3.5-flash:free',
-                api: 'OpenRouter'
+                model: 'stepfun/step-3.5-flash',
+                api: 'routerai.ru'
             }
         };
         
@@ -3738,12 +3575,10 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     // ==================== ИМПОРТ/ЭКСПОРТ ====================
 
     setupImportListeners() {
-        // Открытие файлового диалога
         this.elements.importDropzone.addEventListener('click', () => {
             this.elements.importFileInput.click();
         });
         
-        // Drag & drop
         this.elements.importDropzone.addEventListener('dragover', (e) => {
             e.preventDefault();
             this.elements.importDropzone.style.borderColor = 'var(--primary)';
@@ -3768,7 +3603,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             }
         });
         
-        // Выбор файла
         this.elements.importFileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
@@ -3776,7 +3610,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             }
         });
         
-        // Кнопки
         this.elements.importConfirm.addEventListener('click', () => {
             this.importChat();
         });
@@ -3791,7 +3624,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     }
 
     setupExportListeners() {
-        // Выбор формата экспорта
         document.querySelectorAll('#export-chat-modal .export-option[data-format]').forEach(option => {
             option.addEventListener('click', (e) => {
                 document.querySelectorAll('#export-chat-modal .export-option').forEach(opt => {
@@ -3799,7 +3631,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 });
                 option.classList.add('active');
                 
-                // Показываем/скрываем заметку о шифровании
                 const format = option.dataset.format;
                 if (format === 'json-encrypted') {
                     this.elements.encryptionNote.style.display = 'block';
@@ -3809,7 +3640,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             });
         });
         
-        // Кнопки
         this.elements.exportChatConfirm.addEventListener('click', () => {
             const selectedFormat = document.querySelector('#export-chat-modal .export-option.active')?.dataset.format;
             if (selectedFormat) {
@@ -3888,7 +3718,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 throw new Error('Неверный формат файла');
             }
             
-            // Добавляем чаты с новыми ID
             importedChats.forEach(chat => {
                 const newId = 'chat-' + this.chatManager.nextChatId++;
                 const newChat = {
@@ -3902,7 +3731,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             
             await this.saveChats();
             
-            // Загружаем последний импортированный чат
             if (importedChats.length > 0) {
                 const lastChat = this.chatManager.chats[this.chatManager.chats.length - 1];
                 await this.loadChat(lastChat.id);
@@ -4012,14 +3840,12 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     startAutoSave() {
         if (!this.chatManager.autoSave) return;
         
-        // Сохраняем каждые 30 секунд
         this.chatManager.autoSaveTimer = setInterval(async () => {
             if (this.chatManager.currentChatId && this.state.messageCount > 1) {
                 await this.saveChats();
             }
         }, this.chatManager.autoSaveInterval);
         
-        // Сохраняем при закрытии страницы
         window.addEventListener('beforeunload', () => {
             if (this.chatManager.currentChatId && this.state.messageCount > 1) {
                 this.saveChatsSync();
@@ -4038,7 +3864,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         }
     }
 
-    // Методы управления шифрованием (сокращенные)
     showEncryptionManager() {
         const modalHTML = `
         <div class="modal" id="encryption-manager-modal">
@@ -4250,7 +4075,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             const encryptedData = localStorage.getItem('verdikt_encrypted_data');
             const decryptedData = await this.crypto.decrypt(encryptedData, password);
             
-            // Сохраняем данные без шифрования
             if (decryptedData.chats) {
                 localStorage.setItem('verdikt_chats', JSON.stringify(decryptedData.chats));
                 this.chatManager.chats = decryptedData.chats;
@@ -4270,7 +4094,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 });
             }
             
-            // Очищаем зашифрованные данные
             localStorage.removeItem('verdikt_encrypted_data');
             localStorage.removeItem('verdikt_password_hash');
             localStorage.setItem('verdikt_encryption_setup', 'skipped');
@@ -4374,7 +4197,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     }
 
     generateActivityData() {
-        // Генерация демо данных активности за последние 7 дней
         const activity = [];
         const now = new Date();
         
@@ -4394,19 +4216,10 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     }
 
     renderDashboardData() {
-        // Рендерим вопросы
         this.renderQuestions();
-        
-        // Рендерим истории
         this.renderStories();
-        
-        // Рендерим аналитику
         this.renderAnalytics();
-        
-        // Рендерим активность
         this.renderActivity();
-
-        // Рендерим админ-вкладку (если есть права)
         this.renderAdminQuestions();
         this.renderAdminUsers();
     }
@@ -4415,7 +4228,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         const questionsList = document.getElementById('questions-list');
         if (!questionsList) return;
 
-        // Форма для отправки вопроса доступна только авторизованным пользователям
         let formHtml = '';
         if (this.state.user) {
             formHtml = `
@@ -4499,7 +4311,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
 
         questionsList.innerHTML = formHtml + listHtml;
 
-        // Обработчик отправки вопроса
         const submitBtn = document.getElementById('new-question-submit');
         if (submitBtn) {
             submitBtn.addEventListener('click', async () => {
@@ -4512,10 +4323,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             });
         }
 
-        // Навешиваем обработчики админ-действий по вопросам
         this.attachAdminQuestionHandlers();
-
-        // Обновляем бейджи
         this.updateBadges();
     }
 
@@ -4534,7 +4342,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             return;
         }
         
-        // Сортируем по дате (новые сверху)
         const sortedStories = [...this.dashboard.stories].sort((a, b) => b.date - a.date);
         
         storiesList.innerHTML = sortedStories.map(story => `
@@ -4565,7 +4372,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     }
 
     renderAnalytics() {
-        // Обновляем статистику
         const analyticsTotal = document.getElementById('analytics-total');
         const analyticsHelpful = document.getElementById('analytics-helpful');
         const analyticsLikes = document.getElementById('analytics-likes');
@@ -4578,7 +4384,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         if (analyticsComments) analyticsComments.textContent = this.dashboard.dashboard?.comments?.length || 0;
         if (dashboardRating) dashboardRating.textContent = this.dashboard.analytics.averageRating || 0;
         
-        // Создаем график активности
         this.createAnalyticsChart();
     }
 
@@ -4586,7 +4391,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         const activityList = document.getElementById('activity-list');
         if (!activityList) return;
         
-        // Демо данные активности
         const activities = [
             { type: 'question', text: 'Ответил на вопрос о манипуляциях', time: '2 часа назад' },
             { type: 'like', text: 'Получил 5 лайков за совет о свиданиях', time: '5 часов назад' },
@@ -4616,7 +4420,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
 
         if (!usersList) return;
 
-        // Если админ-режим выключен — просто показываем заглушку
         if (!this.state.isAdmin) {
             usersList.innerHTML = `
                 <div class="question-card" style="text-align: center; padding: 40px;">
@@ -4639,7 +4442,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             return;
         }
 
-        // Собираем пользователей из вопросов
         const usersMap = new Map();
 
         this.dashboard.questions.forEach(question => {
@@ -4660,14 +4462,12 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             usersMap.set(key, existing);
         });
 
-        // Применяем сохраненные роли
         const roles = this.state.adminRoles || {};
         let users = Array.from(usersMap.values()).map(u => ({
             ...u,
             role: roles[u.key] || u.role
         }));
 
-        // Фильтрация по типу
         const filter = this.state.adminUserFilter || 'all';
         if (filter === 'banned') {
             users = users.filter(u => u.isBanned);
@@ -4675,7 +4475,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             users = users.filter(u => u.role === 'admin');
         }
 
-        // Поиск по имени / email
         const query = (this.state.adminUserSearchQuery || '').trim().toLowerCase();
         if (query) {
             users = users.filter(u => {
@@ -4722,7 +4521,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             </div>
         `).join('');
 
-        // Фильтры по пользователям
         usersFilterButtons.forEach(btn => {
             const value = btn.getAttribute('data-filter');
             if (!value) return;
@@ -4738,7 +4536,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             }
         });
 
-        // Поле поиска пользователей
         if (searchInput) {
             if (typeof this.state.adminUserSearchQuery === 'string') {
                 searchInput.value = this.state.adminUserSearchQuery;
@@ -4753,13 +4550,11 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             }
         }
 
-        // Обработчики действий по пользователям
         usersList.querySelectorAll('[data-action="user-ban"]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const key = btn.getAttribute('data-user-key');
                 if (!key) return;
 
-                // Переключаем бан пользователя через его вопросы
                 const questions = this.dashboard.questions || [];
                 const isCurrentlyBanned = questions.some(q => {
                     const u = q.user || {};
@@ -4815,10 +4610,8 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         const adminTabButton = document.querySelector('.dashboard-tab[data-tab="admin"]');
         const adminList = document.getElementById('admin-questions-list');
 
-        // Если элементов нет в DOM — просто выходим
         if (!adminTabButton || !adminList) return;
 
-        // Показываем/скрываем вкладку "Админ" в зависимости от прав
         if (this.state.isAdmin) {
             adminTabButton.style.display = '';
         } else {
@@ -4847,7 +4640,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             return;
         }
 
-        // Применяем фильтры по статусу
         const filter = this.state.adminQuestionFilter || 'all';
         let questions = [...this.dashboard.questions];
 
@@ -4899,7 +4691,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
 
         adminList.innerHTML = html;
 
-        // Навешиваем обработчики на кнопки внутри админ-списка
         adminList.querySelectorAll('[data-action="admin-delete"]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const id = btn.getAttribute('data-question-id');
@@ -4939,7 +4730,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             });
         });
 
-        // Обработчики фильтров по вопросам
         const filterButtons = document.querySelectorAll('.admin-question-filter');
         filterButtons.forEach(btn => {
             const value = btn.getAttribute('data-filter');
@@ -4978,13 +4768,11 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     }
 
     triggerHapticFeedback() {
-        // Вибрация только на мобильных устройствах, если поддерживается
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
         const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent || '');
         if (!isMobile) return;
         if (!navigator.vibrate) return;
 
-        // Мягкий короткий паттерн
         navigator.vibrate(30);
     }
 
@@ -5062,7 +4850,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         const stats = this.state.stats;
         const total = stats.totalMessages || 0;
 
-        // Базируемся на уже считаемых темах
         const trustConcerns = stats.relationshipAdvice || 0;
         const communicationConcerns = stats.relationshipAdvice || 0;
         const boundariesConcerns = stats.manipulationRequests || 0;
@@ -5070,7 +4857,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
 
         const clampScore = (concerns, maxImpact = 5) => {
             const impact = Math.min(concerns, maxImpact);
-            const score = 10 - impact; // больше проблем -> ниже балл
+            const score = 10 - impact;
             return Math.max(2, Math.min(10, score));
         };
 
@@ -5115,7 +4902,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
 
         const { labels, values } = this.getBalanceData();
 
-        // Рисуем радар-чарт
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
@@ -5169,7 +4955,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
             },
         });
 
-        // Текстовый анализ
         const summaryEl = document.getElementById('balance-summary');
         const recsEl = document.getElementById('balance-recommendations');
 
@@ -5229,7 +5014,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     updateSidebarStats() {
         if (!this.dashboard.questions) return;
         
-        // Обновляем статистику в боковом меню
         const totalQuestions = this.dashboard.questions.length;
         const totalLikes = this.dashboard.questions.reduce((sum, q) => sum + q.likes, 0);
         const totalComments = this.dashboard.questions.reduce((sum, q) => sum + q.comments, 0);
@@ -5244,7 +5028,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
     updateBadges() {
         if (!this.dashboard.questions) return;
         
-        // Обновляем бейджи в боковом меню
         const totalQuestions = this.dashboard.questions.length;
         const totalLikes = this.dashboard.questions.reduce((sum, q) => sum + q.likes, 0);
         const totalComments = this.dashboard.questions.reduce((sum, q) => sum + q.comments, 0);
@@ -5275,10 +5058,8 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
         const story = this.dashboard.stories.find(s => s.id === storyId);
         if (!story) return;
         
-        // Создаем URL для шаринга
         const shareUrl = `${window.location.origin}?story=${storyId}`;
         
-        // Проверяем поддержку Web Share API
         if (navigator.share) {
             navigator.share({
                 title: story.title,
@@ -5286,11 +5067,9 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 url: shareUrl
             }).catch(console.error);
         } else {
-            // Копируем в буфер обмена
             navigator.clipboard.writeText(shareUrl).then(() => {
                 this.showNotification('Ссылка скопирована в буфер обмена 📋', 'success');
             }).catch(() => {
-                // Fallback для старых браузеров
                 const textArea = document.createElement('textarea');
                 textArea.value = shareUrl;
                 document.body.appendChild(textArea);
@@ -5357,5 +5136,11 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                 }
             });
         });
+    }
+
+    // Добавьте этот недостающий метод
+    setupHeroChips() {
+        // Этот метод вызывается в init(), но не определен
+        console.log('Hero chips initialized');
     }
 }
