@@ -1,6 +1,8 @@
 export class APIClient {
     constructor(app) {
         this.app = app;
+        // Максимальное количество сообщений для сохранения в истории
+        this.maxHistoryMessages = 6; // Сохраняем последние 6 сообщений (3 пользователя + 3 ассистента)
     }
 
     get apiConfig() {
@@ -29,17 +31,84 @@ export class APIClient {
 
     // ===== routerai.ru API =====
 
+    // Метод для обрезки истории сообщений
+    truncateMessageHistory(messages) {
+        if (!messages || messages.length === 0) return messages;
+        
+        // Всегда сохраняем системный промпт (первое сообщение)
+        const systemMessage = messages[0];
+        
+        // Берем последние N сообщений (исключая системное)
+        const recentMessages = messages.slice(-this.maxHistoryMessages);
+        
+        // Если есть системное сообщение, добавляем его в начало
+        if (systemMessage && systemMessage.role === 'system') {
+            return [systemMessage, ...recentMessages];
+        }
+        
+        return recentMessages;
+    }
+
+    // Метод для подсчета примерного количества токенов
+    estimateTokens(text) {
+        // Грубая оценка: 1 токен ≈ 4 символа для русского/английского
+        return Math.ceil(text.length / 4);
+    }
+
+    // Метод для обрезки длинных сообщений
+    truncateLongMessage(message, maxTokens = 500) {
+        if (!message.content) return message;
+        
+        const estimatedTokens = this.estimateTokens(message.content);
+        
+        if (estimatedTokens > maxTokens) {
+            // Обрезаем сообщение до примерно maxTokens токенов
+            const maxChars = maxTokens * 4;
+            const truncated = message.content.substring(0, maxChars) + 
+                `\n\n[Сообщение обрезано... Оригинальная длина: ${estimatedTokens} токенов]`;
+            
+            return {
+                ...message,
+                content: truncated
+            };
+        }
+        
+        return message;
+    }
+
     async getAIResponse(messages) {
         if (!this.apiConfig.apiKey) {
             throw new Error('API ключ не настроен. Пожалуйста, добавьте ключ в настройках.');
         }
 
         try {
-            console.log('Отправка запроса к API...', {
-                url: this.apiConfig.url,
-                model: this.apiConfig.model,
-                messagesCount: messages.length
-            });
+            console.log('Исходная история сообщений:', messages.length);
+            
+            // 1. Обрезаем историю до последних N сообщений
+            let processedMessages = this.truncateMessageHistory(messages);
+            console.log('После обрезки истории:', processedMessages.length);
+            
+            // 2. Обрезаем слишком длинные сообщения
+            processedMessages = processedMessages.map(msg => 
+                this.truncateLongMessage(msg, 300) // Обрезаем сообщения длиннее 300 токенов
+            );
+            
+            // 3. Проверяем общий размер запроса
+            const totalEstimate = processedMessages.reduce((sum, msg) => 
+                sum + this.estimateTokens(msg.content || ''), 0
+            );
+            
+            console.log('Примерный размер запроса в токенах:', totalEstimate);
+            
+            // Если запрос слишком большой, дополнительно обрезаем
+            if (totalEstimate > 1500) {
+                console.log('Запрос слишком большой, применяем дополнительную обрезку');
+                
+                // Оставляем системный промпт и последние 4 сообщения
+                const systemMsg = processedMessages[0];
+                const lastMessages = processedMessages.slice(-4);
+                processedMessages = systemMsg ? [systemMsg, ...lastMessages] : lastMessages;
+            }
 
             const response = await fetch(this.apiConfig.url, {
                 method: 'POST',
@@ -49,8 +118,8 @@ export class APIClient {
                 },
                 body: JSON.stringify({
                     model: this.apiConfig.model,
-                    messages: messages,
-                    max_tokens: this.apiConfig.maxTokens,
+                    messages: processedMessages,
+                    max_tokens: 300, // Ограничиваем ответ до 300 токенов
                     temperature: this.apiConfig.temperature,
                     stream: false
                 })
@@ -85,27 +154,56 @@ export class APIClient {
             }
 
             const data = await response.json();
-            console.log('Ответ API получен:', data);
+            console.log('Ответ API получен');
             
             // Проверяем различные форматы ответа
+            let aiResponse = '';
+            
             if (data.choices && data.choices[0]?.message?.content) {
-                // Стандартный формат OpenAI
-                return data.choices[0].message.content.trim();
+                aiResponse = data.choices[0].message.content.trim();
             } else if (data.choices && data.choices[0]?.text) {
-                // Формат для некоторых моделей
-                return data.choices[0].text.trim();
+                aiResponse = data.choices[0].text.trim();
             } else if (data.response) {
-                // Альтернативный формат
-                return data.response.trim();
+                aiResponse = data.response.trim();
             } else if (data.content) {
-                // Еще один формат
-                return data.content.trim();
+                aiResponse = data.content.trim();
             } else if (data.message?.content) {
-                return data.message.content.trim();
+                aiResponse = data.message.content.trim();
             } else {
                 console.error('Неизвестный формат ответа:', data);
                 throw new Error('Неверный формат ответа от API');
             }
+            
+            // Обновляем историю в состоянии приложения, сохраняя только последние сообщения
+            if (this.app.state) {
+                // Находим последнее сообщение пользователя
+                const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+                
+                if (lastUserMessage) {
+                    // Добавляем сообщение пользователя и ответ в историю, но обрезаем старые
+                    const updatedHistory = [this.app.createSystemPromptMessage()];
+                    
+                    // Берем последние 2-4 сообщения из текущей истории
+                    const recentMessages = this.app.state.conversationHistory
+                        ?.filter(m => m.role !== 'system')
+                        .slice(-4) || [];
+                    
+                    updatedHistory.push(...recentMessages);
+                    updatedHistory.push({ role: "user", content: lastUserMessage.content });
+                    updatedHistory.push({ role: "assistant", content: aiResponse });
+                    
+                    // Оставляем только последние 6 сообщений (системный + 5 диалоговых)
+                    if (updatedHistory.length > 6) {
+                        const systemMsg = updatedHistory[0];
+                        const lastFive = updatedHistory.slice(-5);
+                        this.app.state.conversationHistory = [systemMsg, ...lastFive];
+                    } else {
+                        this.app.state.conversationHistory = updatedHistory;
+                    }
+                }
+            }
+            
+            return aiResponse;
             
         } catch (error) {
             console.error('Error in getAIResponse:', error);
@@ -132,10 +230,7 @@ export class APIClient {
         this.elements.apiStatus.classList.add('api-connecting');
         
         try {
-            console.log('Проверка API с ключом:', this.apiConfig.apiKey.substring(0, 10) + '...');
-            console.log('URL:', this.apiConfig.url);
-            
-            // Отправляем тестовый запрос
+            // Отправляем минимальный тестовый запрос (1-2 токена)
             const response = await fetch(this.apiConfig.url, {
                 method: 'POST',
                 headers: {
@@ -145,21 +240,16 @@ export class APIClient {
                 body: JSON.stringify({
                     model: this.apiConfig.model,
                     messages: [{ role: 'user', content: 'test' }],
-                    max_tokens: 5,
-                    temperature: 0.5
+                    max_tokens: 2, // Минимум токенов для проверки
+                    temperature: 0.1
                 })
             });
 
-            console.log('Статус ответа:', response.status);
-
             if (response.ok) {
                 const data = await response.json();
-                console.log('Ответ API при проверке:', data);
                 
                 // Проверяем, что ответ содержит ожидаемые поля
-                const hasValidResponse = data.choices && 
-                                        data.choices[0] && 
-                                        (data.choices[0].message || data.choices[0].text);
+                const hasValidResponse = data.choices && data.choices[0];
                 
                 if (hasValidResponse) {
                     const selectedModel = this.availableModels.find(m => m.id === this.apiConfig.model);
@@ -179,10 +269,8 @@ export class APIClient {
                 try {
                     const errorData = await response.json();
                     errorText = JSON.stringify(errorData);
-                    console.error('Ошибка API:', errorData);
                 } catch (e) {
                     errorText = await response.text();
-                    console.error('Ошибка API (текст):', errorText);
                 }
                 
                 this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API ключа';
@@ -193,10 +281,6 @@ export class APIClient {
                 let userMessage = 'Не удалось подключиться к API. ';
                 if (response.status === 401) {
                     userMessage = 'Неверный API ключ. Проверьте ключ в настройках.';
-                } else if (response.status === 404) {
-                    userMessage = 'API endpoint не найден. Проверьте URL.';
-                } else if (response.status === 500) {
-                    userMessage = 'Внутренняя ошибка сервера. Попробуйте позже.';
                 } else {
                     userMessage += `Код ошибки: ${response.status}`;
                 }
@@ -211,18 +295,11 @@ export class APIClient {
             this.elements.apiStatus.classList.add('api-error');
             this.state.isApiConnected = false;
             
-            let errorMessage = 'Не удалось подключиться к API. ';
-            if (error.message.includes('Failed to fetch')) {
-                errorMessage = 'Сервер недоступен. Проверьте URL и интернет-соединение.';
-            } else {
-                errorMessage += error.message;
-            }
-            
-            this.app.showNotification(errorMessage, 'error');
+            this.app.showNotification('Не удалось подключиться к серверу API', 'error');
         }
     }
 
-    // ===== Вопросы / дашборд =====
+    // ===== Вопросы / дашборд (без изменений) =====
 
     async loadDashboardData() {
         try {
