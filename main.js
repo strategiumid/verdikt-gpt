@@ -397,12 +397,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                     <i class="fas fa-key"></i> Настройки API
                 </h2>
                 
-                <div class="modal-section">
-                    <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">
-                            API ключ:
-                        </label>
-                        <input type="password" id="api-key-input" 
+               
                                placeholder="sk-..." 
                                value="${this.API_CONFIG.apiKey || ''}"
                                style="width: 100%; padding: 12px; border-radius: 8px; 
@@ -432,7 +427,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ ПО ИГНОРУ (строго 
                                 </div>
                                 <div>
                                     <h4 style="margin: 0; font-size: 1.1rem;">Активная модель</h4>
-                                    <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">stepfun/step-3.5-flash</p>
+                                    <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">Verdikt GPT</p>
                                 </div>
                             </div>
                             <p style="font-size: 0.9rem; margin: 0; color: var(--text-secondary);">
