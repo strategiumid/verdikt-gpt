@@ -35,6 +35,12 @@ export class APIClient {
         }
 
         try {
+            console.log('Отправка запроса к API...', {
+                url: this.apiConfig.url,
+                model: this.apiConfig.model,
+                messagesCount: messages.length
+            });
+
             const response = await fetch(this.apiConfig.url, {
                 method: 'POST',
                 headers: {
@@ -49,6 +55,8 @@ export class APIClient {
                     stream: false
                 })
             });
+
+            console.log('Статус ответа:', response.status);
 
             if (!response.ok) {
                 let errorMessage = "Ошибка API: ";
@@ -77,12 +85,27 @@ export class APIClient {
             }
 
             const data = await response.json();
+            console.log('Ответ API получен:', data);
             
-            if (!data.choices || !data.choices[0]?.message?.content) {
+            // Проверяем различные форматы ответа
+            if (data.choices && data.choices[0]?.message?.content) {
+                // Стандартный формат OpenAI
+                return data.choices[0].message.content.trim();
+            } else if (data.choices && data.choices[0]?.text) {
+                // Формат для некоторых моделей
+                return data.choices[0].text.trim();
+            } else if (data.response) {
+                // Альтернативный формат
+                return data.response.trim();
+            } else if (data.content) {
+                // Еще один формат
+                return data.content.trim();
+            } else if (data.message?.content) {
+                return data.message.content.trim();
+            } else {
+                console.error('Неизвестный формат ответа:', data);
                 throw new Error('Неверный формат ответа от API');
             }
-            
-            return data.choices[0].message.content.trim();
             
         } catch (error) {
             console.error('Error in getAIResponse:', error);
@@ -109,7 +132,10 @@ export class APIClient {
         this.elements.apiStatus.classList.add('api-connecting');
         
         try {
-            // Отправляем тестовый запрос с минимальным потреблением токенов
+            console.log('Проверка API с ключом:', this.apiConfig.apiKey.substring(0, 10) + '...');
+            console.log('URL:', this.apiConfig.url);
+            
+            // Отправляем тестовый запрос
             const response = await fetch(this.apiConfig.url, {
                 method: 'POST',
                 headers: {
@@ -124,27 +150,75 @@ export class APIClient {
                 })
             });
 
+            console.log('Статус ответа:', response.status);
+
             if (response.ok) {
-                const selectedModel = this.availableModels.find(m => m.id === this.apiConfig.model);
-                const modelName = selectedModel ? selectedModel.name : this.apiConfig.model;
+                const data = await response.json();
+                console.log('Ответ API при проверке:', data);
                 
-                this.elements.apiStatus.innerHTML = `<i class="fas fa-circle"></i> ${modelName}`;
-                this.elements.apiStatus.classList.remove('api-connecting');
-                this.elements.apiStatus.classList.add('api-connected');
-                this.state.isApiConnected = true;
+                // Проверяем, что ответ содержит ожидаемые поля
+                const hasValidResponse = data.choices && 
+                                        data.choices[0] && 
+                                        (data.choices[0].message || data.choices[0].text);
                 
-                this.app.showNotification('API ключ проверен и активен ✅', 'success');
+                if (hasValidResponse) {
+                    const selectedModel = this.availableModels.find(m => m.id === this.apiConfig.model);
+                    const modelName = selectedModel ? selectedModel.name : this.apiConfig.model;
+                    
+                    this.elements.apiStatus.innerHTML = `<i class="fas fa-circle"></i> ${modelName}`;
+                    this.elements.apiStatus.classList.remove('api-connecting');
+                    this.elements.apiStatus.classList.add('api-connected');
+                    this.state.isApiConnected = true;
+                    
+                    this.app.showNotification('API ключ проверен и активен ✅', 'success');
+                } else {
+                    throw new Error('Неверный формат ответа');
+                }
             } else {
-                throw new Error(`HTTP ${response.status}`);
+                let errorText = '';
+                try {
+                    const errorData = await response.json();
+                    errorText = JSON.stringify(errorData);
+                    console.error('Ошибка API:', errorData);
+                } catch (e) {
+                    errorText = await response.text();
+                    console.error('Ошибка API (текст):', errorText);
+                }
+                
+                this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API ключа';
+                this.elements.apiStatus.classList.remove('api-connecting');
+                this.elements.apiStatus.classList.add('api-error');
+                this.state.isApiConnected = false;
+                
+                let userMessage = 'Не удалось подключиться к API. ';
+                if (response.status === 401) {
+                    userMessage = 'Неверный API ключ. Проверьте ключ в настройках.';
+                } else if (response.status === 404) {
+                    userMessage = 'API endpoint не найден. Проверьте URL.';
+                } else if (response.status === 500) {
+                    userMessage = 'Внутренняя ошибка сервера. Попробуйте позже.';
+                } else {
+                    userMessage += `Код ошибки: ${response.status}`;
+                }
+                
+                this.app.showNotification(userMessage, 'error');
             }
         } catch (error) {
             console.error('API check error:', error);
             
-            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API ключа';
+            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка соединения';
             this.elements.apiStatus.classList.remove('api-connecting');
             this.elements.apiStatus.classList.add('api-error');
             this.state.isApiConnected = false;
-            this.app.showNotification('Не удалось проверить API ключ. Проверьте его правильность.', 'error');
+            
+            let errorMessage = 'Не удалось подключиться к API. ';
+            if (error.message.includes('Failed to fetch')) {
+                errorMessage = 'Сервер недоступен. Проверьте URL и интернет-соединение.';
+            } else {
+                errorMessage += error.message;
+            }
+            
+            this.app.showNotification(errorMessage, 'error');
         }
     }
 
