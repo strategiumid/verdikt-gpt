@@ -1,28 +1,28 @@
-/* macOS 26 (Tahoe) Liquid Glass — глобальные переменные и стили */
+/* Liquid Glass эффекты — глобальные переменные и стили */
 :root {
-    --primary: #0a84ff;
-    --primary-dark: #0066cc;
-    --primary-light: #409cff;
-    --secondary: #5e5ce6;
-    --secondary-dark: #4846c4;
+    --primary: #ec4899;
+    --primary-dark: #db2777;
+    --primary-light: #f472b6;
+    --secondary: #8b5cf6;
+    --secondary-dark: #7c3aed;
     --gradient: linear-gradient(135deg, var(--primary), var(--secondary));
     --gradient-border: linear-gradient(135deg, rgba(255,255,255,0.4), rgba(255,255,255,0.05));
-    --bg-gradient: linear-gradient(160deg, #1c1c1e 0%, #2c2c2e 50%, #1a1a1c 100%);
-    --bg-glass: rgba(44, 44, 46, 0.72);
-    --bg-glass-strong: rgba(58, 58, 60, 0.85);
-    --bg-card: rgba(44, 44, 46, 0.65);
-    --bg-card-light: rgba(58, 58, 60, 0.88);
-    --text-primary: #f5f5f7;
-    --text-secondary: #a1a1a6;
-    --text-tertiary: #6e6e73;
-    --border-color: rgba(255, 255, 255, 0.08);
+    --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    --bg-glass: rgba(30, 41, 59, 0.72);
+    --bg-glass-strong: rgba(30, 41, 59, 0.85);
+    --bg-card: rgba(30, 41, 59, 0.65);
+    --bg-card-light: rgba(30, 41, 59, 0.88);
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-tertiary: #94a3b8;
+    --border-color: rgba(255, 255, 255, 0.1);
     --border-glass: rgba(255, 255, 255, 0.12);
     --shadow: 0 24px 48px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0,0,0,0.1);
     --shadow-sm: 0 4px 24px rgba(0, 0, 0, 0.2);
     --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.25);
-    --radius-lg: 16px;
+    --radius-lg: 20px;
     --radius-md: 12px;
-    --radius-sm: 10px;
+    --radius-sm: 8px;
     --radius-xl: 24px;
     --blur-glass: 20px;
     --blur-strong: 40px;
@@ -30,13 +30,13 @@
     --transition-slow: all 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
     --transition-fast: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
     --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-    --glow: 0 0 24px rgba(10, 132, 255, 0.35);
+    --glow: 0 0 24px rgba(236, 72, 153, 0.5);
     --ios-blue: var(--primary);
     --ios-gray: #8E8E93;
     --ios-light-gray: #F2F2F7;
-    --ios-card: rgba(255, 255, 255, 0.06);
-    --primary-rgb: 10, 132, 255;
-    --secondary-rgb: 94, 92, 230;
+    --ios-card: rgba(255, 255, 255, 0.1);
+    --primary-rgb: 236, 72, 153;
+    --secondary-rgb: 139, 92, 246;
 }
 
 * {
@@ -79,11 +79,11 @@ body {
     width: 100%;
     height: 100%;
     background-image: 
-        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-    background-size: 60px 60px;
-    opacity: 0.6;
-    animation: gridMove 40s linear infinite;
+        linear-gradient(var(--primary-light) 1px, transparent 1px),
+        linear-gradient(90deg, var(--primary-light) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.05;
+    animation: gridMove 20s linear infinite;
 }
 
 /* Основной контейнер */
@@ -891,9 +891,9 @@ footer {
 }
 
 .auth-tab.active {
-    background: rgba(10, 132, 255, 0.15);
+    background: rgba(236, 72, 153, 0.16);
     color: var(--primary-light);
-    box-shadow: 0 0 12px rgba(10, 132, 255, 0.2);
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.18);
 }
 
 .auth-forms {
@@ -1017,9 +1017,9 @@ footer {
     transform: translateX(0);
 }
 
-.notification.success { border-left: 4px solid #30d158; }
-.notification.error { border-left: 4px solid #ff453a; }
-.notification.warning { border-left: 4px solid #ff9f0a; }
+.notification.success { border-left: 4px solid #10b981; }
+.notification.error { border-left: 4px solid #ef4444; }
+.notification.warning { border-left: 4px solid #f59e0b; }
 .notification.info { border-left: 4px solid var(--primary); }
 
 /* Достижения уведомления */

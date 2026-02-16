@@ -359,8 +359,8 @@
 }
 
 :root, [data-theme="dark"] {
-    --primary-rgb: 10, 132, 255;
-    --secondary-rgb: 94, 92, 230;
+    --primary-rgb: 236, 72, 153;
+    --secondary-rgb: 139, 92, 246;
 }
 
 [data-theme="deepseek"] {
@@ -415,11 +415,11 @@
     --notification-info: linear-gradient(135deg, #2d8cff, #22d3ee);
 }
 
-/* macOS 26 / тёмная тема */
+/* Тёмная тема */
 :root, [data-theme="dark"] {
-    --notification-success: linear-gradient(135deg, #30d158, #28a745);
-    --notification-error: linear-gradient(135deg, #ff453a, #dc2626);
-    --notification-warning: linear-gradient(135deg, #ff9f0a, #d97706);
+    --notification-success: linear-gradient(135deg, #ec4899, #db2777);
+    --notification-error: linear-gradient(135deg, #ef4444, #dc2626);
+    --notification-warning: linear-gradient(135deg, #f59e0b, #d97706);
     --notification-info: var(--gradient);
 }
 
