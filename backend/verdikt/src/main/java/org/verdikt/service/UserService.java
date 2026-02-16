@@ -44,6 +44,9 @@ public class UserService {
         if (request.getName() != null && !request.getName().isBlank()) {
             user.setName(request.getName().trim());
         }
+        if (userRepository.count() == 0) {
+            user.setRole("ADMIN");
+        }
         user = userRepository.save(user);
         return UserResponse.from(user);
     }
@@ -58,6 +61,9 @@ public class UserService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Неверный email или пароль"));
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Неверный email или пароль");
+        }
+        if (user.isBanned()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Аккаунт заблокирован");
         }
         String token = jwtService.generateToken(user);
         return new LoginResponse(token, UserResponse.from(user));
