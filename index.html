@@ -1171,6 +1171,8 @@
             <div class="user-info">
                 <h3 id="sidebar-username">Гость</h3>
                 <p id="sidebar-useremail">Войдите в аккаунт</p>
+                <p id="sidebar-userplan" style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; display: none;"></p>
+                <p id="sidebar-usage" style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; display: none;"></p>
                 <div id="user-rating" style="margin-top: 4px;">
                     <span style="font-size: 0.75rem; color: rgba(251, 191, 36, 0.9);">
                         <i class="fas fa-star"></i> 0.0
@@ -2255,7 +2257,7 @@
 
             <div class="subscription-grid">
                 <!-- FREE -->
-                <div class="subscription-card free">
+                <div class="subscription-card free" data-plan="free">
                     <div class="card-header">
                         <h3>Verdikt-GPT FREE</h3>
                         <div class="price">0 ₽</div>
@@ -2270,11 +2272,11 @@
                         <p><strong>Выгода:</strong> Бесплатно, можно попробовать.</p>
                         <p><strong>Недостаток:</strong> Мало запросов, сгорают.</p>
                     </div>
-                    <button class="ios-button secondary">Текущий план</button>
+                    <button type="button" class="ios-button subscription-plan-btn secondary" data-plan="free">Текущий план</button>
                 </div>
 
                 <!-- LITE -->
-                <div class="subscription-card lite">
+                <div class="subscription-card lite" data-plan="lite">
                     <div class="card-header">
                         <h3>Verdikt-GPT Lite</h3>
                         <div class="price">199 ₽ <span>/мес</span></div>
@@ -2289,11 +2291,11 @@
                         <p><strong>Выгода:</strong> Недорого, достаточно для редких консультаций.</p>
                         <p><strong>Недостаток:</strong> Может не хватить при активном использовании.</p>
                     </div>
-                    <button class="ios-button secondary">Выбрать</button>
+                    <button type="button" class="ios-button subscription-plan-btn secondary" data-plan="lite">Выбрать</button>
                 </div>
 
-                <!-- PRO (изумрудный) -->
-                <div class="subscription-card pro">
+                <!-- PRO -->
+                <div class="subscription-card pro" data-plan="pro">
                     <div class="card-header">
                         <h3>Verdikt-GPT Pro</h3>
                         <div class="price">299 ₽ <span>/мес</span></div>
@@ -2309,11 +2311,11 @@
                         <p><strong>Выгода:</strong> Оптимальное соотношение цены и количества запросов.</p>
                         <p><strong>Недостаток:</strong> Меньше, чем в Ultimate.</p>
                     </div>
-                    <button class="ios-button">Выбрать</button>
+                    <button type="button" class="ios-button subscription-plan-btn" data-plan="pro">Выбрать</button>
                 </div>
 
-                <!-- ULTIMATE (золотой) -->
-                <div class="subscription-card ultimate">
+                <!-- ULTIMATE -->
+                <div class="subscription-card ultimate" data-plan="ultimate">
                     <div class="card-header">
                         <h3>Verdikt-GPT Ultimate</h3>
                         <div class="price">599 ₽ <span>/мес</span></div>
@@ -2330,7 +2332,7 @@
                         <p><strong>Выгода:</strong> Максимум возможностей, премиум-статус.</p>
                         <p><strong>Недостаток:</strong> Дороже других планов.</p>
                     </div>
-                    <button class="ios-button">Выбрать</button>
+                    <button type="button" class="ios-button subscription-plan-btn" data-plan="ultimate">Выбрать</button>
                 </div>
             </div>
         </div>
