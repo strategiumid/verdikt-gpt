@@ -72,6 +72,7 @@ export class VerdiktChatApp {
             adminUserFilter: 'all',
             adminUserSearchQuery: '',
             adminRoles: {},
+            adminSubscriptions: {},
             questionComments: {},
             user: null,
             authToken: null,
@@ -2249,7 +2250,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         const cursorHtml = '<span class="typing-cursor"></span>';
         const chunkMin = 1;
         const chunkMax = 3;
-        const delayMs = 12;
+        const delayMs = 15;
         let index = 0;
 
         const typeNext = () => {
@@ -2507,6 +2508,16 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             this.state.isAdmin = true;
             document.body.classList.add('admin-mode');
         }
+
+        try {
+            const rolesJson = localStorage.getItem('verdikt_admin_roles');
+            if (rolesJson) this.state.adminRoles = JSON.parse(rolesJson) || {};
+        } catch (e) {}
+
+        try {
+            const subsJson = localStorage.getItem('verdikt_admin_subscriptions');
+            if (subsJson) this.state.adminSubscriptions = JSON.parse(subsJson) || {};
+        } catch (e) {}
     }
 
     async saveToLocalStorage() {
@@ -3269,18 +3280,9 @@ hideTypingIndicator() {
         const cores = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
             ? navigator.hardwareConcurrency
             : 2;
-
-        const reducedMotion = typeof window !== 'undefined' && window.matchMedia
-            ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-            : false;
-
-        const isLowEnd = cores <= 4;
-
-        if (typeof document !== 'undefined' && (reducedMotion || isLowEnd)) {
-            document.documentElement.classList.add('low-motion');
-        }
-
-        return { cores, reducedMotion, isLowEnd };
+        // По запросу: не ограничиваем анимации даже на "слабых" устройствах
+        // и не учитываем prefers-reduced-motion для отключения анимаций.
+        return { cores, reducedMotion: false, isLowEnd: false };
     }
 
     setupServiceWorker() {
@@ -4588,9 +4590,11 @@ hideTypingIndicator() {
         });
 
         const roles = this.state.adminRoles || {};
+        const subs = this.state.adminSubscriptions || {};
         let users = Array.from(usersMap.values()).map(u => ({
             ...u,
-            role: roles[u.key] || u.role
+            role: roles[u.key] || u.role,
+            subscription: subs[u.key] || 'free'
         }));
 
         const filter = this.state.adminUserFilter || 'all';
@@ -4627,7 +4631,7 @@ hideTypingIndicator() {
                     <div class="question-meta">
                         <h5>${user.name}</h5>
                         <div class="date">
-                            ${user.email ? user.email + ' · ' : ''}${user.role === 'admin' ? 'Админ' : 'Пользователь'}
+                            ${user.email ? user.email + ' · ' : ''}${user.role === 'admin' ? 'Админ' : 'Пользователь'} · Подписка: ${String(user.subscription || 'free').toUpperCase()}
                         </div>
                     </div>
                 </div>
@@ -4641,6 +4645,16 @@ hideTypingIndicator() {
                             <i class="fas fa-${user.role === 'admin' ? 'user' : 'user-shield'}"></i>
                             ${user.role === 'admin' ? 'Сделать пользователем' : 'Сделать админом'}
                         </button>
+                        <label style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.05);">
+                            <i class="fas fa-gem" style="opacity: 0.8;"></i>
+                            <span style="font-size: 0.85rem; color: var(--text-secondary);">Подписка</span>
+                            <select data-action="user-subscription" data-user-key="${user.key}" style="background: transparent; color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 8px;">
+                                <option value="free" ${user.subscription === 'free' ? 'selected' : ''}>FREE</option>
+                                <option value="lite" ${user.subscription === 'lite' ? 'selected' : ''}>LITE</option>
+                                <option value="pro" ${user.subscription === 'pro' ? 'selected' : ''}>PRO</option>
+                                <option value="ultimate" ${user.subscription === 'ultimate' ? 'selected' : ''}>ULTIMATE</option>
+                            </select>
+                        </label>
                     </div>
                 </div>
             </div>
@@ -4718,6 +4732,9 @@ hideTypingIndicator() {
                     ...(this.state.adminRoles || {}),
                     [key]: newRole
                 };
+                try {
+                    localStorage.setItem('verdikt_admin_roles', JSON.stringify(this.state.adminRoles || {}));
+                } catch (e) {}
 
                 this.showNotification(
                     newRole === 'admin'
@@ -4728,6 +4745,27 @@ hideTypingIndicator() {
 
                 this.renderAdminUsers();
             });
+        });
+
+        usersList.querySelectorAll('select[data-action="user-subscription"]').forEach(sel => {
+            if (sel._adminSubBound) return;
+            sel.addEventListener('change', () => {
+                const key = sel.getAttribute('data-user-key');
+                if (!key) return;
+                const value = (sel.value || 'free').toLowerCase();
+
+                this.state.adminSubscriptions = {
+                    ...(this.state.adminSubscriptions || {}),
+                    [key]: value
+                };
+                try {
+                    localStorage.setItem('verdikt_admin_subscriptions', JSON.stringify(this.state.adminSubscriptions || {}));
+                } catch (e) {}
+
+                this.showNotification(`Подписка изменена на ${value.toUpperCase()} (локально)`, 'info');
+                this.renderAdminUsers();
+            });
+            sel._adminSubBound = true;
         });
     }
 

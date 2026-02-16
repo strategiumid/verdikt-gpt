@@ -810,6 +810,8 @@ footer {
 
 .modal-content {
     background: var(--bg-card);
+    /* чуть больше "стекла" */
+    background: color-mix(in srgb, var(--bg-card) 88%, transparent);
     border-radius: var(--radius-lg);
     width: 90%;
     max-width: 600px;
@@ -821,6 +823,7 @@ footer {
     box-shadow: var(--shadow);
     transform: translateY(50px) scale(0.9);
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(16px);
 }
 
 .auth-modal {
@@ -1553,33 +1556,8 @@ footer {
     }
 }
 
-/* Глобальные оптимизации для слабых устройств и режима "меньше движения" */
-@media (prefers-reduced-motion: reduce) {
-    * {
-        scroll-behavior: auto !important;
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
-
-    .connection-particles,
-    .grid-pattern {
-        display: none !important;
-        animation: none !important;
-    }
-}
-
-html.low-motion * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-}
-
-html.low-motion .connection-particles,
-html.low-motion .grid-pattern {
-    display: none !important;
-    animation: none !important;
-}
+/* Раньше тут были глобальные ограничения анимаций для слабых устройств/reduced-motion.
+   По запросу: НЕ ограничиваем анимации даже на телефонах. */
 
 /* Анимация подключения API */
 @keyframes apiConnecting {
