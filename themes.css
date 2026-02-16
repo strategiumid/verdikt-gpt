@@ -26,10 +26,6 @@
     /* iOS элементы */
     --ios-blue: var(--primary);
     --ios-card: rgba(255, 255, 255, 0.9);
-    
-    /* RGB значения для primary */
-    --primary-rgb: 45, 140, 255;
-    --secondary-rgb: 34, 211, 238;
 }
 
 /* Дополнительные элементы стиля для DeepSeek темы */
@@ -72,6 +68,26 @@
 
 [data-theme="deepseek"] .hero-chip i {
     color: var(--primary);
+}
+
+[data-theme="deepseek"] .message.ai-message {
+    background: white;
+    border: 1px solid rgba(45, 140, 255, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="deepseek"] .message.user-message {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 2px 8px rgba(45, 140, 255, 0.2);
+}
+
+[data-theme="deepseek"] .message.user-message:hover {
+    box-shadow: 0 0 20px rgba(45, 140, 255, 0.3);
+}
+
+[data-theme="deepseek"] .message.ai-message:hover {
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.15);
 }
 
 [data-theme="deepseek"] .logo-icon,
@@ -1015,33 +1031,4 @@
 
 [data-theme="deepseek"] .chat-messages {
     scrollbar-color: rgba(45, 140, 255, 0.2) transparent;
-}
-
-/* DeepSeek тема - синее стекло (всегда видимое) */
-[data-theme="deepseek"] .user-message {
-    background: transparent;
-    border: 1px solid rgba(34, 211, 238, 0.2); /* Бирюзовые границы */
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    color: var(--text-primary);
-}
-
-[data-theme="deepseek"] .user-message:hover {
-    background: transparent;
-    border-color: rgba(34, 211, 238, 0.4);
-    box-shadow: 0 0 20px rgba(34, 211, 238, 0.15);
-}
-
-[data-theme="deepseek"] .ai-message {
-    background: transparent;
-    border: 1px solid rgba(45, 140, 255, 0.2); /* Синие границы */
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    color: var(--text-primary);
-}
-
-[data-theme="deepseek"] .ai-message:hover {
-    background: transparent;
-    border-color: rgba(45, 140, 255, 0.4);
-    box-shadow: 0 0 20px rgba(45, 140, 255, 0.15);
 }
