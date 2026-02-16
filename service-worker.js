@@ -37,6 +37,10 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+    // Не кэшировать запросы расширений браузера (chrome-extension://, moz-extension://)
+    if (event.request.url.startsWith('chrome-extension://') || event.request.url.startsWith('moz-extension://')) {
+        return;
+    }
     // Не кэшировать запросы к нашему бэкенду (чтобы лайки/дизлайки не «пропадали» после обновления)
     if (event.request.url.includes('/api/')) {
         return;
