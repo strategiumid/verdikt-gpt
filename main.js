@@ -2573,15 +2573,25 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         if (!container) return;
 
         container.querySelectorAll('[data-action="admin-delete"]').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', async () => {
                 const id = btn.getAttribute('data-question-id');
                 if (!id) return;
-                this.dashboard.questions = this.dashboard.questions.filter(q => String(q.id) !== String(id));
-                this.renderQuestions();
-                this.renderAdminQuestions();
-                this.renderAdminUsers();
-                this.updateSidebarStats();
-                this.showNotification('Вопрос удален (локально)', 'info');
+                const baseUrl = (window.VERDIKT_BACKEND_URL || window.location.origin).replace(/\/$/, '');
+                try {
+                    const response = await fetch(`${baseUrl}/api/admin/questions/${id}`, { method: 'DELETE', credentials: 'include' });
+                    if (!response.ok) {
+                        this.showNotification(response.status === 403 ? 'Нет прав' : 'Не удалось удалить вопрос', 'error');
+                        return;
+                    }
+                    this.showNotification('Вопрос удалён', 'info');
+                    await this.loadDashboardData();
+                    this.renderQuestions();
+                    this.renderAdminQuestions();
+                    this.renderAdminUsers();
+                    this.updateSidebarStats();
+                } catch (e) {
+                    this.showNotification('Ошибка запроса', 'error');
+                }
             });
         });
 
@@ -4658,14 +4668,17 @@ hideTypingIndicator() {
             `;
         } else {
             const isAdminRole = (r) => (r || '').toUpperCase() === 'ADMIN';
-            usersList.innerHTML = users.map(user => `
+            const subs = this.state.adminSubscriptions || {};
+            usersList.innerHTML = users.map(user => {
+                const sub = (user.subscription || subs[user.id] || 'free').toLowerCase();
+                return `
                 <div class="question-card" data-user-id="${user.id}">
                     <div class="question-header">
                         <div class="question-avatar">${(user.name || user.email || 'П')[0].toUpperCase()}</div>
                         <div class="question-meta">
                             <h5>${user.name || user.email || 'Пользователь'}</h5>
                             <div class="date">
-                                ${user.email ? user.email + ' · ' : ''}${isAdminRole(user.role) ? 'Админ' : 'Пользователь'}${user.banned ? ' · Забанен' : ''}
+                                ${user.email ? user.email + ' · ' : ''}${isAdminRole(user.role) ? 'Админ' : 'Пользователь'}${user.banned ? ' · Забанен' : ''} · Подписка: ${String(sub).toUpperCase()}
                             </div>
                         </div>
                     </div>
@@ -4679,10 +4692,21 @@ hideTypingIndicator() {
                                 <i class="fas fa-${isAdminRole(user.role) ? 'user' : 'user-shield'}"></i>
                                 ${isAdminRole(user.role) ? 'Сделать пользователем' : 'Сделать админом'}
                             </button>
+                            <label style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.05);">
+                                <i class="fas fa-gem" style="opacity: 0.8;"></i>
+                                <span style="font-size: 0.85rem; color: var(--text-secondary);">Подписка</span>
+                                <select data-action="user-subscription" data-user-id="${user.id}" style="background: transparent; color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 8px;">
+                                    <option value="free" ${sub === 'free' ? 'selected' : ''}>FREE</option>
+                                    <option value="lite" ${sub === 'lite' ? 'selected' : ''}>LITE</option>
+                                    <option value="pro" ${sub === 'pro' ? 'selected' : ''}>PRO</option>
+                                    <option value="ultimate" ${sub === 'ultimate' ? 'selected' : ''}>ULTIMATE</option>
+                                </select>
+                            </label>
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         const paginationHtml = [];
@@ -4785,6 +4809,32 @@ hideTypingIndicator() {
                 }
             });
         });
+
+        usersList.querySelectorAll('select[data-action="user-subscription"]').forEach(sel => {
+            if (sel._adminSubBound) return;
+            sel._adminSubBound = true;
+            sel.addEventListener('change', async () => {
+                const id = sel.getAttribute('data-user-id');
+                const value = (sel.value || 'free').toLowerCase();
+                if (!id) return;
+                try {
+                    const response = await fetch(`${baseUrl}/api/admin/users/${id}/subscription`, {
+                        method: 'PATCH',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ subscription: value })
+                    });
+                    if (!response.ok) {
+                        this.showNotification(response.status === 403 ? 'Нет прав' : 'Не удалось изменить подписку', 'error');
+                        return;
+                    }
+                    this.showNotification(`Подписка изменена на ${value.toUpperCase()}`, 'info');
+                    await this.loadAdminUsers(this.state.adminUsersPageNumber ?? 0);
+                } catch (e) {
+                    this.showNotification('Ошибка запроса', 'error');
+                }
+            });
+        });
     }
 
     renderAdminQuestions() {
@@ -4873,15 +4923,25 @@ hideTypingIndicator() {
         adminList.innerHTML = html;
 
         adminList.querySelectorAll('[data-action="admin-delete"]').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', async () => {
                 const id = btn.getAttribute('data-question-id');
                 if (!id) return;
-                this.dashboard.questions = this.dashboard.questions.filter(q => String(q.id) !== String(id));
-                this.renderQuestions();
-                this.renderAdminQuestions();
-                this.updateSidebarStats();
-                this.renderAdminUsers();
-                this.showNotification('Вопрос удален (локально)', 'info');
+                const baseUrl = (window.VERDIKT_BACKEND_URL || window.location.origin).replace(/\/$/, '');
+                try {
+                    const response = await fetch(`${baseUrl}/api/admin/questions/${id}`, { method: 'DELETE', credentials: 'include' });
+                    if (!response.ok) {
+                        this.showNotification(response.status === 403 ? 'Нет прав' : 'Не удалось удалить вопрос', 'error');
+                        return;
+                    }
+                    this.showNotification('Вопрос удалён', 'info');
+                    await this.loadDashboardData();
+                    this.renderQuestions();
+                    this.renderAdminQuestions();
+                    this.updateSidebarStats();
+                    this.renderAdminUsers();
+                } catch (e) {
+                    this.showNotification('Ошибка запроса', 'error');
+                }
             });
         });
 
