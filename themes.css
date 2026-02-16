@@ -415,8 +415,11 @@
     --notification-info: linear-gradient(135deg, #2d8cff, #22d3ee);
 }
 
-/* Тёмная тема */
+/* А в темной теме (по умолчанию) */
 :root, [data-theme="dark"] {
+    /* ... существующие переменные ... */
+    
+    /* Цвета уведомлений для темной темы */
     --notification-success: linear-gradient(135deg, #ec4899, #db2777);
     --notification-error: linear-gradient(135deg, #ef4444, #dc2626);
     --notification-warning: linear-gradient(135deg, #f59e0b, #d97706);
