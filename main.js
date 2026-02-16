@@ -2538,12 +2538,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             }
         }
 
-        const adminMode = localStorage.getItem('verdikt_admin_mode');
-        if (adminMode === '1') {
-            this.state.isAdmin = true;
-            document.body.classList.add('admin-mode');
-        }
-
         try {
             const rolesJson = localStorage.getItem('verdikt_admin_roles');
             if (rolesJson) this.state.adminRoles = JSON.parse(rolesJson) || {};
@@ -2564,33 +2558,11 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
     setupAdminMode() {
         const btn = this.elements.adminModeToggle;
         if (!btn) return;
-
-        const applyStateToUI = () => {
-            document.body.classList.toggle('admin-mode', this.state.isAdmin);
-            btn.classList.toggle('primary', this.state.isAdmin);
-            btn.classList.toggle('secondary', !this.state.isAdmin);
-            btn.title = this.state.isAdmin
-                ? 'Выйти из админ-режима'
-                : 'Войти в админ-режим';
-        };
-
-        applyStateToUI();
-
+        btn.classList.add('primary');
+        btn.title = 'Админ-панель';
         btn.addEventListener('click', () => {
-            this.state.isAdmin = !this.state.isAdmin;
-            localStorage.setItem('verdikt_admin_mode', this.state.isAdmin ? '1' : '0');
-            applyStateToUI();
-
-            this.showNotification(
-                this.state.isAdmin
-                    ? 'Админ-режим включен (локально)'
-                    : 'Админ-режим выключен',
-                'info'
-            );
-
-            this.renderQuestions();
-            this.renderAdminQuestions();
-            this.renderAdminUsers();
+            const adminTab = document.querySelector('.dashboard-tab[data-tab="admin"]');
+            if (adminTab) adminTab.click();
         });
     }
 
@@ -2635,6 +2607,9 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             const userJson = localStorage.getItem('verdikt_user');
             if (userJson) {
                 this.state.user = JSON.parse(userJson);
+                this.state.isAdmin = (this.state.user.role || '').toUpperCase() === 'ADMIN';
+            } else {
+                this.state.isAdmin = false;
             }
             this.state.authToken = null;
         } catch (e) {
@@ -2841,13 +2816,21 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
                 userNameLabel.textContent = name;
                 userInfo.style.display = 'flex';
             }
+            this.state.isAdmin = (this.state.user.role || '').toUpperCase() === 'ADMIN';
         } else {
             label.textContent = 'Войти';
             userAuth.classList.remove('user-auth-logged-in');
             if (userInfo) {
                 userInfo.style.display = 'none';
             }
+            this.state.isAdmin = false;
         }
+
+        const adminTab = document.querySelector('.dashboard-tab[data-tab="admin"]');
+        if (adminTab) adminTab.style.display = this.state.isAdmin ? '' : 'none';
+        const adminToggle = document.getElementById('admin-mode-toggle');
+        if (adminToggle) adminToggle.style.display = this.state.isAdmin ? '' : 'none';
+        document.body.classList.toggle('admin-mode', this.state.isAdmin);
     }
 
     getCurrentTime() {
@@ -4279,6 +4262,29 @@ hideTypingIndicator() {
         return this.apiClient.loadDashboardData();
     }
 
+    async loadAdminUsers(page = 0) {
+        const baseUrl = (window.VERDIKT_BACKEND_URL || window.location.origin).replace(/\/$/, '');
+        this.state.adminUsersLoading = true;
+        this.state.adminUsersPageNumber = page;
+        this.renderAdminUsers();
+        try {
+            const response = await fetch(`${baseUrl}/api/admin/users?page=${page}&size=20`, { credentials: 'include' });
+            if (!response.ok) {
+                this.state.adminUsersPage = null;
+                this.showNotification(response.status === 403 ? 'Нет прав администратора' : 'Не удалось загрузить список пользователей', 'error');
+                return;
+            }
+            const data = await response.json();
+            this.state.adminUsersPage = data;
+        } catch (e) {
+            this.state.adminUsersPage = null;
+            this.showNotification('Ошибка загрузки списка пользователей', 'error');
+        } finally {
+            this.state.adminUsersLoading = false;
+            this.renderAdminUsers();
+        }
+    }
+
     async submitDashboardQuestion(content) {
         return this.apiClient.submitDashboardQuestion(content);
     }
@@ -4593,50 +4599,44 @@ hideTypingIndicator() {
             return;
         }
 
-        if (!this.dashboard || !this.dashboard.questions || this.dashboard.questions.length === 0) {
+        if (this.state.adminUsersLoading) {
             usersList.innerHTML = `
                 <div class="question-card" style="text-align: center; padding: 40px;">
-                    <i class="fas fa-users" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
-                    <h4>Пока нет пользователей</h4>
-                    <p style="color: var(--text-tertiary);">Пользователи появятся здесь после того, как начнут задавать вопросы</p>
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--text-tertiary); margin-bottom: 16px;"></i>
+                    <p style="color: var(--text-tertiary);">Загрузка пользователей...</p>
                 </div>
             `;
             return;
         }
 
-        const usersMap = new Map();
+        if (!this.state.adminUsersPage || !this.state.adminUsersPage.content) {
+            usersList.innerHTML = `
+                <div class="question-card" style="text-align: center; padding: 40px;">
+                    <i class="fas fa-users" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
+                    <h4>Список пользователей</h4>
+                    <p style="color: var(--text-tertiary); margin-bottom: 16px;">Загрузите список с сервера</p>
+                    <button type="button" class="action-btn" id="admin-users-load-btn"><i class="fas fa-sync-alt"></i> Загрузить</button>
+                </div>
+            `;
+            const loadBtn = document.getElementById('admin-users-load-btn');
+            if (loadBtn && !loadBtn._bound) {
+                loadBtn._bound = true;
+                loadBtn.addEventListener('click', () => this.loadAdminUsers(0));
+            }
+            if (!this.state._adminUsersLoadTriggered) {
+                this.state._adminUsersLoadTriggered = true;
+                this.loadAdminUsers(0);
+            }
+            return;
+        }
 
-        this.dashboard.questions.forEach(question => {
-            const u = question.user || {};
-            const key = u.email || u.name;
-            if (!key) return;
-
-            const existing = usersMap.get(key) || {
-                key,
-                name: u.name || u.email || 'Пользователь',
-                email: u.email || '',
-                avatar: u.avatar || '👤',
-                isBanned: false,
-                role: 'user'
-            };
-
-            existing.isBanned = existing.isBanned || !!question.isBanned;
-            usersMap.set(key, existing);
-        });
-
-        const roles = this.state.adminRoles || {};
-        const subs = this.state.adminSubscriptions || {};
-        let users = Array.from(usersMap.values()).map(u => ({
-            ...u,
-            role: roles[u.key] || u.role,
-            subscription: subs[u.key] || 'free'
-        }));
-
+        const page = this.state.adminUsersPage;
+        let users = page.content || [];
         const filter = this.state.adminUserFilter || 'all';
         if (filter === 'banned') {
-            users = users.filter(u => u.isBanned);
+            users = users.filter(u => u.banned === true);
         } else if (filter === 'admins') {
-            users = users.filter(u => u.role === 'admin');
+            users = users.filter(u => (u.role || '').toUpperCase() === 'ADMIN');
         }
 
         const query = (this.state.adminUserSearchQuery || '').trim().toLowerCase();
@@ -4656,51 +4656,60 @@ hideTypingIndicator() {
                     <p style="color: var(--text-tertiary);">Попробуйте изменить фильтр или поиск</p>
                 </div>
             `;
-            return;
-        }
-
-        usersList.innerHTML = users.map(user => `
-            <div class="question-card" data-user-key="${user.key}">
-                <div class="question-header">
-                    <div class="question-avatar">${user.avatar}</div>
-                    <div class="question-meta">
-                        <h5>${user.name}</h5>
-                        <div class="date">
-                            ${user.email ? user.email + ' · ' : ''}${user.role === 'admin' ? 'Админ' : 'Пользователь'} · Подписка: ${String(user.subscription || 'free').toUpperCase()}
+        } else {
+            const isAdminRole = (r) => (r || '').toUpperCase() === 'ADMIN';
+            usersList.innerHTML = users.map(user => `
+                <div class="question-card" data-user-id="${user.id}">
+                    <div class="question-header">
+                        <div class="question-avatar">${(user.name || user.email || 'П')[0].toUpperCase()}</div>
+                        <div class="question-meta">
+                            <h5>${user.name || user.email || 'Пользователь'}</h5>
+                            <div class="date">
+                                ${user.email ? user.email + ' · ' : ''}${isAdminRole(user.role) ? 'Админ' : 'Пользователь'}${user.banned ? ' · Забанен' : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="question-actions">
+                        <div class="action-buttons">
+                            <button class="action-btn" data-action="user-ban" data-user-id="${user.id}" data-user-banned="${user.banned === true}">
+                                <i class="fas fa-${user.banned ? 'user-check' : 'user-slash'}"></i>
+                                ${user.banned ? 'Разбанить' : 'Забанить'}
+                            </button>
+                            <button class="action-btn" data-action="user-role" data-user-id="${user.id}" data-user-role="${(user.role || 'USER').toUpperCase()}">
+                                <i class="fas fa-${isAdminRole(user.role) ? 'user' : 'user-shield'}"></i>
+                                ${isAdminRole(user.role) ? 'Сделать пользователем' : 'Сделать админом'}
+                            </button>
                         </div>
                     </div>
                 </div>
-                <div class="question-actions">
-                    <div class="action-buttons">
-                        <button class="action-btn" data-action="user-ban" data-user-key="${user.key}">
-                            <i class="fas fa-${user.isBanned ? 'user-check' : 'user-slash'}"></i>
-                            ${user.isBanned ? 'Разбанить' : 'Забанить'}
-                        </button>
-                        <button class="action-btn" data-action="user-role" data-user-key="${user.key}">
-                            <i class="fas fa-${user.role === 'admin' ? 'user' : 'user-shield'}"></i>
-                            ${user.role === 'admin' ? 'Сделать пользователем' : 'Сделать админом'}
-                        </button>
-                        <label style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.05);">
-                            <i class="fas fa-gem" style="opacity: 0.8;"></i>
-                            <span style="font-size: 0.85rem; color: var(--text-secondary);">Подписка</span>
-                            <select data-action="user-subscription" data-user-key="${user.key}" style="background: transparent; color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 8px;">
-                                <option value="free" ${user.subscription === 'free' ? 'selected' : ''}>FREE</option>
-                                <option value="lite" ${user.subscription === 'lite' ? 'selected' : ''}>LITE</option>
-                                <option value="pro" ${user.subscription === 'pro' ? 'selected' : ''}>PRO</option>
-                                <option value="ultimate" ${user.subscription === 'ultimate' ? 'selected' : ''}>ULTIMATE</option>
-                            </select>
-                        </label>
-                    </div>
-                </div>
-            </div>
-        `).join('');
+            `).join('');
+        }
+
+        const paginationHtml = [];
+        if (page.totalPages > 1) {
+            const currentPage = page.number !== undefined ? page.number : (this.state.adminUsersPageNumber || 0);
+            if (!page.first) {
+                paginationHtml.push(`<button type="button" class="action-btn admin-users-prev" data-page="${currentPage - 1}"><i class="fas fa-chevron-left"></i> Назад</button>`);
+            }
+            paginationHtml.push(`<span style="color: var(--text-secondary); font-size: 0.9rem;">Страница ${currentPage + 1} из ${page.totalPages}</span>`);
+            if (!page.last) {
+                paginationHtml.push(`<button type="button" class="action-btn admin-users-next" data-page="${currentPage + 1}">Вперёд <i class="fas fa-chevron-right"></i></button>`);
+            }
+        }
+        if (paginationHtml.length) {
+            usersList.insertAdjacentHTML('beforeend', `<div class="question-card" style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 16px;">${paginationHtml.join('')}</div>`);
+            usersList.querySelectorAll('.admin-users-prev, .admin-users-next').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const p = parseInt(btn.getAttribute('data-page'), 10);
+                    if (!isNaN(p)) this.loadAdminUsers(p);
+                });
+            });
+        }
 
         usersFilterButtons.forEach(btn => {
             const value = btn.getAttribute('data-filter');
             if (!value) return;
-
             btn.classList.toggle('active', value === this.state.adminUserFilter);
-
             if (!btn._adminUserFilterBound) {
                 btn.addEventListener('click', () => {
                     this.state.adminUserFilter = value;
@@ -4711,10 +4720,7 @@ hideTypingIndicator() {
         });
 
         if (searchInput) {
-            if (typeof this.state.adminUserSearchQuery === 'string') {
-                searchInput.value = this.state.adminUserSearchQuery;
-            }
-
+            if (typeof this.state.adminUserSearchQuery === 'string') searchInput.value = this.state.adminUserSearchQuery;
             if (!searchInput._adminUserSearchBound) {
                 searchInput.addEventListener('input', () => {
                     this.state.adminUserSearchQuery = searchInput.value || '';
@@ -4724,83 +4730,60 @@ hideTypingIndicator() {
             }
         }
 
+        const baseUrl = (window.VERDIKT_BACKEND_URL || window.location.origin).replace(/\/$/, '');
         usersList.querySelectorAll('[data-action="user-ban"]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const key = btn.getAttribute('data-user-key');
-                if (!key) return;
-
-                const questions = this.dashboard.questions || [];
-                const isCurrentlyBanned = questions.some(q => {
-                    const u = q.user || {};
-                    const k = u.email || u.name;
-                    return k === key && q.isBanned;
-                });
-
-                questions.forEach(q => {
-                    const u = q.user || {};
-                    const k = u.email || u.name;
-                    if (k === key) {
-                        q.isBanned = !isCurrentlyBanned;
+            btn.addEventListener('click', async () => {
+                const id = btn.getAttribute('data-user-id');
+                const isBanned = btn.getAttribute('data-user-banned') === 'true';
+                if (!id) return;
+                const endpoint = isBanned ? `${baseUrl}/api/admin/users/${id}/unban` : `${baseUrl}/api/admin/users/${id}/ban`;
+                const method = 'PATCH';
+                try {
+                    const response = await fetch(endpoint, { method, credentials: 'include' });
+                    if (!response.ok) {
+                        const msg = await response.text().catch(() => '');
+                        this.showNotification(msg || (response.status === 403 ? 'Нет прав' : 'Ошибка'), 'error');
+                        return;
                     }
-                });
-
-                this.showNotification(
-                    isCurrentlyBanned ? 'Пользователь разбанен (локально)' : 'Пользователь забанен (локально)',
-                    isCurrentlyBanned ? 'success' : 'warning'
-                );
-
-                this.renderQuestions();
-                this.renderAdminQuestions();
-                this.renderAdminUsers();
+                    this.showNotification(isBanned ? 'Пользователь разбанен' : 'Пользователь забанен', isBanned ? 'success' : 'warning');
+                    await this.loadAdminUsers(this.state.adminUsersPageNumber ?? 0);
+                } catch (e) {
+                    this.showNotification('Ошибка запроса', 'error');
+                }
             });
         });
 
         usersList.querySelectorAll('[data-action="user-role"]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const key = btn.getAttribute('data-user-key');
-                if (!key) return;
-
-                const currentRole = this.state.adminRoles?.[key] || 'user';
-                const newRole = currentRole === 'admin' ? 'user' : 'admin';
-
-                this.state.adminRoles = {
-                    ...(this.state.adminRoles || {}),
-                    [key]: newRole
-                };
+            btn.addEventListener('click', async () => {
+                const id = btn.getAttribute('data-user-id');
+                const currentRole = (btn.getAttribute('data-user-role') || 'USER').toUpperCase();
+                const newRole = currentRole === 'ADMIN' ? 'USER' : 'ADMIN';
+                if (!id) return;
                 try {
-                    localStorage.setItem('verdikt_admin_roles', JSON.stringify(this.state.adminRoles || {}));
-                } catch (e) {}
-
-                this.showNotification(
-                    newRole === 'admin'
-                        ? 'Пользователь отмечен как админ (локально)'
-                        : 'Права админа сняты (локально)',
-                    'info'
-                );
-
-                this.renderAdminUsers();
+                    const response = await fetch(`${baseUrl}/api/admin/users/${id}/role`, {
+                        method: 'PATCH',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ role: newRole })
+                    });
+                    if (!response.ok) {
+                        const text = await response.text();
+                        let msg = 'Ошибка смены роли';
+                        try {
+                            const err = text ? JSON.parse(text) : {};
+                            if (err.message) msg = err.message;
+                        } catch (_) {
+                            if (text && text.length < 200) msg = text;
+                        }
+                        this.showNotification(msg, 'error');
+                        return;
+                    }
+                    this.showNotification(newRole === 'ADMIN' ? 'Пользователь назначен админом' : 'Права админа сняты', 'info');
+                    await this.loadAdminUsers(this.state.adminUsersPageNumber ?? 0);
+                } catch (e) {
+                    this.showNotification('Ошибка запроса', 'error');
+                }
             });
-        });
-
-        usersList.querySelectorAll('select[data-action="user-subscription"]').forEach(sel => {
-            if (sel._adminSubBound) return;
-            sel.addEventListener('change', () => {
-                const key = sel.getAttribute('data-user-key');
-                if (!key) return;
-                const value = (sel.value || 'free').toLowerCase();
-
-                this.state.adminSubscriptions = {
-                    ...(this.state.adminSubscriptions || {}),
-                    [key]: value
-                };
-                try {
-                    localStorage.setItem('verdikt_admin_subscriptions', JSON.stringify(this.state.adminSubscriptions || {}));
-                } catch (e) {}
-
-                this.showNotification(`Подписка изменена на ${value.toUpperCase()} (локально)`, 'info');
-                this.renderAdminUsers();
-            });
-            sel._adminSubBound = true;
         });
     }
 
