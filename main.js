@@ -1456,7 +1456,13 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
 
         const sidebarCollapse = document.getElementById('sidebar-collapse');
         if (sidebarCollapse) {
-            sidebarCollapse.addEventListener('click', () => this.hideSidebar());
+            sidebarCollapse.addEventListener('click', () => {
+                if (window.matchMedia('(min-width: 769px)').matches) {
+                    this.toggleSidebarCollapsed();
+                } else {
+                    this.hideSidebar();
+                }
+            });
         }
 
         document.addEventListener('keydown', (e) => {
@@ -1543,7 +1549,43 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             });
         }
 
+        this.applySidebarCollapsedState();
         this.updateSidebarInfo();
+    }
+
+    toggleSidebarCollapsed() {
+        const sidebar = this.elements.sidebar;
+        if (!sidebar) return;
+        const isCollapsed = sidebar.classList.toggle('collapsed');
+        document.body.classList.toggle('sidebar-collapsed', isCollapsed);
+        try {
+            localStorage.setItem('sidebarCollapsed', isCollapsed ? '1' : '0');
+        } catch (_) {}
+        this.updateSidebarCollapseButton();
+    }
+
+    applySidebarCollapsedState() {
+        if (!window.matchMedia('(min-width: 769px)').matches) return;
+        let collapsed = false;
+        try {
+            collapsed = localStorage.getItem('sidebarCollapsed') === '1';
+        } catch (_) {}
+        if (collapsed && this.elements.sidebar) {
+            this.elements.sidebar.classList.add('collapsed');
+            document.body.classList.add('sidebar-collapsed');
+        }
+        this.updateSidebarCollapseButton();
+    }
+
+    updateSidebarCollapseButton() {
+        const btn = document.getElementById('sidebar-collapse');
+        const icon = document.getElementById('sidebar-collapse-icon');
+        if (!btn || !this.elements.sidebar) return;
+        const isCollapsed = this.elements.sidebar.classList.contains('collapsed');
+        btn.title = isCollapsed ? 'Развернуть сайдбар' : 'Свернуть сайдбар';
+        if (icon) {
+            icon.className = isCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left';
+        }
     }
 
     toggleSidebar() {

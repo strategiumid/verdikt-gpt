@@ -97,8 +97,10 @@ body {
     max-width: 1200px;
     width: 100%;
     margin: 0 auto;
-    margin-left: 320px; /* Отступ для сайдбара */
+    margin-left: calc(320px + env(safe-area-inset-left, 0px)); /* Сайдбар + safe area (Mac notch) */
     padding: 0;
+    transition: margin-left 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    padding-top: max(0px, env(safe-area-inset-top));
     padding-left: max(20px, env(safe-area-inset-left));
     padding-right: max(20px, env(safe-area-inset-right));
     padding-bottom: max(20px, env(safe-area-inset-bottom));
@@ -1978,11 +1980,23 @@ footer {
     justify-content: center;
 }
 
-/* Адаптивность */
+/* Адаптивность под Mac: шире контент на больших экранах */
+@media (min-width: 1400px) {
+    .container {
+        max-width: 1400px;
+    }
+}
+
+@media (min-width: 1680px) {
+    .container {
+        max-width: 1600px;
+    }
+}
+
 @media (max-width: 1100px) {
     .container {
         max-width: 100%;
-        margin-left: 320px; /* Отступ для сайдбара */
+        margin-left: calc(320px + env(safe-area-inset-left, 0px));
         padding: 15px;
     }
     

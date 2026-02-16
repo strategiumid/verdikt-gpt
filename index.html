@@ -118,10 +118,11 @@
     .sidebar {
         position: fixed;
         top: 0;
-        left: 0;
+        left: env(safe-area-inset-left, 0px); /* Учёт notch на MacBook Pro */
         width: 320px;
         height: 100vh;
         height: 100dvh;
+        padding-top: env(safe-area-inset-top, 0px);
         background: #000000;
         border-right: 1px solid rgba(255, 255, 255, 0.06);
         z-index: 1000;
@@ -130,7 +131,7 @@
         display: flex;
         flex-direction: column;
         transform: translateX(-100%);
-        transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+        transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.4s cubic-bezier(0.32, 0.72, 0, 1), width 0.3s cubic-bezier(0.32, 0.72, 0, 1);
         box-shadow: none;
     }
 
@@ -321,6 +322,79 @@
     .sidebar-collapse-btn:hover {
         background: rgba(255, 255, 255, 0.1);
         color: #fff;
+    }
+
+    /* Футер с кнопкой сворачивания (только на ПК) */
+    .sidebar-footer-collapse {
+        padding: 12px 16px 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        flex-shrink: 0;
+    }
+    @media (max-width: 768px) {
+        .sidebar-footer-collapse { display: none; }
+    }
+
+    /* Свёрнутый сайдбар (только десктоп) */
+    @media (min-width: 769px) {
+        .sidebar.collapsed {
+            width: 72px;
+        }
+        .sidebar.collapsed .sidebar-search,
+        .sidebar.collapsed .sidebar-search-inner input,
+        .sidebar.collapsed .sidebar-search-kbd {
+            opacity: 0;
+            pointer-events: none;
+            width: 0;
+            min-width: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .sidebar.collapsed .sidebar-search-inner {
+            padding: 0;
+            min-width: 0;
+        }
+        .sidebar.collapsed .sidebar-header {
+            justify-content: center;
+            padding: 0 8px 12px;
+        }
+        .sidebar.collapsed .user-info {
+            display: none;
+        }
+        .sidebar.collapsed .user-avatar {
+            width: 36px;
+            height: 36px;
+            font-size: 14px;
+        }
+        .sidebar.collapsed .nav-section h4 {
+            opacity: 0;
+            height: 0;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .sidebar.collapsed .nav-item span,
+        .sidebar.collapsed .nav-item .badge {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+            padding: 0;
+            margin: 0;
+        }
+        .sidebar.collapsed .nav-item {
+            justify-content: center;
+            padding: 10px;
+        }
+        .sidebar.collapsed .nav-item i {
+            margin: 0;
+        }
+        .sidebar.collapsed .sidebar-footer-collapse {
+            padding: 12px 8px;
+            display: flex;
+            justify-content: center;
+        }
+        body.sidebar-collapsed .container {
+            margin-left: calc(72px + env(safe-area-inset-left, 0px));
+        }
     }
 
     .stats-summary {
@@ -1263,34 +1337,11 @@
             </div>
         </div>
 
-        <!-- <div class="sidebar-footer">
-            <div class="sidebar-footer-row">
-                <div class="stats-summary" style="flex: 1;">
-                <div class="stat-mini">
-                    <div class="stat-mini-value" id="stat-questions">0</div>
-                    <div class="stat-mini-label">Вопросы</div>
-                </div>
-                <div class="stat-mini">
-                    <div class="stat-mini-value" id="stat-likes">0</div>
-                    <div class="stat-mini-label">Лайки</div>
-                </div>
-                <div class="stat-mini">
-                    <div class="stat-mini-value" id="stat-comments">0</div>
-                    <div class="stat-mini-label">Комментарии</div>
-                </div>
-                <div class="stat-mini">
-                    <div class="stat-mini-value" id="stat-helpful">0</div>
-                    <div class="stat-mini-label">Помогли</div>
-                </div>
-            </div>
-                <button class="sidebar-collapse-btn" id="sidebar-collapse" title="Свернуть">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-            </div>
-            <button class="ios-button secondary" id="logout-sidebar" style="width: 100%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
-                <i class="fas fa-sign-out-alt"></i> Выйти
+        <div class="sidebar-footer-collapse">
+            <button class="sidebar-collapse-btn" id="sidebar-collapse" title="Свернуть сайдбар">
+                <i class="fas fa-chevron-left" id="sidebar-collapse-icon"></i>
             </button>
-        </div> -->
+        </div>
     </div>
 
     <button class="sidebar-toggle" id="sidebar-toggle">
