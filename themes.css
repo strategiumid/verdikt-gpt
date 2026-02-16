@@ -359,8 +359,8 @@
 }
 
 :root, [data-theme="dark"] {
-    --primary-rgb: 236, 72, 153;
-    --secondary-rgb: 139, 92, 246;
+    --primary-rgb: 255, 255, 255;
+    --secondary-rgb: 224, 224, 224;
 }
 
 [data-theme="deepseek"] {
@@ -537,10 +537,10 @@
     --notification-border: var(--notification-info-border, rgba(59, 130, 246, 0.2));
 }
 
-/* Тёмная тема - цветовые переменные */
+/* Тёмная тема (Grok) - цветовые переменные */
 [data-theme="dark"] {
-    --notification-success-bg: var(--gradient); /* Розовый градиент */
-    --notification-success-border: rgba(236, 72, 153, 0.2);
+    --notification-success-bg: linear-gradient(135deg, #22c55e, #16a34a);
+    --notification-success-border: rgba(34, 197, 94, 0.2);
     
     --notification-error-bg: linear-gradient(135deg, #ef4444, #dc2626);
     --notification-error-border: rgba(239, 68, 68, 0.2);
@@ -548,8 +548,8 @@
     --notification-warning-bg: linear-gradient(135deg, #f59e0b, #d97706);
     --notification-warning-border: rgba(245, 158, 11, 0.2);
     
-    --notification-info-bg: linear-gradient(135deg, #8b5cf6, #7c3aed);
-    --notification-info-border: rgba(139, 92, 246, 0.2);
+    --notification-info-bg: linear-gradient(135deg, #3b82f6, #2563eb);
+    --notification-info-border: rgba(59, 130, 246, 0.2);
 }
 
 /* DeepSeek тема - цветовые переменные */
@@ -626,7 +626,8 @@
 }
 
 .theme-dark {
-    background: linear-gradient(135deg, #0f172a, #1e293b);
+    background: #000;
+    border-color: rgba(255,255,255,0.15);
 }
 
 .theme-deepseek {

@@ -1,33 +1,33 @@
-/* Глобальные стили и переменные */
+/* Глобальные стили и переменные (Grok-style по умолчанию) */
 :root {
-    --primary: #ec4899;
-    --primary-dark: #db2777;
-    --primary-light: #f472b6;
-    --secondary: #8b5cf6;
-    --secondary-dark: #7c3aed;
-    --gradient: linear-gradient(135deg, var(--primary), var(--secondary));
-    --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    --bg-card: rgba(30, 41, 59, 0.7);
-    --bg-card-light: rgba(30, 41, 59, 0.95);
-    --text-primary: #f8fafc;
-    --text-secondary: #cbd5e1;
-    --text-tertiary: #94a3b8;
-    --border-color: rgba(255, 255, 255, 0.1);
-    --shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.2);
-    --radius-lg: 20px;
+    --primary: #e0e0e0;
+    --primary-dark: #b0b0b0;
+    --primary-light: #ffffff;
+    --secondary: #a0a0a0;
+    --secondary-dark: #808080;
+    --gradient: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
+    --bg-gradient: #000000;
+    --bg-card: rgba(26, 26, 26, 0.95);
+    --bg-card-light: #1a1a1a;
+    --text-primary: #ffffff;
+    --text-secondary: #e0e0e0;
+    --text-tertiary: rgba(255, 255, 255, 0.5);
+    --border-color: rgba(255, 255, 255, 0.06);
+    --shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --radius-lg: 16px;
     --radius-md: 12px;
-    --radius-sm: 8px;
-    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-slow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-    --glow: 0 0 20px rgba(236, 72, 153, 0.5);
-    --ios-blue: var(--primary);
+    --radius-sm: 10px;
+    --transition: all 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    --transition-slow: all 0.45s cubic-bezier(0.32, 0.72, 0, 1);
+    --transition-fast: all 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+    --glow: 0 0 20px rgba(255, 255, 255, 0.08);
+    --ios-blue: #2a2a2a;
     --ios-gray: #8E8E93;
-    --ios-light-gray: #F2F2F7;
-    --ios-card: rgba(255, 255, 255, 0.1);
-    --primary-rgb: 236, 72, 153;
-    --secondary-rgb: 139, 92, 246;
+    --ios-light-gray: #1a1a1a;
+    --ios-card: rgba(255, 255, 255, 0.06);
+    --primary-rgb: 255, 255, 255;
+    --secondary-rgb: 224, 224, 224;
 }
 
 * {
@@ -52,7 +52,7 @@ body {
     position: relative;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    transition: background 0.3s ease;
+    transition: background 0.35s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 /* Фоновые элементы с анимациями */
@@ -64,16 +64,30 @@ body {
     overflow: hidden;
 }
 
+/* Grok-style звёздный фон */
 .grid-pattern {
     position: absolute;
     width: 100%;
     height: 100%;
     background-image: 
-        linear-gradient(var(--primary-light) 1px, transparent 1px),
-        linear-gradient(90deg, var(--primary-light) 1px, transparent 1px);
-    background-size: 40px 40px;
-    opacity: 0.05;
-    animation: gridMove 20s linear infinite;
+        radial-gradient(1.5px 1.5px at 20px 30px, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 80px 120px, rgba(255,255,255,0.3), transparent),
+        radial-gradient(1.5px 1.5px at 160px 40px, rgba(255,255,255,0.35), transparent),
+        radial-gradient(1px 1px at 250px 200px, rgba(255,255,255,0.25), transparent),
+        radial-gradient(1px 1px at 350px 80px, rgba(255,255,255,0.3), transparent),
+        radial-gradient(1.5px 1.5px at 450px 250px, rgba(255,255,255,0.2), transparent),
+        radial-gradient(1px 1px at 550px 150px, rgba(255,255,255,0.35), transparent),
+        radial-gradient(1px 1px at 700px 50px, rgba(255,255,255,0.25), transparent),
+        radial-gradient(1.5px 1.5px at 850px 180px, rgba(255,255,255,0.3), transparent),
+        radial-gradient(1px 1px at 950px 300px, rgba(255,255,255,0.2), transparent);
+    background-size: 1000px 350px;
+    opacity: 1;
+    animation: starTwinkle 8s ease-in-out infinite;
+}
+
+@keyframes starTwinkle {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
 }
 
 /* Основной контейнер */
@@ -118,14 +132,14 @@ body {
 .logo-icon {
     width: 44px;
     height: 44px;
-    background: var(--gradient);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 20px;
-    box-shadow: var(--glow);
-    animation: pulse 2s infinite;
+    transition: var(--transition);
 }
 
 .logo-icon i {
@@ -157,17 +171,17 @@ body {
     white-space: nowrap;
 }
 
-/* iOS-стиль кнопок с СВЕЧЕНИЕМ */
+/* Grok-style кнопки */
 .ios-button {
     background: var(--ios-blue);
     color: white;
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 10px;
     padding: 10px 16px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.35s cubic-bezier(0.32, 0.72, 0, 1);
     position: relative;
     overflow: hidden;
     display: inline-flex;
@@ -182,10 +196,9 @@ body {
 }
 
 .ios-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 
-        0 8px 15px rgba(var(--primary-rgb), 0.3),
-        0 0 20px rgba(var(--primary-rgb), 0.4);
+    background: #353535;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .ios-button:active {
@@ -196,8 +209,9 @@ body {
 }
 
 .ios-button.secondary {
-    background: var(--ios-card);
+    background: rgba(255, 255, 255, 0.06);
     color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border: 1px solid var(--border-color);
     box-shadow: none;
 }
@@ -311,15 +325,16 @@ body {
 .hero-icon {
     width: 80px;
     height: 80px;
-    background: var(--gradient);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 36px;
-    color: white;
+    color: #fff;
     margin: 0 auto 24px;
-    box-shadow: var(--glow);
+    transition: var(--transition);
     animation: float 6s infinite ease-in-out;
 }
 
@@ -340,9 +355,9 @@ body {
 
 .hero-chip {
     padding: 12px 20px;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 40px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
     color: var(--text-primary);
     font-size: 0.95rem;
     font-weight: 500;
@@ -351,18 +366,16 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    backdrop-filter: blur(10px);
 }
 
 .hero-chip:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: var(--primary);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(var(--primary-rgb), 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
 }
 
 .hero-chip i {
-    color: var(--primary);
+    color: rgba(255, 255, 255, 0.8);
     font-size: 14px;
 }
 
@@ -401,26 +414,26 @@ body {
 
 .user-message {
     align-self: flex-end;
-    background: var(--primary);
+    background: #1a1a1a;
     color: white;
-    border-bottom-right-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom-right-radius: 12px;
 }
 
 .user-message:hover {
-    box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.3);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 .ai-message {
     align-self: flex-start;
-    background: var(--bg-card-light);
+    background: #1a1a1a;
     color: var(--text-primary);
-    border: 1px solid var(--border-color);
-    border-bottom-left-radius: 6px;
-    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom-left-radius: 12px;
 }
 
 .ai-message:hover {
-    box-shadow: 0 0 20px rgba(var(--secondary-rgb), 0.2);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 /* Анимации сообщений */
@@ -608,24 +621,22 @@ body {
 @keyframes typingWave {
     0%, 60%, 100% {
         transform: translateY(0) scale(1);
-        background: var(--primary);
-        box-shadow: 0 0 8px var(--primary);
+        background: rgba(255, 255, 255, 0.6);
     }
     30% {
         transform: translateY(-6px) scale(1.2);
-        background: var(--secondary);
-        box-shadow: 0 0 16px var(--secondary);
+        background: rgba(255, 255, 255, 0.9);
     }
 }
 
 /* Панель ввода */
 .input-container-extended {
-    flex-shrink: 0; /* Не сжимается */
+    flex-shrink: 0;
     display: flex;
     padding: 16px 24px;
-    background: var(--bg-card);
+    background: transparent;
     border-radius: 28px 28px 0 0;
-    border-top: 1px solid var(--border-color);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
     gap: 12px;
     align-items: center;
     margin-top: 0;
@@ -645,8 +656,8 @@ body {
 #message-input {
     width: 100%;
     padding: 14px 18px;
-    background: var(--bg-card);
-    border: 2px solid var(--border-color);
+    background: #1a1a1a;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 28px;
     font-size: 1rem;
     font-family: 'Inter', sans-serif;
@@ -661,12 +672,12 @@ body {
 }
 
 #message-input:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.05);
 }
 
 #message-input:hover {
-    border-color: rgba(var(--primary-rgb), 0.3);
+    border-color: rgba(255, 255, 255, 0.15);
 }
 
 #message-input::placeholder {
@@ -683,8 +694,8 @@ body {
     width: 44px;
     height: 44px;
     border-radius: 22px;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     color: var(--text-primary);
     cursor: pointer;
     display: flex;
@@ -785,22 +796,22 @@ footer {
     text-shadow: 0 0 10px rgba(var(--primary-rgb), 0.5);
 }
 
-/* Модальные окна */
+/* Модальные окна (Grok-style анимации) */
 .modal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(10px);
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(12px);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 2000;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.3s ease;
+    transition: opacity 0.35s cubic-bezier(0.32, 0.72, 0, 1), visibility 0.35s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .modal.active {
@@ -809,9 +820,7 @@ footer {
 }
 
 .modal-content {
-    background: var(--bg-card);
-    /* чуть больше "стекла" */
-    background: color-mix(in srgb, var(--bg-card) 88%, transparent);
+    background: #1a1a1a;
     border-radius: var(--radius-lg);
     width: 90%;
     max-width: 600px;
@@ -819,11 +828,10 @@ footer {
     overflow-y: auto;
     padding: 25px;
     position: relative;
-    border: 1px solid var(--border-color);
-    box-shadow: var(--shadow);
-    transform: translateY(50px) scale(0.9);
-    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
+    transform: translateY(30px) scale(0.96);
+    transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .auth-modal {
@@ -853,9 +861,8 @@ footer {
 }
 
 .auth-tab.active {
-    background: rgba(236, 72, 153, 0.16);
-    color: var(--primary-light);
-    box-shadow: 0 0 15px rgba(236, 72, 153, 0.18);
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
 }
 
 .auth-forms {
@@ -1522,9 +1529,9 @@ footer {
 
 /* Подсветка области ввода при drag & drop файла */
 .input-container-extended.drag-over {
-    outline: 2px dashed rgba(236, 72, 153, 0.8);
+    outline: 2px dashed rgba(255, 255, 255, 0.3);
     outline-offset: 4px;
-    background: rgba(236, 72, 153, 0.05);
+    background: rgba(255, 255, 255, 0.03);
     border-radius: 28px;
 }
 

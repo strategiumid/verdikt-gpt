@@ -1454,6 +1454,27 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             });
         }
 
+        const sidebarCollapse = document.getElementById('sidebar-collapse');
+        if (sidebarCollapse) {
+            sidebarCollapse.addEventListener('click', () => this.hideSidebar());
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'k') {
+                e.preventDefault();
+                const searchInput = document.getElementById('sidebar-search-input');
+                if (this.elements.sidebar.classList.contains('active') && searchInput) {
+                    searchInput.focus();
+                } else {
+                    this.showSidebar();
+                    setTimeout(() => searchInput?.focus(), 450);
+                }
+            }
+            if (e.key === 'Escape' && this.elements.sidebar?.classList.contains('active')) {
+                this.hideSidebar();
+            }
+        });
+
         if (this.elements.navDashboard) {
             this.elements.navDashboard.addEventListener('click', () => {
                 this.showDashboardModal();
@@ -1558,14 +1579,22 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             }
             
             const avatarIcon = this.elements.userAvatar.querySelector('i');
+            const avatarText = this.elements.userAvatar.querySelector('.avatar-initials');
             if (this.state.user.avatar) {
                 this.elements.userAvatar.style.backgroundImage = `url(${this.state.user.avatar})`;
                 this.elements.userAvatar.style.backgroundSize = 'cover';
                 this.elements.userAvatar.style.backgroundPosition = 'center';
                 if (avatarIcon) avatarIcon.style.display = 'none';
+                if (avatarText) avatarText.style.display = 'none';
             } else {
                 this.elements.userAvatar.style.backgroundImage = '';
-                if (avatarIcon) avatarIcon.style.display = 'flex';
+                const name = this.state.user.name || this.state.user.email || '';
+                const initials = name.split(/[\s@]/).filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase() || '?';
+                if (avatarText) {
+                    avatarText.textContent = initials;
+                    avatarText.style.display = 'flex';
+                }
+                if (avatarIcon) avatarIcon.style.display = 'none';
             }
             
             if (this.elements.logoutSidebar) {
@@ -1578,6 +1607,12 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             if (this.elements.dashboardUsername) {
                 this.elements.dashboardUsername.textContent = 'Гость';
             }
+            
+            const avatarIcon = this.elements.userAvatar?.querySelector('i');
+            const avatarText = this.elements.userAvatar?.querySelector('.avatar-initials');
+            if (avatarText) avatarText.style.display = 'none';
+            if (avatarIcon) avatarIcon.style.display = 'flex';
+            this.elements.userAvatar && (this.elements.userAvatar.style.backgroundImage = '');
             
             if (this.elements.logoutSidebar) {
                 this.elements.logoutSidebar.style.display = 'none';

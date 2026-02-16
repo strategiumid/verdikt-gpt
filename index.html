@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#000000">
     <title>Verdikt GPT</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
@@ -15,6 +15,7 @@
     
     <style>
     /* Стили для бокового меню */
+   /* Grok-style toggle button */
    .sidebar-toggle {
     position: fixed;
     left: 20px;
@@ -22,17 +23,16 @@
     z-index: 1001;
     width: 44px;
     height: 44px;
-    border-radius: 50%;
-    background: var(--gradient);
-    border: none;
-    color: white;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.9);
     font-size: 18px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: var(--shadow);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.35s cubic-bezier(0.32, 0.72, 0, 1);
     opacity: 1;
     visibility: visible;
 }
@@ -40,13 +40,13 @@
 .sidebar.active ~ .sidebar-toggle {
     opacity: 0;
     visibility: hidden;
-    transform: translateX(-20px);
+    transform: translateX(-60px);
 }
 
-    .sidebar-toggle:hover {
-        transform: scale(1.1);
-        box-shadow: var(--glow);
-    }
+.sidebar-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.12);
+}
 
     /* Адаптивность для мобильных */
 @media (max-width: 768px) {
@@ -69,18 +69,21 @@
     }
 }
 
+    /* Grok-like overlay: плавное появление с blur */
     .sidebar-overlay {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        backdrop-filter: blur(5px);
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
         z-index: 999;
         opacity: 0;
         visibility: hidden;
-        transition: all 0.3s ease;
+        transition: opacity 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+                    visibility 0.35s cubic-bezier(0.32, 0.72, 0, 1);
     }
 
     .sidebar-overlay.active {
@@ -88,46 +91,95 @@
         visibility: visible;
     }
 
+    /* Grok-like sidebar: тёмный дизайн, плавный spring-переход */
     .sidebar {
         position: fixed;
         top: 0;
-        left: -350px;
+        left: 0;
         width: 320px;
         height: 100vh;
-        background: var(--bg-card);
-        backdrop-filter: blur(20px);
-        border-right: 1px solid var(--border-color);
+        height: 100dvh;
+        background: #1a1a1a;
+        border-right: 1px solid rgba(255, 255, 255, 0.06);
         z-index: 1000;
-        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         overflow-y: auto;
+        overflow-x: hidden;
         display: flex;
         flex-direction: column;
+        transform: translateX(-100%);
+        transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1),
+                    box-shadow 0.4s cubic-bezier(0.32, 0.72, 0, 1);
     }
 
     .sidebar.active {
-        left: 0;
+        transform: translateX(0);
+        box-shadow: 16px 0 48px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Grok-style search bar */
+    .sidebar-search {
+        padding: 16px 16px 12px;
+        flex-shrink: 0;
+    }
+
+    .sidebar-search-inner {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .sidebar-search-inner i {
+        color: rgba(255, 255, 255, 0.4);
+        font-size: 14px;
+    }
+
+    .sidebar-search-inner input {
+        flex: 1;
+        background: none;
+        border: none;
+        color: #fff;
+        font-size: 14px;
+        outline: none;
+    }
+
+    .sidebar-search-inner input::placeholder {
+        color: rgba(255, 255, 255, 0.4);
+    }
+
+    .sidebar-search-kbd {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.3);
     }
 
     .sidebar-header {
-        padding: 25px 20px 15px;
-        border-bottom: 1px solid var(--border-color);
+        padding: 0 16px 16px;
         display: flex;
         align-items: center;
-        gap: 15px;
+        gap: 12px;
     }
 
     .user-avatar {
-        width: 60px;
-        height: 60px;
-        border-radius: 15px;
-        background: var(--gradient);
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.08);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 24px;
-        color: white;
+        font-size: 14px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.9);
         flex-shrink: 0;
-        box-shadow: var(--glow);
+    }
+
+    .user-avatar .avatar-initials {
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .user-info {
@@ -136,113 +188,146 @@
     }
 
     .user-info h3 {
-        font-size: 1.2rem;
-        margin-bottom: 5px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin-bottom: 2px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        color: #fff;
     }
 
     .user-info p {
-        font-size: 0.85rem;
-        color: var(--text-secondary);
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.5);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
 
     .sidebar-nav {
-        padding: 20px 0;
+        padding: 8px 12px;
         flex: 1;
     }
 
     .nav-section {
-        margin-bottom: 25px;
-        padding: 0 20px;
+        margin-bottom: 20px;
+        padding: 0 4px;
     }
 
     .nav-section h4 {
-        font-size: 0.8rem;
+        font-size: 0.7rem;
         text-transform: uppercase;
-        color: var(--text-tertiary);
-        margin-bottom: 12px;
+        letter-spacing: 0.08em;
+        color: rgba(255, 255, 255, 0.35);
+        margin-bottom: 8px;
         font-weight: 600;
-        letter-spacing: 0.5px;
     }
 
     .nav-item {
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 12px 15px;
-        border-radius: var(--radius-md);
-        color: var(--text-secondary);
+        padding: 10px 12px;
+        border-radius: 10px;
+        color: rgba(255, 255, 255, 0.8);
         text-decoration: none;
-        transition: var(--transition);
-        margin-bottom: 5px;
+        transition: all 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+        margin-bottom: 2px;
         cursor: pointer;
-        border: 1px solid transparent;
+        border: none;
     }
 
     .nav-item:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: var(--text-primary);
-        transform: translateX(5px);
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
     }
 
     .nav-item.active {
-        background: rgba(236, 72, 153, 0.1);
-        color: var(--primary);
-        border-color: rgba(236, 72, 153, 0.3);
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
     }
 
     .nav-item i {
         width: 20px;
         text-align: center;
-        font-size: 16px;
+        font-size: 15px;
+        opacity: 0.9;
+    }
+
+    .sidebar .nav-item .badge {
+        margin-left: auto;
+        background: rgba(255, 255, 255, 0.12);
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.7rem;
+        padding: 2px 8px;
+        border-radius: 8px;
     }
 
     .sidebar-footer {
-        padding: 20px;
-        border-top: 1px solid var(--border-color);
+        padding: 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 12px;
+        flex-shrink: 0;
+    }
+
+    .sidebar-footer-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .sidebar-collapse-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.06);
+        border: none;
+        color: rgba(255, 255, 255, 0.8);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+    }
+
+    .sidebar-collapse-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
     }
 
     .stats-summary {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-        margin-bottom: 15px;
+        gap: 8px;
     }
 
     .stat-mini {
         text-align: center;
-        padding: 10px;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: var(--radius-md);
-        transition: var(--transition);
+        padding: 10px 8px;
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 10px;
+        transition: all 0.2s ease;
     }
 
     .stat-mini:hover {
-        background: rgba(255, 255, 255, 0.1);
-        transform: translateY(-2px);
+        background: rgba(255, 255, 255, 0.08);
     }
 
     .stat-mini-value {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
         font-weight: 700;
-        background: var(--gradient);
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
-        margin-bottom: 3px;
+        color: #fff;
+        margin-bottom: 2px;
     }
 
     .stat-mini-label {
-        font-size: 0.75rem;
-        color: var(--text-tertiary);
+        font-size: 0.7rem;
+        color: rgba(255, 255, 255, 0.45);
     }
 
     /* Дашборд в модальном окне */
@@ -1070,15 +1155,24 @@
      <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
     <div class="sidebar" id="sidebar">
+        <div class="sidebar-search">
+            <div class="sidebar-search-inner">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Поиск" id="sidebar-search-input">
+                <span class="sidebar-search-kbd">Ctrl+K</span>
+            </div>
+        </div>
+
         <div class="sidebar-header">
             <div class="user-avatar" id="user-avatar">
+                <span class="avatar-initials" style="display: none;">?</span>
                 <i class="fas fa-user"></i>
             </div>
             <div class="user-info">
                 <h3 id="sidebar-username">Гость</h3>
                 <p id="sidebar-useremail">Войдите в аккаунт</p>
-                <div id="user-rating" style="margin-top: 5px;">
-                    <span style="font-size: 0.8rem; color: #fbbf24;">
+                <div id="user-rating" style="margin-top: 4px;">
+                    <span style="font-size: 0.75rem; color: rgba(251, 191, 36, 0.9);">
                         <i class="fas fa-star"></i> 0.0
                     </span>
                 </div>
@@ -1144,7 +1238,8 @@
         </div>
 
         <div class="sidebar-footer">
-            <div class="stats-summary">
+            <div class="sidebar-footer-row">
+                <div class="stats-summary" style="flex: 1;">
                 <div class="stat-mini">
                     <div class="stat-mini-value" id="stat-questions">0</div>
                     <div class="stat-mini-label">Вопросы</div>
@@ -1162,7 +1257,11 @@
                     <div class="stat-mini-label">Помогли</div>
                 </div>
             </div>
-            <button class="ios-button secondary" id="logout-sidebar" style="width: 100%;">
+                <button class="sidebar-collapse-btn" id="sidebar-collapse" title="Свернуть">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+            </div>
+            <button class="ios-button secondary" id="logout-sidebar" style="width: 100%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
                 <i class="fas fa-sign-out-alt"></i> Выйти
             </button>
         </div>
