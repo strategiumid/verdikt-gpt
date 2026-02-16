@@ -270,6 +270,7 @@ export class APIClient {
                         if (Array.isArray(data)) {
                             questions = data.map(q => ({
                                 id: q.id,
+                                authorId: q.authorId ?? null,
                                 user: {
                                     name: q.authorName || q.authorEmail || 'Пользователь',
                                     email: q.authorEmail || '',
