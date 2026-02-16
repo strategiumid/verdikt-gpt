@@ -1556,14 +1556,14 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
     }
 
     showSidebar() {
-        this.elements.sidebar.classList.add('active');
-        this.elements.sidebarOverlay.classList.add('active');
+        this.elements.sidebar?.classList.add('active');
+        this.elements.sidebarOverlay?.classList.add('active');
         document.body.style.overflow = 'hidden';
     }
 
     hideSidebar() {
-        this.elements.sidebar.classList.remove('active');
-        this.elements.sidebarOverlay.classList.remove('active');
+        this.elements.sidebar?.classList.remove('active');
+        this.elements.sidebarOverlay?.classList.remove('active');
         document.body.style.overflow = '';
     }
 
