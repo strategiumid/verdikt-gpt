@@ -2596,16 +2596,27 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         });
 
         container.querySelectorAll('[data-action="admin-ban"]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const id = btn.getAttribute('data-question-id');
-                if (!id) return;
-                const question = this.dashboard.questions.find(q => String(q.id) === String(id));
-                const userEmail = question?.user?.email || question?.user?.name || 'пользователь';
-
-                question.isBanned = true;
-                this.showNotification(`Пользователь ${userEmail} помечен как забаненный (локально)`, 'warning');
-                this.renderAdminQuestions();
-                this.renderAdminUsers();
+            btn.addEventListener('click', async () => {
+                const authorId = btn.getAttribute('data-author-id');
+                if (!authorId) {
+                    this.showNotification('Нет данных об авторе вопроса', 'warning');
+                    return;
+                }
+                const baseUrl = (window.VERDIKT_BACKEND_URL || window.location.origin).replace(/\/$/, '');
+                try {
+                    const response = await fetch(`${baseUrl}/api/admin/users/${authorId}/ban`, { method: 'PATCH', credentials: 'include' });
+                    if (!response.ok) {
+                        const msg = await response.text().catch(() => '');
+                        this.showNotification(msg || (response.status === 403 ? 'Нет прав' : 'Ошибка'), 'error');
+                        return;
+                    }
+                    this.showNotification('Пользователь забанен', 'warning');
+                    await this.loadDashboardData();
+                    this.renderAdminQuestions();
+                    this.renderAdminUsers();
+                } catch (e) {
+                    this.showNotification('Ошибка запроса', 'error');
+                }
             });
         });
     }
@@ -4474,7 +4485,7 @@ hideTypingIndicator() {
                             <button class="action-btn" data-action="admin-delete" data-question-id="${question.id}">
                                 <i class="fas fa-trash"></i> Удалить
                             </button>
-                            <button class="action-btn" data-action="admin-ban" data-question-id="${question.id}">
+                            <button class="action-btn" data-action="admin-ban" data-question-id="${question.id}" data-author-id="${question.authorId ?? ''}">
                                 <i class="fas fa-user-slash"></i> Бан пользователя
                             </button>
                             ` : ''}
@@ -4906,7 +4917,7 @@ hideTypingIndicator() {
                         <button class="action-btn" data-action="admin-delete" data-question-id="${question.id}">
                             <i class="fas fa-trash"></i> Удалить вопрос
                         </button>
-                        <button class="action-btn" data-action="admin-ban" data-question-id="${question.id}">
+                        <button class="action-btn" data-action="admin-ban" data-question-id="${question.id}" data-author-id="${question.authorId ?? ''}">
                             <i class="fas fa-user-slash"></i> Забанить пользователя
                         </button>
                         <button class="action-btn" data-action="admin-resolve" data-question-id="${question.id}">
@@ -4946,16 +4957,27 @@ hideTypingIndicator() {
         });
 
         adminList.querySelectorAll('[data-action="admin-ban"]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const id = btn.getAttribute('data-question-id');
-                if (!id) return;
-                const question = this.dashboard.questions.find(q => String(q.id) === String(id));
-                const userEmail = question?.user?.email || question?.user?.name || 'пользователь';
-
-                question.isBanned = true;
-                this.showNotification(`Пользователь ${userEmail} помечен как забаненный (локально)`, 'warning');
-                this.renderAdminQuestions();
-                this.renderAdminUsers();
+            btn.addEventListener('click', async () => {
+                const authorId = btn.getAttribute('data-author-id');
+                if (!authorId) {
+                    this.showNotification('Нет данных об авторе вопроса', 'warning');
+                    return;
+                }
+                const baseUrl = (window.VERDIKT_BACKEND_URL || window.location.origin).replace(/\/$/, '');
+                try {
+                    const response = await fetch(`${baseUrl}/api/admin/users/${authorId}/ban`, { method: 'PATCH', credentials: 'include' });
+                    if (!response.ok) {
+                        const msg = await response.text().catch(() => '');
+                        this.showNotification(msg || (response.status === 403 ? 'Нет прав' : 'Ошибка'), 'error');
+                        return;
+                    }
+                    this.showNotification('Пользователь забанен', 'warning');
+                    await this.loadDashboardData();
+                    this.renderAdminQuestions();
+                    this.renderAdminUsers();
+                } catch (e) {
+                    this.showNotification('Ошибка запроса', 'error');
+                }
             });
         });
 
