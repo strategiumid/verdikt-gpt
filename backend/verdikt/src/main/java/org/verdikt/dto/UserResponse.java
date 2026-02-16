@@ -19,6 +19,8 @@ public class UserResponse {
     private List<String> expertise = new ArrayList<>();
     private String theme;
     private Instant createdAt;
+    private String role;
+    private Boolean banned;
 
     public static UserResponse from(User user) {
         UserResponse r = new UserResponse();
@@ -30,6 +32,8 @@ public class UserResponse {
         r.setExpertise(user.getExpertise() != null ? new ArrayList<>(user.getExpertise()) : new ArrayList<>());
         r.setTheme(user.getTheme());
         r.setCreatedAt(user.getCreatedAt());
+        r.setRole(user.getRole());
+        r.setBanned(user.isBanned());
         return r;
     }
 
@@ -95,5 +99,21 @@ public class UserResponse {
 
     public void setTheme(String theme) {
         this.theme = theme;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public Boolean getBanned() {
+        return banned;
+    }
+
+    public void setBanned(Boolean banned) {
+        this.banned = banned;
     }
 }

@@ -55,6 +55,15 @@ public class User {
     @Column(name = "theme", length = 50)
     private String theme;
 
+    /** Роль: USER, ADMIN. По умолчанию USER. */
+    @Size(max = 20)
+    @Column(name = "role", nullable = false, length = 20)
+    private String role = "USER";
+
+    /** Забанен ли пользователь (не может авторизоваться). */
+    @Column(name = "banned", nullable = false)
+    private boolean banned = false;
+
     // --- Геттеры и сеттеры ---
 
     public Long getId() {
@@ -127,5 +136,21 @@ public class User {
 
     public void setTheme(String theme) {
         this.theme = theme;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role != null ? role : "USER";
+    }
+
+    public boolean isBanned() {
+        return banned;
+    }
+
+    public void setBanned(boolean banned) {
+        this.banned = banned;
     }
 }
