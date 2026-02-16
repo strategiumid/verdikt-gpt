@@ -10,5 +10,7 @@ public interface QuestionCommentRepository extends JpaRepository<QuestionComment
     long countByQuestionId(Long questionId);
 
     List<QuestionComment> findByQuestionIdOrderByCreatedAtAsc(Long questionId);
+
+    void deleteByQuestionId(Long questionId);
 }
 

@@ -12,5 +12,7 @@ public interface QuestionReactionRepository extends JpaRepository<QuestionReacti
     Optional<QuestionReaction> findByQuestionIdAndUserId(Long questionId, Long userId);
 
     void deleteByQuestionIdAndUserId(Long questionId, Long userId);
+
+    void deleteByQuestionId(Long questionId);
 }
 
