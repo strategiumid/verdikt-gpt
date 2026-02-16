@@ -40,11 +40,6 @@
     );
 }
 
-[data-theme="deepseek"] .heart {
-    color: var(--primary);
-    opacity: 0.15;
-}
-
 [data-theme="deepseek"] .particle {
     background: var(--secondary);
 }

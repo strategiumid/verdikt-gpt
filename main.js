@@ -1810,8 +1810,30 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         if (privacySelect) {
             privacySelect.value = this.state.user.privacy || 'public';
         }
-        
+
+        this.updateProfileSubscriptionDisplay();
         this.showModal('profile-settings-modal');
+    }
+
+    getActiveSubscription() {
+        try {
+            return (localStorage.getItem('verdikt_user_subscription') || 'free').toLowerCase();
+        } catch (_) {
+            return 'free';
+        }
+    }
+
+    getSubscriptionDisplayName(key) {
+        const names = { free: 'Verdikt-GPT FREE', lite: 'Verdikt-GPT Lite', pro: 'Verdikt-GPT Pro', ultimate: 'Verdikt-GPT Ultimate' };
+        return names[key] || names.free;
+    }
+
+    updateProfileSubscriptionDisplay() {
+        const el = document.getElementById('profile-subscription-value');
+        if (!el) return;
+        const key = this.getActiveSubscription();
+        el.textContent = this.getSubscriptionDisplayName(key);
+        el.className = 'profile-subscription-value profile-subscription--' + key;
     }
 
     async saveProfileSettings() {
@@ -5467,21 +5489,47 @@ hideTypingIndicator() {
     }
 
     // НОВЫЙ МЕТОД ДЛЯ ПОДПИСОК
-    showSubscriptionModal() {
-        this.showModal('subscription-modal');
-    }
-
     // НОВЫЙ МЕТОД ДЛЯ НАСТРОЙКИ КНОПОК В МОДАЛЬНОМ ОКНЕ ПОДПИСОК
     setupSubscriptionModal() {
         const modal = document.getElementById('subscription-modal');
         if (!modal) return;
+
+        const updateSubscriptionButtons = () => {
+            const active = this.getActiveSubscription();
+            modal.querySelectorAll('.subscription-card').forEach(card => {
+                const btn = card.querySelector('.ios-button');
+                if (!btn) return;
+                const planKey = card.classList.contains('free') ? 'free' : card.classList.contains('lite') ? 'lite' : card.classList.contains('pro') ? 'pro' : card.classList.contains('ultimate') ? 'ultimate' : null;
+                if (planKey === active) {
+                    btn.textContent = 'Текущий план';
+                    btn.classList.add('secondary');
+                } else {
+                    btn.textContent = 'Выбрать';
+                    btn.classList.remove('secondary');
+                }
+            });
+        };
+
         modal.querySelectorAll('.ios-button').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 const card = e.target.closest('.subscription-card');
-                const plan = card?.querySelector('h3')?.textContent || 'Неизвестный план';
-                this.showNotification(`Вы выбрали план: ${plan} (функционал в разработке)`, 'info');
+                const planKey = card?.classList.contains('free') ? 'free' : card?.classList.contains('lite') ? 'lite' : card?.classList.contains('pro') ? 'pro' : card?.classList.contains('ultimate') ? 'ultimate' : 'free';
+                const planName = this.getSubscriptionDisplayName(planKey);
+                try {
+                    localStorage.setItem('verdikt_user_subscription', planKey);
+                } catch (_) {}
+                this.updateProfileSubscriptionDisplay();
+                updateSubscriptionButtons();
+                this.showNotification(`Вы выбрали план: ${planName} (функционал в разработке)`, 'info');
             });
         });
+
+        this._updateSubscriptionButtons = updateSubscriptionButtons;
+    }
+
+    showSubscriptionModal() {
+        this.showModal('subscription-modal');
+        if (this._updateSubscriptionButtons) this._updateSubscriptionButtons();
     }
 }

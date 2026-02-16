@@ -2,8 +2,12 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0, user-scalable=yes">
     <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Verdikt GPT">
+    <meta name="format-detection" content="telephone=no">
     <title>Verdikt GPT</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
@@ -58,6 +62,11 @@
     .sidebar-toggle {
         display: flex !important;
         pointer-events: auto;
+        left: max(15px, env(safe-area-inset-left));
+        top: max(15px, env(safe-area-inset-top));
+        width: 44px;
+        height: 44px;
+        font-size: 18px;
     }
     .sidebar.active ~ .sidebar-toggle {
         opacity: 0;
@@ -71,22 +80,24 @@
         transform: translateX(0);
         box-shadow: 16px 0 48px rgba(0, 0, 0, 0.4);
     }
-    .sidebar-toggle {
-        left: 15px;
-        top: 15px;
-        width: 40px;
-        height: 40px;
-        font-size: 16px;
-    }
 }
 
+/* iPhone: сайдбар на весь экран, отступы под notch и home indicator */
 @media (max-width: 480px) {
     .sidebar-toggle {
-        left: 10px;
-        top: 10px;
-        width: 36px;
-        height: 36px;
-        font-size: 14px;
+        left: max(12px, env(safe-area-inset-left));
+        top: max(12px, env(safe-area-inset-top));
+        width: 44px;
+        height: 44px;
+        font-size: 16px;
+    }
+    .sidebar {
+        width: 100%;
+        left: 0;
+        padding-left: env(safe-area-inset-left, 0px);
+        padding-right: env(safe-area-inset-right, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        padding-top: env(safe-area-inset-top, 0px);
     }
 }
 
@@ -329,9 +340,6 @@
         padding: 12px 16px 16px;
         border-top: 1px solid rgba(255, 255, 255, 0.06);
         flex-shrink: 0;
-    }
-    @media (max-width: 768px) {
-        .sidebar-footer-collapse { display: none; }
     }
 
     /* Свёрнутый сайдбар (только десктоп) */
@@ -766,11 +774,6 @@
     }
 
     @media (max-width: 480px) {
-        .sidebar {
-            width: 100%;
-            left: 0;
-        }
-
         .stats-summary {
             grid-template-columns: repeat(2, 1fr);
         }
@@ -1622,9 +1625,14 @@
                 <i class="fas fa-times"></i>
             </button>
             
-            <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+            <h2 style="margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
                 <i class="fas fa-user-cog"></i> Настройки профиля
             </h2>
+
+            <div class="profile-subscription-block" id="profile-subscription-block">
+                <span class="profile-subscription-label">Активная подписка</span>
+                <span class="profile-subscription-value" id="profile-subscription-value">Verdikt-GPT FREE</span>
+            </div>
             
             <form class="profile-form" id="profile-settings-form">
                 <div class="form-group">
@@ -1710,7 +1718,6 @@
             <span class="starfall-line" style="--i: 13"></span>
             <span class="starfall-line" style="--i: 14"></span>
         </div>
-        <div class="floating-hearts" id="floating-hearts"></div>
         <div class="connection-particles" id="connection-particles"></div>
     </div>
 
