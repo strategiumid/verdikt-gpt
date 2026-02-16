@@ -814,33 +814,19 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         
         this.state.conversationHistory = [this.createSystemPromptMessage()];
         
-        this.state.messageCount = 1;
-        this.state.stats.totalMessages = 1;
+        this.state.messageCount = 0;
+        this.state.stats.totalMessages = 0;
         this.state.stats.userMessages = 0;
-        this.state.stats.aiMessages = 1;
+        this.state.stats.aiMessages = 0;
         this.state.retryCount = 0;
 
         const heroBlock = document.getElementById('hero-block');
         if (heroBlock) {
             heroBlock.style.display = 'flex';
         }
-        
-        this.elements.chatMessages.innerHTML = `
-            <div class="message ai-message" style="opacity: 1; transform: translateY(0);">
-                <div class="message-actions">
-                    <button class="message-action" onclick="window.verdiktApp.copyMessage('msg-initial')">
-                        <i class="fas fa-copy"></i>
-                    </button>
-                    <button class="message-action" onclick="window.verdiktApp.speakMessage('msg-initial')">
-                        <i class="fas fa-volume-up"></i>
-                    </button>
-                </div>
-                <div class="message-sender"><i class="fas fa-heart"></i> Эксперт по отношениям</div>
-                <div class="message-content">Новый чат начат! Я готов помочь с вопросами об отношениях, знакомствах и манипуляциях. Расскажите, что вас беспокоит? 💕</div>
-                <div class="message-time">${this.getCurrentTime()}</div>
-            </div>
-        `;
-        
+
+        this.elements.chatMessages.innerHTML = '';
+
         await this.saveChats();
         
         this.showNotification('Новый чат создан 💬', 'success');
@@ -1660,6 +1646,16 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
                 this.elements.logoutSidebar.style.display = 'none';
             }
         }
+
+        this.updateSidebarSubscriptionDisplay();
+    }
+
+    updateSidebarSubscriptionDisplay() {
+        const el = document.getElementById('sidebar-subscription');
+        if (!el) return;
+        const key = this.getActiveSubscription();
+        el.textContent = 'Подписка: ' + this.getSubscriptionDisplayName(key);
+        el.className = 'sidebar-subscription sidebar-sub--' + key;
     }
 
     // ==================== ДАШБОРД ====================
@@ -2428,23 +2424,9 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
     clearChat() {
         if (confirm('Очистить текущий чат? Сообщения будут удалены.')) {
             this.state.conversationHistory = [this.createSystemPromptMessage()];
-            
-            this.elements.chatMessages.innerHTML = `
-                <div class="message ai-message" style="opacity: 1; transform: translateY(0);">
-                    <div class="message-actions">
-                        <button class="message-action" onclick="window.verdiktApp.copyMessage('msg-initial')">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                        <button class="message-action" onclick="window.verdiktApp.speakMessage('msg-initial')">
-                            <i class="fas fa-volume-up"></i>
-                        </button>
-                    </div>
-                    <div class="message-sender"><i class="fas fa-heart"></i> Эксперт по отношениям</div>
-                    <div class="message-content">Чат очищен! Я готов помочь с вопросами об отношениях, знакомствах и манипуляциях. Расскажите, что вас беспокоит? 💕</div>
-                    <div class="message-time">${this.getCurrentTime()}</div>
-                </div>
-            `;
-            
+            const heroBlock = document.getElementById('hero-block');
+            if (heroBlock) heroBlock.style.display = 'flex';
+            this.elements.chatMessages.innerHTML = '';
             this.saveChats();
             this.showNotification('Чат очищен 🗑️', 'info');
         }
@@ -5520,6 +5502,7 @@ hideTypingIndicator() {
                     localStorage.setItem('verdikt_user_subscription', planKey);
                 } catch (_) {}
                 this.updateProfileSubscriptionDisplay();
+                this.updateSidebarSubscriptionDisplay();
                 updateSubscriptionButtons();
                 this.showNotification(`Вы выбрали план: ${planName} (функционал в разработке)`, 'info');
             });

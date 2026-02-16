@@ -240,6 +240,18 @@
         text-overflow: ellipsis;
     }
 
+    .sidebar-subscription {
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.45);
+        margin-top: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .sidebar-subscription.sidebar-sub--lite { color: rgba(147, 197, 253, 0.95); }
+    .sidebar-subscription.sidebar-sub--pro { color: rgba(110, 231, 183, 0.95); }
+    .sidebar-subscription.sidebar-sub--ultimate { color: rgba(251, 191, 36, 0.95); }
+
     .sidebar-nav {
         padding: 8px 12px;
         flex: 1;
@@ -1274,6 +1286,7 @@
             <div class="user-info">
                 <h3 id="sidebar-username">Гость</h3>
                 <p id="sidebar-useremail">Войдите в аккаунт</p>
+                <p class="sidebar-subscription" id="sidebar-subscription">Подписка: Verdikt-GPT FREE</p>
                 <div id="user-rating" style="margin-top: 4px;">
                     <span style="font-size: 0.75rem; color: rgba(251, 191, 36, 0.9);">
                         <i class="fas fa-star"></i> 0.0
