@@ -818,33 +818,19 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         
         this.state.conversationHistory = [this.createSystemPromptMessage()];
         
-        this.state.messageCount = 1;
-        this.state.stats.totalMessages = 1;
+        this.state.messageCount = 0;
+        this.state.stats.totalMessages = 0;
         this.state.stats.userMessages = 0;
-        this.state.stats.aiMessages = 1;
+        this.state.stats.aiMessages = 0;
         this.state.retryCount = 0;
 
         const heroBlock = document.getElementById('hero-block');
         if (heroBlock) {
             heroBlock.style.display = 'flex';
         }
-        
-        this.elements.chatMessages.innerHTML = `
-            <div class="message ai-message" style="opacity: 1; transform: translateY(0);">
-                <div class="message-actions">
-                    <button class="message-action" onclick="window.verdiktApp.copyMessage('msg-initial')">
-                        <i class="fas fa-copy"></i>
-                    </button>
-                    <button class="message-action" onclick="window.verdiktApp.speakMessage('msg-initial')">
-                        <i class="fas fa-volume-up"></i>
-                    </button>
-                </div>
-                <div class="message-sender"><i class="fas fa-heart"></i> Эксперт по отношениям</div>
-                <div class="message-content">Новый чат начат! Я готов помочь с вопросами об отношениях, знакомствах и манипуляциях. Расскажите, что вас беспокоит? 💕</div>
-                <div class="message-time">${this.getCurrentTime()}</div>
-            </div>
-        `;
-        
+
+        this.elements.chatMessages.innerHTML = '';
+
         await this.saveChats();
         
         this.showNotification('Новый чат создан 💬', 'success');
@@ -1460,7 +1446,13 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
 
         const sidebarCollapse = document.getElementById('sidebar-collapse');
         if (sidebarCollapse) {
-            sidebarCollapse.addEventListener('click', () => this.hideSidebar());
+            sidebarCollapse.addEventListener('click', () => {
+                if (window.matchMedia('(min-width: 769px)').matches) {
+                    this.toggleSidebarCollapsed();
+                } else {
+                    this.hideSidebar();
+                }
+            });
         }
 
         document.addEventListener('keydown', (e) => {
@@ -1547,7 +1539,43 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             });
         }
 
+        this.applySidebarCollapsedState();
         this.updateSidebarInfo();
+    }
+
+    toggleSidebarCollapsed() {
+        const sidebar = this.elements.sidebar;
+        if (!sidebar) return;
+        const isCollapsed = sidebar.classList.toggle('collapsed');
+        document.body.classList.toggle('sidebar-collapsed', isCollapsed);
+        try {
+            localStorage.setItem('sidebarCollapsed', isCollapsed ? '1' : '0');
+        } catch (_) {}
+        this.updateSidebarCollapseButton();
+    }
+
+    applySidebarCollapsedState() {
+        if (!window.matchMedia('(min-width: 769px)').matches) return;
+        let collapsed = false;
+        try {
+            collapsed = localStorage.getItem('sidebarCollapsed') === '1';
+        } catch (_) {}
+        if (collapsed && this.elements.sidebar) {
+            this.elements.sidebar.classList.add('collapsed');
+            document.body.classList.add('sidebar-collapsed');
+        }
+        this.updateSidebarCollapseButton();
+    }
+
+    updateSidebarCollapseButton() {
+        const btn = document.getElementById('sidebar-collapse');
+        const icon = document.getElementById('sidebar-collapse-icon');
+        if (!btn || !this.elements.sidebar) return;
+        const isCollapsed = this.elements.sidebar.classList.contains('collapsed');
+        btn.title = isCollapsed ? 'Развернуть сайдбар' : 'Свернуть сайдбар';
+        if (icon) {
+            icon.className = isCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left';
+        }
     }
 
     toggleSidebar() {
@@ -1560,14 +1588,14 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
     }
 
     showSidebar() {
-        this.elements.sidebar.classList.add('active');
-        this.elements.sidebarOverlay.classList.add('active');
+        this.elements.sidebar?.classList.add('active');
+        this.elements.sidebarOverlay?.classList.add('active');
         document.body.style.overflow = 'hidden';
     }
 
     hideSidebar() {
-        this.elements.sidebar.classList.remove('active');
-        this.elements.sidebarOverlay.classList.remove('active');
+        this.elements.sidebar?.classList.remove('active');
+        this.elements.sidebarOverlay?.classList.remove('active');
         document.body.style.overflow = '';
     }
 
@@ -1826,8 +1854,30 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         if (privacySelect) {
             privacySelect.value = this.state.user.privacy || 'public';
         }
-        
+
+        this.updateProfileSubscriptionDisplay();
         this.showModal('profile-settings-modal');
+    }
+
+    getActiveSubscription() {
+        try {
+            return (localStorage.getItem('verdikt_user_subscription') || 'free').toLowerCase();
+        } catch (_) {
+            return 'free';
+        }
+    }
+
+    getSubscriptionDisplayName(key) {
+        const names = { free: 'Verdikt-GPT FREE', lite: 'Verdikt-GPT Lite', pro: 'Verdikt-GPT Pro', ultimate: 'Verdikt-GPT Ultimate' };
+        return names[key] || names.free;
+    }
+
+    updateProfileSubscriptionDisplay() {
+        const el = document.getElementById('profile-subscription-value');
+        if (!el) return;
+        const key = this.getActiveSubscription();
+        el.textContent = this.getSubscriptionDisplayName(key);
+        el.className = 'profile-subscription-value profile-subscription--' + key;
     }
 
     async saveProfileSettings() {
@@ -2459,23 +2509,9 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
     clearChat() {
         if (confirm('Очистить текущий чат? Сообщения будут удалены.')) {
             this.state.conversationHistory = [this.createSystemPromptMessage()];
-            
-            this.elements.chatMessages.innerHTML = `
-                <div class="message ai-message" style="opacity: 1; transform: translateY(0);">
-                    <div class="message-actions">
-                        <button class="message-action" onclick="window.verdiktApp.copyMessage('msg-initial')">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                        <button class="message-action" onclick="window.verdiktApp.speakMessage('msg-initial')">
-                            <i class="fas fa-volume-up"></i>
-                        </button>
-                    </div>
-                    <div class="message-sender"><i class="fas fa-heart"></i> Эксперт по отношениям</div>
-                    <div class="message-content">Чат очищен! Я готов помочь с вопросами об отношениях, знакомствах и манипуляциях. Расскажите, что вас беспокоит? 💕</div>
-                    <div class="message-time">${this.getCurrentTime()}</div>
-                </div>
-            `;
-            
+            const heroBlock = document.getElementById('hero-block');
+            if (heroBlock) heroBlock.style.display = 'flex';
+            this.elements.chatMessages.innerHTML = '';
             this.saveChats();
             this.showNotification('Чат очищен 🗑️', 'info');
         }
@@ -5565,5 +5601,12 @@ hideTypingIndicator() {
                 }
             });
         });
+
+        this._updateSubscriptionButtons = updateSubscriptionButtons;
+    }
+
+    showSubscriptionModal() {
+        this.showModal('subscription-modal');
+        if (this._updateSubscriptionButtons) this._updateSubscriptionButtons();
     }
 }
