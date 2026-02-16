@@ -8,7 +8,7 @@ COPY backend/verdikt/src ./backend/src
 
 # Фронт в static — Spring Boot отдаст с /
 RUN mkdir -p ./backend/src/main/resources/static
-COPY index.html main.js styles.css themes.css crypto.js service-worker.js ./backend/src/main/resources/static/
+COPY index.html app.js main.js apiClient.js chatStore.js uiManager.js encryptionService.js authService.js styles.css themes.css crypto.js service-worker.js manifest.json ./backend/src/main/resources/static/
 
 # В проде фронт с того же хоста — не задаём VERDIKT_BACKEND_URL (будет location.origin)
 RUN sed -i "s|window.VERDIKT_BACKEND_URL = 'http://localhost:8080';|window.VERDIKT_BACKEND_URL = '';|g" ./backend/src/main/resources/static/index.html
