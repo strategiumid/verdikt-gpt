@@ -69,6 +69,15 @@ public class User {
     @Column(name = "subscription", length = 20)
     private String subscription = "free";
 
+    /** Использовано запросов к AI в текущем периоде (месяц). */
+    @Column(name = "ai_requests_used", nullable = false)
+    private int aiRequestsUsed = 0;
+
+    /** Начало периода учёта (год-месяц, например "2025-02"). */
+    @Size(max = 7)
+    @Column(name = "usage_period_start", length = 7)
+    private String usagePeriodStart;
+
     // --- Геттеры и сеттеры ---
 
     public Long getId() {
@@ -165,5 +174,21 @@ public class User {
 
     public void setSubscription(String subscription) {
         this.subscription = subscription != null && !subscription.isBlank() ? subscription.trim().toLowerCase() : "free";
+    }
+
+    public int getAiRequestsUsed() {
+        return aiRequestsUsed;
+    }
+
+    public void setAiRequestsUsed(int aiRequestsUsed) {
+        this.aiRequestsUsed = aiRequestsUsed;
+    }
+
+    public String getUsagePeriodStart() {
+        return usagePeriodStart;
+    }
+
+    public void setUsagePeriodStart(String usagePeriodStart) {
+        this.usagePeriodStart = usagePeriodStart;
     }
 }
