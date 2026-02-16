@@ -75,6 +75,7 @@ export class VerdiktChatApp {
             adminSubscriptions: {},
             questionComments: {},
             user: null,
+            usage: null,
             authToken: null,
             currentTheme: 'dark',
             isPresentationMode: false,
@@ -179,6 +180,8 @@ export class VerdiktChatApp {
             statComments: document.getElementById('stat-comments'),
             statHelpful: document.getElementById('stat-helpful'),
             logoutSidebar: document.getElementById('logout-sidebar'),
+            sidebarUserplan: document.getElementById('sidebar-userplan'),
+            sidebarUsage: document.getElementById('sidebar-usage'),
 
             dashboardModal: document.getElementById('dashboard-modal'),
             dashboardClose: document.getElementById('dashboard-close'),
@@ -370,6 +373,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         
         if (this.state.user) {
             await this.loadUserSettings();
+            await this.loadUsage();
         } else {
             const savedTheme = localStorage.getItem('verdikt_theme');
             if (savedTheme) this.setTheme(savedTheme);
@@ -1600,6 +1604,12 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             if (this.elements.logoutSidebar) {
                 this.elements.logoutSidebar.style.display = 'flex';
             }
+            const sub = (this.state.user.subscription || 'free').toLowerCase();
+            const planLabels = { free: 'FREE', lite: 'Lite', pro: 'Pro', ultimate: 'Ultimate' };
+            if (this.elements.sidebarUserplan) {
+                this.elements.sidebarUserplan.textContent = `План: ${planLabels[sub] || sub}`;
+                this.elements.sidebarUserplan.style.display = 'block';
+            }
         } else {
             this.elements.sidebarUsername.textContent = 'Гость';
             this.elements.sidebarUseremail.textContent = 'Войдите в аккаунт';
@@ -1617,7 +1627,55 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             if (this.elements.logoutSidebar) {
                 this.elements.logoutSidebar.style.display = 'none';
             }
+            if (this.elements.sidebarUserplan) {
+                this.elements.sidebarUserplan.style.display = 'none';
+            }
+            if (this.elements.sidebarUsage) {
+                this.elements.sidebarUsage.style.display = 'none';
+            }
         }
+    }
+
+    async loadUsage() {
+        if (!this.state.user) return;
+        try {
+            const baseUrl = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
+            const res = await fetch(`${baseUrl}/api/users/me/usage`, { method: 'GET', credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                this.state.usage = { used: data.used, limit: data.limit };
+                this.updateSidebarUsage();
+            }
+        } catch (e) {
+            console.warn('loadUsage error', e);
+        }
+    }
+
+    updateSidebarUsage() {
+        const el = this.elements.sidebarUsage;
+        if (!el) return;
+        const u = this.state.usage;
+        if (this.state.user && u) {
+            el.textContent = `Запросов: ${u.used} / ${u.limit} за месяц`;
+            el.style.display = 'block';
+        } else {
+            el.style.display = 'none';
+        }
+    }
+
+    updateSubscriptionModalState() {
+        const modal = document.getElementById('subscription-modal');
+        if (!modal) return;
+        const current = this.state.user ? (this.state.user.subscription || 'free').toLowerCase() : null;
+        modal.querySelectorAll('.subscription-card').forEach(card => {
+            const plan = (card.getAttribute('data-plan') || '').toLowerCase();
+            const btn = card.querySelector('.subscription-plan-btn');
+            if (!btn) return;
+            const isCurrent = current !== null && plan === current;
+            btn.textContent = isCurrent ? 'Текущий план' : 'Выбрать';
+            btn.classList.toggle('secondary', isCurrent);
+            btn.disabled = isCurrent;
+        });
     }
 
     // ==================== ДАШБОРД ====================
@@ -2045,6 +2103,11 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             this.showNotification('Введите сообщение', 'warning');
             return;
         }
+
+        if (!this.state.user) {
+            this.showNotification('Чтобы отправить сообщение, пожалуйста, авторизуйтесь', 'warning');
+            return;
+        }
         
         if (message.startsWith('/')) {
             if (this.handleCommand(message)) {
@@ -2068,6 +2131,22 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             this.showNotification('API не подключен. Проверьте настройки.', 'error');
             this.checkApiStatus();
             return;
+        }
+
+        if (this.state.user) {
+            try {
+                const baseUrl = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
+                const res = await fetch(`${baseUrl}/api/users/me/usage`, { method: 'GET', credentials: 'include' });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.used >= data.limit) {
+                        this.showNotification('Исчерпан лимит запросов на этот месяц. Смените план в «План подписок».', 'warning');
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn('Не удалось проверить лимит запросов', e);
+            }
         }
         
         this.addMessage(message, 'user');
@@ -2116,6 +2195,22 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             }
             
             this.showNotification(`Ответ получен за ${responseTime.toFixed(1)}с ✅`, 'success');
+
+            if (this.state.user) {
+                try {
+                    const baseUrl = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
+                    const incRes = await fetch(`${baseUrl}/api/users/me/usage/increment`, { method: 'POST', credentials: 'include' });
+                    if (incRes.ok) {
+                        const data = await incRes.json();
+                        this.state.usage = { used: data.used, limit: data.limit };
+                        this.updateSidebarUsage();
+                    } else if (incRes.status === 429) {
+                        this.showNotification('Лимит запросов на этот месяц исчерпан.', 'warning');
+                    }
+                } catch (e) {
+                    console.warn('Не удалось обновить счётчик запросов', e);
+                }
+            }
 
             this.triggerHapticFeedback();
             this.updateUI();
@@ -5424,21 +5519,50 @@ hideTypingIndicator() {
         console.log('Hero chips initialized');
     }
 
-    // НОВЫЙ МЕТОД ДЛЯ ПОДПИСОК
     showSubscriptionModal() {
         this.showModal('subscription-modal');
+        this.updateSubscriptionModalState();
     }
 
-    // НОВЫЙ МЕТОД ДЛЯ НАСТРОЙКИ КНОПОК В МОДАЛЬНОМ ОКНЕ ПОДПИСОК
     setupSubscriptionModal() {
         const modal = document.getElementById('subscription-modal');
         if (!modal) return;
-        modal.querySelectorAll('.ios-button').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+        modal.querySelectorAll('.subscription-plan-btn').forEach(btn => {
+            if (btn._subscriptionBound) return;
+            btn._subscriptionBound = true;
+            btn.addEventListener('click', async (e) => {
                 e.preventDefault();
-                const card = e.target.closest('.subscription-card');
-                const plan = card?.querySelector('h3')?.textContent || 'Неизвестный план';
-                this.showNotification(`Вы выбрали план: ${plan} (функционал в разработке)`, 'info');
+                const plan = (btn.getAttribute('data-plan') || 'free').toLowerCase();
+                const current = (this.state.user?.subscription || 'free').toLowerCase();
+                if (plan === current) return;
+                if (!this.state.user) {
+                    this.showNotification('Войдите в аккаунт, чтобы сменить план', 'warning');
+                    return;
+                }
+                const baseUrl = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
+                try {
+                    const response = await fetch(`${baseUrl}/api/users/me/subscription`, {
+                        method: 'PATCH',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ subscription: plan })
+                    });
+                    if (!response.ok) {
+                        const err = await response.json().catch(() => ({}));
+                        this.showNotification(err.message || 'Не удалось сменить план', 'error');
+                        return;
+                    }
+                    const user = await response.json();
+                    this.state.user = user;
+                    this.authService.saveUserToStorage();
+                    this.updateSubscriptionModalState();
+                    this.updateSidebarInfo();
+                    const labels = { free: 'FREE', lite: 'Lite', pro: 'Pro', ultimate: 'Ultimate' };
+                    this.showNotification(`План изменён на ${labels[plan] || plan}`, 'success');
+                    this.hideModal('subscription-modal');
+                } catch (e) {
+                    this.showNotification('Ошибка запроса', 'error');
+                }
             });
         });
     }

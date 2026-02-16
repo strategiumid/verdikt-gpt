@@ -43,6 +43,10 @@ export class AuthService {
         this.app.updateSidebarInfo();
         if (user) {
             setTimeout(() => this.app.loadDashboardData(), 1000);
+            this.app.loadUsage().catch(() => {});
+        } else {
+            this.app.state.usage = null;
+            this.app.updateSidebarUsage && this.app.updateSidebarUsage();
         }
     }
 
