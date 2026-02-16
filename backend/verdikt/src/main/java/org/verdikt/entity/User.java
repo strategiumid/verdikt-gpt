@@ -64,6 +64,11 @@ public class User {
     @Column(name = "banned", nullable = false)
     private boolean banned = false;
 
+    /** Подписка: free, lite, pro, ultimate. По умолчанию free. */
+    @Size(max = 20)
+    @Column(name = "subscription", length = 20)
+    private String subscription = "free";
+
     // --- Геттеры и сеттеры ---
 
     public Long getId() {
@@ -152,5 +157,13 @@ public class User {
 
     public void setBanned(boolean banned) {
         this.banned = banned;
+    }
+
+    public String getSubscription() {
+        return subscription != null ? subscription : "free";
+    }
+
+    public void setSubscription(String subscription) {
+        this.subscription = subscription != null && !subscription.isBlank() ? subscription.trim().toLowerCase() : "free";
     }
 }

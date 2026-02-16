@@ -21,6 +21,7 @@ public class UserResponse {
     private Instant createdAt;
     private String role;
     private Boolean banned;
+    private String subscription;
 
     public static UserResponse from(User user) {
         UserResponse r = new UserResponse();
@@ -34,6 +35,7 @@ public class UserResponse {
         r.setCreatedAt(user.getCreatedAt());
         r.setRole(user.getRole());
         r.setBanned(user.isBanned());
+        r.setSubscription(user.getSubscription());
         return r;
     }
 
@@ -115,5 +117,13 @@ public class UserResponse {
 
     public void setBanned(Boolean banned) {
         this.banned = banned;
+    }
+
+    public String getSubscription() {
+        return subscription;
+    }
+
+    public void setSubscription(String subscription) {
+        this.subscription = subscription;
     }
 }

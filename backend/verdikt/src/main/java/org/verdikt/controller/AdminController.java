@@ -2,6 +2,7 @@ package org.verdikt.controller;
 
 import org.verdikt.dto.QuestionResponse;
 import org.verdikt.dto.SetRoleRequest;
+import org.verdikt.dto.SetSubscriptionRequest;
 import org.verdikt.dto.UserResponse;
 import org.verdikt.entity.User;
 import org.verdikt.service.AdminService;
@@ -71,6 +72,16 @@ public class AdminController {
     ) {
         if (!isAdmin(user)) return forbidden();
         return ResponseEntity.ok(adminService.setUserRole(id, request));
+    }
+
+    @PatchMapping("/users/{id}/subscription")
+    public ResponseEntity<UserResponse> setUserSubscription(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id,
+            @Valid @RequestBody SetSubscriptionRequest request
+    ) {
+        if (!isAdmin(user)) return forbidden();
+        return ResponseEntity.ok(adminService.setUserSubscription(id, request));
     }
 
     @GetMapping("/questions")

@@ -2,6 +2,7 @@ package org.verdikt.service;
 
 import org.verdikt.dto.QuestionResponse;
 import org.verdikt.dto.SetRoleRequest;
+import org.verdikt.dto.SetSubscriptionRequest;
 import org.verdikt.dto.UserResponse;
 import org.verdikt.entity.User;
 import org.verdikt.repository.UserRepository;
@@ -60,6 +61,15 @@ public class AdminService {
             }
         }
         target.setRole(request.getRole().trim());
+        target = userRepository.save(target);
+        return UserResponse.from(target);
+    }
+
+    @Transactional
+    public UserResponse setUserSubscription(Long targetId, SetSubscriptionRequest request) {
+        User target = userRepository.findById(targetId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь не найден"));
+        target.setSubscription(request.getSubscription());
         target = userRepository.save(target);
         return UserResponse.from(target);
     }
