@@ -20,6 +20,7 @@ public class QuestionResponse {
     private long commentsCount;
     private Boolean isLiked;
     private Boolean isDisliked;
+    private Boolean resolved;
 
     public static QuestionResponse from(Question question) {
         QuestionResponse r = new QuestionResponse();
@@ -31,6 +32,7 @@ public class QuestionResponse {
             r.setAuthorEmail(question.getAuthor().getEmail());
             r.setAuthorName(question.getAuthor().getName());
         }
+        r.setResolved(question.isResolved());
         return r;
     }
 
@@ -120,6 +122,14 @@ public class QuestionResponse {
 
     public void setIsDisliked(Boolean isDisliked) {
         this.isDisliked = isDisliked;
+    }
+
+    public Boolean getResolved() {
+        return resolved;
+    }
+
+    public void setResolved(Boolean resolved) {
+        this.resolved = resolved;
     }
 }
 

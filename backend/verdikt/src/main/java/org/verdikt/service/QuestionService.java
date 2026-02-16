@@ -70,6 +70,15 @@ public class QuestionService {
         questionRepository.deleteById(questionId);
     }
 
+    @Transactional
+    public QuestionResponse setResolved(Long questionId, boolean resolved) {
+        Question question = questionRepository.findById(questionId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Вопрос не найден"));
+        question.setResolved(resolved);
+        question = questionRepository.save(question);
+        return toResponse(question, null);
+    }
+
     private QuestionResponse toResponse(Question question, User currentUser) {
         QuestionResponse r = QuestionResponse.from(question);
         long likes = reactionRepository.countByQuestionIdAndType(question.getId(), QuestionReaction.Type.LIKE);

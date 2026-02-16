@@ -83,4 +83,9 @@ public class AdminService {
     public void deleteQuestion(Long questionId) {
         questionService.deleteQuestion(questionId);
     }
+
+    @Transactional
+    public QuestionResponse setQuestionResolved(Long questionId, boolean resolved) {
+        return questionService.setResolved(questionId, resolved);
+    }
 }

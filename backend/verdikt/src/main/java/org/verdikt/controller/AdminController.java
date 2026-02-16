@@ -102,4 +102,15 @@ public class AdminController {
         adminService.deleteQuestion(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/questions/{id}/resolve")
+    public ResponseEntity<QuestionResponse> setQuestionResolved(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id,
+            @RequestBody(required = false) java.util.Map<String, Boolean> body
+    ) {
+        if (!isAdmin(user)) return forbidden();
+        boolean resolved = body != null && Boolean.TRUE.equals(body.get("resolved"));
+        return ResponseEntity.ok(adminService.setQuestionResolved(id, resolved));
+    }
 }

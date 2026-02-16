@@ -29,6 +29,9 @@ public class Question {
     @JoinColumn(name = "author_id", nullable = false)
     private User author;
 
+    @Column(name = "resolved", nullable = false)
+    private boolean resolved = false;
+
     public Long getId() {
         return id;
     }
@@ -59,6 +62,14 @@ public class Question {
 
     public void setAuthor(User author) {
         this.author = author;
+    }
+
+    public boolean isResolved() {
+        return resolved;
+    }
+
+    public void setResolved(boolean resolved) {
+        this.resolved = resolved;
     }
 }
 
