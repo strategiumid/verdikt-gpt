@@ -282,7 +282,8 @@ export class APIClient {
                                 dislikes: q.dislikesCount ?? 0,
                                 comments: q.commentsCount ?? 0,
                                 isLiked: q.isLiked ?? false,
-                                isDisliked: q.isDisliked ?? false
+                                isDisliked: q.isDisliked ?? false,
+                                isResolved: q.resolved ?? false
                             }));
                         }
                     } else if (response.status !== 404) {

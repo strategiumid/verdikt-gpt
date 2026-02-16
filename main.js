@@ -4921,7 +4921,7 @@ hideTypingIndicator() {
                             <i class="fas fa-user-slash"></i> Забанить пользователя
                         </button>
                         <button class="action-btn" data-action="admin-resolve" data-question-id="${question.id}">
-                            <i class="fas fa-check"></i> Отметить как решенный
+                            <i class="fas fa-${question.isResolved ? 'undo' : 'check'}"></i> ${question.isResolved ? 'Снять отметку' : 'Отметить как решенный'}
                         </button>
                     </div>
                     <div class="comments-count" data-question-id="${question.id}">
@@ -4982,14 +4982,31 @@ hideTypingIndicator() {
         });
 
         adminList.querySelectorAll('[data-action="admin-resolve"]').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', async () => {
                 const id = btn.getAttribute('data-question-id');
                 if (!id) return;
                 const question = this.dashboard.questions.find(q => String(q.id) === String(id));
                 if (!question) return;
-                question.isResolved = true;
-                this.showNotification('Вопрос отмечен как решенный (локально)', 'success');
-                this.renderAdminQuestions();
+                const resolved = !question.isResolved;
+                const baseUrl = (window.VERDIKT_BACKEND_URL || window.location.origin).replace(/\/$/, '');
+                try {
+                    const response = await fetch(`${baseUrl}/api/admin/questions/${id}/resolve`, {
+                        method: 'PATCH',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ resolved })
+                    });
+                    if (!response.ok) {
+                        const msg = await response.text().catch(() => '');
+                        this.showNotification(msg || (response.status === 403 ? 'Нет прав' : 'Ошибка'), 'error');
+                        return;
+                    }
+                    this.showNotification(resolved ? 'Вопрос отмечен как решённый' : 'Снята отметка о решении', 'success');
+                    await this.loadDashboardData();
+                    this.renderAdminQuestions();
+                } catch (e) {
+                    this.showNotification('Ошибка запроса', 'error');
+                }
             });
         });
 
