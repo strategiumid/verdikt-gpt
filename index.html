@@ -99,16 +99,16 @@
         width: 320px;
         height: 100vh;
         height: 100dvh;
-        background: #1a1a1a;
+        background: #000000;
         border-right: 1px solid rgba(255, 255, 255, 0.06);
         z-index: 1000;
         overflow-y: auto;
         overflow-x: hidden;
         display: flex;
         flex-direction: column;
-        transform: translateX(-100%);
-        transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1),
-                    box-shadow 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+        transform: translateX(0);
+        transition: box-shadow 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+        box-shadow: 16px 0 48px rgba(0, 0, 0, 0.4);
     }
 
     .sidebar.active {
@@ -671,7 +671,7 @@
     @media (max-width: 480px) {
         .sidebar {
             width: 100%;
-            left: -100%;
+            left: 0;
         }
 
         .stats-summary {
@@ -1201,7 +1201,7 @@
                 </div>
             </div>
 
-            <div class="nav-section">
+            <!-- <div class="nav-section">
                 <h4>Взаимодействие</h4>
                 <div class="nav-item" id="nav-questions">
                     <i class="fas fa-question-circle"></i>
@@ -1218,7 +1218,7 @@
                     <span>Комментарии</span>
                     <span class="badge comments" id="comments-badge">0</span>
                 </div>
-            </div>
+            </div> -->
 
             <div class="nav-section">
                 <h4>Настройки</h4>
@@ -1237,7 +1237,7 @@
             </div>
         </div>
 
-        <div class="sidebar-footer">
+        <!-- <div class="sidebar-footer">
             <div class="sidebar-footer-row">
                 <div class="stats-summary" style="flex: 1;">
                 <div class="stat-mini">
@@ -1264,7 +1264,7 @@
             <button class="ios-button secondary" id="logout-sidebar" style="width: 100%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
                 <i class="fas fa-sign-out-alt"></i> Выйти
             </button>
-        </div>
+        </div> -->
     </div>
 
     <button class="sidebar-toggle" id="sidebar-toggle">

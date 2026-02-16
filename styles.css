@@ -95,6 +95,7 @@ body {
     max-width: 1200px;
     width: 100%;
     margin: 0 auto;
+    margin-left: 320px; /* Отступ для сайдбара */
     padding: 0;
     padding-left: max(20px, env(safe-area-inset-left));
     padding-right: max(20px, env(safe-area-inset-right));
@@ -1942,6 +1943,7 @@ footer {
 @media (max-width: 1100px) {
     .container {
         max-width: 100%;
+        margin-left: 320px; /* Отступ для сайдбара */
         padding: 15px;
     }
     
@@ -1953,6 +1955,7 @@ footer {
 
 @media (max-width: 768px) {
     .container {
+        margin-left: 280px; /* Отступ для сайдбара на планшетах */
         padding: 12px;
         padding-left: max(12px, env(safe-area-inset-left));
         padding-right: max(12px, env(safe-area-inset-right));
@@ -2143,6 +2146,7 @@ footer {
 /* Телефоны: узкие экраны */
 @media (max-width: 480px) {
     .container {
+        margin-left: 0; /* На мобильных сайдбар overlay, не нужен отступ */
         padding: 10px;
         padding-left: max(10px, env(safe-area-inset-left));
         padding-right: max(10px, env(safe-area-inset-right));
