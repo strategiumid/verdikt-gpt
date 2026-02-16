@@ -3,12 +3,16 @@ package org.verdikt.service;
 import org.verdikt.dto.LoginRequest;
 import org.verdikt.dto.LoginResponse;
 import org.verdikt.dto.RegisterRequest;
+import org.verdikt.dto.SetSubscriptionRequest;
 import org.verdikt.dto.SettingsResponse;
 import org.verdikt.dto.UpdateProfileRequest;
 import org.verdikt.dto.UpdateSettingsRequest;
+import org.verdikt.dto.UsageResponse;
 import org.verdikt.dto.UserResponse;
 import org.verdikt.entity.User;
 import org.verdikt.repository.UserRepository;
+
+import java.time.YearMonth;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -125,6 +129,72 @@ public class UserService {
         user = userRepository.save(user);
         SettingsResponse r = new SettingsResponse();
         r.setTheme(user.getTheme());
+        return r;
+    }
+
+    /**
+     * Смена плана подписки пользователя (для себя — /api/users/me/subscription).
+     */
+    @Transactional
+    public UserResponse updateSubscription(Long userId, SetSubscriptionRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь не найден"));
+        user.setSubscription(request.getSubscription());
+        user = userRepository.save(user);
+        return UserResponse.from(user);
+    }
+
+    private static final int LIMIT_FREE = 5;
+    private static final int LIMIT_LITE = 20;
+    private static final int LIMIT_PRO = 100;
+    private static final int LIMIT_ULTIMATE = 300;
+
+    private int getUsageLimit(String subscription) {
+        if (subscription == null) return LIMIT_FREE;
+        switch (subscription.trim().toLowerCase()) {
+            case "lite": return LIMIT_LITE;
+            case "pro": return LIMIT_PRO;
+            case "ultimate": return LIMIT_ULTIMATE;
+            default: return LIMIT_FREE;
+        }
+    }
+
+    private void ensureUsagePeriod(User user) {
+        String current = YearMonth.now().toString();
+        if (current.equals(user.getUsagePeriodStart())) return;
+        user.setUsagePeriodStart(current);
+        user.setAiRequestsUsed(0);
+    }
+
+    @Transactional
+    public UsageResponse getUsage(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь не найден"));
+        ensureUsagePeriod(user);
+        userRepository.save(user);
+        UsageResponse r = new UsageResponse();
+        r.setUsed(user.getAiRequestsUsed());
+        r.setLimit(getUsageLimit(user.getSubscription()));
+        r.setPeriodStart(user.getUsagePeriodStart());
+        return r;
+    }
+
+    @Transactional
+    public UsageResponse incrementAiRequests(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь не найден"));
+        ensureUsagePeriod(user);
+        int limit = getUsageLimit(user.getSubscription());
+        if (user.getAiRequestsUsed() >= limit) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                    "Исчерпан лимит запросов на этот месяц. Обновите план подписки.");
+        }
+        user.setAiRequestsUsed(user.getAiRequestsUsed() + 1);
+        user = userRepository.save(user);
+        UsageResponse r = new UsageResponse();
+        r.setUsed(user.getAiRequestsUsed());
+        r.setLimit(limit);
+        r.setPeriodStart(user.getUsagePeriodStart());
         return r;
     }
 }
