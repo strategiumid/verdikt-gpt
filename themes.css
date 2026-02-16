@@ -29,10 +29,15 @@
 }
 
 /* Дополнительные элементы стиля для DeepSeek темы */
-[data-theme="deepseek"] .grid-pattern {
-    background-image: 
-        linear-gradient(rgba(45, 140, 255, 0.1) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(45, 140, 255, 0.1) 1px, transparent 1px);
+[data-theme="deepseek"] .starfall-line {
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        rgba(45, 140, 255, 0.08) 20%,
+        rgba(45, 140, 255, 0.4) 50%,
+        rgba(45, 140, 255, 0.85) 70%,
+        transparent 100%
+    );
 }
 
 [data-theme="deepseek"] .heart {
