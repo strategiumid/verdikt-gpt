@@ -12,6 +12,8 @@ import org.verdikt.entity.User;
 import org.verdikt.repository.QuestionCommentRepository;
 import org.verdikt.repository.QuestionReactionRepository;
 import org.verdikt.repository.QuestionRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +52,22 @@ public class QuestionService {
         return questions.stream()
                 .map(q -> toResponse(q, currentUser))
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<QuestionResponse> getQuestionsPage(Pageable pageable, User currentUser) {
+        return questionRepository.findAllByOrderByCreatedAtDesc(pageable)
+                .map(q -> toResponse(q, currentUser));
+    }
+
+    @Transactional
+    public void deleteQuestion(Long questionId) {
+        if (!questionRepository.existsById(questionId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Вопрос не найден");
+        }
+        reactionRepository.deleteByQuestionId(questionId);
+        commentRepository.deleteByQuestionId(questionId);
+        questionRepository.deleteById(questionId);
     }
 
     private QuestionResponse toResponse(Question question, User currentUser) {
