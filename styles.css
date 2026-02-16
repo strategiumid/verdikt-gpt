@@ -480,6 +480,21 @@ body {
     line-height: 1.6;
 }
 
+.typing-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1.1em;
+    background: var(--primary, #a855f7);
+    margin-left: 1px;
+    vertical-align: text-bottom;
+    animation: typing-cursor-blink 0.9s step-end infinite;
+}
+
+@keyframes typing-cursor-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
 .message-content pre {
     background: rgba(0, 0, 0, 0.3);
     border-radius: var(--radius-sm);

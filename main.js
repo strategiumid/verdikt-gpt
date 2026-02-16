@@ -2067,7 +2067,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             
             this.hideTypingIndicator();
             
-            this.addMessage(aiResponse, 'ai');
+            this.addAiMessageWithTypingEffect(aiResponse);
             this.state.conversationHistory.push({ role: "assistant", content: aiResponse });
             this.state.stats.totalMessages++;
             this.state.stats.aiMessages++;
@@ -2208,6 +2208,67 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         if (heroBlock) {
             heroBlock.style.display = 'none';
         }
+    }
+
+    addAiMessageWithTypingEffect(fullText) {
+        const messageId = 'msg-' + Date.now();
+        const time = this.getCurrentTime();
+
+        const messageElement = document.createElement('div');
+        messageElement.className = 'message ai-message ai-message-typing';
+        messageElement.id = messageId;
+        messageElement.style.opacity = '1';
+        messageElement.style.transform = 'translateY(0)';
+
+        messageElement.innerHTML = `
+            <div class="message-actions">
+                <button class="message-action" onclick="window.verdiktApp.copyMessage('${messageId}')">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <button class="message-action" onclick="window.verdiktApp.speakMessage('${messageId}')">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+                <button class="message-action" onclick="window.verdiktApp.regenerateMessage('${messageId}')">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+            <div class="message-sender">
+                <i class="fas fa-heart"></i> Эксперт по отношениям
+            </div>
+            <div class="message-content"><span class="typing-cursor"></span></div>
+            <div class="message-time">${time}</div>
+        `;
+
+        this.elements.chatMessages.appendChild(messageElement);
+        this.scrollToBottom();
+
+        const heroBlock = document.getElementById('hero-block');
+        if (heroBlock) heroBlock.style.display = 'none';
+
+        const contentEl = messageElement.querySelector('.message-content');
+        const cursorHtml = '<span class="typing-cursor"></span>';
+        const chunkMin = 1;
+        const chunkMax = 3;
+        const delayMs = 12;
+        let index = 0;
+
+        const typeNext = () => {
+            if (index >= fullText.length) {
+                contentEl.innerHTML = this.formatMessage(fullText);
+                messageElement.classList.remove('ai-message-typing');
+                setTimeout(() => hljs.highlightAll(), 50);
+                this.scrollToBottom();
+                return;
+            }
+            const chunkSize = Math.min(chunkMin + Math.floor(Math.random() * (chunkMax - chunkMin + 1)), fullText.length - index);
+            index += chunkSize;
+            const accumulated = fullText.slice(0, index);
+            contentEl.innerHTML = this.formatMessage(accumulated) + cursorHtml;
+            this.scrollToBottom();
+            setTimeout(typeNext, delayMs);
+        };
+
+        setTimeout(typeNext, 80);
     }
 
     formatMessage(text) {
