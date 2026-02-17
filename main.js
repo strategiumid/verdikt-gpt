@@ -2707,9 +2707,10 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
 
         const positionDropdown = () => {
             const rect = inputBar.getBoundingClientRect();
-            container.style.top = (rect.bottom - 14) + 'px';
+            container.style.top = rect.top + 'px';
             container.style.left = rect.left + 'px';
             container.style.width = Math.max(rect.width, 280) + 'px';
+            container.style.transform = 'translateY(-100%)';
         };
 
         const hideDropdown = () => {
