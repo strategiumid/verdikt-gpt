@@ -2683,29 +2683,29 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
 
     setupT9Suggestions() {
         const input = this.elements.messageInput;
-        if (!input) {
-            console.warn('T9: messageInput not found');
-            return;
-        }
+        if (!input) return;
+
+        const inputBar = input.closest('.input-container-extended');
+        if (!inputBar) return;
 
         let container = document.getElementById('t9-suggestions');
         if (!container) {
-            console.warn('T9: container not found, creating...');
-            const inputContainer = input.closest('.input-container-extended');
-            if (inputContainer) {
-                container = document.createElement('div');
-                container.id = 't9-suggestions';
-                container.className = 't9-dropdown';
-                container.setAttribute('role', 'listbox');
-                container.setAttribute('aria-label', 'Подсказки');
-                inputContainer.appendChild(container);
-            } else {
-                console.error('T9: input-container-extended not found');
-                return;
-            }
+            container = document.createElement('div');
+            container.id = 't9-suggestions';
+            container.className = 't9-dropdown t9-dropdown-fixed';
+            container.setAttribute('role', 'listbox');
+            container.setAttribute('aria-label', 'Подсказки');
+            document.body.appendChild(container);
         }
 
         let t9Debounce = null;
+
+        const positionDropdown = () => {
+            const rect = inputBar.getBoundingClientRect();
+            container.style.top = (rect.bottom - 14) + 'px';
+            container.style.left = rect.left + 'px';
+            container.style.width = rect.width + 'px';
+        };
 
         const updateSuggestions = () => {
             try {
@@ -2760,38 +2760,27 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
                     container.appendChild(item);
                 });
                 
+                positionDropdown();
                 container.classList.add('has-suggestions');
-            } catch (error) {
-                console.error('T9 updateSuggestions error:', error);
+            } catch (err) {
+                console.error('T9 error:', err);
             }
         };
 
-        const handleInput = (e) => {
+        const handleInput = () => {
             if (input.style) {
                 input.style.height = 'auto';
                 input.style.height = Math.min(input.scrollHeight, 200) + 'px';
             }
             clearTimeout(t9Debounce);
-            t9Debounce = setTimeout(() => {
-                updateSuggestions();
-            }, 50);
+            t9Debounce = setTimeout(updateSuggestions, 50);
         };
 
         input.addEventListener('input', handleInput);
         input.addEventListener('keyup', handleInput);
-        input.addEventListener('keydown', (e) => {
-            if (e.key !== 'Enter' || e.shiftKey) {
-                handleInput(e);
-            }
-        });
-        
         input.addEventListener('focus', () => {
-            const text = (input.value || '').trim();
-            if (text.length >= 1) {
-                updateSuggestions();
-            }
+            if ((input.value || '').trim().length >= 1) updateSuggestions();
         });
-
         input.addEventListener('blur', () => {
             clearTimeout(t9Debounce);
             setTimeout(() => {
@@ -2801,14 +2790,19 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             }, 200);
         });
 
+        window.addEventListener('scroll', () => {
+            if (container.classList.contains('has-suggestions')) positionDropdown();
+        }, true);
+        window.addEventListener('resize', () => {
+            if (container.classList.contains('has-suggestions')) positionDropdown();
+        });
+
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && container.classList.contains('has-suggestions')) {
                 container.innerHTML = '';
                 container.classList.remove('has-suggestions');
             }
         });
-        
-        console.log('T9 suggestions initialized');
     }
 
     togglePresentationMode() {

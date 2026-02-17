@@ -753,13 +753,6 @@ body.sidebar-collapsed .container {
 .t9-dropdown {
     display: none !important;
     flex-direction: column;
-    position: absolute;
-    top: calc(100% - 14px);
-    left: 0;
-    right: 0;
-    width: calc(100% - 40px);
-    margin-left: 0;
-    margin-right: 0;
     padding: 6px 0;
     background: rgba(28, 28, 30, 0.98);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -769,8 +762,15 @@ body.sidebar-collapsed .container {
     overflow-y: auto;
     overflow-x: hidden;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-    z-index: 1000;
+    z-index: 10000;
     backdrop-filter: blur(20px);
+}
+
+.t9-dropdown-fixed {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 300px;
 }
 
 .t9-dropdown.has-suggestions {
