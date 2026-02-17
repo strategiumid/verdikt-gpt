@@ -383,33 +383,76 @@ body.sidebar-collapsed .container {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform: scale(1);
 }
 
 .animated-sphere:hover {
-    /* Эффекты при наведении */
+    transform: scale(1.05);
+    animation: sphereAttract 2s ease-in-out infinite;
+}
+
+.animated-sphere:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+}
+
+@keyframes sphereAttract {
+    0%, 100% {
+        transform: scale(1.05);
+    }
+    50% {
+        transform: scale(1.08);
+    }
 }
 
 .animated-sphere:hover .sphere-core {
     box-shadow: 
-        0 0 80px rgba(0, 0, 0, 0.8),
-        inset 0 0 100px rgba(0, 0, 0, 0.95),
+        0 0 100px rgba(0, 0, 0, 0.9),
+        inset 0 0 120px rgba(0, 0, 0, 0.95),
         inset -30px -30px 60px rgba(0, 0, 0, 0.7),
-        inset 30px 30px 60px rgba(255, 255, 255, 0.05);
+        inset 30px 30px 60px rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%) scale(1.05);
 }
 
 .animated-sphere:hover .sphere-ring-1,
 .animated-sphere:hover .sphere-ring-2,
 .animated-sphere:hover .sphere-ring-3 {
-    opacity: 0.8;
+    opacity: 0.9;
     filter: blur(0.5px);
-    box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+    border-width: 3px;
+}
+
+.animated-sphere:hover .sphere-ring-1 {
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.animated-sphere:hover .sphere-ring-2 {
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+.animated-sphere:hover .sphere-ring-3 {
+    border-color: rgba(255, 255, 255, 0.3);
 }
 
 .animated-sphere:hover .particle {
     opacity: 1;
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.6),
-                0 0 8px rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.8),
+                0 0 10px rgba(255, 255, 255, 0.6);
+    transform: scale(1.2);
+}
+
+.animated-sphere:hover .sphere-glow {
+    opacity: 0.9;
+    filter: blur(35px);
+    width: 280px;
+    height: 280px;
+}
+
+.animated-sphere:hover .sphere-wave {
+    opacity: 0.8;
+    animation-duration: 1.5s;
 }
 
 /* Эффект черной дыры - искажение пространства с белым свечением */
@@ -481,12 +524,86 @@ body.sidebar-collapsed .container {
     border: 2px solid rgba(255, 255, 255, 0.2);
     animation: spherePulse 4s ease-in-out infinite;
     z-index: 2;
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     opacity: 0.9;
     /* Убеждаемся что элемент идеально круглый */
     aspect-ratio: 1 / 1;
     min-width: 150px;
     min-height: 150px;
+}
+
+/* Волны внутри сферы */
+.sphere-waves {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.sphere-wave {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    aspect-ratio: 1 / 1;
+    opacity: 0;
+    animation: wavePulse 3s ease-out infinite;
+}
+
+.sphere-wave-1 {
+    width: 160px;
+    height: 160px;
+    min-width: 160px;
+    min-height: 160px;
+    animation-delay: 0s;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.sphere-wave-2 {
+    width: 190px;
+    height: 190px;
+    min-width: 190px;
+    min-height: 190px;
+    animation-delay: 0.5s;
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+.sphere-wave-3 {
+    width: 220px;
+    height: 220px;
+    min-width: 220px;
+    min-height: 220px;
+    animation-delay: 1s;
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.sphere-wave-4 {
+    width: 250px;
+    height: 250px;
+    min-width: 250px;
+    min-height: 250px;
+    animation-delay: 1.5s;
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+@keyframes wavePulse {
+    0% {
+        transform: translate(-50%, -50%) scale(0.8);
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 0.4;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1.3);
+        opacity: 0;
+    }
 }
 
 /* Внешнее свечение ядра - идеально круглое */
@@ -518,12 +635,12 @@ body.sidebar-collapsed .container {
 
 @keyframes coreGlow {
     0%, 100% {
-        opacity: 0.6;
+        opacity: 0.7;
         transform: translate(-50%, -50%) scale(1);
     }
     50% {
         opacity: 1;
-        transform: translate(-50%, -50%) scale(1.1);
+        transform: translate(-50%, -50%) scale(1.15);
     }
 }
 
@@ -717,16 +834,18 @@ body.sidebar-collapsed .container {
             0 0 60px rgba(0, 0, 0, 0.6),
             inset 0 0 80px rgba(0, 0, 0, 0.8),
             inset -30px -30px 60px rgba(0, 0, 0, 0.6),
-            inset 30px 30px 60px rgba(255, 255, 255, 0.1);
+            inset 30px 30px 60px rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.2);
     }
     50% {
-        transform: translate(-50%, -50%) scale(1.02);
+        transform: translate(-50%, -50%) scale(1.03);
         box-shadow: 
             0 0 120px rgba(0, 0, 0, 0.8),
             0 0 80px rgba(0, 0, 0, 0.7),
             inset 0 0 100px rgba(0, 0, 0, 0.85),
             inset -30px -30px 60px rgba(0, 0, 0, 0.6),
-            inset 30px 30px 60px rgba(255, 255, 255, 0.12);
+            inset 30px 30px 60px rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.3);
     }
 }
 
