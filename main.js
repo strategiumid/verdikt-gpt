@@ -788,6 +788,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         if (heroBlock) {
             heroBlock.style.display = 'flex';
         }
+        this.syncInputPosition();
 
         this.elements.chatMessages.innerHTML = '';
 
@@ -860,6 +861,12 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             this.elements.chatMessages.appendChild(messageElement);
         });
         
+        const heroBlock = document.getElementById('hero-block');
+        if (heroBlock) {
+            heroBlock.style.display = chat.messages.length > 0 ? 'none' : 'flex';
+        }
+        this.syncInputPosition();
+
         this.showNotification(`Загружен чат: ${chat.title}`, 'success');
         this.scrollToBottom();
         this.updateUI();
@@ -2882,6 +2889,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         if (heroBlock) {
             heroBlock.style.display = 'none';
         }
+        this.syncInputPosition();
     }
 
     addAiMessageWithTypingEffect(fullText) {
@@ -2918,6 +2926,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
 
         const heroBlock = document.getElementById('hero-block');
         if (heroBlock) heroBlock.style.display = 'none';
+        this.syncInputPosition();
 
         const contentEl = messageElement.querySelector('.message-content');
         const cursorHtml = '<span class="typing-cursor"></span>';
@@ -3004,6 +3013,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             this.state.conversationHistory = [this.createSystemPromptMessage()];
             const heroBlock = document.getElementById('hero-block');
             if (heroBlock) heroBlock.style.display = 'flex';
+            this.syncInputPosition();
             this.elements.chatMessages.innerHTML = '';
             this.saveChats();
             this.showNotification('Чат очищен 🗑️', 'info');
@@ -3770,6 +3780,15 @@ hideApiLoadingEffect() {
     const overlay = document.getElementById('api-loading-overlay');
     if (overlay) {
         overlay.classList.remove('active');
+    }
+}
+
+syncInputPosition() {
+    const heroBlock = document.getElementById('hero-block');
+    const chatContainer = document.querySelector('.chat-container');
+    if (heroBlock && chatContainer) {
+        const isCentered = heroBlock.style.display !== 'none';
+        chatContainer.classList.toggle('input-centered', isCentered);
     }
 }
 

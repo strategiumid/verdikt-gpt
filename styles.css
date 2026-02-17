@@ -349,6 +349,34 @@ body.sidebar-collapsed .container {
     min-height: 0;
 }
 
+/* Поле ввода по центру при пустом чате, плавно уходит вниз при начале чата */
+.chat-container .input-container-extended {
+    position: absolute;
+    left: 50%;
+    width: min(720px, calc(100% - 64px));
+    max-width: calc(100% - 64px);
+    margin-left: 0;
+    transition: top 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+                bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chat-container.input-centered .input-container-extended {
+    top: 50%;
+    bottom: auto;
+    transform: translate(-50%, -50%);
+}
+
+.chat-container:not(.input-centered) .input-container-extended {
+    top: auto;
+    bottom: 20px;
+    transform: translate(-50%, 0);
+}
+
+.chat-container:not(.input-centered) .chat-messages {
+    padding-bottom: 100px;
+}
+
 /* Hero-блок (пустое состояние) */
 .hero-block {
     flex: 1 0 auto;
