@@ -384,21 +384,14 @@ body.sidebar-collapsed .container {
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s ease;
-    filter: drop-shadow(0 0 60px rgba(255, 255, 255, 0.2)) 
-            drop-shadow(0 0 100px rgba(255, 255, 255, 0.15))
-            drop-shadow(0 0 40px rgba(0, 0, 0, 0.6));
 }
 
 .animated-sphere:hover {
-    filter: drop-shadow(0 0 80px rgba(255, 255, 255, 0.3)) 
-            drop-shadow(0 0 120px rgba(255, 255, 255, 0.25))
-            drop-shadow(0 0 60px rgba(0, 0, 0, 0.7));
+    /* Эффекты при наведении */
 }
 
 .animated-sphere:hover .sphere-core {
     box-shadow: 
-        0 0 150px rgba(255, 255, 255, 0.15),
-        0 0 100px rgba(255, 255, 255, 0.1),
         0 0 80px rgba(0, 0, 0, 0.8),
         inset 0 0 100px rgba(0, 0, 0, 0.95),
         inset -30px -30px 60px rgba(0, 0, 0, 0.7),
@@ -429,10 +422,11 @@ body.sidebar-collapsed .container {
     width: 300px;
     height: 300px;
     border-radius: 50%;
-    background: radial-gradient(circle, 
-        rgba(255, 255, 255, 0.08) 0%,
-        rgba(255, 255, 255, 0.05) 20%,
-        transparent 30%,
+    background: radial-gradient(circle at center, 
+        rgba(255, 255, 255, 0.1) 0%,
+        rgba(255, 255, 255, 0.08) 15%,
+        rgba(255, 255, 255, 0.05) 25%,
+        transparent 35%,
         rgba(0, 0, 0, 0.05) 50%,
         rgba(0, 0, 0, 0.2) 70%,
         rgba(0, 0, 0, 0.4) 100%);
@@ -440,19 +434,17 @@ body.sidebar-collapsed .container {
     pointer-events: none;
     z-index: 1;
     transition: all 0.3s ease;
-    box-shadow: 0 0 80px rgba(255, 255, 255, 0.15),
-                0 0 120px rgba(255, 255, 255, 0.1),
-                inset 0 0 60px rgba(255, 255, 255, 0.05);
     opacity: 0.7;
+    /* Убеждаемся что элемент идеально круглый */
+    aspect-ratio: 1 / 1;
+    min-width: 300px;
+    min-height: 300px;
 }
 
 .animated-sphere:hover::before {
     width: 320px;
     height: 320px;
     opacity: 0.85;
-    box-shadow: 0 0 100px rgba(255, 255, 255, 0.25),
-                0 0 150px rgba(255, 255, 255, 0.15),
-                inset 0 0 80px rgba(255, 255, 255, 0.1);
 }
 
 @keyframes blackHoleDistortion {
@@ -475,15 +467,13 @@ body.sidebar-collapsed .container {
     width: 150px;
     height: 150px;
     border-radius: 50%;
-    background: radial-gradient(circle at 50% 50%, 
+    background: radial-gradient(circle at center, 
         rgba(0, 0, 0, 0.85) 0%,
         rgba(0, 0, 0, 0.8) 30%,
         rgba(10, 10, 10, 0.75) 50%,
         rgba(0, 0, 0, 0.8) 70%,
         rgba(0, 0, 0, 0.85) 100%);
     box-shadow: 
-        0 0 100px rgba(255, 255, 255, 0.2),
-        0 0 60px rgba(255, 255, 255, 0.15),
         0 0 80px rgba(0, 0, 0, 0.7),
         inset 0 0 60px rgba(0, 0, 0, 0.7),
         inset -30px -30px 60px rgba(0, 0, 0, 0.6),
@@ -493,27 +483,37 @@ body.sidebar-collapsed .container {
     z-index: 2;
     transition: all 0.3s ease;
     opacity: 0.9;
+    /* Убеждаемся что элемент идеально круглый */
+    aspect-ratio: 1 / 1;
+    min-width: 150px;
+    min-height: 150px;
 }
 
-/* Внешнее свечение ядра */
+/* Внешнее свечение ядра - идеально круглое */
 .sphere-core::after {
     content: '';
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 180px;
-    height: 180px;
+    width: 200px;
+    height: 200px;
     border-radius: 50%;
-    background: radial-gradient(circle,
+    background: radial-gradient(circle at center,
         transparent 0%,
-        rgba(255, 255, 255, 0.1) 40%,
-        rgba(255, 255, 255, 0.08) 60%,
-        transparent 100%);
+        rgba(255, 255, 255, 0.12) 35%,
+        rgba(255, 255, 255, 0.1) 45%,
+        rgba(255, 255, 255, 0.08) 55%,
+        rgba(255, 255, 255, 0.05) 65%,
+        transparent 80%);
     animation: coreGlow 3s ease-in-out infinite;
     z-index: -1;
-    filter: blur(15px);
+    filter: blur(20px);
     opacity: 0.7;
+    /* Убеждаемся что элемент идеально круглый */
+    aspect-ratio: 1 / 1;
+    min-width: 200px;
+    min-height: 200px;
 }
 
 @keyframes coreGlow {
@@ -571,56 +571,63 @@ body.sidebar-collapsed .container {
     animation: ringRotate 15s linear infinite;
     filter: blur(0.5px);
     transition: all 0.3s ease;
+    /* Убеждаемся что кольца идеально круглые */
+    aspect-ratio: 1 / 1;
 }
 
 .sphere-ring-1 {
     width: 180px;
     height: 180px;
+    min-width: 180px;
+    min-height: 180px;
     border-color: rgba(255, 255, 255, 0.3);
     animation-duration: 8s;
     animation-direction: normal;
-    box-shadow: 0 0 30px rgba(255, 255, 255, 0.2),
-                0 0 15px rgba(255, 255, 255, 0.15);
 }
 
 .sphere-ring-2 {
     width: 210px;
     height: 210px;
+    min-width: 210px;
+    min-height: 210px;
     border-color: rgba(255, 255, 255, 0.25);
     animation-duration: 12s;
     animation-direction: reverse;
-    box-shadow: 0 0 25px rgba(255, 255, 255, 0.15),
-                0 0 12px rgba(255, 255, 255, 0.1);
 }
 
 .sphere-ring-3 {
     width: 240px;
     height: 240px;
+    min-width: 240px;
+    min-height: 240px;
     border-color: rgba(255, 255, 255, 0.2);
     animation-duration: 18s;
     animation-direction: normal;
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.1),
-                0 0 10px rgba(255, 255, 255, 0.08);
 }
 
-/* Свечение вокруг сферы с белым ореолом */
+/* Свечение вокруг сферы с белым ореолом - идеально круглое */
 .sphere-glow {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 200px;
-    height: 200px;
+    width: 250px;
+    height: 250px;
     border-radius: 50%;
-    background: radial-gradient(circle, 
-        rgba(255, 255, 255, 0.15) 0%,
-        rgba(255, 255, 255, 0.1) 30%,
-        rgba(0, 0, 0, 0.1) 50%,
-        transparent 100%);
+    background: radial-gradient(circle at center, 
+        rgba(255, 255, 255, 0.2) 0%,
+        rgba(255, 255, 255, 0.15) 25%,
+        rgba(255, 255, 255, 0.1) 40%,
+        rgba(255, 255, 255, 0.05) 55%,
+        transparent 70%);
     animation: glowPulse 3s ease-in-out infinite;
-    filter: blur(25px);
+    filter: blur(30px);
     z-index: 0;
-    opacity: 0.6;
+    opacity: 0.7;
+    /* Убеждаемся что элемент идеально круглый */
+    aspect-ratio: 1 / 1;
+    min-width: 250px;
+    min-height: 250px;
 }
 
 /* Частицы вокруг сферы */
@@ -706,8 +713,6 @@ body.sidebar-collapsed .container {
     0%, 100% {
         transform: translate(-50%, -50%) scale(1);
         box-shadow: 
-            0 0 120px rgba(255, 255, 255, 0.25),
-            0 0 80px rgba(255, 255, 255, 0.2),
             0 0 100px rgba(0, 0, 0, 0.7),
             0 0 60px rgba(0, 0, 0, 0.6),
             inset 0 0 80px rgba(0, 0, 0, 0.8),
@@ -717,8 +722,6 @@ body.sidebar-collapsed .container {
     50% {
         transform: translate(-50%, -50%) scale(1.02);
         box-shadow: 
-            0 0 150px rgba(255, 255, 255, 0.3),
-            0 0 100px rgba(255, 255, 255, 0.25),
             0 0 120px rgba(0, 0, 0, 0.8),
             0 0 80px rgba(0, 0, 0, 0.7),
             inset 0 0 100px rgba(0, 0, 0, 0.85),
