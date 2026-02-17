@@ -736,15 +736,15 @@ body.sidebar-collapsed .container {
 .input-container-extended {
     flex-shrink: 0;
     display: flex;
-    padding: 14px 18px 14px 20px;
+    padding: 16px 18px 16px 20px;
     background: #2c2c2e;
     border: none;
     border-radius: 28px;
     gap: 12px;
     align-items: center;
-    margin-left: 24px;
-    margin-right: 24px;
-    max-width: calc(100% - 48px);
+    margin-left: 32px;
+    margin-right: 32px;
+    max-width: calc(100% - 64px);
     position: relative;
     flex-wrap: wrap;
 }
@@ -762,7 +762,7 @@ body.sidebar-collapsed .container {
 
 #message-input {
     width: 100%;
-    padding: 14px 12px 14px 4px;
+    padding: 16px 12px 16px 4px;
     background: transparent;
     border: none;
     border-radius: 0;
@@ -772,7 +772,7 @@ body.sidebar-collapsed .container {
     transition: var(--transition);
     outline: none;
     resize: none;
-    min-height: 52px;
+    min-height: 56px;
     max-height: 180px;
     line-height: 1.5;
 }
