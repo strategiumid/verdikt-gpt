@@ -362,7 +362,7 @@ body.sidebar-collapsed .container {
 }
 
 .hero-content {
-    max-width: 600px;
+    max-width: 100%;
     width: 100%;
     text-align: center;
     display: flex;
@@ -376,8 +376,8 @@ body.sidebar-collapsed .container {
 /* Анимированная сфера */
 .animated-sphere {
     position: relative;
-    width: 400px;
-    height: 400px;
+    width: 500px;
+    height: 500px;
     margin: 0 auto;
     display: flex;
     align-items: center;
@@ -438,7 +438,7 @@ body.sidebar-collapsed .container {
 
 /* Состояние: подключено */
 .animated-sphere.api-connected {
-    animation: sphereApiConnected 1s ease-out !important;
+    animation: sphereApiConnectedPulse 2s ease-in-out infinite !important;
     filter: drop-shadow(0 0 80px rgba(34, 197, 94, 0.5)) 
             drop-shadow(0 0 120px rgba(34, 197, 94, 0.4))
             drop-shadow(0 0 60px rgba(255, 255, 255, 0.3)) !important;
@@ -453,7 +453,7 @@ body.sidebar-collapsed .container {
         inset 0 0 80px rgba(0, 0, 0, 0.8),
         inset -30px -30px 60px rgba(0, 0, 0, 0.6),
         inset 30px 30px 60px rgba(34, 197, 94, 0.2) !important;
-    animation: sphereCoreConnected 0.8s ease-out !important;
+    animation: sphereCoreConnectedPulse 2s ease-in-out infinite !important;
 }
 
 .animated-sphere.api-connected .sphere-ring-1,
@@ -472,7 +472,7 @@ body.sidebar-collapsed .container {
         rgba(34, 197, 94, 0.1) 65%,
         transparent 80%);
     opacity: 1;
-    animation: glowPulseSuccess 1.5s ease-out;
+    animation: glowPulseSuccess 2s ease-in-out infinite;
 }
 
 .animated-sphere.api-connected .particle {
@@ -611,6 +611,22 @@ body.sidebar-collapsed .container {
     }
 }
 
+/* Постоянное пульсирующее свечение для подключенного состояния */
+@keyframes sphereApiConnectedPulse {
+    0%, 100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 80px rgba(34, 197, 94, 0.5)) 
+                drop-shadow(0 0 120px rgba(34, 197, 94, 0.4))
+                drop-shadow(0 0 60px rgba(255, 255, 255, 0.3));
+    }
+    50% {
+        transform: scale(1.02);
+        filter: drop-shadow(0 0 90px rgba(34, 197, 94, 0.6)) 
+                drop-shadow(0 0 130px rgba(34, 197, 94, 0.5))
+                drop-shadow(0 0 70px rgba(255, 255, 255, 0.35));
+    }
+}
+
 @keyframes sphereCoreConnected {
     0% {
         transform: translate(-50%, -50%) scale(1);
@@ -623,6 +639,18 @@ body.sidebar-collapsed .container {
     100% {
         transform: translate(-50%, -50%) scale(1);
         border-color: rgba(34, 197, 94, 0.6);
+    }
+}
+
+/* Постоянное пульсирующее свечение ядра для подключенного состояния */
+@keyframes sphereCoreConnectedPulse {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        border-color: rgba(34, 197, 94, 0.6);
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.05);
+        border-color: rgba(34, 197, 94, 0.8);
     }
 }
 
@@ -695,8 +723,8 @@ body.sidebar-collapsed .container {
 .animated-sphere:hover .sphere-glow {
     opacity: 0.9;
     filter: blur(35px);
-    width: 280px;
-    height: 280px;
+    width: 350px;
+    height: 350px;
 }
 
 .animated-sphere:hover .sphere-wave {
@@ -711,8 +739,8 @@ body.sidebar-collapsed .container {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 300px;
-    height: 300px;
+    width: 375px;
+    height: 375px;
     border-radius: 50%;
     background: radial-gradient(circle at center, 
         rgba(255, 255, 255, 0.1) 0%,
@@ -729,13 +757,13 @@ body.sidebar-collapsed .container {
     opacity: 0.7;
     /* Убеждаемся что элемент идеально круглый */
     aspect-ratio: 1 / 1;
-    min-width: 300px;
-    min-height: 300px;
+    min-width: 375px;
+    min-height: 375px;
 }
 
 .animated-sphere:hover::before {
-    width: 320px;
-    height: 320px;
+    width: 400px;
+    height: 400px;
     opacity: 0.85;
 }
 
@@ -756,8 +784,8 @@ body.sidebar-collapsed .container {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 150px;
-    height: 150px;
+    width: 188px;
+    height: 188px;
     border-radius: 50%;
     background: radial-gradient(circle at center, 
         rgba(0, 0, 0, 0.85) 0%,
@@ -778,8 +806,8 @@ body.sidebar-collapsed .container {
     opacity: 0.95;
     /* Убеждаемся что элемент идеально круглый */
     aspect-ratio: 1 / 1;
-    min-width: 150px;
-    min-height: 150px;
+    min-width: 188px;
+    min-height: 188px;
 }
 
 /* Волны внутри сферы */
@@ -807,20 +835,20 @@ body.sidebar-collapsed .container {
 }
 
 .sphere-wave-1 {
-    width: 170px;
-    height: 170px;
-    min-width: 170px;
-    min-height: 170px;
+    width: 213px;
+    height: 213px;
+    min-width: 213px;
+    min-height: 213px;
     animation-delay: 0s;
     border-color: rgba(255, 255, 255, 0.25);
     border-width: 2.5px;
 }
 
 .sphere-wave-2 {
-    width: 210px;
-    height: 210px;
-    min-width: 210px;
-    min-height: 210px;
+    width: 263px;
+    height: 263px;
+    min-width: 263px;
+    min-height: 263px;
     animation-delay: 1s;
     border-color: rgba(255, 255, 255, 0.2);
     border-width: 2px;
@@ -927,30 +955,30 @@ body.sidebar-collapsed .container {
 }
 
 .sphere-ring-1 {
-    width: 180px;
-    height: 180px;
-    min-width: 180px;
-    min-height: 180px;
+    width: 225px;
+    height: 225px;
+    min-width: 225px;
+    min-height: 225px;
     border-color: rgba(255, 255, 255, 0.35);
     animation-duration: 8s;
     animation-direction: normal;
 }
 
 .sphere-ring-2 {
-    width: 210px;
-    height: 210px;
-    min-width: 210px;
-    min-height: 210px;
+    width: 263px;
+    height: 263px;
+    min-width: 263px;
+    min-height: 263px;
     border-color: rgba(255, 255, 255, 0.3);
     animation-duration: 12s;
     animation-direction: reverse;
 }
 
 .sphere-ring-3 {
-    width: 240px;
-    height: 240px;
-    min-width: 240px;
-    min-height: 240px;
+    width: 300px;
+    height: 300px;
+    min-width: 300px;
+    min-height: 300px;
     border-color: rgba(255, 255, 255, 0.25);
     animation-duration: 18s;
     animation-direction: normal;
@@ -962,8 +990,8 @@ body.sidebar-collapsed .container {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 280px;
-    height: 280px;
+    width: 350px;
+    height: 350px;
     border-radius: 50%;
     background: radial-gradient(circle at center, 
         rgba(255, 255, 255, 0.25) 0%,
@@ -978,8 +1006,8 @@ body.sidebar-collapsed .container {
     opacity: 0.85;
     /* Убеждаемся что элемент идеально круглый */
     aspect-ratio: 1 / 1;
-    min-width: 280px;
-    min-height: 280px;
+    min-width: 350px;
+    min-height: 350px;
 }
 
 /* Частицы вокруг сферы */
@@ -1272,6 +1300,15 @@ body.sidebar-collapsed .container {
 .animated-sphere.active .hero-chips {
     opacity: 1;
     visibility: visible;
+}
+
+/* Скрываем hero-chips когда сфера показывает статус API */
+.animated-sphere.api-connecting .hero-chips,
+.animated-sphere.api-connected .hero-chips,
+.animated-sphere.api-error .hero-chips {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
 }
 
 .hero-chip {

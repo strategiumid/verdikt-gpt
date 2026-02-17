@@ -149,9 +149,11 @@ export class APIClient {
 
     async checkApiStatus() {
         if (!this.apiConfig.apiKey) {
-            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> API ключ не настроен';
-            this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
-            this.elements.apiStatus.style.color = '#f87171';
+            if (this.elements.apiStatus) {
+                this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> API ключ не настроен';
+                this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
+                this.elements.apiStatus.style.color = '#f87171';
+            }
             this.app.showNotification('Добавьте API ключ в настройках', 'warning');
             this.state.isApiConnected = false;
             if (this.app.updateSphereApiState) {
@@ -160,8 +162,10 @@ export class APIClient {
             return;
         }
 
-        this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> Проверка API ключа...';
-        this.elements.apiStatus.classList.add('api-connecting');
+        if (this.elements.apiStatus) {
+            this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> Проверка API ключа...';
+            this.elements.apiStatus.classList.add('api-connecting');
+        }
         if (this.app.updateSphereApiState) {
             this.app.updateSphereApiState('connecting');
         }
@@ -200,9 +204,11 @@ export class APIClient {
                     const selectedModel = this.availableModels.find(m => m.id === this.apiConfig.model);
                     const modelName = selectedModel ? selectedModel.name : this.apiConfig.model;
                     
-                    this.elements.apiStatus.innerHTML = `<i class="fas fa-circle"></i> ${modelName}`;
-                    this.elements.apiStatus.classList.remove('api-connecting');
-                    this.elements.apiStatus.classList.add('api-connected');
+                    if (this.elements.apiStatus) {
+                        this.elements.apiStatus.innerHTML = `<i class="fas fa-circle"></i> ${modelName}`;
+                        this.elements.apiStatus.classList.remove('api-connecting');
+                        this.elements.apiStatus.classList.add('api-connected');
+                    }
                     this.state.isApiConnected = true;
                     if (this.app.updateSphereApiState) {
                         this.app.updateSphereApiState('connected');
@@ -223,9 +229,11 @@ export class APIClient {
                     console.error('Ошибка API (текст):', errorText);
                 }
                 
-                this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API ключа';
-                this.elements.apiStatus.classList.remove('api-connecting');
-                this.elements.apiStatus.classList.add('api-error');
+                if (this.elements.apiStatus) {
+                    this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API ключа';
+                    this.elements.apiStatus.classList.remove('api-connecting');
+                    this.elements.apiStatus.classList.add('api-error');
+                }
                 this.state.isApiConnected = false;
                 if (this.app.updateSphereApiState) {
                     this.app.updateSphereApiState('error');
@@ -247,9 +255,11 @@ export class APIClient {
         } catch (error) {
             console.error('API check error:', error);
             
-            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка соединения';
-            this.elements.apiStatus.classList.remove('api-connecting');
-            this.elements.apiStatus.classList.add('api-error');
+            if (this.elements.apiStatus) {
+                this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка соединения';
+                this.elements.apiStatus.classList.remove('api-connecting');
+                this.elements.apiStatus.classList.add('api-error');
+            }
             this.state.isApiConnected = false;
             if (this.app.updateSphereApiState) {
                 this.app.updateSphereApiState('error');

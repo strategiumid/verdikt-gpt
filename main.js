@@ -2383,7 +2383,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
                     ? '<i class="fas fa-bell-slash"></i>'
                     : '<i class="fas fa-bell"></i>';
 
-                const status = this.elements.apiStatus;
+                const status = this.elements.apiStatus || null;
                 if (status) {
                     status.classList.toggle('dnd-active', enabled);
                 }
@@ -2744,9 +2744,11 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             this.addMessage(`Ошибка: ${errorMessage}`, 'ai');
             this.showNotification(errorMessage, 'error');
             
-            this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API';
-            this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
-            this.elements.apiStatus.style.color = '#f87171';
+            if (this.elements.apiStatus) {
+                this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API';
+                this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
+                this.elements.apiStatus.style.color = '#f87171';
+            }
             
             if (errorMessage.includes('API ключ') || errorMessage.includes('401')) {
                 setTimeout(() => {
@@ -3804,14 +3806,8 @@ applySphereApiState(sphere, state) {
         case 'connected':
             sphere.classList.add('api-connected');
             this.startStarSuction(sphere);
-            // Через 2 секунды убираем эффект подключения
-            setTimeout(() => {
-                const currentSphere = document.querySelector('.animated-sphere');
-                if (currentSphere && currentSphere.classList.contains('api-connected')) {
-                    currentSphere.classList.remove('api-connected');
-                    this.stopStarSuction();
-                }
-            }, 2000);
+            // Сфера должна светиться зеленым постоянно при подключении
+            // Не убираем класс api-connected
             break;
         case 'error':
             sphere.classList.add('api-error');
@@ -3846,7 +3842,7 @@ startStarSuction(sphere) {
         
         // Генерируем случайную позицию на краю контейнера (вокруг сферы)
         const startAngle = Math.random() * Math.PI * 2;
-        const startDistance = 180 + Math.random() * 80; // Расстояние от центра (180-260px)
+        const startDistance = 225 + Math.random() * 100; // Расстояние от центра (225-325px) для сферы 500px
         const startX = Math.cos(startAngle) * startDistance;
         const startY = Math.sin(startAngle) * startDistance;
         
