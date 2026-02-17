@@ -2678,6 +2678,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         this.updateSendButtonState();
         this.elements.messageInput.disabled = true;
         
+        this.showApiLoadingEffect();
         this.showTypingIndicator();
         
         try {
@@ -2752,6 +2753,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         } finally {
             // Разблокируем интерфейс после завершения ответа
             this.state.isResponding = false;
+            this.hideApiLoadingEffect();
             this.updateSendButtonState();
             this.elements.messageInput.disabled = false;
         }
@@ -3749,6 +3751,20 @@ hideTypingIndicator() {
     const indicator = this.elements.typingIndicator;
     if (indicator) {
         indicator.classList.remove('visible');
+    }
+}
+
+showApiLoadingEffect() {
+    const overlay = document.getElementById('api-loading-overlay');
+    if (overlay) {
+        overlay.classList.add('active');
+    }
+}
+
+hideApiLoadingEffect() {
+    const overlay = document.getElementById('api-loading-overlay');
+    if (overlay) {
+        overlay.classList.remove('active');
     }
 }
 

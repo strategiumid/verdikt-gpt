@@ -4134,6 +4134,221 @@ footer {
     animation: apiConnecting 2s infinite alternate !important;
 }
 
+/* Глобальный эффект загрузки API */
+.api-loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(20px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+    pointer-events: none;
+}
+
+.api-loading-overlay.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: all;
+}
+
+.api-loading-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+}
+
+.api-loading-sphere {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.api-loading-core {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: radial-gradient(circle at center,
+        rgba(255, 255, 255, 0.9) 0%,
+        rgba(255, 255, 255, 0.7) 50%,
+        rgba(255, 255, 255, 0.3) 100%);
+    box-shadow: 0 0 30px rgba(255, 255, 255, 0.8),
+                0 0 60px rgba(255, 255, 255, 0.5);
+    animation: apiCorePulse 2s ease-in-out infinite;
+    z-index: 3;
+}
+
+.api-loading-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: apiRingExpand 2s ease-out infinite;
+}
+
+.api-loading-ring-1 {
+    width: 60px;
+    height: 60px;
+    animation-delay: 0s;
+}
+
+.api-loading-ring-2 {
+    width: 80px;
+    height: 80px;
+    animation-delay: 0.3s;
+}
+
+.api-loading-ring-3 {
+    width: 100px;
+    height: 100px;
+    animation-delay: 0.6s;
+}
+
+.api-loading-text {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.2rem;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    animation: apiTextPulse 2s ease-in-out infinite;
+}
+
+.api-loading-particles {
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.api-particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+    animation: apiParticleOrbit 3s linear infinite;
+}
+
+.api-particle:nth-child(1) {
+    top: 0;
+    left: 50%;
+    animation-delay: 0s;
+    animation-duration: 3s;
+}
+
+.api-particle:nth-child(2) {
+    top: 50%;
+    right: 0;
+    animation-delay: 0.5s;
+    animation-duration: 3.5s;
+}
+
+.api-particle:nth-child(3) {
+    bottom: 0;
+    left: 50%;
+    animation-delay: 1s;
+    animation-duration: 4s;
+}
+
+.api-particle:nth-child(4) {
+    top: 50%;
+    left: 0;
+    animation-delay: 1.5s;
+    animation-duration: 3.5s;
+}
+
+.api-particle:nth-child(5) {
+    top: 20%;
+    right: 20%;
+    animation-delay: 0.25s;
+    animation-duration: 3.8s;
+}
+
+.api-particle:nth-child(6) {
+    bottom: 20%;
+    left: 20%;
+    animation-delay: 0.75s;
+    animation-duration: 4.2s;
+}
+
+@keyframes apiCorePulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+        box-shadow: 0 0 30px rgba(255, 255, 255, 0.8),
+                    0 0 60px rgba(255, 255, 255, 0.5);
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.9;
+        box-shadow: 0 0 50px rgba(255, 255, 255, 1),
+                    0 0 100px rgba(255, 255, 255, 0.7);
+    }
+}
+
+@keyframes apiRingExpand {
+    0% {
+        transform: translate(-50%, -50%) scale(0.8);
+        opacity: 0.8;
+        border-color: rgba(255, 255, 255, 0.5);
+    }
+    50% {
+        opacity: 0.4;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1.5);
+        opacity: 0;
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+}
+
+@keyframes apiTextPulse {
+    0%, 100% {
+        opacity: 0.7;
+        transform: translateY(0);
+    }
+    50% {
+        opacity: 1;
+        transform: translateY(-5px);
+    }
+}
+
+@keyframes apiParticleOrbit {
+    0% {
+        transform: rotate(0deg) translateX(80px) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: rotate(360deg) translateX(80px) rotate(-360deg);
+        opacity: 0;
+    }
+}
+
 .api-error {
     background: rgba(239, 68, 68, 0.15) !important;
     color: #f87171 !important;
