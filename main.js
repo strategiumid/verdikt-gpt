@@ -1408,6 +1408,14 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             });
         }
 
+        const sidebarChatHistoryBtn = document.getElementById('sidebar-chat-history-btn');
+        if (sidebarChatHistoryBtn) {
+            sidebarChatHistoryBtn.addEventListener('click', () => {
+                this.showChatHistoryModal();
+                this.hideSidebar();
+            });
+        }
+
         const sidebarCollapse = document.getElementById('sidebar-collapse');
         if (sidebarCollapse) {
             sidebarCollapse.addEventListener('click', () => {
