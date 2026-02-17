@@ -358,10 +358,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         await this.loadInstructions();
         
         this.updateUI();
-        // Небольшая задержка, чтобы сфера успела загрузиться в DOM
-        setTimeout(async () => {
-            await this.checkApiStatus();
-        }, 500);
+        // Проверка API при загрузке не выполняется — подключение к API только при входе в аккаунт
         this.setupKeyboardShortcuts();
         this.setupServiceWorker();
         this.setupSettingsTabs();
@@ -3673,6 +3670,12 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
                 try {
                     await this.loginUser({ email, password });
                     this.hideModal('auth-modal');
+                    this.showApiLoadingEffect();
+                    try {
+                        await this.checkApiStatus();
+                    } finally {
+                        this.hideApiLoadingEffect();
+                    }
                     this.showNotification('Вы успешно вошли ✅', 'success');
                 } catch (error) {
                     this.showNotification(error.message || 'Ошибка входа', 'error');
@@ -3695,6 +3698,12 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
                 try {
                     await this.registerUser({ name, email, password });
                     this.hideModal('auth-modal');
+                    this.showApiLoadingEffect();
+                    try {
+                        await this.checkApiStatus();
+                    } finally {
+                        this.hideApiLoadingEffect();
+                    }
                     this.showNotification('Регистрация прошла успешно ✅', 'success');
                 } catch (error) {
                     this.showNotification(error.message || 'Ошибка регистрации', 'error');
