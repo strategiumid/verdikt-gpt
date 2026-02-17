@@ -426,20 +426,9 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
     }
 
     setupApiSettingsListeners() {
-        const apiSettingsBtn = document.createElement('button');
-        apiSettingsBtn.className = 'ios-button secondary';
-        apiSettingsBtn.id = 'api-settings-btn';
-        apiSettingsBtn.innerHTML = '<i class="fas fa-key"></i> Настройки API';
-        apiSettingsBtn.style.width = '100%';
-        apiSettingsBtn.style.marginTop = '15px';
-        
-        const settingsModal = document.getElementById('settings-modal');
-        const saveSettingsBtn = settingsModal.querySelector('#save-settings');
-        saveSettingsBtn.parentNode.insertBefore(apiSettingsBtn, saveSettingsBtn);
-        
-        apiSettingsBtn.addEventListener('click', () => {
-            this.showApiSettingsModal();
-        });
+        // Кнопка API настроек теперь в настройках профиля (в HTML)
+        // Обработчик события для неё уже настроен в setupProfileSettings()
+        // Эта функция оставлена для совместимости, но больше ничего не делает
     }
 
     showApiSettingsModal() {
@@ -2325,6 +2314,11 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         }
         
         // Enter key to send message
+        if (!this.elements.messageInput) {
+            console.error('messageInput element not found');
+            return;
+        }
+        
         this.elements.messageInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -2338,39 +2332,44 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             }
         });
         
-        this.elements.voiceInput.addEventListener('click', () => this.toggleVoiceRecording());
+        if (this.elements.voiceInput) {
+            this.elements.voiceInput.addEventListener('click', () => this.toggleVoiceRecording());
+        }
         
-        document.querySelectorAll('.mode-item-settings').forEach(mode => {
-            mode.addEventListener('click', (e) => {
-                const modeId = e.currentTarget.dataset.mode;
-                this.setAIMode(modeId);
-                
-                document.querySelectorAll('.mode-item-settings').forEach(item => {
-                    item.classList.remove('active');
-                });
-                mode.classList.add('active');
-            });
-        });
+        // Обработчики для режимов AI теперь настраиваются в setupProfileSettings()
+        // Этот код выполняется при инициализации, когда элементы могут еще не существовать
         
         // Grok-style AI Mode Selector
         this.setupGrokModeSelector();
         
-        document.querySelectorAll('.example-button').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const question = e.currentTarget.dataset.question;
-                this.elements.messageInput.value = question;
-                this.elements.messageInput.focus();
+        // Обработчики для примеров вопросов (если они существуют)
+        const exampleButtons = document.querySelectorAll('.example-button');
+        if (exampleButtons.length > 0) {
+            exampleButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const question = e.currentTarget.dataset.question;
+                    if (this.elements.messageInput) {
+                        this.elements.messageInput.value = question;
+                        this.elements.messageInput.focus();
+                    }
+                });
             });
-        });
+        }
         
-        this.elements.newChat.addEventListener('click', () => this.createNewChat());
+        if (this.elements.newChat) {
+            this.elements.newChat.addEventListener('click', () => this.createNewChat());
+        }
         // Кнопка настроек удалена - настройки теперь в профиле
-        this.elements.presentationMode.addEventListener('click', () => this.togglePresentationMode());
+        if (this.elements.presentationMode) {
+            this.elements.presentationMode.addEventListener('click', () => this.togglePresentationMode());
+        }
         
-        this.elements.toggleChatHistory.addEventListener('click', () => {
-            this.showChatHistoryModal();
-        });
+        if (this.elements.toggleChatHistory) {
+            this.elements.toggleChatHistory.addEventListener('click', () => {
+                this.showChatHistoryModal();
+            });
+        }
 
         if (this.elements.dndToggle) {
             this.elements.dndToggle.addEventListener('click', () => {
@@ -2454,53 +2453,86 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             });
         }
         
-        this.elements.temperatureSlider.addEventListener('input', (e) => {
-            const value = e.target.value;
-            this.elements.temperatureValue.textContent = value;
-            this.API_CONFIG.temperature = parseFloat(value);
-        });
-        
-        document.querySelectorAll('.theme-option').forEach(theme => {
-            theme.addEventListener('click', (e) => {
-                const themeName = e.currentTarget.dataset.theme;
-                this.setTheme(themeName);
-                
-                document.querySelectorAll('.theme-option').forEach(opt => opt.classList.remove('active'));
-                theme.classList.add('active');
+        // Обработчик для слайдера температуры теперь в setupProfileSettings()
+        // Эти элементы больше не находятся в this.elements, так как они в настройках профиля
+        const temperatureSlider = document.getElementById('temperature-slider');
+        const temperatureValue = document.getElementById('temperature-value');
+        if (temperatureSlider && temperatureValue) {
+            temperatureSlider.addEventListener('input', (e) => {
+                const value = e.target.value;
+                temperatureValue.textContent = value;
+                this.API_CONFIG.temperature = parseFloat(value);
             });
-        });
+        }
         
-        document.querySelectorAll('#export-modal .export-option').forEach(option => {
-            option.addEventListener('click', (e) => {
-                const format = e.currentTarget.dataset.format;
-                this.exportChat(format);
+        // Обработчики для выбора темы (если элементы существуют)
+        const themeOptions = document.querySelectorAll('.theme-option');
+        if (themeOptions.length > 0) {
+            themeOptions.forEach(theme => {
+                theme.addEventListener('click', (e) => {
+                    const themeName = e.currentTarget.dataset.theme;
+                    this.setTheme(themeName);
+                    
+                    themeOptions.forEach(opt => opt.classList.remove('active'));
+                    theme.classList.add('active');
+                });
             });
-        });
+        }
+        
+        // Обработчики для опций экспорта (если модальное окно существует)
+        const exportOptions = document.querySelectorAll('#export-modal .export-option');
+        if (exportOptions.length > 0) {
+            exportOptions.forEach(option => {
+                option.addEventListener('click', (e) => {
+                    const format = e.currentTarget.dataset.format;
+                    this.exportChat(format);
+                });
+            });
+        }
         
         // Обработчики для старого модального окна настроек больше не нужны
         // Все настройки теперь в профиле
-        this.elements.exportClose.addEventListener('click', () => this.hideModal('export-modal'));
-        this.elements.exportCancel.addEventListener('click', () => this.hideModal('export-modal'));
-        this.elements.statsClose.addEventListener('click', () => this.hideModal('stats-modal'));
+        if (this.elements.exportClose) {
+            this.elements.exportClose.addEventListener('click', () => this.hideModal('export-modal'));
+        }
+        if (this.elements.exportCancel) {
+            this.elements.exportCancel.addEventListener('click', () => this.hideModal('export-modal'));
+        }
+        if (this.elements.statsClose) {
+            this.elements.statsClose.addEventListener('click', () => this.hideModal('stats-modal'));
+        }
         
-        this.elements.prevSlide.addEventListener('click', () => this.prevSlide());
-        this.elements.nextSlide.addEventListener('click', () => this.nextSlide());
-        this.elements.exitPresentation.addEventListener('click', () => this.togglePresentationMode());
+        if (this.elements.prevSlide) {
+            this.elements.prevSlide.addEventListener('click', () => this.prevSlide());
+        }
+        if (this.elements.nextSlide) {
+            this.elements.nextSlide.addEventListener('click', () => this.nextSlide());
+        }
+        if (this.elements.exitPresentation) {
+            this.elements.exitPresentation.addEventListener('click', () => this.togglePresentationMode());
+        }
         
-        this.elements.messageInput.addEventListener('input', () => {
-            this.elements.messageInput.style.height = 'auto';
-            this.elements.messageInput.style.height = Math.min(this.elements.messageInput.scrollHeight, 200) + 'px';
-        });
+        if (this.elements.messageInput) {        
+        if (this.elements.messageInput) {
+            this.elements.messageInput.addEventListener('input', () => {
+                this.elements.messageInput.style.height = 'auto';
+                this.elements.messageInput.style.height = Math.min(this.elements.messageInput.scrollHeight, 200) + 'px';
+            });
+        }
+        }
         
         window.addEventListener('online', () => this.updateOnlineStatus(true));
         window.addEventListener('offline', () => this.updateOnlineStatus(false));
         
         window.addEventListener('beforeunload', () => this.saveToLocalStorage());
         
-        document.getElementById('model-info').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.showNotification('Используется: Verdikt GPT-b v0.01', 'info');
-        });
+        const modelInfo = document.getElementById('model-info');
+        if (modelInfo) {
+            modelInfo.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.showNotification('Используется: Verdikt GPT-b v0.01', 'info');
+            });
+        }
         
         document.getElementById('privacy-policy').addEventListener('click', (e) => {
             e.preventDefault();
