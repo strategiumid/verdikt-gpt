@@ -348,6 +348,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         this.setupCookieNotification();
         this.loadApiKey();
         this.setupEventListeners();
+        this.setupT9Suggestions();
         this.loadFromLocalStorage();
         this.loadUserFromStorage();
         await this.restoreSession();
@@ -390,8 +391,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
 
         // НОВЫЙ ВЫЗОВ
         this.setupSubscriptionModal();
-        
-        this.setupT9Suggestions();
         
         console.log('✅ Verdikt GPT инициализирован');
         console.log('📚 Инструкции загружены:', this.state.instructionsLoaded);
@@ -2682,11 +2681,16 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
     ];
 
     setupT9Suggestions() {
-        const input = this.elements.messageInput;
-        if (!input) return;
-
+        const input = document.getElementById('message-input');
+        if (!input) {
+            console.warn('T9: #message-input не найден');
+            return;
+        }
         const inputBar = input.closest('.input-container-extended');
-        if (!inputBar) return;
+        if (!inputBar) {
+            console.warn('T9: .input-container-extended не найден');
+            return;
+        }
 
         let container = document.getElementById('t9-suggestions');
         if (!container) {
@@ -2695,6 +2699,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             container.className = 't9-dropdown t9-dropdown-fixed';
             container.setAttribute('role', 'listbox');
             container.setAttribute('aria-label', 'Подсказки');
+            container.style.setProperty('display', 'none', 'important');
             document.body.appendChild(container);
         }
 
@@ -2704,90 +2709,79 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             const rect = inputBar.getBoundingClientRect();
             container.style.top = (rect.bottom - 14) + 'px';
             container.style.left = rect.left + 'px';
-            container.style.width = rect.width + 'px';
+            container.style.width = Math.max(rect.width, 280) + 'px';
+        };
+
+        const hideDropdown = () => {
+            container.innerHTML = '';
+            container.style.setProperty('display', 'none', 'important');
+            container.classList.remove('has-suggestions');
         };
 
         const updateSuggestions = () => {
-            try {
-                const text = (input.value || '').trim();
-                container.innerHTML = '';
-                container.classList.remove('has-suggestions');
-                
-                if (!text || text.length < 1) {
-                    return;
-                }
-                
-                const lower = text.toLowerCase();
-                const matches = VerdiktChatApp.T9_PHRASES.filter(phrase => {
-                    const phraseLower = phrase.toLowerCase();
-                    return phraseLower.startsWith(lower) || phraseLower.includes(lower);
-                }).slice(0, 8);
-                
-                if (matches.length === 0) {
-                    return;
-                }
-                
-                matches.forEach(phrase => {
-                    const item = document.createElement('button');
-                    item.type = 'button';
-                    item.className = 't9-suggestion-item';
-                    item.setAttribute('role', 'option');
-                    
-                    const icon = document.createElement('span');
-                    icon.className = 't9-icon';
-                    icon.innerHTML = '<i class="fas fa-search"></i>';
-                    
-                    const textSpan = document.createElement('span');
-                    textSpan.className = 't9-text';
-                    textSpan.textContent = phrase;
-                    
-                    item.appendChild(icon);
-                    item.appendChild(textSpan);
-                    
-                    item.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        input.value = phrase;
-                        if (input.style) {
-                            input.style.height = 'auto';
-                            input.style.height = Math.min(input.scrollHeight, 200) + 'px';
-                        }
-                        container.innerHTML = '';
-                        container.classList.remove('has-suggestions');
-                        input.focus();
-                    });
-                    
-                    container.appendChild(item);
+            const text = (input.value || '').trim();
+            hideDropdown();
+            if (!text || text.length < 1) return;
+
+            const lower = text.toLowerCase();
+            const matches = VerdiktChatApp.T9_PHRASES.filter(phrase => {
+                const pl = phrase.toLowerCase();
+                return pl.startsWith(lower) || pl.includes(lower);
+            }).slice(0, 8);
+
+            if (matches.length === 0) return;
+
+            matches.forEach(phrase => {
+                const item = document.createElement('button');
+                item.type = 'button';
+                item.className = 't9-suggestion-item';
+                item.setAttribute('role', 'option');
+                const icon = document.createElement('span');
+                icon.className = 't9-icon';
+                icon.innerHTML = '<i class="fas fa-search"></i>';
+                const textSpan = document.createElement('span');
+                textSpan.className = 't9-text';
+                textSpan.textContent = phrase;
+                item.appendChild(icon);
+                item.appendChild(textSpan);
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    input.value = phrase;
+                    if (input.style) {
+                        input.style.height = 'auto';
+                        input.style.height = Math.min(input.scrollHeight, 200) + 'px';
+                    }
+                    hideDropdown();
+                    input.focus();
                 });
-                
-                positionDropdown();
-                container.classList.add('has-suggestions');
-            } catch (err) {
-                console.error('T9 error:', err);
-            }
+                container.appendChild(item);
+            });
+
+            positionDropdown();
+            container.style.setProperty('display', 'flex', 'important');
+            container.classList.add('has-suggestions');
         };
 
-        const handleInput = () => {
+        const scheduleUpdate = () => {
             if (input.style) {
                 input.style.height = 'auto';
                 input.style.height = Math.min(input.scrollHeight, 200) + 'px';
             }
             clearTimeout(t9Debounce);
-            t9Debounce = setTimeout(updateSuggestions, 50);
+            t9Debounce = setTimeout(updateSuggestions, 80);
         };
 
-        input.addEventListener('input', handleInput);
-        input.addEventListener('keyup', handleInput);
+        input.addEventListener('input', scheduleUpdate);
+        input.addEventListener('keyup', scheduleUpdate);
         input.addEventListener('focus', () => {
             if ((input.value || '').trim().length >= 1) updateSuggestions();
         });
         input.addEventListener('blur', () => {
             clearTimeout(t9Debounce);
             setTimeout(() => {
-                if (!container.contains(document.activeElement)) {
-                    container.classList.remove('has-suggestions');
-                }
-            }, 200);
+                if (!container.contains(document.activeElement)) hideDropdown();
+            }, 220);
         });
 
         window.addEventListener('scroll', () => {
@@ -2796,12 +2790,8 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         window.addEventListener('resize', () => {
             if (container.classList.contains('has-suggestions')) positionDropdown();
         });
-
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && container.classList.contains('has-suggestions')) {
-                container.innerHTML = '';
-                container.classList.remove('has-suggestions');
-            }
+            if (e.key === 'Escape') hideDropdown();
         });
     }
 
