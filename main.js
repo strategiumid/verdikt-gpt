@@ -1819,6 +1819,32 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             });
         }
         
+        // Навигация по секциям настроек профиля
+        const navItems = document.querySelectorAll('.profile-nav-item');
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const section = item.dataset.section;
+                
+                // Убираем активный класс со всех элементов навигации
+                navItems.forEach(nav => nav.classList.remove('active'));
+                // Добавляем активный класс к выбранному элементу
+                item.classList.add('active');
+                
+                // Скрываем все секции
+                document.querySelectorAll('.profile-settings-section').forEach(sec => {
+                    sec.classList.remove('active');
+                    sec.style.display = 'none';
+                });
+                
+                // Показываем выбранную секцию
+                const targetSection = document.getElementById(`${section}-section`);
+                if (targetSection) {
+                    targetSection.classList.add('active');
+                    targetSection.style.display = 'block';
+                }
+            });
+        });
+        
         if (this.elements.profileSettingsForm) {
             this.elements.profileSettingsForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -1833,9 +1859,36 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             return;
         }
         
-        document.getElementById('profile-name').value = this.state.user.name || '';
-        document.getElementById('profile-email').value = this.state.user.email || '';
-        document.getElementById('profile-bio').value = this.state.user.bio || '';
+        // Обновляем отображение профиля в новом формате
+        const displayName = document.getElementById('profile-display-name');
+        const displayEmail = document.getElementById('profile-display-email');
+        const profileAvatar = document.querySelector('.profile-avatar');
+        
+        if (displayName) {
+            displayName.textContent = this.state.user.name || 'Пользователь';
+        }
+        if (displayEmail) {
+            displayEmail.textContent = this.state.user.email || '';
+        }
+        if (profileAvatar && this.state.user.name) {
+            // Генерируем инициалы из имени
+            const initials = this.state.user.name
+                .split(' ')
+                .map(word => word[0])
+                .join('')
+                .toUpperCase()
+                .substring(0, 2);
+            profileAvatar.textContent = initials || 'U';
+        }
+        
+        // Старые поля формы (если они еще используются)
+        const profileNameInput = document.getElementById('profile-name');
+        const profileEmailInput = document.getElementById('profile-email');
+        if (profileNameInput) profileNameInput.value = this.state.user.name || '';
+        if (profileEmailInput) profileEmailInput.value = this.state.user.email || '';
+        
+        const profileBio = document.getElementById('profile-bio');
+        if (profileBio) profileBio.value = this.state.user.bio || '';
         
         const expertiseSelect = document.getElementById('profile-expertise');
         if (expertiseSelect) {

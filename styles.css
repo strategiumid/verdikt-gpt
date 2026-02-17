@@ -1528,16 +1528,369 @@ footer {
     max-width: 420px;
 }
 
+/* Настройки профиля - новый дизайн */
+.profile-settings-container {
+    max-width: 900px !important;
+    width: 90%;
+    padding: 0 !important;
+    background: #18181B !important;
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+}
+
+.profile-settings-container .modal-close {
+    color: rgba(255, 255, 255, 0.7);
+    top: 20px;
+    right: 20px;
+}
+
+.profile-settings-container .modal-close:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.profile-settings-layout {
+    display: flex;
+    height: 600px;
+    max-height: 80vh;
+}
+
+/* Левая панель навигации */
+.profile-settings-sidebar {
+    width: 240px;
+    background: #18181B;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 24px 0;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.profile-settings-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #fff;
+    padding: 0 24px;
+    margin-bottom: 24px;
+}
+
+.profile-settings-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 12px;
+}
+
+.profile-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 0 12px 12px 0;
+    margin-left: -12px;
+    padding-left: 28px;
+}
+
+.profile-nav-item:hover {
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.profile-nav-item.active {
+    background: #202022;
+    color: #fff;
+    font-weight: 500;
+}
+
+.profile-nav-item i {
+    width: 20px;
+    text-align: center;
+    font-size: 1rem;
+}
+
+/* Правая область контента */
+.profile-settings-content {
+    flex: 1;
+    padding: 24px 32px;
+    overflow-y: auto;
+    background: #18181B;
+    position: relative;
+}
+
+.profile-settings-section {
+    display: none;
+}
+
+.profile-settings-section.active {
+    display: block;
+}
+
+.profile-section-item {
+    margin-bottom: 0;
+}
+
+.profile-user-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 0;
+}
+
+.profile-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 600;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.profile-user-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.profile-user-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+}
+
+.profile-user-email {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.profile-section-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0;
+}
+
+.profile-section-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #fff;
+    font-size: 0.95rem;
+}
+
+.profile-section-info i {
+    width: 20px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.profile-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 0;
+}
+
+/* Pill-shaped кнопки */
+.profile-pill-button {
+    padding: 8px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.profile-pill-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Версия/ID */
+.profile-version-id {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.4);
+    margin-top: 24px;
+    font-family: monospace;
+}
+
+/* Баннер SuperGrok */
+.profile-supergrok-banner {
+    position: absolute;
+    bottom: 24px;
+    right: 32px;
+    width: 320px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    background-image: 
+        radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+}
+
+/* Адаптивность для настроек профиля */
+@media (max-width: 768px) {
+    .profile-settings-layout {
+        flex-direction: column;
+        height: auto;
+        max-height: 90vh;
+    }
+    
+    .profile-settings-sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 16px;
+    }
+    
+    .profile-settings-nav {
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 8px;
+        padding: 0;
+    }
+    
+    .profile-nav-item {
+        border-radius: 12px;
+        margin-left: 0;
+        padding: 10px 16px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+    
+    .profile-settings-content {
+        padding: 20px;
+        max-height: calc(90vh - 120px);
+    }
+    
+    .profile-supergrok-banner {
+        position: relative;
+        bottom: auto;
+        right: auto;
+        width: 100%;
+        margin-top: 24px;
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .supergrok-banner-content {
+        margin-bottom: 12px;
+    }
+    
+    .supergrok-button {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-settings-container {
+        width: 95%;
+        max-height: 95vh;
+    }
+    
+    .profile-settings-title {
+        font-size: 1.1rem;
+        padding: 0 16px;
+    }
+    
+    .profile-user-info {
+        flex-wrap: wrap;
+    }
+    
+    .profile-pill-button {
+        width: 100%;
+        margin-top: 12px;
+    }
+    
+    .profile-section-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+}
+
+.supergrok-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.supergrok-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.supergrok-text {
+    color: #fff;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.supergrok-button {
+    padding: 10px 20px;
+    background: #fff;
+    border: none;
+    border-radius: 20px;
+    color: #18181B;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.supergrok-button:hover {
+    background: rgba(255, 255, 255, 0.9);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
 /* Блок активной подписки в профиле */
 .profile-subscription-block {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 20px;
-    padding: 12px 14px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: var(--radius-md);
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding: 16px 18px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.profile-subscription-block:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
 }
 
 .profile-subscription-label {
@@ -1548,8 +1901,9 @@ footer {
 .profile-subscription-value {
     font-weight: 600;
     font-size: 0.95rem;
-    padding: 4px 10px;
-    border-radius: 8px;
+    padding: 6px 14px;
+    border-radius: 10px;
+    transition: all 0.3s ease;
 }
 
 .profile-subscription--free {
@@ -1675,11 +2029,12 @@ footer {
     right: 18px;
     background: transparent;
     border: none;
-    color: var(--text-tertiary);
+    color: rgba(255, 255, 255, 0.6);
     font-size: 22px;
     cursor: pointer;
     width: 36px;
     height: 36px;
+    z-index: 10;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -2014,30 +2369,288 @@ footer {
 }
 
 .stat-card-settings {
-    padding: 14px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--radius-sm);
+    padding: 18px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
     text-align: center;
-    transition: var(--transition);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(10px);
 }
 
 .stat-card-settings:hover {
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.12);
 }
 
 .stat-value-settings {
-    font-size: 1.4rem;
+    font-size: 1.6rem;
     font-weight: 700;
     background: var(--gradient);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
+    letter-spacing: -0.02em;
 }
 
 .stat-label-settings {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 500;
+}
+
+/* Дашборд */
+.dashboard-modal {
+    max-width: 900px;
+    max-height: 80vh;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dashboard-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.dashboard-tabs {
+    display: flex;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 14px;
+    padding: 6px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.dashboard-tab {
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    text-align: center;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 100px;
+}
+
+.dashboard-tab:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.9);
+    transform: translateY(-1px);
+}
+
+.dashboard-tab.active {
+    background: rgba(var(--primary-rgb), 0.2);
+    color: var(--primary);
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.2);
+}
+
+.dashboard-tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.dashboard-tab-content.active {
+    display: block;
+}
+
+/* Карточки вопросов */
+.questions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.question-card {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 20px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(10px);
+}
+
+.question-card:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.question-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.question-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: white;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.question-meta h5 {
+    font-size: 1rem;
+    margin-bottom: 4px;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.question-meta .date {
     font-size: 0.8rem;
-    color: var(--text-tertiary);
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.question-content {
+    margin-bottom: 16px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+}
+
+.question-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    padding: 8px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.action-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+}
+
+.action-btn.liked {
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.15);
+}
+
+.action-btn.disliked {
+    color: #3b82f6;
+    border-color: rgba(59, 130, 246, 0.4);
+    background: rgba(59, 130, 246, 0.15);
+}
+
+/* Форма профиля */
+.profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.form-group label {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 120px;
+    line-height: 1.6;
+}
+
+.form-group select {
+    cursor: pointer;
+}
+
+.form-group select option {
+    background: #1a1a1a;
+    color: var(--text-primary);
 }
 
 /* Горячие клавиши в настройках */

@@ -454,41 +454,60 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 25px;
+        margin-bottom: 28px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .dashboard-header h2 {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
     }
 
     .dashboard-tabs {
         display: flex;
-        gap: 5px;
+        gap: 6px;
         background: rgba(255, 255, 255, 0.05);
-        border-radius: var(--radius-md);
-        padding: 5px;
-        margin-bottom: 20px;
+        border-radius: 14px;
+        padding: 6px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        border: 1px solid rgba(255, 255, 255, 0.06);
     }
 
     .dashboard-tab {
-        padding: 10px 15px;
+        padding: 12px 16px;
         background: transparent;
         border: none;
-        border-radius: var(--radius-sm);
-        color: var(--text-secondary);
+        border-radius: 10px;
+        color: rgba(255, 255, 255, 0.6);
         font-size: 0.9rem;
         font-weight: 500;
         cursor: pointer;
-        transition: var(--transition);
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         text-align: center;
         flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-width: 100px;
     }
 
     .dashboard-tab:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.9);
+        transform: translateY(-1px);
     }
 
     .dashboard-tab.active {
-        background: rgba(236, 72, 153, 0.2);
+        background: rgba(var(--primary-rgb), 0.2);
         color: var(--primary);
-        box-shadow: 0 0 15px rgba(236, 72, 153, 0.1);
+        box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.2);
     }
 
     .questions-grid {
@@ -499,17 +518,19 @@
     }
 
     .question-card {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: var(--radius-md);
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
         padding: 20px;
-        border: 1px solid var(--border-color);
-        transition: var(--transition);
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        backdrop-filter: blur(10px);
     }
 
     .question-card:hover {
         background: rgba(255, 255, 255, 0.1);
-        transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        transform: translateY(-4px);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+        border-color: rgba(255, 255, 255, 0.12);
     }
 
     .question-header {
@@ -520,40 +541,44 @@
     }
 
     .question-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
         background: linear-gradient(135deg, #8b5cf6, #7c3aed);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 16px;
+        font-size: 18px;
         color: white;
+        flex-shrink: 0;
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
     }
 
     .question-meta h5 {
-        font-size: 0.95rem;
-        margin-bottom: 3px;
+        font-size: 1rem;
+        margin-bottom: 4px;
         color: var(--text-primary);
+        font-weight: 600;
     }
 
     .question-meta .date {
         font-size: 0.8rem;
-        color: var(--text-tertiary);
+        color: rgba(255, 255, 255, 0.5);
     }
 
     .question-content {
-        margin-bottom: 15px;
-        line-height: 1.5;
-        color: var(--text-secondary);
+        margin-bottom: 16px;
+        line-height: 1.6;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.9rem;
     }
 
     .question-actions {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding-top: 15px;
-        border-top: 1px solid var(--border-color);
+        padding-top: 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .action-buttons {
@@ -565,32 +590,35 @@
     .action-btn {
         display: flex;
         align-items: center;
-        gap: 5px;
-        background: transparent;
-        border: 1px solid var(--border-color);
-        color: var(--text-secondary);
-        padding: 6px 12px;
-        border-radius: var(--radius-sm);
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.7);
+        padding: 8px 14px;
+        border-radius: 10px;
         cursor: pointer;
-        transition: var(--transition);
+        transition: all 0.2s ease;
         font-size: 0.85rem;
+        font-weight: 500;
     }
 
     .action-btn:hover {
         background: rgba(255, 255, 255, 0.1);
-        color: var(--text-primary);
+        color: rgba(255, 255, 255, 0.9);
+        border-color: rgba(255, 255, 255, 0.15);
+        transform: translateY(-1px);
     }
 
     .action-btn.liked {
         color: #ef4444;
-        border-color: rgba(239, 68, 68, 0.3);
-        background: rgba(239, 68, 68, 0.1);
+        border-color: rgba(239, 68, 68, 0.4);
+        background: rgba(239, 68, 68, 0.15);
     }
 
     .action-btn.disliked {
         color: #3b82f6;
-        border-color: rgba(59, 130, 246, 0.3);
-        background: rgba(59, 130, 246, 0.1);
+        border-color: rgba(59, 130, 246, 0.4);
+        background: rgba(59, 130, 246, 0.15);
     }
 
     .comments-count {
@@ -614,21 +642,29 @@
 
     .comment-input {
         width: 100%;
-        padding: 12px;
-        background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius-md);
+        padding: 14px 16px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
         color: var(--text-primary);
         font-family: inherit;
-        font-size: 0.9rem;
+        font-size: 0.95rem;
         resize: vertical;
-        min-height: 80px;
-        margin-bottom: 10px;
+        min-height: 100px;
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
     }
 
     .comment-input:focus {
         outline: none;
         border-color: var(--primary);
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+    }
+
+    .comment-input::placeholder {
+        color: rgba(255, 255, 255, 0.4);
     }
 
     .comments-list {
@@ -641,10 +677,17 @@
     }
 
     .comment-item {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: var(--radius-md);
-        padding: 15px;
-        border: 1px solid var(--border-color);
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 16px;
+        backdrop-filter: blur(10px);
+        transition: all 0.2s ease;
+    }
+
+    .comment-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.12);
     }
 
     .comment-header {
@@ -676,31 +719,34 @@
     .profile-form {
         display: flex;
         flex-direction: column;
-        gap: 15px;
+        gap: 20px;
     }
 
     .form-group {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 10px;
     }
 
     .form-group label {
         font-size: 0.9rem;
-        color: var(--text-secondary);
+        color: rgba(255, 255, 255, 0.7);
         font-weight: 500;
+        margin-bottom: 2px;
     }
 
     .form-group input,
     .form-group textarea,
     .form-group select {
-        padding: 12px;
-        background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius-md);
+        padding: 14px 16px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
         color: var(--text-primary);
         font-family: inherit;
-        font-size: 0.9rem;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
     }
 
     .form-group input:focus,
@@ -708,11 +754,19 @@
     .form-group select:focus {
         outline: none;
         border-color: var(--primary);
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+    }
+
+    .form-group input::placeholder,
+    .form-group textarea::placeholder {
+        color: rgba(255, 255, 255, 0.4);
     }
 
     .form-group textarea {
         resize: vertical;
-        min-height: 100px;
+        min-height: 120px;
+        line-height: 1.6;
     }
 
     /* Бейджи в навигации */
@@ -1631,62 +1685,168 @@
 
     <!-- Модальное окно настроек профиля -->
     <div class="modal" id="profile-settings-modal">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content profile-settings-container">
             <button class="modal-close" id="profile-settings-close">
                 <i class="fas fa-times"></i>
             </button>
             
-            <h2 style="margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
-                <i class="fas fa-user-cog"></i> Настройки профиля
-            </h2>
+            <div class="profile-settings-layout">
+                <!-- Левая панель навигации -->
+                <div class="profile-settings-sidebar">
+                    <h2 class="profile-settings-title">Настройки</h2>
+                    <nav class="profile-settings-nav">
+                        <div class="profile-nav-item active" data-section="account">
+                            <i class="fas fa-user"></i>
+                            <span>Аккаунт</span>
+                        </div>
+                        <div class="profile-nav-item" data-section="appearance">
+                            <i class="fas fa-palette"></i>
+                            <span>Оформление</span>
+                        </div>
+                        <div class="profile-nav-item" data-section="behavior">
+                            <i class="fas fa-hand-pointer"></i>
+                            <span>Поведение</span>
+                        </div>
+                        <div class="profile-nav-item" data-section="personalize">
+                            <i class="fas fa-sliders-h"></i>
+                            <span>Персонализировать</span>
+                        </div>
+                        <div class="profile-nav-item" data-section="data">
+                            <i class="fas fa-database"></i>
+                            <span>Управление данными</span>
+                        </div>
+                    </nav>
+                </div>
 
-            <div class="profile-subscription-block" id="profile-subscription-block">
-                <span class="profile-subscription-label">Активная подписка</span>
-                <span class="profile-subscription-value" id="profile-subscription-value">Verdikt-GPT FREE</span>
+                <!-- Правая область контента -->
+                <div class="profile-settings-content">
+                    <!-- Секция Аккаунт -->
+                    <div class="profile-settings-section active" id="account-section">
+                        <!-- Профиль пользователя -->
+                        <div class="profile-section-item">
+                            <div class="profile-user-info">
+                                <div class="profile-avatar">AN</div>
+                                <div class="profile-user-details">
+                                    <div class="profile-user-name" id="profile-display-name">Alexander Nikolskiy</div>
+                                    <div class="profile-user-email" id="profile-display-email">alexandernikolskiyy@gmail.com</div>
+                                </div>
+                                <button class="profile-pill-button" id="profile-edit-btn">Настроить</button>
+                            </div>
+                            <div class="profile-divider"></div>
+                        </div>
+
+                        <!-- Перейти на SuperGrok -->
+                        <div class="profile-section-item">
+                            <div class="profile-section-row">
+                                <div class="profile-section-info">
+                                    <i class="fas fa-ban"></i>
+                                    <span>Перейти на SuperGrok</span>
+                                </div>
+                                <button class="profile-pill-button">Улучшить</button>
+                            </div>
+                            <div class="profile-divider"></div>
+                        </div>
+
+                        <!-- X Аккаунт -->
+                        <div class="profile-section-item">
+                            <div class="profile-section-row">
+                                <div class="profile-section-info">
+                                    <i class="fab fa-x-twitter"></i>
+                                    <span>X Аккаунт</span>
+                                </div>
+                                <button class="profile-pill-button">Подключить</button>
+                            </div>
+                            <div class="profile-divider"></div>
+                        </div>
+
+                        <!-- Язык -->
+                        <div class="profile-section-item">
+                            <div class="profile-section-row">
+                                <div class="profile-section-info">
+                                    <i class="fas fa-language"></i>
+                                    <span>Язык</span>
+                                </div>
+                                <button class="profile-pill-button">Изменить</button>
+                            </div>
+                            <div class="profile-divider"></div>
+                        </div>
+
+                        <!-- Год рождения -->
+                        <div class="profile-section-item">
+                            <div class="profile-section-row">
+                                <div class="profile-section-info">
+                                    <span>Год рождения</span>
+                                </div>
+                                <button class="profile-pill-button">Изменить</button>
+                            </div>
+                            <div class="profile-divider"></div>
+                        </div>
+
+                        <!-- Версия/ID -->
+                        <div class="profile-version-id">1061d2bf-175a-48e5-8d70-3a1d2f2ea660</div>
+                    </div>
+
+                    <!-- Секция Оформление -->
+                    <div class="profile-settings-section" id="appearance-section" style="display: none;">
+                        <div class="profile-section-item">
+                            <div class="profile-section-row">
+                                <div class="profile-section-info">
+                                    <span>Тема оформления</span>
+                                </div>
+                            </div>
+                            <div class="profile-divider"></div>
+                        </div>
+                    </div>
+
+                    <!-- Секция Поведение -->
+                    <div class="profile-settings-section" id="behavior-section" style="display: none;">
+                        <div class="profile-section-item">
+                            <div class="profile-section-row">
+                                <div class="profile-section-info">
+                                    <span>Настройки поведения</span>
+                                </div>
+                            </div>
+                            <div class="profile-divider"></div>
+                        </div>
+                    </div>
+
+                    <!-- Секция Персонализировать -->
+                    <div class="profile-settings-section" id="personalize-section" style="display: none;">
+                        <div class="profile-section-item">
+                            <div class="profile-section-row">
+                                <div class="profile-section-info">
+                                    <span>Персонализация</span>
+                                </div>
+                            </div>
+                            <div class="profile-divider"></div>
+                        </div>
+                    </div>
+
+                    <!-- Секция Управление данными -->
+                    <div class="profile-settings-section" id="data-section" style="display: none;">
+                        <div class="profile-section-item">
+                            <div class="profile-section-row">
+                                <div class="profile-section-info">
+                                    <span>Управление данными</span>
+                                </div>
+                            </div>
+                            <div class="profile-divider"></div>
+                        </div>
+                    </div>
+
+                    <!-- Баннер SuperGrok -->
+                    <div class="profile-supergrok-banner">
+                        <div class="supergrok-banner-content">
+                            <div class="supergrok-icon">SG</div>
+                            <div class="supergrok-text">
+                                <div>Меньше лимитов,</div>
+                                <div>больше возможностей</div>
+                            </div>
+                        </div>
+                        <button class="supergrok-button">Попробовать бесплатно</button>
+                    </div>
+                </div>
             </div>
-            
-            <form class="profile-form" id="profile-settings-form">
-                <div class="form-group">
-                    <label for="profile-name">Имя</label>
-                    <input type="text" id="profile-name" placeholder="Ваше имя">
-                </div>
-                
-                <div class="form-group">
-                    <label for="profile-email">Email</label>
-                    <input type="email" id="profile-email" placeholder="your@email.com">
-                </div>
-                
-                <div class="form-group">
-                    <label for="profile-bio">Биография</label>
-                    <textarea id="profile-bio" placeholder="Расскажите о себе..."></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label for="profile-expertise">Экспертиза</label>
-                    <select id="profile-expertise" multiple style="height: 100px;">
-                        <option value="relationships">Отношения</option>
-                        <option value="dating">Знакомства</option>
-                        <option value="manipulation">Манипуляции</option>
-                        <option value="psychology">Психология</option>
-                        <option value="communication">Коммуникация</option>
-                        <option value="family">Семейные отношения</option>
-                    </select>
-                    <small style="color: var(--text-tertiary); font-size: 0.8rem;">Удерживайте Ctrl для выбора нескольких вариантов</small>
-                </div>
-                
-                <div class="form-group">
-                    <label for="profile-privacy">Настройки приватности</label>
-                    <select id="profile-privacy">
-                        <option value="public">Публичный профиль</option>
-                        <option value="private">Приватный профиль</option>
-                        <option value="friends">Только друзья</option>
-                    </select>
-                </div>
-                
-                <button type="submit" class="ios-button" style="width: 100%;">
-                    <i class="fas fa-save"></i> Сохранить изменения
-                </button>
-            </form>
         </div>
     </div>
 
