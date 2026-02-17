@@ -3768,6 +3768,34 @@ hideApiLoadingEffect() {
     }
 }
 
+updateSphereApiState(state) {
+    const sphere = document.querySelector('.animated-sphere');
+    if (!sphere) return;
+    
+    // Удаляем все предыдущие классы состояний
+    sphere.classList.remove('api-connecting', 'api-connected', 'api-error', 'api-not-configured');
+    
+    // Добавляем новый класс состояния
+    switch(state) {
+        case 'connecting':
+            sphere.classList.add('api-connecting');
+            break;
+        case 'connected':
+            sphere.classList.add('api-connected');
+            // Через 2 секунды убираем эффект подключения
+            setTimeout(() => {
+                sphere.classList.remove('api-connected');
+            }, 2000);
+            break;
+        case 'error':
+            sphere.classList.add('api-error');
+            break;
+        case 'not-configured':
+            sphere.classList.add('api-not-configured');
+            break;
+    }
+}
+
     updateUI() {
         this.updateSettingsStats();
         this.updateSidebarInfo();

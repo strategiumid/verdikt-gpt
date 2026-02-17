@@ -390,6 +390,144 @@ body.sidebar-collapsed .container {
             drop-shadow(0 0 80px rgba(255, 255, 255, 0.1));
 }
 
+/* Состояния сферы при подключении к API */
+.animated-sphere.api-connecting {
+    animation: sphereApiConnecting 2s ease-in-out infinite;
+    filter: drop-shadow(0 0 60px rgba(59, 130, 246, 0.4)) 
+            drop-shadow(0 0 100px rgba(59, 130, 246, 0.3))
+            drop-shadow(0 0 40px rgba(255, 255, 255, 0.2));
+}
+
+.animated-sphere.api-connecting .sphere-core {
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 
+        0 0 120px rgba(59, 130, 246, 0.3),
+        0 0 80px rgba(59, 130, 246, 0.2),
+        0 0 40px rgba(59, 130, 246, 0.1),
+        inset 0 0 80px rgba(0, 0, 0, 0.8),
+        inset -30px -30px 60px rgba(0, 0, 0, 0.6),
+        inset 30px 30px 60px rgba(59, 130, 246, 0.15);
+    animation: sphereCoreConnecting 1.5s ease-in-out infinite;
+}
+
+.animated-sphere.api-connecting .sphere-ring-1,
+.animated-sphere.api-connecting .sphere-ring-2,
+.animated-sphere.api-connecting .sphere-ring-3 {
+    border-color: rgba(59, 130, 246, 0.4);
+    opacity: 0.7;
+    animation-duration: 4s, 6s, 9s;
+}
+
+.animated-sphere.api-connecting .sphere-glow {
+    background: radial-gradient(circle at center, 
+        rgba(59, 130, 246, 0.3) 0%,
+        rgba(59, 130, 246, 0.2) 20%,
+        rgba(59, 130, 246, 0.15) 35%,
+        rgba(59, 130, 246, 0.1) 50%,
+        rgba(59, 130, 246, 0.05) 65%,
+        transparent 80%);
+    opacity: 0.9;
+}
+
+.animated-sphere.api-connecting .particle {
+    background: rgba(59, 130, 246, 0.9);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.8),
+                0 0 8px rgba(59, 130, 246, 0.6);
+    opacity: 1;
+}
+
+/* Состояние: подключено */
+.animated-sphere.api-connected {
+    animation: sphereApiConnected 1s ease-out;
+    filter: drop-shadow(0 0 80px rgba(34, 197, 94, 0.5)) 
+            drop-shadow(0 0 120px rgba(34, 197, 94, 0.4))
+            drop-shadow(0 0 60px rgba(255, 255, 255, 0.3));
+}
+
+.animated-sphere.api-connected .sphere-core {
+    border-color: rgba(34, 197, 94, 0.6);
+    box-shadow: 
+        0 0 150px rgba(34, 197, 94, 0.4),
+        0 0 100px rgba(34, 197, 94, 0.3),
+        0 0 60px rgba(34, 197, 94, 0.2),
+        inset 0 0 80px rgba(0, 0, 0, 0.8),
+        inset -30px -30px 60px rgba(0, 0, 0, 0.6),
+        inset 30px 30px 60px rgba(34, 197, 94, 0.2);
+    animation: sphereCoreConnected 0.8s ease-out;
+}
+
+.animated-sphere.api-connected .sphere-ring-1,
+.animated-sphere.api-connected .sphere-ring-2,
+.animated-sphere.api-connected .sphere-ring-3 {
+    border-color: rgba(34, 197, 94, 0.5);
+    opacity: 0.8;
+}
+
+.animated-sphere.api-connected .sphere-glow {
+    background: radial-gradient(circle at center, 
+        rgba(34, 197, 94, 0.35) 0%,
+        rgba(34, 197, 94, 0.25) 20%,
+        rgba(34, 197, 94, 0.2) 35%,
+        rgba(34, 197, 94, 0.15) 50%,
+        rgba(34, 197, 94, 0.1) 65%,
+        transparent 80%);
+    opacity: 1;
+    animation: glowPulseSuccess 1.5s ease-out;
+}
+
+.animated-sphere.api-connected .particle {
+    background: rgba(34, 197, 94, 1);
+    box-shadow: 0 0 20px rgba(34, 197, 94, 1),
+                0 0 10px rgba(34, 197, 94, 0.8);
+    opacity: 1;
+}
+
+/* Состояние: ошибка */
+.animated-sphere.api-error {
+    animation: sphereApiError 1s ease-in-out infinite;
+    filter: drop-shadow(0 0 60px rgba(239, 68, 68, 0.4)) 
+            drop-shadow(0 0 100px rgba(239, 68, 68, 0.3));
+}
+
+.animated-sphere.api-error .sphere-core {
+    border-color: rgba(239, 68, 68, 0.5);
+    box-shadow: 
+        0 0 120px rgba(239, 68, 68, 0.3),
+        0 0 80px rgba(239, 68, 68, 0.2),
+        inset 0 0 80px rgba(0, 0, 0, 0.8),
+        inset -30px -30px 60px rgba(0, 0, 0, 0.6),
+        inset 30px 30px 60px rgba(239, 68, 68, 0.15);
+}
+
+.animated-sphere.api-error .sphere-ring-1,
+.animated-sphere.api-error .sphere-ring-2,
+.animated-sphere.api-error .sphere-ring-3 {
+    border-color: rgba(239, 68, 68, 0.4);
+    opacity: 0.6;
+}
+
+/* Состояние: не настроен */
+.animated-sphere.api-not-configured {
+    filter: drop-shadow(0 0 40px rgba(255, 255, 255, 0.1)) 
+            drop-shadow(0 0 80px rgba(255, 255, 255, 0.05));
+    opacity: 0.6;
+}
+
+.animated-sphere.api-not-configured .sphere-core {
+    border-color: rgba(255, 255, 255, 0.15);
+    opacity: 0.7;
+}
+
+.animated-sphere.api-not-configured .sphere-ring-1,
+.animated-sphere.api-not-configured .sphere-ring-2,
+.animated-sphere.api-not-configured .sphere-ring-3 {
+    opacity: 0.3;
+}
+
+.animated-sphere.api-not-configured .particle {
+    opacity: 0.4;
+}
+
 .animated-sphere:hover {
     transform: scale(1.05);
     animation: sphereAttract 2s ease-in-out infinite;
@@ -422,6 +560,98 @@ body.sidebar-collapsed .container {
     }
     50% {
         transform: scale(1.08);
+    }
+}
+
+/* Анимации для состояний подключения API */
+@keyframes sphereApiConnecting {
+    0%, 100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 60px rgba(59, 130, 246, 0.4)) 
+                drop-shadow(0 0 100px rgba(59, 130, 246, 0.3))
+                drop-shadow(0 0 40px rgba(255, 255, 255, 0.2));
+    }
+    50% {
+        transform: scale(1.04);
+        filter: drop-shadow(0 0 80px rgba(59, 130, 246, 0.5)) 
+                drop-shadow(0 0 120px rgba(59, 130, 246, 0.4))
+                drop-shadow(0 0 60px rgba(255, 255, 255, 0.25));
+    }
+}
+
+@keyframes sphereCoreConnecting {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        border-color: rgba(59, 130, 246, 0.5);
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.05);
+        border-color: rgba(59, 130, 246, 0.7);
+    }
+}
+
+@keyframes sphereApiConnected {
+    0% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 80px rgba(34, 197, 94, 0.5)) 
+                drop-shadow(0 0 120px rgba(34, 197, 94, 0.4))
+                drop-shadow(0 0 60px rgba(255, 255, 255, 0.3));
+    }
+    50% {
+        transform: scale(1.1);
+        filter: drop-shadow(0 0 100px rgba(34, 197, 94, 0.6)) 
+                drop-shadow(0 0 150px rgba(34, 197, 94, 0.5))
+                drop-shadow(0 0 80px rgba(255, 255, 255, 0.4));
+    }
+    100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 80px rgba(34, 197, 94, 0.5)) 
+                drop-shadow(0 0 120px rgba(34, 197, 94, 0.4))
+                drop-shadow(0 0 60px rgba(255, 255, 255, 0.3));
+    }
+}
+
+@keyframes sphereCoreConnected {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        border-color: rgba(34, 197, 94, 0.6);
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.15);
+        border-color: rgba(34, 197, 94, 0.9);
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        border-color: rgba(34, 197, 94, 0.6);
+    }
+}
+
+@keyframes glowPulseSuccess {
+    0% {
+        opacity: 0.7;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.2);
+    }
+    100% {
+        opacity: 0.7;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+@keyframes sphereApiError {
+    0%, 100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 60px rgba(239, 68, 68, 0.4)) 
+                drop-shadow(0 0 100px rgba(239, 68, 68, 0.3));
+    }
+    25% {
+        transform: scale(0.98);
+    }
+    75% {
+        transform: scale(1.02);
     }
 }
 
