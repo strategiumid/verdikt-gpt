@@ -2691,8 +2691,8 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         const updateSuggestions = () => {
             const text = (input.value || '').trim();
             container.innerHTML = '';
-            if (!text) {
-                container.style.display = 'none';
+            container.classList.remove('has-suggestions');
+            if (!text || text.length < 2) {
                 return;
             }
             const lower = text.toLowerCase();
@@ -2701,7 +2701,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             );
             const show = matches.slice(0, 8);
             if (show.length === 0) {
-                container.style.display = 'none';
                 return;
             }
             show.forEach(phrase => {
@@ -2716,38 +2715,43 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
                     input.style.height = 'auto';
                     input.style.height = Math.min(input.scrollHeight, 200) + 'px';
                     container.innerHTML = '';
-                    container.style.display = 'none';
+                    container.classList.remove('has-suggestions');
                     input.focus();
                 });
                 container.appendChild(chip);
             });
-            container.style.display = 'flex';
+            container.classList.add('has-suggestions');
         };
 
         input.addEventListener('input', () => {
             this.elements.messageInput.style.height = 'auto';
             this.elements.messageInput.style.height = Math.min(this.elements.messageInput.scrollHeight, 200) + 'px';
             clearTimeout(t9Debounce);
-            t9Debounce = setTimeout(updateSuggestions, 150);
+            t9Debounce = setTimeout(updateSuggestions, 100);
+        });
+
+        input.addEventListener('keyup', () => {
+            clearTimeout(t9Debounce);
+            t9Debounce = setTimeout(updateSuggestions, 80);
         });
 
         input.addEventListener('focus', () => {
-            if ((input.value || '').trim()) updateSuggestions();
+            if ((input.value || '').trim().length >= 2) updateSuggestions();
         });
 
         input.addEventListener('blur', () => {
             clearTimeout(t9Debounce);
             setTimeout(() => {
                 if (!container.contains(document.activeElement)) {
-                    container.style.display = 'none';
+                    container.classList.remove('has-suggestions');
                 }
-            }, 150);
+            }, 180);
         });
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 container.innerHTML = '';
-                container.style.display = 'none';
+                container.classList.remove('has-suggestions');
             }
         });
     }
