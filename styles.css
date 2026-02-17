@@ -145,17 +145,6 @@ body {
     box-sizing: border-box;
 }
 
-/* Центрирование контента с учётом сайдбара */
-@media (min-width: 1520px) {
-    .container {
-        margin-left: calc(320px + env(safe-area-inset-left, 0px) + (100vw - 320px - 1200px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)) / 2);
-    }
-    
-    body.sidebar-collapsed .container {
-        margin-left: calc(72px + env(safe-area-inset-left, 0px) + (100vw - 72px - 1200px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)) / 2);
-    }
-}
-
 /* Центрирование контента с учётом свёрнутого сайдбара */
 body.sidebar-collapsed .container {
     margin-left: calc(72px + env(safe-area-inset-left, 0px));
@@ -740,55 +729,71 @@ body.sidebar-collapsed .container {
     color: var(--text-tertiary);
 }
 
-/* Подсказки Т9 над полем ввода */
+/* Подсказки Т9 — выпадающий список под полем ввода */
 .input-wrapper-with-t9 {
     display: flex;
     flex-direction: column;
     min-width: 0;
+    position: relative;
 }
 
-.t9-suggestions {
+.t9-dropdown {
     display: none;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 8px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    max-height: 72px;
+    flex-direction: column;
+    margin-top: 0;
+    padding: 6px 0;
+    background: rgba(28, 28, 30, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: none;
+    border-radius: 0 0 14px 14px;
+    max-height: 240px;
     overflow-y: auto;
     overflow-x: hidden;
-    align-items: center;
-    align-content: center;
-    order: -1; /* выше textarea */
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
-.t9-suggestions.has-suggestions {
+.t9-dropdown.has-suggestions {
     display: flex;
 }
 
-.t9-suggestion-chip {
-    display: inline-flex;
+.t9-suggestion-item {
+    display: flex;
     align-items: center;
-    padding: 6px 12px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 0.85rem;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 14px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 0.9rem;
+    font-family: inherit;
+    text-align: left;
     cursor: pointer;
-    transition: all 0.2s ease;
-    white-space: nowrap;
+    transition: background 0.15s ease;
+}
+
+.t9-suggestion-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.t9-suggestion-item:active {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.t9-suggestion-item .t9-icon {
     flex-shrink: 0;
+    width: 18px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 14px;
 }
 
-.t9-suggestion-chip:hover {
-    background: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.2);
-    transform: scale(1.02);
-}
-
-.t9-suggestion-chip:active {
-    transform: scale(0.98);
+.t9-suggestion-item .t9-text {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .input-actions-right {
@@ -2559,7 +2564,6 @@ footer {
     
     body.sidebar-collapsed .container {
         margin-left: calc(72px + env(safe-area-inset-left, 0px));
-        transition: margin-left 0.35s cubic-bezier(0.32, 0.72, 0, 1);
     }
     
     .footer-content {

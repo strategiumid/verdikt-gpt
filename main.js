@@ -2704,12 +2704,13 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
                 return;
             }
             show.forEach(phrase => {
-                const chip = document.createElement('button');
-                chip.type = 'button';
-                chip.className = 't9-suggestion-chip';
-                chip.textContent = phrase;
-                chip.setAttribute('role', 'option');
-                chip.addEventListener('click', (e) => {
+                const item = document.createElement('button');
+                item.type = 'button';
+                item.className = 't9-suggestion-item';
+                item.setAttribute('role', 'option');
+                item.innerHTML = '<span class="t9-icon"><i class="fas fa-search"></i></span><span class="t9-text"></span>';
+                item.querySelector('.t9-text').textContent = phrase;
+                item.addEventListener('click', (e) => {
                     e.preventDefault();
                     input.value = phrase;
                     input.style.height = 'auto';
@@ -2718,7 +2719,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
                     container.classList.remove('has-suggestions');
                     input.focus();
                 });
-                container.appendChild(chip);
+                container.appendChild(item);
             });
             container.classList.add('has-suggestions');
         };
