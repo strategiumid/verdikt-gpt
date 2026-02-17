@@ -3799,23 +3799,126 @@ applySphereApiState(sphere, state) {
     switch(state) {
         case 'connecting':
             sphere.classList.add('api-connecting');
+            this.startStarSuction(sphere);
             break;
         case 'connected':
             sphere.classList.add('api-connected');
+            this.startStarSuction(sphere);
             // Через 2 секунды убираем эффект подключения
             setTimeout(() => {
                 const currentSphere = document.querySelector('.animated-sphere');
                 if (currentSphere && currentSphere.classList.contains('api-connected')) {
                     currentSphere.classList.remove('api-connected');
+                    this.stopStarSuction();
                 }
             }, 2000);
             break;
         case 'error':
             sphere.classList.add('api-error');
+            this.startStarSuction(sphere);
             break;
         case 'not-configured':
             sphere.classList.add('api-not-configured');
+            this.stopStarSuction();
             break;
+        default:
+            this.stopStarSuction();
+            break;
+    }
+}
+
+startStarSuction(sphere) {
+    // Останавливаем предыдущий интервал, если он существует
+    if (this.starSuctionInterval) {
+        clearInterval(this.starSuctionInterval);
+    }
+    
+    const starContainer = sphere.querySelector('.sphere-star-suction');
+    if (!starContainer) return;
+    
+    // Очищаем предыдущие звезды
+    starContainer.innerHTML = '';
+    
+    // Функция создания звезды со спиральным движением
+    const createStar = () => {
+        const star = document.createElement('div');
+        star.className = 'star-suction-particle';
+        
+        // Генерируем случайную позицию на краю контейнера (вокруг сферы)
+        const startAngle = Math.random() * Math.PI * 2;
+        const startDistance = 180 + Math.random() * 80; // Расстояние от центра (180-260px)
+        const startX = Math.cos(startAngle) * startDistance;
+        const startY = Math.sin(startAngle) * startDistance;
+        
+        // Устанавливаем начальную позицию
+        star.style.left = '50%';
+        star.style.top = '50%';
+        star.style.transform = `translate(${startX}px, ${startY}px)`;
+        
+        // Количество оборотов спирали (2-4 оборота)
+        const rotations = 2 + Math.random() * 2;
+        const duration = 2 + Math.random() * 0.5; // Длительность анимации 2-2.5 секунды
+        
+        // Создаем keyframes для спирального движения
+        const animationName = `starSuction_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const styleSheet = document.createElement('style');
+        
+        // Генерируем ключевые кадры для спирального движения
+        const keyframes = [];
+        const steps = 20;
+        for (let i = 0; i <= steps; i++) {
+            const progress = i / steps;
+            const currentAngle = startAngle + (rotations * Math.PI * 2 * progress);
+            const currentDistance = startDistance * (1 - progress); // Уменьшаем расстояние к центру
+            const currentX = Math.cos(currentAngle) * currentDistance;
+            const currentY = Math.sin(currentAngle) * currentDistance;
+            const scale = 1 - progress * 0.9; // Уменьшаем размер
+            const opacity = progress < 0.1 ? progress * 10 : (progress > 0.9 ? (1 - progress) * 10 : 1);
+            
+            keyframes.push(`
+                ${progress * 100}% {
+                    opacity: ${opacity};
+                    transform: translate(${currentX}px, ${currentY}px) scale(${scale});
+                }
+            `);
+        }
+        
+        styleSheet.textContent = `
+            @keyframes ${animationName} {
+                ${keyframes.join('\n')}
+            }
+            .star-suction-particle.${animationName} {
+                animation: ${animationName} ${duration}s ease-in forwards;
+            }
+        `;
+        document.head.appendChild(styleSheet);
+        star.classList.add(animationName);
+        
+        starContainer.appendChild(star);
+        
+        // Удаляем звезду и стили после анимации
+        setTimeout(() => {
+            star.remove();
+            styleSheet.remove();
+        }, duration * 1000 + 100);
+    };
+    
+    // Создаем звезды периодически
+    this.starSuctionInterval = setInterval(() => {
+        createStar();
+    }, 250); // Новая звезда каждые 250мс для более плавного эффекта
+}
+
+stopStarSuction() {
+    if (this.starSuctionInterval) {
+        clearInterval(this.starSuctionInterval);
+        this.starSuctionInterval = null;
+    }
+    
+    // Очищаем контейнер звезд
+    const starContainer = document.querySelector('.sphere-star-suction');
+    if (starContainer) {
+        starContainer.innerHTML = '';
     }
 }
 

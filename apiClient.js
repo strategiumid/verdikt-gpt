@@ -154,11 +154,17 @@ export class APIClient {
             this.elements.apiStatus.style.color = '#f87171';
             this.app.showNotification('Добавьте API ключ в настройках', 'warning');
             this.state.isApiConnected = false;
+            if (this.app.updateSphereApiState) {
+                this.app.updateSphereApiState('not-configured');
+            }
             return;
         }
 
         this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> Проверка API ключа...';
         this.elements.apiStatus.classList.add('api-connecting');
+        if (this.app.updateSphereApiState) {
+            this.app.updateSphereApiState('connecting');
+        }
         
         try {
             console.log('Проверка API с ключом:', this.apiConfig.apiKey.substring(0, 10) + '...');
@@ -198,6 +204,9 @@ export class APIClient {
                     this.elements.apiStatus.classList.remove('api-connecting');
                     this.elements.apiStatus.classList.add('api-connected');
                     this.state.isApiConnected = true;
+                    if (this.app.updateSphereApiState) {
+                        this.app.updateSphereApiState('connected');
+                    }
                     
                     this.app.showNotification('API ключ проверен и активен ✅', 'success');
                 } else {
@@ -218,6 +227,9 @@ export class APIClient {
                 this.elements.apiStatus.classList.remove('api-connecting');
                 this.elements.apiStatus.classList.add('api-error');
                 this.state.isApiConnected = false;
+                if (this.app.updateSphereApiState) {
+                    this.app.updateSphereApiState('error');
+                }
                 
                 let userMessage = 'Не удалось подключиться к API. ';
                 if (response.status === 401) {
@@ -239,6 +251,9 @@ export class APIClient {
             this.elements.apiStatus.classList.remove('api-connecting');
             this.elements.apiStatus.classList.add('api-error');
             this.state.isApiConnected = false;
+            if (this.app.updateSphereApiState) {
+                this.app.updateSphereApiState('error');
+            }
             
             let errorMessage = 'Не удалось подключиться к API. ';
             if (error.message.includes('Failed to fetch')) {
