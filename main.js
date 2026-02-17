@@ -1935,11 +1935,19 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
     // ==================== ОСНОВНЫЕ ФУНКЦИИ ЧАТА ====================
 
     setupEventListeners() {
-        this.elements.sendButton.addEventListener('click', () => this.sendMessage());
+        // Send button (if exists)
+        if (this.elements.sendButton) {
+            this.elements.sendButton.addEventListener('click', () => this.sendMessage());
+        }
+        
+        // Enter key to send message
         this.elements.messageInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.ctrlKey) {
+            if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 this.sendMessage();
+            } else if (e.key === 'Enter' && e.shiftKey) {
+                // Allow Shift+Enter for new line
+                return;
             }
         });
         
@@ -1956,6 +1964,9 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
                 mode.classList.add('active');
             });
         });
+        
+        // Grok-style AI Mode Selector
+        this.setupGrokModeSelector();
         
         document.querySelectorAll('.example-button').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -2531,7 +2542,92 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             activeMode.classList.add('active');
         }
         
+        // Update Grok mode selector UI
+        this.updateGrokModeSelector(modeId);
+        
         this.showNotification(`Режим изменен на: ${this.state.aiModes[modeId].name}`, 'info');
+    }
+    
+    setupGrokModeSelector() {
+        const modeSelector = document.getElementById('ai-mode-selector');
+        const modeDropdown = document.getElementById('ai-mode-dropdown');
+        
+        if (!modeSelector || !modeDropdown) return;
+        
+        // Toggle dropdown on button click
+        modeSelector.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = modeDropdown.classList.contains('show');
+            
+            if (isOpen) {
+                modeDropdown.classList.remove('show');
+                modeSelector.classList.remove('active');
+            } else {
+                modeDropdown.classList.add('show');
+                modeSelector.classList.add('active');
+            }
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!modeSelector.contains(e.target) && !modeDropdown.contains(e.target)) {
+                modeDropdown.classList.remove('show');
+                modeSelector.classList.remove('active');
+            }
+        });
+        
+        // Handle mode selection
+        modeDropdown.querySelectorAll('.mode-dropdown-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const modeId = item.dataset.mode;
+                
+                if (modeId) {
+                    this.setAIMode(modeId);
+                    modeDropdown.classList.remove('show');
+                    modeSelector.classList.remove('active');
+                }
+            });
+        });
+        
+        // Initialize UI with current mode
+        this.updateGrokModeSelector(this.state.currentMode);
+    }
+    
+    updateGrokModeSelector(modeId) {
+        const modeSelector = document.getElementById('ai-mode-selector');
+        const modeSelectorText = document.getElementById('mode-selector-text');
+        const modeDropdown = document.getElementById('ai-mode-dropdown');
+        
+        if (!modeSelector || !modeSelectorText || !modeDropdown) return;
+        
+        // Update dropdown items
+        modeDropdown.querySelectorAll('.mode-dropdown-item').forEach(item => {
+            item.classList.remove('active');
+            const checkIcon = item.querySelector('.mode-item-check');
+            if (checkIcon) {
+                checkIcon.style.display = 'none';
+            }
+            
+            if (item.dataset.mode === modeId) {
+                item.classList.add('active');
+                const checkIcon = item.querySelector('.mode-item-check');
+                if (checkIcon) {
+                    checkIcon.style.display = 'block';
+                }
+            }
+        });
+        
+        // Update selector text
+        const mode = this.state.aiModes[modeId];
+        if (mode) {
+            // For "balanced" mode, show "Авто", otherwise show mode name
+            if (modeId === 'balanced') {
+                modeSelectorText.textContent = 'Авто';
+            } else {
+                modeSelectorText.textContent = mode.name;
+            }
+        }
     }
 
     togglePresentationMode() {
@@ -3015,6 +3111,10 @@ hideTypingIndicator() {
     updateUI() {
         this.updateSettingsStats();
         this.updateSidebarInfo();
+        // Update Grok mode selector if it exists
+        if (this.state.currentMode) {
+            this.updateGrokModeSelector(this.state.currentMode);
+        }
     }
 
     getAchievementIdByName(name) {

@@ -795,6 +795,333 @@ body {
     box-shadow: none;
 }
 
+/* Grok-style Input Container */
+.grok-input-container {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 20px;
+    padding-bottom: 10px;
+}
+
+/* Основное поле ввода Grok */
+.grok-input-field {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(44, 44, 46, 0.95);
+    border-radius: 24px;
+    gap: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: var(--transition);
+}
+
+.grok-input-field:focus-within {
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05);
+}
+
+.grok-attach-button {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: var(--transition);
+    border-radius: 8px;
+}
+
+.grok-attach-button:hover {
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.grok-input-wrapper {
+    flex: 1;
+    position: relative;
+    min-width: 0;
+}
+
+.grok-input-wrapper textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+    resize: none;
+    outline: none;
+    min-height: 24px;
+    max-height: 120px;
+    line-height: 1.5;
+    padding: 0;
+}
+
+.grok-input-wrapper textarea::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* AI Mode Selector */
+.grok-mode-selector-wrapper {
+    position: relative;
+}
+
+.grok-mode-selector {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 12px;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.grok-mode-selector:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.grok-mode-selector.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.grok-mode-selector i.fa-rocket {
+    font-size: 14px;
+}
+
+.mode-selector-text {
+    font-size: 0.9rem;
+}
+
+.mode-chevron {
+    font-size: 10px;
+    transition: transform 0.2s ease;
+}
+
+.grok-mode-selector.active .mode-chevron {
+    transform: rotate(180deg);
+}
+
+/* Dropdown меню режимов */
+.grok-mode-dropdown {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    right: 0;
+    min-width: 320px;
+    max-width: 400px;
+    background: rgba(44, 44, 46, 0.98);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(20px);
+    padding: 8px;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 1000;
+    animation: fadeInDown 0.2s ease;
+}
+
+.grok-mode-dropdown.show {
+    display: flex;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.mode-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+}
+
+.mode-dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.mode-dropdown-item.active {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.mode-dropdown-item.active .mode-item-check {
+    display: block !important;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.mode-item-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.9);
+    flex-shrink: 0;
+}
+
+.mode-item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.mode-item-name {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.95);
+    margin-bottom: 2px;
+}
+
+.mode-item-desc {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.3;
+}
+
+.mode-item-check {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+/* Voice Button */
+.grok-voice-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    padding: 0;
+}
+
+.grok-voice-button:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.voice-wave-icon {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: 20px;
+}
+
+.voice-wave-icon span {
+    width: 3px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 2px;
+    animation: voiceWave 1.2s ease-in-out infinite;
+}
+
+.voice-wave-icon span:nth-child(1) {
+    height: 8px;
+    animation-delay: 0s;
+}
+
+.voice-wave-icon span:nth-child(2) {
+    height: 12px;
+    animation-delay: 0.2s;
+}
+
+.voice-wave-icon span:nth-child(3) {
+    height: 16px;
+    animation-delay: 0.4s;
+}
+
+@keyframes voiceWave {
+    0%, 100% {
+        transform: scaleY(0.5);
+        opacity: 0.5;
+    }
+    50% {
+        transform: scaleY(1);
+        opacity: 1;
+    }
+}
+
+/* Feature Buttons */
+.grok-feature-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 0 4px;
+}
+
+.grok-feature-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: rgba(44, 44, 46, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.grok-feature-btn:hover {
+    background: rgba(44, 44, 46, 0.95);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.grok-feature-btn i {
+    font-size: 14px;
+}
+
+.grok-send-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    font-size: 16px;
+}
+
+.grok-send-button:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.9);
+}
+
 /* Индикатор статуса API */
 .status-indicator {
     display: flex;
@@ -2375,10 +2702,70 @@ footer {
         border-radius: 20px;
     }
     
+    .grok-input-container {
+        margin: 12px;
+        gap: 8px;
+    }
+    
+    .grok-input-field {
+        padding: 10px 12px;
+        gap: 8px;
+        border-radius: 20px;
+    }
+    
+    .grok-mode-selector {
+        padding: 6px 8px;
+        font-size: 0.8rem;
+        gap: 4px;
+    }
+    
+    .mode-selector-text {
+        font-size: 0.8rem;
+    }
+    
+    .grok-mode-dropdown {
+        min-width: calc(100vw - 24px);
+        max-width: calc(100vw - 24px);
+        right: auto;
+        left: 0;
+        bottom: calc(100% + 12px);
+    }
+    
+    .grok-feature-buttons {
+        gap: 4px;
+        justify-content: space-between;
+    }
+    
+    .grok-feature-btn {
+        padding: 6px 8px;
+        font-size: 0.75rem;
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .grok-feature-btn span {
+        display: none;
+    }
+    
+    .grok-feature-btn i {
+        font-size: 12px;
+    }
+    
+    .grok-attach-button,
+    .grok-voice-button {
+        width: 36px;
+        height: 36px;
+        padding: 6px;
+    }
+    
+    .grok-attach-button i {
+        font-size: 16px;
+    }
+    
     .input-actions-left, .input-actions-right {
         flex-shrink: 0;
     }
-    
+
     .input-wrapper {
         min-width: 0;
     }
@@ -2399,6 +2786,11 @@ footer {
         padding: 6px 6px 6px 2px;
         font-size: 16px;
         line-height: 1.35;
+    }
+    
+    .grok-input-wrapper textarea {
+        font-size: 16px;
+        min-height: 24px;
     }
     
     .modal-content {

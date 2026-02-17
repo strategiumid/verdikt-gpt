@@ -2622,26 +2622,104 @@
                         </div>
                     </div>
                     <!-- Панель ввода -->
-                    <div class="input-container-extended">
-                        <div class="input-actions-left">
-                            <button class="input-icon-button" id="attach-button" title="Прикрепить файл">
+                    <div class="grok-input-container">
+                        <!-- Основное поле ввода -->
+                        <div class="grok-input-field">
+                            <button class="grok-attach-button" id="attach-button" title="Прикрепить файл">
                                 <i class="fas fa-paperclip"></i>
                             </button>
-                            <button class="input-icon-button" id="toggle-chat-history" title="История чатов">
-                                <i class="fas fa-history"></i>
+                            
+                            <div class="grok-input-wrapper">
+                                <textarea id="message-input" placeholder="Что вы думаете?" maxlength="2000" autocomplete="off"></textarea>
+                            </div>
+                            
+                            <!-- AI Mode Selector -->
+                            <div class="grok-mode-selector-wrapper">
+                                <button class="grok-mode-selector" id="ai-mode-selector" title="Выбрать режим AI">
+                                    <i class="fas fa-rocket"></i>
+                                    <span class="mode-selector-text" id="mode-selector-text">Авто</span>
+                                    <i class="fas fa-chevron-down mode-chevron"></i>
+                                </button>
+                                
+                                <!-- Dropdown меню режимов -->
+                                <div class="grok-mode-dropdown" id="ai-mode-dropdown">
+                                    <div class="mode-dropdown-item" data-mode="balanced">
+                                        <div class="mode-item-icon">
+                                            <i class="fas fa-balance-scale"></i>
+                                        </div>
+                                        <div class="mode-item-content">
+                                            <div class="mode-item-name">Сбалансированный</div>
+                                            <div class="mode-item-desc">Объективный анализ</div>
+                                        </div>
+                                        <i class="fas fa-check mode-item-check" style="display: none;"></i>
+                                    </div>
+                                    
+                                    <div class="mode-dropdown-item" data-mode="creative">
+                                        <div class="mode-item-icon">
+                                            <i class="fas fa-heart"></i>
+                                        </div>
+                                        <div class="mode-item-content">
+                                            <div class="mode-item-name">Эмоциональный</div>
+                                            <div class="mode-item-desc">Учет чувств и эмоций</div>
+                                        </div>
+                                        <i class="fas fa-check mode-item-check" style="display: none;"></i>
+                                    </div>
+                                    
+                                    <div class="mode-dropdown-item" data-mode="precise">
+                                        <div class="mode-item-icon">
+                                            <i class="fas fa-brain"></i>
+                                        </div>
+                                        <div class="mode-item-content">
+                                            <div class="mode-item-name">Аналитический</div>
+                                            <div class="mode-item-desc">Детальный разбор ситуации</div>
+                                        </div>
+                                        <i class="fas fa-check mode-item-check" style="display: none;"></i>
+                                    </div>
+                                    
+                                    <div class="mode-dropdown-item" data-mode="protective">
+                                        <div class="mode-item-icon">
+                                            <i class="fas fa-shield-alt"></i>
+                                        </div>
+                                        <div class="mode-item-content">
+                                            <div class="mode-item-name">Защитный</div>
+                                            <div class="mode-item-desc">Распознавание манипуляций</div>
+                                        </div>
+                                        <i class="fas fa-check mode-item-check" style="display: none;"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="grok-voice-button" id="voice-input" title="Голосовой ввод">
+                                <div class="voice-wave-icon">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
                             </button>
-                        </div>
-                        
-                        <div class="input-wrapper">
-                            <textarea id="message-input" placeholder="Отправить сообщение..." maxlength="2000" autocomplete="off"></textarea>
-                        </div>
-                        
-                        <div class="input-actions-right">
-                            <button class="input-icon-button" id="voice-input" title="Голосовой ввод">
-                                <i class="fas fa-microphone"></i>
-                            </button>
-                            <button class="input-icon-button primary" id="send-button" title="Отправить сообщение">
+                            
+                            <!-- Hidden send button for compatibility -->
+                            <button class="grok-send-button" id="send-button" title="Отправить сообщение" style="display: none;">
                                 <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Дополнительные кнопки функций -->
+                        <div class="grok-feature-buttons">
+                            <button class="grok-feature-btn" id="deepsearch-btn">
+                                <i class="fas fa-search"></i>
+                                <span>DeepSearch</span>
+                            </button>
+                            <button class="grok-feature-btn" id="imagine-btn">
+                                <i class="fas fa-image"></i>
+                                <span>Imagine</span>
+                            </button>
+                            <button class="grok-feature-btn" id="news-btn">
+                                <i class="fas fa-newspaper"></i>
+                                <span>Свежие новости</span>
+                            </button>
+                            <button class="grok-feature-btn" id="voice-chat-btn">
+                                <i class="fas fa-microphone-alt"></i>
+                                <span>Голосовой чат</span>
                             </button>
                         </div>
                     </div>
