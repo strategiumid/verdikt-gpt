@@ -382,37 +382,44 @@ body.sidebar-collapsed .container {
     display: flex;
     align-items: center;
     justify-content: center;
-    filter: drop-shadow(0 0 40px rgba(0, 0, 0, 0.8));
     cursor: pointer;
     transition: all 0.3s ease;
+    filter: drop-shadow(0 0 60px rgba(138, 43, 226, 0.4)) 
+            drop-shadow(0 0 100px rgba(75, 0, 130, 0.3))
+            drop-shadow(0 0 40px rgba(0, 0, 0, 0.8));
 }
 
 .animated-sphere:hover {
-    filter: drop-shadow(0 0 60px rgba(0, 0, 0, 0.9));
+    filter: drop-shadow(0 0 80px rgba(138, 43, 226, 0.6)) 
+            drop-shadow(0 0 120px rgba(75, 0, 130, 0.5))
+            drop-shadow(0 0 60px rgba(0, 0, 0, 0.9));
 }
 
 .animated-sphere:hover .sphere-core {
     box-shadow: 
-        0 0 150px rgba(0, 0, 0, 1),
-        0 0 100px rgba(0, 0, 0, 0.95),
+        0 0 150px rgba(138, 43, 226, 0.3),
+        0 0 100px rgba(75, 0, 130, 0.2),
+        0 0 80px rgba(0, 0, 0, 1),
         inset 0 0 100px rgba(0, 0, 0, 0.98),
         inset -30px -30px 60px rgba(0, 0, 0, 0.8),
-        inset 30px 30px 60px rgba(0, 0, 0, 0.7);
+        inset 30px 30px 60px rgba(138, 43, 226, 0.1);
 }
 
 .animated-sphere:hover .sphere-ring-1,
 .animated-sphere:hover .sphere-ring-2,
 .animated-sphere:hover .sphere-ring-3 {
-    opacity: 0.8;
-    filter: blur(1px);
+    opacity: 1;
+    filter: blur(0.5px);
+    box-shadow: 0 0 30px rgba(138, 43, 226, 0.4);
 }
 
 .animated-sphere:hover .particle {
     opacity: 1;
-    box-shadow: 0 0 12px rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 15px rgba(138, 43, 226, 0.8),
+                0 0 8px rgba(255, 255, 255, 0.6);
 }
 
-/* Эффект черной дыры - искажение пространства */
+/* Эффект черной дыры - искажение пространства с цветным свечением */
 .animated-sphere::before {
     content: '';
     position: absolute;
@@ -423,7 +430,8 @@ body.sidebar-collapsed .container {
     height: 300px;
     border-radius: 50%;
     background: radial-gradient(circle, 
-        transparent 0%,
+        rgba(138, 43, 226, 0.15) 0%,
+        rgba(75, 0, 130, 0.1) 20%,
         transparent 30%,
         rgba(0, 0, 0, 0.1) 50%,
         rgba(0, 0, 0, 0.3) 70%,
@@ -432,26 +440,32 @@ body.sidebar-collapsed .container {
     pointer-events: none;
     z-index: 1;
     transition: all 0.3s ease;
+    box-shadow: 0 0 80px rgba(138, 43, 226, 0.3),
+                0 0 120px rgba(75, 0, 130, 0.2),
+                inset 0 0 60px rgba(138, 43, 226, 0.1);
 }
 
 .animated-sphere:hover::before {
     width: 320px;
     height: 320px;
     opacity: 0.9;
+    box-shadow: 0 0 100px rgba(138, 43, 226, 0.5),
+                0 0 150px rgba(75, 0, 130, 0.3),
+                inset 0 0 80px rgba(138, 43, 226, 0.2);
 }
 
 @keyframes blackHoleDistortion {
     0%, 100% {
         transform: translate(-50%, -50%) scale(1);
-        opacity: 0.6;
+        opacity: 0.7;
     }
     50% {
         transform: translate(-50%, -50%) scale(1.05);
-        opacity: 0.8;
+        opacity: 0.9;
     }
 }
 
-/* Ядро сферы - черная дыра */
+/* Ядро сферы - черная дыра с цветным ореолом */
 .sphere-core {
     position: absolute;
     top: 50%;
@@ -467,14 +481,47 @@ body.sidebar-collapsed .container {
         rgba(0, 0, 0, 0.98) 70%,
         rgba(0, 0, 0, 1) 100%);
     box-shadow: 
+        0 0 100px rgba(138, 43, 226, 0.4),
+        0 0 60px rgba(75, 0, 130, 0.3),
         0 0 80px rgba(0, 0, 0, 1),
         inset 0 0 60px rgba(0, 0, 0, 0.9),
         inset -30px -30px 60px rgba(0, 0, 0, 0.8),
-        inset 30px 30px 60px rgba(0, 0, 0, 0.6);
-    border: 2px solid rgba(255, 255, 255, 0.05);
+        inset 30px 30px 60px rgba(138, 43, 226, 0.15);
+    border: 2px solid rgba(138, 43, 226, 0.3);
     animation: spherePulse 4s ease-in-out infinite;
     z-index: 2;
     transition: all 0.3s ease;
+}
+
+/* Внешнее свечение ядра */
+.sphere-core::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: radial-gradient(circle,
+        transparent 0%,
+        rgba(138, 43, 226, 0.2) 40%,
+        rgba(75, 0, 130, 0.15) 60%,
+        transparent 100%);
+    animation: coreGlow 3s ease-in-out infinite;
+    z-index: -1;
+    filter: blur(15px);
+}
+
+@keyframes coreGlow {
+    0%, 100% {
+        opacity: 0.6;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.1);
+    }
 }
 
 /* Аккреционный диск вокруг черной дыры */
@@ -508,47 +555,51 @@ body.sidebar-collapsed .container {
     }
 }
 
-/* Кольца вокруг сферы - гравитационное линзирование */
+/* Кольца вокруг сферы - гравитационное линзирование с цветным свечением */
 .sphere-ring {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     border-radius: 50%;
-    border: 1px solid;
-    opacity: 0.4;
+    border: 2px solid;
+    opacity: 0.6;
     animation: ringRotate 15s linear infinite;
     filter: blur(0.5px);
+    transition: all 0.3s ease;
 }
 
 .sphere-ring-1 {
     width: 180px;
     height: 180px;
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(138, 43, 226, 0.5);
     animation-duration: 8s;
     animation-direction: normal;
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 30px rgba(138, 43, 226, 0.4),
+                0 0 15px rgba(255, 255, 255, 0.2);
 }
 
 .sphere-ring-2 {
     width: 210px;
     height: 210px;
-    border-color: rgba(255, 255, 255, 0.15);
+    border-color: rgba(75, 0, 130, 0.4);
     animation-duration: 12s;
     animation-direction: reverse;
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 25px rgba(75, 0, 130, 0.3),
+                0 0 12px rgba(255, 255, 255, 0.15);
 }
 
 .sphere-ring-3 {
     width: 240px;
     height: 240px;
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(138, 43, 226, 0.3);
     animation-duration: 18s;
     animation-direction: normal;
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.05);
+    box-shadow: 0 0 20px rgba(138, 43, 226, 0.2),
+                0 0 10px rgba(255, 255, 255, 0.1);
 }
 
-/* Свечение вокруг сферы */
+/* Свечение вокруг сферы с цветным ореолом */
 .sphere-glow {
     position: absolute;
     top: 50%;
@@ -558,11 +609,13 @@ body.sidebar-collapsed .container {
     height: 200px;
     border-radius: 50%;
     background: radial-gradient(circle, 
-        rgba(0, 0, 0, 0.4) 0%,
+        rgba(138, 43, 226, 0.3) 0%,
+        rgba(75, 0, 130, 0.2) 30%,
         rgba(0, 0, 0, 0.2) 50%,
         transparent 100%);
     animation: glowPulse 3s ease-in-out infinite;
-    filter: blur(20px);
+    filter: blur(25px);
+    z-index: 0;
 }
 
 /* Частицы вокруг сферы */
@@ -577,11 +630,12 @@ body.sidebar-collapsed .container {
 
 .particle {
     position: absolute;
-    width: 4px;
-    height: 4px;
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.8);
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+    background: rgba(138, 43, 226, 0.9);
+    box-shadow: 0 0 12px rgba(138, 43, 226, 0.8),
+                0 0 6px rgba(255, 255, 255, 0.6);
     animation: particleOrbit 8s linear infinite;
     z-index: 3;
 }
@@ -596,18 +650,18 @@ body.sidebar-collapsed .container {
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.3), transparent);
+    background: radial-gradient(circle, rgba(138, 43, 226, 0.5), transparent);
     animation: particleGlow 2s ease-in-out infinite;
 }
 
 @keyframes particleGlow {
     0%, 100% {
-        opacity: 0.5;
+        opacity: 0.6;
         transform: translate(-50%, -50%) scale(1);
     }
     50% {
         opacity: 1;
-        transform: translate(-50%, -50%) scale(1.5);
+        transform: translate(-50%, -50%) scale(1.8);
     }
 }
 
@@ -646,20 +700,24 @@ body.sidebar-collapsed .container {
     0%, 100% {
         transform: translate(-50%, -50%) scale(1);
         box-shadow: 
+            0 0 120px rgba(138, 43, 226, 0.5),
+            0 0 80px rgba(75, 0, 130, 0.4),
             0 0 100px rgba(0, 0, 0, 1),
             0 0 60px rgba(0, 0, 0, 0.9),
             inset 0 0 80px rgba(0, 0, 0, 0.95),
             inset -30px -30px 60px rgba(0, 0, 0, 0.8),
-            inset 30px 30px 60px rgba(0, 0, 0, 0.6);
+            inset 30px 30px 60px rgba(138, 43, 226, 0.2);
     }
     50% {
         transform: translate(-50%, -50%) scale(1.02);
         box-shadow: 
+            0 0 150px rgba(138, 43, 226, 0.6),
+            0 0 100px rgba(75, 0, 130, 0.5),
             0 0 120px rgba(0, 0, 0, 1),
             0 0 80px rgba(0, 0, 0, 0.95),
             inset 0 0 100px rgba(0, 0, 0, 0.98),
             inset -30px -30px 60px rgba(0, 0, 0, 0.8),
-            inset 30px 30px 60px rgba(0, 0, 0, 0.7);
+            inset 30px 30px 60px rgba(138, 43, 226, 0.25);
     }
 }
 
@@ -683,12 +741,12 @@ body.sidebar-collapsed .container {
 
 @keyframes glowPulse {
     0%, 100% {
-        opacity: 0.4;
+        opacity: 0.6;
         transform: translate(-50%, -50%) scale(1);
     }
     50% {
-        opacity: 0.6;
-        transform: translate(-50%, -50%) scale(1.1);
+        opacity: 0.9;
+        transform: translate(-50%, -50%) scale(1.15);
     }
 }
 
