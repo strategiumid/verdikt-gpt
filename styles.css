@@ -393,6 +393,7 @@ body.sidebar-collapsed .container {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
+    overflow: visible !important;
 }
 
 /* Состояния сферы при подключении к API */
@@ -444,9 +445,11 @@ body.sidebar-collapsed .container {
 /* Состояние: подключено */
 .animated-sphere.api-connected {
     animation: sphereApiConnectedPulse 2s ease-in-out infinite !important;
-    filter: drop-shadow(0 0 80px rgba(34, 197, 94, 0.5)) 
-            drop-shadow(0 0 120px rgba(34, 197, 94, 0.4))
-            drop-shadow(0 0 60px rgba(255, 255, 255, 0.3)) !important;
+    filter: none !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
 }
 
 .animated-sphere.api-connected .sphere-core {
@@ -619,15 +622,9 @@ body.sidebar-collapsed .container {
 @keyframes sphereApiConnectedPulse {
     0%, 100% {
         transform: scale(1);
-        filter: drop-shadow(0 0 80px rgba(34, 197, 94, 0.5)) 
-                drop-shadow(0 0 120px rgba(34, 197, 94, 0.4))
-                drop-shadow(0 0 60px rgba(255, 255, 255, 0.3));
     }
     50% {
         transform: scale(1.02);
-        filter: drop-shadow(0 0 90px rgba(34, 197, 94, 0.6)) 
-                drop-shadow(0 0 130px rgba(34, 197, 94, 0.5))
-                drop-shadow(0 0 70px rgba(255, 255, 255, 0.35));
     }
 }
 
@@ -1096,9 +1093,8 @@ body.sidebar-collapsed .container {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 500px;
-    height: 500px;
-    border-radius: 50%;
+    width: 100%;
+    height: 100%;
     pointer-events: none;
     z-index: 4;
     overflow: visible;
