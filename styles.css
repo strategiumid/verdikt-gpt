@@ -1721,12 +1721,96 @@ footer {
     /* Используются стили ios-button */
 }
 
-/* Версия/ID */
-.profile-version-id {
-    font-size: 0.75rem;
+/* Отображение описания профиля */
+.profile-bio-display-text {
+    margin-top: 12px;
+    padding: 12px 0;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    min-height: 24px;
+}
+
+.profile-bio-content {
+    display: block;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.profile-bio-empty {
     color: rgba(255, 255, 255, 0.4);
-    margin-top: 24px;
-    font-family: monospace;
+    font-style: italic;
+}
+
+/* Промо код */
+.profile-promo-section {
+    padding: 16px 0;
+}
+
+.profile-promo-input-group {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+    align-items: stretch;
+}
+
+.profile-promo-input {
+    flex: 1;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: #fff;
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(10px);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.profile-promo-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+}
+
+.profile-promo-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.profile-promo-input-group .ios-button {
+    flex-shrink: 0;
+    white-space: nowrap;
+    min-width: 120px;
+}
+
+.profile-promo-status {
+    margin-top: 12px;
+    font-size: 0.85rem;
+    min-height: 20px;
+    padding: 8px 0;
+}
+
+.profile-promo-status.success {
+    color: #6ee7b7;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.profile-promo-status.error {
+    color: #f87171;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.profile-promo-status.info {
+    color: rgba(255, 255, 255, 0.6);
 }
 
 /* Редактирование аватарки */
@@ -1971,6 +2055,137 @@ footer {
 .subscription-card-profile.active .subscription-select-btn:hover {
     background: rgba(var(--primary-rgb), 0.9);
     transform: translateY(-1px);
+}
+
+/* Стили для элементов настроек в профиле */
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+}
+
+.control-label {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+    min-width: 100px;
+}
+
+#temperature-slider {
+    flex: 1;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+#temperature-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--primary);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#temperature-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 8px rgba(var(--primary-rgb), 0.5);
+}
+
+#temperature-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: var(--primary);
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+#temperature-slider::-moz-range-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 8px rgba(var(--primary-rgb), 0.5);
+}
+
+.shortcuts-list {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.shortcut-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+.shortcut-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+    transform: translateX(4px);
+}
+
+.shortcut-keys {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.shortcut-key {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    min-width: 32px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.shortcut-description {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-align: right;
+}
+
+.quick-commands-settings {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.command-item-settings {
+    padding: 10px 16px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.2s ease;
+    cursor: default;
+}
+
+.command-item-settings:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
 }
 
 /* Адаптивность для настроек профиля */

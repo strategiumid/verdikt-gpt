@@ -1703,6 +1703,26 @@
                             <i class="fas fa-palette"></i>
                             <span>Оформление</span>
                         </div>
+                        <div class="profile-nav-item" data-section="ai-mode">
+                            <i class="fas fa-robot"></i>
+                            <span>Режим AI</span>
+                        </div>
+                        <div class="profile-nav-item" data-section="achievements">
+                            <i class="fas fa-trophy"></i>
+                            <span>Достижения</span>
+                        </div>
+                        <div class="profile-nav-item" data-section="stats">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>Статистика</span>
+                        </div>
+                        <div class="profile-nav-item" data-section="shortcuts">
+                            <i class="fas fa-keyboard"></i>
+                            <span>Горячие клавиши</span>
+                        </div>
+                        <div class="profile-nav-item" data-section="security">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Безопасность</span>
+                        </div>
                         <div class="profile-nav-item" data-section="personalize">
                             <i class="fas fa-sliders-h"></i>
                             <span>Персонализировать</span>
@@ -1728,12 +1748,25 @@
                                     <div class="profile-user-name" id="profile-display-name">Alexander Nikolskiy</div>
                                     <div class="profile-user-email" id="profile-display-email">alexandernikolskiyy@gmail.com</div>
                                 </div>
-                                <button class="ios-button secondary" id="profile-edit-btn">Настроить</button>
                             </div>
                             <div class="profile-divider"></div>
                         </div>
 
-                        <!-- Описание профиля -->
+                        <!-- Описание профиля - просмотр -->
+                        <div class="profile-section-item" id="profile-bio-display">
+                            <div class="profile-section-row">
+                                <div class="profile-section-info">
+                                    <span>Описание профиля</span>
+                                </div>
+                                <button class="ios-button secondary" id="profile-bio-edit-btn">Изменить</button>
+                            </div>
+                            <div class="profile-bio-display-text" id="profile-bio-display-text">
+                                <span class="profile-bio-empty">Описание не указано</span>
+                            </div>
+                            <div class="profile-divider"></div>
+                        </div>
+
+                        <!-- Описание профиля - редактирование -->
                         <div class="profile-section-item" id="profile-bio-section" style="display: none;">
                             <div class="profile-bio-edit">
                                 <label for="profile-bio-input" class="profile-section-label">Описание профиля</label>
@@ -1746,8 +1779,24 @@
                             <div class="profile-divider"></div>
                         </div>
 
-                        <!-- Версия/ID -->
-                        <div class="profile-version-id">1061d2bf-175a-48e5-8d70-3a1d2f2ea660</div>
+                        <!-- Промо код -->
+                        <div class="profile-section-item">
+                            <div class="profile-promo-section">
+                                <div class="profile-section-label">Промо код</div>
+                                <div class="profile-promo-input-group">
+                                    <input 
+                                        type="text" 
+                                        id="profile-promo-input" 
+                                        class="profile-promo-input" 
+                                        placeholder="Введите промо код"
+                                        maxlength="50"
+                                    >
+                                    <button class="ios-button" id="profile-promo-apply">Применить</button>
+                                </div>
+                                <div class="profile-promo-status" id="profile-promo-status"></div>
+                            </div>
+                            <div class="profile-divider"></div>
+                        </div>
                     </div>
 
                     <!-- Секция Оформление -->
@@ -1764,6 +1813,332 @@
                                     <span>Светлая</span>
                                 </div>
                             </div>
+                            <div class="profile-divider"></div>
+                        </div>
+                        
+                        <!-- Настройки API -->
+                        <div class="profile-section-item">
+                            <div class="profile-section-label">Настройки API</div>
+                            <button class="ios-button secondary" id="api-settings-button" style="width: 100%; margin-top: 15px;">
+                                <i class="fas fa-key"></i> Настройки API
+                            </button>
+                            <div class="profile-divider"></div>
+                        </div>
+                    </div>
+
+                    <!-- Секция Режим AI -->
+                    <div class="profile-settings-section" id="ai-mode-section" style="display: none;">
+                        <div class="profile-section-item">
+                            <div class="profile-section-label">Режим консультации</div>
+                            <div class="ai-modes-settings">
+                                <div class="mode-item-settings active" data-mode="balanced">
+                                    <div class="mode-icon-settings">
+                                        <i class="fas fa-balance-scale"></i>
+                                    </div>
+                                    <div class="mode-info-settings">
+                                        <h5>Сбалансированный</h5>
+                                        <p>Объективный анализ</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="mode-item-settings" data-mode="creative">
+                                    <div class="mode-icon-settings">
+                                        <i class="fas fa-heart"></i>
+                                    </div>
+                                    <div class="mode-info-settings">
+                                        <h5>Эмоциональный</h5>
+                                        <p>Учет чувств и эмоций</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="mode-item-settings" data-mode="precise">
+                                    <div class="mode-icon-settings">
+                                        <i class="fas fa-brain"></i>
+                                    </div>
+                                    <div class="mode-info-settings">
+                                        <h5>Аналитический</h5>
+                                        <p>Детальный разбор ситуации</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="mode-item-settings" data-mode="protective">
+                                    <div class="mode-icon-settings">
+                                        <i class="fas fa-shield-alt"></i>
+                                    </div>
+                                    <div class="mode-info-settings">
+                                        <h5>Защитный</h5>
+                                        <p>Распознавание манипуляций</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="profile-divider"></div>
+                        </div>
+
+                        <div class="profile-section-item">
+                            <div class="profile-section-label">Настройки AI</div>
+                            <div class="control-group" style="margin-top: 15px; display: flex; align-items: center; gap: 12px;">
+                                <label class="control-label" style="min-width: 100px;">Температура:</label>
+                                <input type="range" id="temperature-slider" min="0.1" max="1" step="0.1" value="0.7" style="flex: 1;">
+                                <span id="temperature-value" style="min-width: 40px; text-align: center; color: rgba(255, 255, 255, 0.8);">0.7</span>
+                            </div>
+                            <div class="profile-divider"></div>
+                        </div>
+                    </div>
+
+                    <!-- Секция Достижения -->
+                    <div class="profile-settings-section" id="achievements-section" style="display: none;">
+                        <div class="profile-section-item">
+                            <div class="profile-section-label">Достижения</div>
+                            <div class="achievements-settings">
+                                <div class="achievement-item-settings unlocked">
+                                    <div class="achievement-icon-settings">🎯</div>
+                                    <div class="achievement-name-settings">Первый шаг</div>
+                                    <div class="achievement-desc-settings">Первая консультация</div>
+                                </div>
+                                
+                                <div class="achievement-item-settings">
+                                    <div class="achievement-icon-settings">💬</div>
+                                    <div class="achievement-name-settings">Доверие</div>
+                                    <div class="achievement-desc-settings">10 личных вопросов</div>
+                                </div>
+                                
+                                <div class="achievement-item-settings">
+                                    <div class="achievement-icon-settings">🛡️</div>
+                                    <div class="achievement-name-settings">Защитник</div>
+                                    <div class="achievement-desc-settings">Распознал 5 манипуляций</div>
+                                </div>
+                                
+                                <div class="achievement-item-settings">
+                                    <div class="achievement-icon-settings">💕</div>
+                                    <div class="achievement-name-settings">Романтик</div>
+                                    <div class="achievement-desc-settings">Помог в отношениях</div>
+                                </div>
+
+                                <div class="achievement-item-settings">
+                                    <div class="achievement-icon-settings">🦉</div>
+                                    <div class="achievement-name-settings">Сова</div>
+                                    <div class="achievement-desc-settings">Общались ночью</div>
+                                </div>
+
+                                <div class="achievement-item-settings">
+                                    <div class="achievement-icon-settings">📥</div>
+                                    <div class="achievement-name-settings">Архивариус</div>
+                                    <div class="achievement-desc-settings">Экспортировали чат</div>
+                                </div>
+
+                                <div class="achievement-item-settings">
+                                    <div class="achievement-icon-settings">📊</div>
+                                    <div class="achievement-name-settings">Презентатор</div>
+                                    <div class="achievement-desc-settings">Использовали режим презентации</div>
+                                </div>
+
+                                <div class="achievement-item-settings">
+                                    <div class="achievement-icon-settings">📚</div>
+                                    <div class="achievement-name-settings">Историк</div>
+                                    <div class="achievement-desc-settings">Создали 5 чатов</div>
+                                </div>
+                            </div>
+                            <div class="profile-divider"></div>
+                        </div>
+
+                        <!-- Дерево навыков отношений -->
+                        <div class="profile-section-item">
+                            <div class="profile-section-label">Дерево навыков</div>
+                            <div class="skills-tree" id="skills-tree">
+                                <div class="skills-branch">
+                                    <div class="skills-branch-title">
+                                        <span>🌸 Эмпатия</span>
+                                        <small id="skill-empathy-level">Уровень 0</small>
+                                    </div>
+                                    <div class="skills-nodes">
+                                        <div class="skill-node" data-skill="empathy-1">
+                                            Слушатель
+                                        </div>
+                                        <div class="skill-node" data-skill="empathy-2">
+                                            Поддержка
+                                        </div>
+                                        <div class="skill-node" data-skill="empathy-3">
+                                            Глубокое понимание
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="skills-branch">
+                                    <div class="skills-branch-title">
+                                        <span>🛡️ Защита</span>
+                                        <small id="skill-protection-level">Уровень 0</small>
+                                    </div>
+                                    <div class="skills-nodes">
+                                        <div class="skill-node" data-skill="protection-1">
+                                            Замечает триггеры
+                                        </div>
+                                        <div class="skill-node" data-skill="protection-2">
+                                            Читает манипуляции
+                                        </div>
+                                        <div class="skill-node" data-skill="protection-3">
+                                            Сильные границы
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="skills-branch">
+                                    <div class="skills-branch-title">
+                                        <span>🧠 Мудрость</span>
+                                        <small id="skill-wisdom-level">Уровень 0</small>
+                                    </div>
+                                    <div class="skills-nodes">
+                                        <div class="skill-node" data-skill="wisdom-1">
+                                            Рефлексия
+                                        </div>
+                                        <div class="skill-node" data-skill="wisdom-2">
+                                            Выводы
+                                        </div>
+                                        <div class="skill-node" data-skill="wisdom-3">
+                                            Стратегия отношений
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="profile-divider"></div>
+                        </div>
+                    </div>
+
+                    <!-- Секция Статистика -->
+                    <div class="profile-settings-section" id="stats-section" style="display: none;">
+                        <div class="profile-section-item">
+                            <div class="profile-section-label">Статистика</div>
+                            <div class="stats-settings-grid">
+                                <div class="stat-card-settings">
+                                    <div class="stat-value-settings" id="stats-total-messages">0</div>
+                                    <div class="stat-label-settings">Всего сообщений</div>
+                                </div>
+                                
+                                <div class="stat-card-settings">
+                                    <div class="stat-value-settings" id="stats-user-messages">0</div>
+                                    <div class="stat-label-settings">Ваших сообщений</div>
+                                </div>
+                                
+                                <div class="stat-card-settings">
+                                    <div class="stat-value-settings" id="stats-ai-messages">0</div>
+                                    <div class="stat-label-settings">Ответов AI</div>
+                                </div>
+                                
+                                <div class="stat-card-settings">
+                                    <div class="stat-value-settings" id="stats-total-chats">0</div>
+                                    <div class="stat-label-settings">Всего чатов</div>
+                                </div>
+                            </div>
+                            <div class="profile-divider"></div>
+                        </div>
+
+                        <div class="profile-section-item">
+                            <div class="profile-section-label">Активность</div>
+                            <div style="margin-top: 15px; color: rgba(255, 255, 255, 0.7); font-size: 0.9rem; line-height: 1.8;">
+                                <p>Среднее время ответа: <span id="stats-avg-response" style="color: rgba(255, 255, 255, 0.9); font-weight: 500;">0с</span></p>
+                                <p>Консультаций: <span id="stats-consultations" style="color: rgba(255, 255, 255, 0.9); font-weight: 500;">0</span></p>
+                                <p>Сохранено чатов: <span id="stats-saved-chats" style="color: rgba(255, 255, 255, 0.9); font-weight: 500;">0</span></p>
+                                <p>Сессий: <span id="stats-sessions" style="color: rgba(255, 255, 255, 0.9); font-weight: 500;">0</span></p>
+                            </div>
+                            <div class="profile-divider"></div>
+                        </div>
+                    </div>
+
+                    <!-- Секция Горячие клавиши -->
+                    <div class="profile-settings-section" id="shortcuts-section" style="display: none;">
+                        <div class="profile-section-item">
+                            <div class="profile-section-label">Горячие клавиши</div>
+                            <div class="shortcuts-list">
+                                <div class="shortcut-item">
+                                    <div class="shortcut-keys">
+                                        <span class="shortcut-key">Ctrl</span>
+                                        <span>+</span>
+                                        <span class="shortcut-key">Enter</span>
+                                    </div>
+                                    <div class="shortcut-description">Отправить сообщение</div>
+                                </div>
+                                
+                                <div class="shortcut-item">
+                                    <div class="shortcut-keys">
+                                        <span class="shortcut-key">Ctrl</span>
+                                        <span>+</span>
+                                        <span class="shortcut-key">N</span>
+                                    </div>
+                                    <div class="shortcut-description">Новый чат</div>
+                                </div>
+                                
+                                <div class="shortcut-item">
+                                    <div class="shortcut-keys">
+                                        <span class="shortcut-key">Ctrl</span>
+                                        <span>+</span>
+                                        <span class="shortcut-key">S</span>
+                                    </div>
+                                    <div class="shortcut-description">Сохранить чат</div>
+                                </div>
+                                
+                                <div class="shortcut-item">
+                                    <div class="shortcut-keys">
+                                        <span class="shortcut-key">Ctrl</span>
+                                        <span>+</span>
+                                        <span class="shortcut-key">E</span>
+                                    </div>
+                                    <div class="shortcut-description">Экспорт</div>
+                                </div>
+                                
+                                <div class="shortcut-item">
+                                    <div class="shortcut-keys">
+                                        <span class="shortcut-key">Ctrl</span>
+                                        <span>+</span>
+                                        <span class="shortcut-key">H</span>
+                                    </div>
+                                    <div class="shortcut-description">История чатов</div>
+                                </div>
+                                
+                                <div class="shortcut-item">
+                                    <div class="shortcut-keys">
+                                        <span class="shortcut-key">Ctrl</span>
+                                        <span>+</span>
+                                        <span class="shortcut-key">L</span>
+                                    </div>
+                                    <div class="shortcut-description">Очистить чат</div>
+                                </div>
+                                
+                                <div class="shortcut-item">
+                                    <div class="shortcut-keys">
+                                        <span class="shortcut-key">Ctrl</span>
+                                        <span>+</span>
+                                        <span class="shortcut-key">P</span>
+                                    </div>
+                                    <div class="shortcut-description">Режим презентации</div>
+                                </div>
+                            </div>
+                            <div class="profile-divider"></div>
+                        </div>
+
+                        <div class="profile-section-item">
+                            <div class="profile-section-label">Быстрые команды в чате</div>
+                            <div class="quick-commands-settings">
+                                <div class="command-item-settings">/clear</div>
+                                <div class="command-item-settings">/save</div>
+                                <div class="command-item-settings">/export</div>
+                                <div class="command-item-settings">/history</div>
+                                <div class="command-item-settings">/import</div>
+                                <div class="command-item-settings">/advice</div>
+                                <div class="command-item-settings">/manipulation</div>
+                                <div class="command-item-settings">/stats</div>
+                                <div class="command-item-settings">/presentation</div>
+                                <div class="command-item-settings">/help</div>
+                            </div>
+                            <div class="profile-divider"></div>
+                        </div>
+                    </div>
+
+                    <!-- Секция Безопасность -->
+                    <div class="profile-settings-section" id="security-section" style="display: none;">
+                        <div class="profile-section-item">
+                            <div class="profile-section-label">Безопасность</div>
+                            <button class="ios-button tertiary" id="encryption-manager" style="width: 100%; margin-top: 15px;">
+                                <i class="fas fa-lock"></i> Управление шифрованием
+                            </button>
                             <div class="profile-divider"></div>
                         </div>
                     </div>
@@ -2615,10 +2990,6 @@
             <div class="header-right">
                 <button class="ios-button secondary" id="presentation-mode" title="Режим презентации">
                     <i class="fas fa-expand"></i>
-                </button>
-                
-                <button class="ios-button secondary" id="settings-button" title="Настройки">
-                    <i class="fas fa-cog"></i>
                 </button>
                 
                 <!-- Кнопка админ-панели (только для пользователей с ролью ADMIN) -->

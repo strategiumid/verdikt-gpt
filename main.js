@@ -113,7 +113,7 @@ export class VerdiktChatApp {
             sendButton: document.getElementById('send-button'),
             voiceInput: document.getElementById('voice-input'),
             newChat: document.getElementById('new-chat'),
-            settingsButton: document.getElementById('settings-button'),
+            // settingsButton удалена - настройки теперь в профиле
             presentationMode: document.getElementById('presentation-mode'),
             notification: document.getElementById('notification'),
             notificationText: document.getElementById('notification-text'),
@@ -131,13 +131,12 @@ export class VerdiktChatApp {
             nextSlide: document.getElementById('next-slide'),
             exitPresentation: document.getElementById('exit-presentation'),
             
-            settingsClose: document.getElementById('settings-close'),
+            // settingsClose больше не нужен - настройки теперь в профиле
             exportClose: document.getElementById('export-close'),
             exportCancel: document.getElementById('export-cancel'),
             statsClose: document.getElementById('stats-close'),
-            saveSettings: document.getElementById('save-settings'),
-            temperatureSlider: document.getElementById('temperature-slider'),
-            temperatureValue: document.getElementById('temperature-value'),
+            // saveSettings больше не нужен - настройки сохраняются автоматически
+            // temperatureSlider и temperatureValue теперь в настройках профиля
             
             toggleChatHistory: document.getElementById('toggle-chat-history'),
             
@@ -217,8 +216,7 @@ export class VerdiktChatApp {
             { id: 'stepfun/step-3.5-flash', name: 'Verdikt GPT', free: true }
         ];
         
-        this.settingsTabs = null;
-        this.settingsTabContents = null;
+        // Старые вкладки настроек больше не используются
     }
 
     createSystemPromptMessage() {
@@ -605,42 +603,10 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
     // ==================== НАСТРОЙКА ВКЛАДОК НАСТРОЕК ====================
 
     setupSettingsTabs() {
-        this.settingsTabs = document.querySelectorAll('.settings-tab');
-        this.settingsTabContents = document.querySelectorAll('.settings-tab-content');
-        
-        if (!this.settingsTabs.length) return;
-        
-        this.settingsTabs.forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                const tabId = e.currentTarget.dataset.tab;
-                this.switchSettingsTab(tabId);
-            });
-        });
-        
+        // Старые вкладки настроек больше не используются - навигация теперь в профиле
+        // Обновляем статистику и достижения при инициализации
         this.updateSettingsStats();
         this.updateSettingsAchievements();
-    }
-
-    switchSettingsTab(tabId) {
-        this.settingsTabs.forEach(tab => {
-            tab.classList.remove('active');
-        });
-        
-        this.settingsTabContents.forEach(content => {
-            content.classList.remove('active');
-        });
-        
-        const activeTab = document.querySelector(`.settings-tab[data-tab="${tabId}"]`);
-        const activeContent = document.getElementById(`${tabId}-tab`);
-        
-        if (activeTab) activeTab.classList.add('active');
-        if (activeContent) activeContent.classList.add('active');
-        
-        if (tabId === 'stats') {
-            this.updateSettingsStats();
-        } else if (tabId === 'achievements') {
-            this.updateSettingsAchievements();
-        }
     }
 
     updateSettingsStats() {
@@ -1846,13 +1812,24 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             });
         });
         
-        // Редактирование профиля
-        const profileEditBtn = document.getElementById('profile-edit-btn');
-        if (profileEditBtn) {
-            profileEditBtn.addEventListener('click', () => {
-                const bioSection = document.getElementById('profile-bio-section');
-                if (bioSection) {
-                    bioSection.style.display = bioSection.style.display === 'none' ? 'block' : 'none';
+        // Редактирование описания профиля
+        const profileBioEditBtn = document.getElementById('profile-bio-edit-btn');
+        const profileBioDisplay = document.getElementById('profile-bio-display');
+        const profileBioSection = document.getElementById('profile-bio-section');
+        
+        if (profileBioEditBtn) {
+            profileBioEditBtn.addEventListener('click', () => {
+                if (profileBioDisplay) {
+                    profileBioDisplay.style.display = 'none';
+                }
+                if (profileBioSection) {
+                    profileBioSection.style.display = 'block';
+                    const profileBioInput = document.getElementById('profile-bio-input');
+                    if (profileBioInput) {
+                        const savedBio = localStorage.getItem('verdikt_user_bio') || '';
+                        profileBioInput.value = savedBio;
+                        profileBioInput.focus();
+                    }
                 }
             });
         }
@@ -1864,12 +1841,18 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         
         if (profileBioSave) {
             profileBioSave.addEventListener('click', () => {
-                const bio = profileBioInput ? profileBioInput.value : '';
+                const bio = profileBioInput ? profileBioInput.value.trim() : '';
+                localStorage.setItem('verdikt_user_bio', bio);
                 if (this.state.user) {
                     this.state.user.bio = bio;
-                    localStorage.setItem('verdikt_user_bio', bio);
-                    this.showNotification('Описание профиля сохранено', 'success');
-                    document.getElementById('profile-bio-section').style.display = 'none';
+                }
+                this.updateProfileBioDisplay(bio);
+                this.showNotification('Описание профиля сохранено', 'success');
+                if (profileBioSection) {
+                    profileBioSection.style.display = 'none';
+                }
+                if (profileBioDisplay) {
+                    profileBioDisplay.style.display = 'block';
                 }
             });
         }
@@ -1877,11 +1860,18 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         if (profileBioCancel) {
             profileBioCancel.addEventListener('click', () => {
                 if (profileBioInput) {
-                    profileBioInput.value = this.state.user?.bio || '';
+                    const savedBio = localStorage.getItem('verdikt_user_bio') || '';
+                    profileBioInput.value = savedBio;
                 }
-                document.getElementById('profile-bio-section').style.display = 'none';
+                if (profileBioSection) {
+                    profileBioSection.style.display = 'none';
+                }
+                if (profileBioDisplay) {
+                    profileBioDisplay.style.display = 'block';
+                }
             });
         }
+        
         
         // Загрузка аватарки
         const avatarInput = document.getElementById('profile-avatar-input');
@@ -1941,11 +1931,180 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             });
         });
         
+        // Промо код
+        const profilePromoInput = document.getElementById('profile-promo-input');
+        const profilePromoApply = document.getElementById('profile-promo-apply');
+        const profilePromoStatus = document.getElementById('profile-promo-status');
+        
+        // Загружаем сохраненный промо код
+        if (profilePromoInput) {
+            const savedPromo = localStorage.getItem('verdikt_promo_code') || '';
+            profilePromoInput.value = savedPromo;
+            if (savedPromo) {
+                this.updatePromoStatus('success', `Промо код "${savedPromo}" применен`);
+            }
+        }
+        
+        // Применение промо кода
+        if (profilePromoApply) {
+            profilePromoApply.addEventListener('click', () => {
+                this.applyPromoCode();
+            });
+        }
+        
+        // Применение по Enter
+        if (profilePromoInput) {
+            profilePromoInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.applyPromoCode();
+                }
+            });
+        }
+        
+        // Режимы AI в настройках профиля
+        const modeItems = document.querySelectorAll('.mode-item-settings');
+        modeItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const mode = item.dataset.mode;
+                modeItems.forEach(m => m.classList.remove('active'));
+                item.classList.add('active');
+                this.setAIMode(mode);
+                localStorage.setItem('verdikt_ai_mode', mode);
+                this.showNotification(`Режим изменен на "${this.state.aiModes[mode]?.name || mode}"`, 'success');
+            });
+        });
+        
+        // Температура AI
+        const temperatureSlider = document.getElementById('temperature-slider');
+        const temperatureValue = document.getElementById('temperature-value');
+        if (temperatureSlider && temperatureValue) {
+            temperatureSlider.value = this.API_CONFIG.temperature;
+            temperatureValue.textContent = this.API_CONFIG.temperature;
+            
+            temperatureSlider.addEventListener('input', (e) => {
+                const value = parseFloat(e.target.value);
+                temperatureValue.textContent = value.toFixed(1);
+                this.API_CONFIG.temperature = value;
+                localStorage.setItem('verdikt_temperature', value.toString());
+            });
+        }
+        
+        // Кнопка настроек API
+        const apiSettingsButton = document.getElementById('api-settings-button');
+        if (apiSettingsButton) {
+            apiSettingsButton.addEventListener('click', () => {
+                this.showApiSettingsModal();
+            });
+        }
+        
+        // Кнопка управления шифрованием
+        const encryptionManager = document.getElementById('encryption-manager');
+        if (encryptionManager) {
+            encryptionManager.addEventListener('click', () => {
+                this.showNotification('Функция управления шифрованием в разработке', 'info');
+            });
+        }
+        
+        // Обновление статистики при открытии секции статистики
+        const statsSection = document.getElementById('stats-section');
+        if (statsSection) {
+            // Обновляем статистику сразу при открытии настроек профиля
+            this.updateSettingsStats();
+            
+            // Также обновляем при переключении на секцию статистики
+            const observer = new MutationObserver(() => {
+                if (statsSection.style.display !== 'none' && statsSection.classList.contains('active')) {
+                    this.updateSettingsStats();
+                }
+            });
+            observer.observe(statsSection, { attributes: true, attributeFilter: ['style', 'class'] });
+        }
+        
+        // Обновление достижений при открытии секции достижений
+        const achievementsSection = document.getElementById('achievements-section');
+        if (achievementsSection) {
+            this.updateSettingsAchievements();
+            
+            const observer = new MutationObserver(() => {
+                if (achievementsSection.style.display !== 'none' && achievementsSection.classList.contains('active')) {
+                    this.updateSettingsAchievements();
+                }
+            });
+            observer.observe(achievementsSection, { attributes: true, attributeFilter: ['style', 'class'] });
+        }
+        
         if (this.elements.profileSettingsForm) {
             this.elements.profileSettingsForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 await this.saveProfileSettings();
             });
+        }
+    }
+    
+    applyPromoCode() {
+        const profilePromoInput = document.getElementById('profile-promo-input');
+        const profilePromoStatus = document.getElementById('profile-promo-status');
+        
+        if (!profilePromoInput || !profilePromoStatus) return;
+        
+        const promoCode = profilePromoInput.value.trim().toUpperCase();
+        
+        if (!promoCode) {
+            this.updatePromoStatus('error', 'Введите промо код');
+            return;
+        }
+        
+        // Валидация промо кода (только фронтенд)
+        if (promoCode.length < 3) {
+            this.updatePromoStatus('error', 'Промо код должен содержать минимум 3 символа');
+            return;
+        }
+        
+        // Сохраняем промо код локально
+        localStorage.setItem('verdikt_promo_code', promoCode);
+        
+        // Обновляем статус
+        this.updatePromoStatus('success', `Промо код "${promoCode}" успешно применен!`);
+        
+        // Очищаем поле ввода после успешного применения
+        setTimeout(() => {
+            profilePromoInput.value = promoCode;
+        }, 100);
+        
+        this.showNotification('Промо код применен', 'success');
+    }
+    
+    updatePromoStatus(type, message) {
+        const profilePromoStatus = document.getElementById('profile-promo-status');
+        if (!profilePromoStatus) return;
+        
+        profilePromoStatus.className = `profile-promo-status ${type}`;
+        
+        if (type === 'success') {
+            profilePromoStatus.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+        } else if (type === 'error') {
+            profilePromoStatus.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+        } else {
+            profilePromoStatus.innerHTML = message;
+        }
+    }
+    
+    updateProfileBioDisplay(bio) {
+        const bioDisplayText = document.getElementById('profile-bio-display-text');
+        if (bioDisplayText) {
+            if (bio && bio.trim()) {
+                // Экранируем HTML для безопасности
+                const escapedBio = bio
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+                bioDisplayText.innerHTML = `<span class="profile-bio-content">${escapedBio.replace(/\n/g, '<br>')}</span>`;
+            } else {
+                bioDisplayText.innerHTML = '<span class="profile-bio-empty">Описание не указано</span>';
+            }
         }
     }
 
@@ -1989,17 +2148,31 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             }
         }
         
-        // Загружаем описание профиля
+        // Загружаем и отображаем описание профиля
+        const savedBio = localStorage.getItem('verdikt_user_bio') || '';
+        if (this.state.user) {
+            this.state.user.bio = savedBio;
+        }
+        this.updateProfileBioDisplay(savedBio);
+        
         const profileBioInput = document.getElementById('profile-bio-input');
         if (profileBioInput) {
-            const savedBio = localStorage.getItem('verdikt_user_bio');
-            if (savedBio) {
-                profileBioInput.value = savedBio;
-                if (this.state.user) {
-                    this.state.user.bio = savedBio;
+            profileBioInput.value = savedBio;
+        }
+        
+        // Загружаем промо код
+        const profilePromoInput = document.getElementById('profile-promo-input');
+        const savedPromo = localStorage.getItem('verdikt_promo_code') || '';
+        if (profilePromoInput) {
+            profilePromoInput.value = savedPromo;
+            if (savedPromo) {
+                this.updatePromoStatus('success', `Промо код "${savedPromo}" применен`);
+            } else {
+                const profilePromoStatus = document.getElementById('profile-promo-status');
+                if (profilePromoStatus) {
+                    profilePromoStatus.innerHTML = '';
+                    profilePromoStatus.className = 'profile-promo-status';
                 }
-            } else if (this.state.user && this.state.user.bio) {
-                profileBioInput.value = this.state.user.bio;
             }
         }
         
@@ -2017,6 +2190,25 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         const subscriptionCard = document.querySelector(`.subscription-card-profile[data-subscription="${currentSubscription}"]`);
         if (subscriptionCard) {
             subscriptionCard.classList.add('active');
+        }
+        
+        // Устанавливаем активный режим AI
+        const currentAIMode = localStorage.getItem('verdikt_ai_mode') || this.state.currentMode || 'balanced';
+        const modeItems = document.querySelectorAll('.mode-item-settings');
+        modeItems.forEach(item => {
+            if (item.dataset.mode === currentAIMode) {
+                item.classList.add('active');
+            }
+        });
+        
+        // Загружаем температуру из localStorage
+        const savedTemperature = localStorage.getItem('verdikt_temperature');
+        if (savedTemperature) {
+            this.API_CONFIG.temperature = parseFloat(savedTemperature);
+            const tempSlider = document.getElementById('temperature-slider');
+            const tempValue = document.getElementById('temperature-value');
+            if (tempSlider) tempSlider.value = this.API_CONFIG.temperature;
+            if (tempValue) tempValue.textContent = this.API_CONFIG.temperature;
         }
         
         // Старые поля формы (если они еще используются)
@@ -2179,7 +2371,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         });
         
         this.elements.newChat.addEventListener('click', () => this.createNewChat());
-        this.elements.settingsButton.addEventListener('click', () => this.showSettingsModal());
+        // Кнопка настроек удалена - настройки теперь в профиле
         this.elements.presentationMode.addEventListener('click', () => this.togglePresentationMode());
         
         this.elements.toggleChatHistory.addEventListener('click', () => {
@@ -2291,11 +2483,11 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             });
         });
         
-        this.elements.settingsClose.addEventListener('click', () => this.hideModal('settings-modal'));
+        // Обработчики для старого модального окна настроек больше не нужны
+        // Все настройки теперь в профиле
         this.elements.exportClose.addEventListener('click', () => this.hideModal('export-modal'));
         this.elements.exportCancel.addEventListener('click', () => this.hideModal('export-modal'));
         this.elements.statsClose.addEventListener('click', () => this.hideModal('stats-modal'));
-        this.elements.saveSettings.addEventListener('click', () => this.saveSettings());
         
         this.elements.prevSlide.addEventListener('click', () => this.prevSlide());
         this.elements.nextSlide.addEventListener('click', () => this.nextSlide());
@@ -3643,10 +3835,9 @@ hideTypingIndicator() {
     }
 
     showSettingsModal() {
-        document.getElementById('temperature-slider').value = this.API_CONFIG.temperature;
-        document.getElementById('temperature-value').textContent = this.API_CONFIG.temperature;
-        this.switchSettingsTab('themes');
-        this.showModal('settings-modal');
+        // Функция больше не используется - настройки теперь в профиле
+        // Открываем настройки профиля вместо старого модального окна
+        this.showProfileSettingsModal();
     }
 
     showExportModal() {
@@ -4187,12 +4378,14 @@ hideTypingIndicator() {
     }
 
     saveSettings() {
-        const temperature = parseFloat(document.getElementById('temperature-slider').value);
-        this.API_CONFIG.temperature = temperature;
-        
-        this.saveChats();
-        
-        this.hideModal('settings-modal');
+        // Настройки теперь сохраняются автоматически при изменении
+        // Эта функция оставлена для совместимости
+        const temperatureSlider = document.getElementById('temperature-slider');
+        if (temperatureSlider) {
+            const temperature = parseFloat(temperatureSlider.value);
+            this.API_CONFIG.temperature = temperature;
+            localStorage.setItem('verdikt_temperature', temperature.toString());
+        }
         this.showNotification('Настройки сохранены ✅', 'success');
     }
 
