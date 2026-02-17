@@ -353,7 +353,7 @@ body.sidebar-collapsed .container {
 .chat-container .input-container-extended {
     position: absolute;
     left: 50%;
-    width: min(720px, calc(100% - 64px));
+    width: min(960px, calc(100% - 64px));
     max-width: calc(100% - 64px);
     margin-left: 0;
     transition: top 0.5s cubic-bezier(0.4, 0, 0.2, 1),
@@ -1955,7 +1955,7 @@ body.sidebar-collapsed .container {
     align-items: center;
     margin-left: 32px;
     margin-right: 32px;
-    max-width: calc(100% - 64px);
+    max-width: min(960px, calc(100% - 64px));
     position: relative;
     flex-wrap: wrap;
 }

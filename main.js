@@ -2685,7 +2685,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         this.updateSendButtonState();
         this.elements.messageInput.disabled = true;
         
-        this.showApiLoadingEffect();
         this.showTypingIndicator();
         
         try {
@@ -2762,7 +2761,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         } finally {
             // Разблокируем интерфейс после завершения ответа
             this.state.isResponding = false;
-            this.hideApiLoadingEffect();
             this.updateSendButtonState();
             this.elements.messageInput.disabled = false;
         }
