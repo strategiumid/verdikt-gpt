@@ -1897,15 +1897,15 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             });
         }
         
-        // Выбор темы
+        // Выбор темы (только фронтенд, без отправки на бэкенд)
         const themeOptions = document.querySelectorAll('.theme-option-profile');
         themeOptions.forEach(option => {
             option.addEventListener('click', () => {
                 const theme = option.dataset.theme;
                 themeOptions.forEach(opt => opt.classList.remove('active'));
                 option.classList.add('active');
-                this.setTheme(theme);
-                localStorage.setItem('verdikt_theme', theme);
+                // Используем setTheme с флагом skipBackend, чтобы не отправлять на бэкенд
+                this.setTheme(theme, { skipBackend: true });
                 this.showNotification(`Тема изменена на ${theme === 'dark' ? 'темную' : 'светлую'}`, 'success');
             });
         });
@@ -1922,11 +1922,9 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
                 const card = document.querySelector(`.subscription-card-profile[data-subscription="${subscription}"]`);
                 if (card) {
                     card.classList.add('active');
-                    if (this.state.user) {
-                        this.state.user.subscription = subscription;
-                        localStorage.setItem('verdikt_user_subscription', subscription);
-                        this.showNotification(`Подписка изменена на ${subscription.toUpperCase()}`, 'success');
-                    }
+                    // Сохраняем подписку только локально (фронтенд)
+                    localStorage.setItem('verdikt_user_subscription', subscription);
+                    this.showNotification(`Подписка изменена на ${subscription.toUpperCase()}`, 'success');
                 }
             });
         });
@@ -2034,12 +2032,8 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             observer.observe(achievementsSection, { attributes: true, attributeFilter: ['style', 'class'] });
         }
         
-        if (this.elements.profileSettingsForm) {
-            this.elements.profileSettingsForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                await this.saveProfileSettings();
-            });
-        }
+        // Форма профиля больше не используется - все настройки сохраняются локально
+        // Функция saveProfileSettings оставлена для совместимости, но не вызывается
     }
     
     applyPromoCode() {
@@ -3245,7 +3239,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
     }
 
     setTheme(theme, options = {}) {
-        const { fromServer = false } = options;
+        const { fromServer = false, skipBackend = false } = options;
         this.state.currentTheme = theme;
         document.body.setAttribute('data-theme', theme);
         
@@ -3257,7 +3251,9 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         
         localStorage.setItem('verdikt_theme', theme);
         this.saveChats();
-        if (this.state.user && !fromServer) {
+        
+        // Отправляем на бэкенд только если пользователь авторизован, не из сервера и не пропущен флаг skipBackend
+        if (this.state.user && !fromServer && !skipBackend) {
             const url = `${this.AUTH_CONFIG.baseUrl}/api/users/me/settings`;
             fetch(url, {
                 method: 'PATCH',
@@ -3266,7 +3262,9 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
                 body: JSON.stringify({ theme })
             }).catch(() => {});
         }
-        if (!fromServer) {
+        
+        // Показываем уведомление только если не из сервера и не пропущен флаг skipBackend
+        if (!fromServer && !skipBackend) {
             this.showNotification(`Тема изменена: ${theme}`, 'info');
         }
     }
