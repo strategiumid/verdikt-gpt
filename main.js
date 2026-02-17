@@ -1845,6 +1845,101 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             });
         });
         
+        // Редактирование профиля
+        const profileEditBtn = document.getElementById('profile-edit-btn');
+        if (profileEditBtn) {
+            profileEditBtn.addEventListener('click', () => {
+                const bioSection = document.getElementById('profile-bio-section');
+                if (bioSection) {
+                    bioSection.style.display = bioSection.style.display === 'none' ? 'block' : 'none';
+                }
+            });
+        }
+        
+        // Сохранение описания профиля
+        const profileBioSave = document.getElementById('profile-bio-save');
+        const profileBioCancel = document.getElementById('profile-bio-cancel');
+        const profileBioInput = document.getElementById('profile-bio-input');
+        
+        if (profileBioSave) {
+            profileBioSave.addEventListener('click', () => {
+                const bio = profileBioInput ? profileBioInput.value : '';
+                if (this.state.user) {
+                    this.state.user.bio = bio;
+                    localStorage.setItem('verdikt_user_bio', bio);
+                    this.showNotification('Описание профиля сохранено', 'success');
+                    document.getElementById('profile-bio-section').style.display = 'none';
+                }
+            });
+        }
+        
+        if (profileBioCancel) {
+            profileBioCancel.addEventListener('click', () => {
+                if (profileBioInput) {
+                    profileBioInput.value = this.state.user?.bio || '';
+                }
+                document.getElementById('profile-bio-section').style.display = 'none';
+            });
+        }
+        
+        // Загрузка аватарки
+        const avatarInput = document.getElementById('profile-avatar-input');
+        if (avatarInput) {
+            avatarInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const avatarDisplay = document.getElementById('profile-avatar-display');
+                        if (avatarDisplay) {
+                            avatarDisplay.style.backgroundImage = `url(${event.target.result})`;
+                            avatarDisplay.textContent = '';
+                            if (this.state.user) {
+                                this.state.user.avatar = event.target.result;
+                                localStorage.setItem('verdikt_user_avatar', event.target.result);
+                                this.showNotification('Аватарка обновлена', 'success');
+                            }
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+        
+        // Выбор темы
+        const themeOptions = document.querySelectorAll('.theme-option-profile');
+        themeOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                const theme = option.dataset.theme;
+                themeOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+                this.setTheme(theme);
+                localStorage.setItem('verdikt_theme', theme);
+                this.showNotification(`Тема изменена на ${theme === 'dark' ? 'темную' : 'светлую'}`, 'success');
+            });
+        });
+        
+        // Выбор подписки
+        const subscriptionCards = document.querySelectorAll('.subscription-card-profile');
+        const subscriptionButtons = document.querySelectorAll('.subscription-select-btn');
+        
+        subscriptionButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const subscription = btn.dataset.subscription;
+                subscriptionCards.forEach(card => card.classList.remove('active'));
+                const card = document.querySelector(`.subscription-card-profile[data-subscription="${subscription}"]`);
+                if (card) {
+                    card.classList.add('active');
+                    if (this.state.user) {
+                        this.state.user.subscription = subscription;
+                        localStorage.setItem('verdikt_user_subscription', subscription);
+                        this.showNotification(`Подписка изменена на ${subscription.toUpperCase()}`, 'success');
+                    }
+                }
+            });
+        });
+        
         if (this.elements.profileSettingsForm) {
             this.elements.profileSettingsForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -1870,15 +1965,57 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         if (displayEmail) {
             displayEmail.textContent = this.state.user.email || '';
         }
-        if (profileAvatar && this.state.user.name) {
-            // Генерируем инициалы из имени
-            const initials = this.state.user.name
-                .split(' ')
-                .map(word => word[0])
-                .join('')
-                .toUpperCase()
-                .substring(0, 2);
-            profileAvatar.textContent = initials || 'U';
+        const avatarDisplay = document.getElementById('profile-avatar-display');
+        if (avatarDisplay) {
+            // Загружаем сохраненную аватарку или генерируем инициалы
+            const savedAvatar = localStorage.getItem('verdikt_user_avatar');
+            if (savedAvatar) {
+                avatarDisplay.style.backgroundImage = `url(${savedAvatar})`;
+                avatarDisplay.textContent = '';
+                if (this.state.user) {
+                    this.state.user.avatar = savedAvatar;
+                }
+            } else if (this.state.user && this.state.user.name) {
+                // Генерируем инициалы из имени
+                const initials = this.state.user.name
+                    .split(' ')
+                    .map(word => word[0])
+                    .join('')
+                    .toUpperCase()
+                    .substring(0, 2);
+                avatarDisplay.textContent = initials || 'U';
+                avatarDisplay.style.backgroundImage = '';
+            }
+        }
+        
+        // Загружаем описание профиля
+        const profileBioInput = document.getElementById('profile-bio-input');
+        if (profileBioInput) {
+            const savedBio = localStorage.getItem('verdikt_user_bio');
+            if (savedBio) {
+                profileBioInput.value = savedBio;
+                if (this.state.user) {
+                    this.state.user.bio = savedBio;
+                }
+            } else if (this.state.user && this.state.user.bio) {
+                profileBioInput.value = this.state.user.bio;
+            }
+        }
+        
+        // Устанавливаем активную тему
+        const currentTheme = localStorage.getItem('verdikt_theme') || 'dark';
+        const themeOptions = document.querySelectorAll('.theme-option-profile');
+        themeOptions.forEach(option => {
+            if (option.dataset.theme === currentTheme) {
+                option.classList.add('active');
+            }
+        });
+        
+        // Устанавливаем активную подписку
+        const currentSubscription = localStorage.getItem('verdikt_user_subscription') || 'free';
+        const subscriptionCard = document.querySelector(`.subscription-card-profile[data-subscription="${currentSubscription}"]`);
+        if (subscriptionCard) {
+            subscriptionCard.classList.add('active');
         }
         
         // Старые поля формы (если они еще используются)
