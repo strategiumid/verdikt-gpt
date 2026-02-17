@@ -766,6 +766,33 @@ body.sidebar-collapsed .container {
     backdrop-filter: blur(20px);
 }
 
+/* Красивый скроллбар для подсказок Т9 */
+.t9-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+.t9-dropdown::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    margin: 6px 0;
+}
+
+.t9-dropdown::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    transition: background 0.2s ease;
+}
+
+.t9-dropdown::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+/* Для Firefox */
+.t9-dropdown {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.03);
+}
+
 .t9-dropdown-fixed {
     position: fixed;
     top: 0;
