@@ -1303,13 +1303,20 @@ body.sidebar-collapsed .container {
     visibility: visible;
 }
 
-/* Скрываем hero-chips когда сфера показывает статус API */
-.animated-sphere.api-connecting .hero-chips,
-.animated-sphere.api-connected .hero-chips,
-.animated-sphere.api-error .hero-chips {
+/* Скрываем hero-chips когда сфера показывает статус API, но показываем если сфера активна */
+.animated-sphere.api-connecting:not(.active) .hero-chips,
+.animated-sphere.api-connected:not(.active) .hero-chips,
+.animated-sphere.api-error:not(.active) .hero-chips {
     opacity: 0 !important;
     visibility: hidden !important;
     pointer-events: none !important;
+}
+
+/* Показываем hero-chips когда сфера активна, даже если есть статус API */
+.animated-sphere.active .hero-chips {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: all !important;
 }
 
 .hero-chip {
