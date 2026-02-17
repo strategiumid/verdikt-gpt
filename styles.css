@@ -362,20 +362,26 @@ body.sidebar-collapsed .container {
 }
 
 .hero-content {
+    max-width: 600px;
     width: 100%;
-    height: 100%;
+    text-align: center;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 40px;
     position: relative;
 }
 
 /* Анимированная сфера */
 .animated-sphere {
     position: relative;
-    width: 300px;
-    height: 300px;
+    width: 600px;
+    height: 600px;
     margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Ядро сферы */
@@ -388,13 +394,14 @@ body.sidebar-collapsed .container {
     height: 200px;
     border-radius: 50%;
     background: radial-gradient(circle at 30% 30%, 
-        rgba(138, 43, 226, 0.8) 0%,
-        rgba(75, 0, 130, 0.6) 40%,
-        rgba(25, 25, 112, 0.4) 100%);
+        rgba(0, 0, 0, 0.9) 0%,
+        rgba(20, 20, 20, 0.8) 40%,
+        rgba(0, 0, 0, 0.95) 100%);
     box-shadow: 
-        0 0 60px rgba(138, 43, 226, 0.6),
-        inset -20px -20px 40px rgba(0, 0, 0, 0.3),
-        inset 20px 20px 40px rgba(255, 255, 255, 0.1);
+        0 0 60px rgba(0, 0, 0, 0.8),
+        inset -20px -20px 40px rgba(0, 0, 0, 0.5),
+        inset 20px 20px 40px rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     animation: spherePulse 4s ease-in-out infinite, sphereRotate 20s linear infinite;
 }
 
@@ -413,7 +420,7 @@ body.sidebar-collapsed .container {
 .sphere-ring-1 {
     width: 240px;
     height: 240px;
-    border-color: rgba(138, 43, 226, 0.4);
+    border-color: rgba(255, 255, 255, 0.15);
     animation-duration: 12s;
     animation-direction: normal;
 }
@@ -421,7 +428,7 @@ body.sidebar-collapsed .container {
 .sphere-ring-2 {
     width: 280px;
     height: 280px;
-    border-color: rgba(75, 0, 130, 0.3);
+    border-color: rgba(255, 255, 255, 0.1);
     animation-duration: 18s;
     animation-direction: reverse;
 }
@@ -429,7 +436,7 @@ body.sidebar-collapsed .container {
 .sphere-ring-3 {
     width: 320px;
     height: 320px;
-    border-color: rgba(25, 25, 112, 0.2);
+    border-color: rgba(255, 255, 255, 0.08);
     animation-duration: 25s;
     animation-direction: normal;
 }
@@ -444,8 +451,8 @@ body.sidebar-collapsed .container {
     height: 250px;
     border-radius: 50%;
     background: radial-gradient(circle, 
-        rgba(138, 43, 226, 0.3) 0%,
-        rgba(75, 0, 130, 0.2) 50%,
+        rgba(0, 0, 0, 0.4) 0%,
+        rgba(0, 0, 0, 0.2) 50%,
         transparent 100%);
     animation: glowPulse 3s ease-in-out infinite;
     filter: blur(20px);
@@ -466,8 +473,8 @@ body.sidebar-collapsed .container {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: rgba(138, 43, 226, 0.8);
-    box-shadow: 0 0 10px rgba(138, 43, 226, 0.6);
+    background: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
     animation: particleOrbit 8s linear infinite;
 }
 
@@ -506,16 +513,16 @@ body.sidebar-collapsed .container {
     0%, 100% {
         transform: translate(-50%, -50%) scale(1);
         box-shadow: 
-            0 0 60px rgba(138, 43, 226, 0.6),
-            inset -20px -20px 40px rgba(0, 0, 0, 0.3),
-            inset 20px 20px 40px rgba(255, 255, 255, 0.1);
+            0 0 60px rgba(0, 0, 0, 0.8),
+            inset -20px -20px 40px rgba(0, 0, 0, 0.5),
+            inset 20px 20px 40px rgba(255, 255, 255, 0.05);
     }
     50% {
         transform: translate(-50%, -50%) scale(1.05);
         box-shadow: 
-            0 0 80px rgba(138, 43, 226, 0.8),
-            inset -20px -20px 40px rgba(0, 0, 0, 0.3),
-            inset 20px 20px 40px rgba(255, 255, 255, 0.15);
+            0 0 80px rgba(0, 0, 0, 0.9),
+            inset -20px -20px 40px rgba(0, 0, 0, 0.5),
+            inset 20px 20px 40px rgba(255, 255, 255, 0.08);
     }
 }
 
@@ -539,11 +546,11 @@ body.sidebar-collapsed .container {
 
 @keyframes glowPulse {
     0%, 100% {
-        opacity: 0.6;
+        opacity: 0.4;
         transform: translate(-50%, -50%) scale(1);
     }
     50% {
-        opacity: 0.9;
+        opacity: 0.6;
         transform: translate(-50%, -50%) scale(1.1);
     }
 }
@@ -610,6 +617,201 @@ body.sidebar-collapsed .container {
             transform: rotate(360deg) translateX(100px) rotate(-360deg);
             opacity: 0.6;
         }
+    }
+}
+
+/* Кнопки выбора встроены в сферу */
+.hero-chips {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.hero-chip {
+    position: absolute;
+    padding: 10px 16px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    pointer-events: all;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+}
+
+.hero-chip:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.hero-chip:active {
+    transform: scale(0.98);
+}
+
+.hero-chip i {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.hero-chip span {
+    display: inline-block;
+}
+
+/* Позиционирование кнопок по кругу вокруг сферы */
+.hero-chip-1 {
+    top: 0%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: chipFloat 6s ease-in-out infinite;
+    animation-delay: 0s;
+}
+
+.hero-chip-2 {
+    top: 25%;
+    right: 0%;
+    transform: translate(50%, -50%);
+    animation: chipFloat 6s ease-in-out infinite;
+    animation-delay: -1s;
+}
+
+.hero-chip-3 {
+    bottom: 25%;
+    right: 0%;
+    transform: translate(50%, 50%);
+    animation: chipFloat 6s ease-in-out infinite;
+    animation-delay: -2s;
+}
+
+.hero-chip-4 {
+    bottom: 0%;
+    left: 50%;
+    transform: translate(-50%, 50%);
+    animation: chipFloat 6s ease-in-out infinite;
+    animation-delay: -3s;
+}
+
+.hero-chip-5 {
+    bottom: 25%;
+    left: 0%;
+    transform: translate(-50%, 50%);
+    animation: chipFloat 6s ease-in-out infinite;
+    animation-delay: -4s;
+}
+
+.hero-chip-6 {
+    top: 25%;
+    left: 0%;
+    transform: translate(-50%, -50%);
+    animation: chipFloat 6s ease-in-out infinite;
+    animation-delay: -5s;
+}
+
+.hero-chip:hover {
+    animation-play-state: paused;
+}
+
+@keyframes chipFloat {
+    0%, 100% {
+        transform: translate(-50%, -50%) translateY(0px);
+    }
+    50% {
+        transform: translate(-50%, -50%) translateY(-8px);
+    }
+}
+
+.hero-chip-2:hover,
+.hero-chip-3:hover,
+.hero-chip-4:hover,
+.hero-chip-5:hover,
+.hero-chip-6:hover {
+    animation-play-state: paused;
+}
+
+.hero-chip-2 {
+    animation: chipFloatRight 6s ease-in-out infinite;
+    animation-delay: -1s;
+}
+
+.hero-chip-3 {
+    animation: chipFloatRightBottom 6s ease-in-out infinite;
+    animation-delay: -2s;
+}
+
+.hero-chip-4 {
+    animation: chipFloatBottom 6s ease-in-out infinite;
+    animation-delay: -3s;
+}
+
+.hero-chip-5 {
+    animation: chipFloatLeftBottom 6s ease-in-out infinite;
+    animation-delay: -4s;
+}
+
+.hero-chip-6 {
+    animation: chipFloatLeft 6s ease-in-out infinite;
+    animation-delay: -5s;
+}
+
+@keyframes chipFloatRight {
+    0%, 100% {
+        transform: translate(50%, -50%) translateX(0px);
+    }
+    50% {
+        transform: translate(50%, -50%) translateX(-8px);
+    }
+}
+
+@keyframes chipFloatRightBottom {
+    0%, 100% {
+        transform: translate(50%, 50%) translateX(0px) translateY(0px);
+    }
+    50% {
+        transform: translate(50%, 50%) translateX(-8px) translateY(-8px);
+    }
+}
+
+@keyframes chipFloatBottom {
+    0%, 100% {
+        transform: translate(-50%, 50%) translateY(0px);
+    }
+    50% {
+        transform: translate(-50%, 50%) translateY(-8px);
+    }
+}
+
+@keyframes chipFloatLeftBottom {
+    0%, 100% {
+        transform: translate(-50%, 50%) translateX(0px) translateY(0px);
+    }
+    50% {
+        transform: translate(-50%, 50%) translateX(8px) translateY(-8px);
+    }
+}
+
+@keyframes chipFloatLeft {
+    0%, 100% {
+        transform: translate(-50%, -50%) translateX(0px);
+    }
+    50% {
+        transform: translate(-50%, -50%) translateX(8px);
     }
 }
 
@@ -3936,8 +4138,8 @@ footer {
     }
     
     .animated-sphere {
-        width: 250px;
-        height: 250px;
+        width: 500px;
+        height: 500px;
     }
     
     .sphere-core {
@@ -3963,6 +4165,19 @@ footer {
     .sphere-glow {
         width: 200px;
         height: 200px;
+    }
+    
+    .hero-chip {
+        font-size: 0.8rem;
+        padding: 8px 14px;
+    }
+    
+    .hero-chip span {
+        display: none;
+    }
+    
+    .hero-chip i {
+        font-size: 14px;
     }
     
     .input-container-extended {
@@ -4173,8 +4388,8 @@ footer {
     }
     
     .animated-sphere {
-        width: 200px;
-        height: 200px;
+        width: 400px;
+        height: 400px;
     }
     
     .sphere-core {
@@ -4205,6 +4420,19 @@ footer {
     .particle {
         width: 4px;
         height: 4px;
+    }
+    
+    .hero-chip {
+        font-size: 0.75rem;
+        padding: 8px 12px;
+    }
+    
+    .hero-chip span {
+        display: none;
+    }
+    
+    .hero-chip i {
+        font-size: 14px;
     }
     
     /* Input bar: компактная панель на телефоне */
@@ -4345,8 +4573,8 @@ footer {
     }
     
     .animated-sphere {
-        width: 180px;
-        height: 180px;
+        width: 350px;
+        height: 350px;
     }
     
     .sphere-core {
@@ -4372,6 +4600,19 @@ footer {
     .sphere-glow {
         width: 140px;
         height: 140px;
+    }
+    
+    .hero-chip {
+        font-size: 0.7rem;
+        padding: 6px 10px;
+    }
+    
+    .hero-chip span {
+        display: none;
+    }
+    
+    .hero-chip i {
+        font-size: 12px;
     }
     
     .input-container-extended {
@@ -4413,13 +4654,26 @@ footer {
 /* iPhone 14/15/16 base, 15 Pro (393px) */
 @media (max-width: 393px) {
     .animated-sphere {
-        width: 160px;
-        height: 160px;
+        width: 320px;
+        height: 320px;
     }
     
     .sphere-core {
         width: 100px;
         height: 100px;
+    }
+    
+    .hero-chip {
+        font-size: 0.65rem;
+        padding: 6px 8px;
+    }
+    
+    .hero-chip span {
+        display: none;
+    }
+    
+    .hero-chip i {
+        font-size: 11px;
     }
     .input-container-extended .input-icon-button {
         min-width: 44px;
@@ -4434,8 +4688,8 @@ footer {
         padding-right: max(10px, env(safe-area-inset-right));
     }
     .animated-sphere {
-        width: 150px;
-        height: 150px;
+        width: 300px;
+        height: 300px;
     }
     
     .sphere-core {
@@ -4462,6 +4716,19 @@ footer {
         width: 120px;
         height: 120px;
     }
+    
+    .hero-chip {
+        font-size: 0.6rem;
+        padding: 5px 8px;
+    }
+    
+    .hero-chip span {
+        display: none;
+    }
+    
+    .hero-chip i {
+        font-size: 10px;
+    }
     .message {
         max-width: 92%;
     }
@@ -4480,8 +4747,8 @@ footer {
         font-size: 14px;
     }
     .animated-sphere {
-        width: 140px;
-        height: 140px;
+        width: 280px;
+        height: 280px;
     }
     
     .sphere-core {
@@ -4512,6 +4779,19 @@ footer {
     .particle {
         width: 3px;
         height: 3px;
+    }
+    
+    .hero-chip {
+        font-size: 0.55rem;
+        padding: 4px 6px;
+    }
+    
+    .hero-chip span {
+        display: none;
+    }
+    
+    .hero-chip i {
+        font-size: 9px;
     }
     .input-container-extended .input-icon-button {
         width: 44px;
