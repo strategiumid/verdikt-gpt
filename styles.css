@@ -351,77 +351,266 @@ body.sidebar-collapsed .container {
 
 /* Hero-блок (пустое состояние) */
 .hero-block {
-    flex: 1 0 auto; /* Изменяем на flex-grow: 1, flex-shrink: 0, flex-basis: auto */
+    flex: 1 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 0;
     padding: 20px;
+    position: relative;
+    overflow: hidden;
 }
 
 .hero-content {
-    max-width: 600px;
     width: 100%;
-    text-align: center;
-}
-
-.hero-icon {
-    width: 80px;
-    height: 80px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 36px;
-    color: #fff;
-    margin: 0 auto 24px;
-    transition: var(--transition);
-    animation: float 10s infinite ease-in-out;
+    position: relative;
 }
 
-.hero-title {
-    font-size: 2rem;
-    font-weight: 600;
-    margin-bottom: 32px;
-    color: var(--text-primary);
-    letter-spacing: -0.02em;
+/* Анимированная сфера */
+.animated-sphere {
+    position: relative;
+    width: 300px;
+    height: 300px;
+    margin: 0 auto;
 }
 
-.hero-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    justify-content: center;
+/* Ядро сферы */
+.sphere-core {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, 
+        rgba(138, 43, 226, 0.8) 0%,
+        rgba(75, 0, 130, 0.6) 40%,
+        rgba(25, 25, 112, 0.4) 100%);
+    box-shadow: 
+        0 0 60px rgba(138, 43, 226, 0.6),
+        inset -20px -20px 40px rgba(0, 0, 0, 0.3),
+        inset 20px 20px 40px rgba(255, 255, 255, 0.1);
+    animation: spherePulse 4s ease-in-out infinite, sphereRotate 20s linear infinite;
 }
 
-.hero-chip {
-    padding: 12px 20px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
-    color: var(--text-primary);
-    font-size: 0.95rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: var(--transition);
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
+/* Кольца вокруг сферы */
+.sphere-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 2px solid;
+    opacity: 0.6;
+    animation: ringRotate 15s linear infinite;
 }
 
-.hero-chip:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.15);
-    transform: translateY(-1px);
+.sphere-ring-1 {
+    width: 240px;
+    height: 240px;
+    border-color: rgba(138, 43, 226, 0.4);
+    animation-duration: 12s;
+    animation-direction: normal;
 }
 
-.hero-chip i {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 14px;
+.sphere-ring-2 {
+    width: 280px;
+    height: 280px;
+    border-color: rgba(75, 0, 130, 0.3);
+    animation-duration: 18s;
+    animation-direction: reverse;
+}
+
+.sphere-ring-3 {
+    width: 320px;
+    height: 320px;
+    border-color: rgba(25, 25, 112, 0.2);
+    animation-duration: 25s;
+    animation-direction: normal;
+}
+
+/* Свечение вокруг сферы */
+.sphere-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 250px;
+    height: 250px;
+    border-radius: 50%;
+    background: radial-gradient(circle, 
+        rgba(138, 43, 226, 0.3) 0%,
+        rgba(75, 0, 130, 0.2) 50%,
+        transparent 100%);
+    animation: glowPulse 3s ease-in-out infinite;
+    filter: blur(20px);
+}
+
+/* Частицы вокруг сферы */
+.sphere-particles {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+}
+
+.particle {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(138, 43, 226, 0.8);
+    box-shadow: 0 0 10px rgba(138, 43, 226, 0.6);
+    animation: particleOrbit 8s linear infinite;
+}
+
+.particle-1 {
+    animation-delay: 0s;
+    animation-duration: 8s;
+}
+
+.particle-2 {
+    animation-delay: -1.3s;
+    animation-duration: 10s;
+}
+
+.particle-3 {
+    animation-delay: -2.6s;
+    animation-duration: 12s;
+}
+
+.particle-4 {
+    animation-delay: -4s;
+    animation-duration: 9s;
+}
+
+.particle-5 {
+    animation-delay: -5.3s;
+    animation-duration: 11s;
+}
+
+.particle-6 {
+    animation-delay: -6.6s;
+    animation-duration: 13s;
+}
+
+/* Анимации */
+@keyframes spherePulse {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        box-shadow: 
+            0 0 60px rgba(138, 43, 226, 0.6),
+            inset -20px -20px 40px rgba(0, 0, 0, 0.3),
+            inset 20px 20px 40px rgba(255, 255, 255, 0.1);
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.05);
+        box-shadow: 
+            0 0 80px rgba(138, 43, 226, 0.8),
+            inset -20px -20px 40px rgba(0, 0, 0, 0.3),
+            inset 20px 20px 40px rgba(255, 255, 255, 0.15);
+    }
+}
+
+@keyframes sphereRotate {
+    0% {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+    100% {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+@keyframes ringRotate {
+    0% {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+    100% {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+@keyframes glowPulse {
+    0%, 100% {
+        opacity: 0.6;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+        opacity: 0.9;
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+}
+
+@keyframes particleOrbit {
+    0% {
+        transform: rotate(0deg) translateX(150px) rotate(0deg);
+        opacity: 0.6;
+    }
+    25% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.8;
+    }
+    75% {
+        opacity: 1;
+    }
+    100% {
+        transform: rotate(360deg) translateX(150px) rotate(-360deg);
+        opacity: 0.6;
+    }
+}
+
+/* Адаптивные размеры для частиц */
+@media (max-width: 768px) {
+    @keyframes particleOrbit {
+        0% {
+            transform: rotate(0deg) translateX(120px) rotate(0deg);
+            opacity: 0.6;
+        }
+        25% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.8;
+        }
+        75% {
+            opacity: 1;
+        }
+        100% {
+            transform: rotate(360deg) translateX(120px) rotate(-360deg);
+            opacity: 0.6;
+        }
+    }
+}
+
+@media (max-width: 480px) {
+    @keyframes particleOrbit {
+        0% {
+            transform: rotate(0deg) translateX(100px) rotate(0deg);
+            opacity: 0.6;
+        }
+        25% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.8;
+        }
+        75% {
+            opacity: 1;
+        }
+        100% {
+            transform: rotate(360deg) translateX(100px) rotate(-360deg);
+            opacity: 0.6;
+        }
+    }
 }
 
 /* Сообщения чата */
@@ -3746,20 +3935,34 @@ footer {
         padding: 16px;
     }
     
-    .hero-icon {
-        width: 60px;
-        height: 60px;
-        font-size: 28px;
+    .animated-sphere {
+        width: 250px;
+        height: 250px;
     }
     
-    .hero-title {
-        font-size: 1.6rem;
-        margin-bottom: 24px;
+    .sphere-core {
+        width: 160px;
+        height: 160px;
     }
     
-    .hero-chip {
-        padding: 10px 16px;
-        font-size: 0.9rem;
+    .sphere-ring-1 {
+        width: 200px;
+        height: 200px;
+    }
+    
+    .sphere-ring-2 {
+        width: 230px;
+        height: 230px;
+    }
+    
+    .sphere-ring-3 {
+        width: 260px;
+        height: 260px;
+    }
+    
+    .sphere-glow {
+        width: 200px;
+        height: 200px;
     }
     
     .input-container-extended {
@@ -3969,25 +4172,39 @@ footer {
         padding: 12px;
     }
     
-    .hero-icon {
-        width: 50px;
-        height: 50px;
-        font-size: 24px;
-        margin-bottom: 16px;
+    .animated-sphere {
+        width: 200px;
+        height: 200px;
     }
     
-    .hero-title {
-        font-size: 1.35rem;
-        margin-bottom: 18px;
+    .sphere-core {
+        width: 130px;
+        height: 130px;
     }
     
-    .hero-chips {
-        gap: 8px;
+    .sphere-ring-1 {
+        width: 160px;
+        height: 160px;
     }
     
-    .hero-chip {
-        padding: 8px 12px;
-        font-size: 0.85rem;
+    .sphere-ring-2 {
+        width: 185px;
+        height: 185px;
+    }
+    
+    .sphere-ring-3 {
+        width: 210px;
+        height: 210px;
+    }
+    
+    .sphere-glow {
+        width: 160px;
+        height: 160px;
+    }
+    
+    .particle {
+        width: 4px;
+        height: 4px;
     }
     
     /* Input bar: компактная панель на телефоне */
@@ -4127,13 +4344,34 @@ footer {
         padding: 6px 10px;
     }
     
-    .hero-title {
-        font-size: 1.2rem;
+    .animated-sphere {
+        width: 180px;
+        height: 180px;
     }
     
-    .hero-chip {
-        padding: 6px 10px;
-        font-size: 0.8rem;
+    .sphere-core {
+        width: 110px;
+        height: 110px;
+    }
+    
+    .sphere-ring-1 {
+        width: 140px;
+        height: 140px;
+    }
+    
+    .sphere-ring-2 {
+        width: 160px;
+        height: 160px;
+    }
+    
+    .sphere-ring-3 {
+        width: 180px;
+        height: 180px;
+    }
+    
+    .sphere-glow {
+        width: 140px;
+        height: 140px;
     }
     
     .input-container-extended {
@@ -4174,8 +4412,14 @@ footer {
 
 /* iPhone 14/15/16 base, 15 Pro (393px) */
 @media (max-width: 393px) {
-    .hero-title {
-        font-size: 1.25rem;
+    .animated-sphere {
+        width: 160px;
+        height: 160px;
+    }
+    
+    .sphere-core {
+        width: 100px;
+        height: 100px;
     }
     .input-container-extended .input-icon-button {
         min-width: 44px;
@@ -4189,12 +4433,34 @@ footer {
         padding-left: max(10px, env(safe-area-inset-left));
         padding-right: max(10px, env(safe-area-inset-right));
     }
-    .hero-title {
-        font-size: 1.15rem;
+    .animated-sphere {
+        width: 150px;
+        height: 150px;
     }
-    .hero-chip {
-        padding: 8px 10px;
-        font-size: 0.8rem;
+    
+    .sphere-core {
+        width: 90px;
+        height: 90px;
+    }
+    
+    .sphere-ring-1 {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .sphere-ring-2 {
+        width: 140px;
+        height: 140px;
+    }
+    
+    .sphere-ring-3 {
+        width: 160px;
+        height: 160px;
+    }
+    
+    .sphere-glow {
+        width: 120px;
+        height: 120px;
     }
     .message {
         max-width: 92%;
@@ -4213,17 +4479,39 @@ footer {
         height: 32px;
         font-size: 14px;
     }
-    .hero-icon {
-        width: 44px;
-        height: 44px;
-        font-size: 20px;
+    .animated-sphere {
+        width: 140px;
+        height: 140px;
     }
-    .hero-title {
-        font-size: 1.05rem;
+    
+    .sphere-core {
+        width: 80px;
+        height: 80px;
     }
-    .hero-chip {
-        padding: 6px 8px;
-        font-size: 0.75rem;
+    
+    .sphere-ring-1 {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .sphere-ring-2 {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .sphere-ring-3 {
+        width: 140px;
+        height: 140px;
+    }
+    
+    .sphere-glow {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .particle {
+        width: 3px;
+        height: 3px;
     }
     .input-container-extended .input-icon-button {
         width: 44px;
