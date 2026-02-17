@@ -2684,7 +2684,10 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
     setupT9Suggestions() {
         const input = this.elements.messageInput;
         const container = document.getElementById('t9-suggestions');
-        if (!input || !container) return;
+        if (!input || !container) {
+            console.warn('T9: input or container not found', { input: !!input, container: !!container });
+            return;
+        }
 
         let t9Debounce = null;
 
@@ -2692,7 +2695,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             const text = (input.value || '').trim();
             container.innerHTML = '';
             container.classList.remove('has-suggestions');
-            if (!text || text.length < 2) {
+            if (!text || text.length < 1) {
                 return;
             }
             const lower = text.toLowerCase();
@@ -2737,7 +2740,7 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         });
 
         input.addEventListener('focus', () => {
-            if ((input.value || '').trim().length >= 2) updateSuggestions();
+            if ((input.value || '').trim().length >= 1) updateSuggestions();
         });
 
         input.addEventListener('blur', () => {
