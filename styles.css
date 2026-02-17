@@ -733,10 +733,24 @@ body {
 /* AI Mode Selector в старом дизайне */
 .ai-mode-selector-wrapper {
     position: relative;
+    overflow: visible;
 }
 
 .ai-mode-selector-btn {
     position: relative;
+}
+
+.ai-mode-selector-btn .ai-mode-icon-open,
+.ai-mode-selector-btn .ai-mode-icon-closed {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.ai-mode-selector-btn.active {
+    background: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.95);
 }
 
 .ai-mode-dropdown {

@@ -2551,46 +2551,56 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
     setupGrokModeSelector() {
         const modeSelector = document.getElementById('ai-mode-selector');
         const modeDropdown = document.getElementById('ai-mode-dropdown');
+        const wrapper = modeSelector && modeSelector.closest('.ai-mode-selector-wrapper');
         
         if (!modeSelector || !modeDropdown) return;
         
-        // Toggle dropdown on button click
+        const setDropdownOpen = (open) => {
+            if (open) {
+                modeDropdown.classList.add('show');
+                modeSelector.classList.add('active');
+                modeSelector.setAttribute('aria-expanded', 'true');
+                const iconClosed = modeSelector.querySelector('.ai-mode-icon-closed');
+                const iconOpen = modeSelector.querySelector('.ai-mode-icon-open');
+                if (iconClosed) iconClosed.style.display = 'none';
+                if (iconOpen) iconOpen.style.display = '';
+            } else {
+                modeDropdown.classList.remove('show');
+                modeSelector.classList.remove('active');
+                modeSelector.setAttribute('aria-expanded', 'false');
+                const iconClosed = modeSelector.querySelector('.ai-mode-icon-closed');
+                const iconOpen = modeSelector.querySelector('.ai-mode-icon-open');
+                if (iconClosed) iconClosed.style.display = '';
+                if (iconOpen) iconOpen.style.display = 'none';
+            }
+        };
+        
+        // Кнопка: сворачивает и разворачивает список режимов
         modeSelector.addEventListener('click', (e) => {
             e.stopPropagation();
             const isOpen = modeDropdown.classList.contains('show');
-            
-            if (isOpen) {
-                modeDropdown.classList.remove('show');
-                modeSelector.classList.remove('active');
-            } else {
-                modeDropdown.classList.add('show');
-                modeSelector.classList.add('active');
-            }
+            setDropdownOpen(!isOpen);
         });
         
-        // Close dropdown when clicking outside
+        // Клик вне области — сворачиваем список
         document.addEventListener('click', (e) => {
-            if (!modeSelector.contains(e.target) && !modeDropdown.contains(e.target)) {
-                modeDropdown.classList.remove('show');
-                modeSelector.classList.remove('active');
+            if (wrapper && !wrapper.contains(e.target)) {
+                setDropdownOpen(false);
             }
         });
         
-        // Handle mode selection
+        // Выбор режима — применяем и сворачиваем список
         modeDropdown.querySelectorAll('.mode-dropdown-item').forEach(item => {
             item.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const modeId = item.dataset.mode;
-                
                 if (modeId) {
                     this.setAIMode(modeId);
-                    modeDropdown.classList.remove('show');
-                    modeSelector.classList.remove('active');
+                    setDropdownOpen(false);
                 }
             });
         });
         
-        // Initialize UI with current mode
         this.updateGrokModeSelector(this.state.currentMode);
     }
     
