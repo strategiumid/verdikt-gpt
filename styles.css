@@ -448,6 +448,9 @@ body.sidebar-collapsed .container {
     word-break: break-word;
     overflow-wrap: break-word;
     overflow-x: auto;
+    overflow-y: visible;
+    min-height: auto;
+    height: auto;
     opacity: 0;
     transform: translateY(20px);
     transition: var(--transition);
@@ -537,6 +540,10 @@ body.sidebar-collapsed .container {
 .message-content {
     font-size: 1rem;
     line-height: 1.6;
+    overflow: visible;
+    max-height: none;
+    height: auto;
+    white-space: normal;
 }
 
 .typing-cursor {
@@ -688,6 +695,7 @@ body.sidebar-collapsed .container {
     margin-left: 20px;
     margin-right: 20px;
     position: relative;
+    flex-wrap: wrap;
 }
 
 .input-actions-left {
@@ -743,12 +751,15 @@ body.sidebar-collapsed .container {
 }
 
 .t9-dropdown {
-    display: none;
+    display: none !important;
     flex-direction: column;
     position: absolute;
     top: calc(100% - 14px);
-    left: 20px;
-    right: 20px;
+    left: 0;
+    right: 0;
+    width: calc(100% - 40px);
+    margin-left: 0;
+    margin-right: 0;
     padding: 6px 0;
     background: rgba(28, 28, 30, 0.98);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -763,7 +774,7 @@ body.sidebar-collapsed .container {
 }
 
 .t9-dropdown.has-suggestions {
-    display: flex;
+    display: flex !important;
 }
 
 .t9-suggestion-item {

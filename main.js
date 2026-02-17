@@ -2683,64 +2683,113 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
 
     setupT9Suggestions() {
         const input = this.elements.messageInput;
-        const container = document.getElementById('t9-suggestions');
-        if (!input || !container) {
-            console.warn('T9: input or container not found', { input: !!input, container: !!container });
+        if (!input) {
+            console.warn('T9: messageInput not found');
             return;
+        }
+
+        let container = document.getElementById('t9-suggestions');
+        if (!container) {
+            console.warn('T9: container not found, creating...');
+            const inputContainer = input.closest('.input-container-extended');
+            if (inputContainer) {
+                container = document.createElement('div');
+                container.id = 't9-suggestions';
+                container.className = 't9-dropdown';
+                container.setAttribute('role', 'listbox');
+                container.setAttribute('aria-label', 'Подсказки');
+                inputContainer.appendChild(container);
+            } else {
+                console.error('T9: input-container-extended not found');
+                return;
+            }
         }
 
         let t9Debounce = null;
 
         const updateSuggestions = () => {
-            const text = (input.value || '').trim();
-            container.innerHTML = '';
-            container.classList.remove('has-suggestions');
-            if (!text || text.length < 1) {
-                return;
-            }
-            const lower = text.toLowerCase();
-            const matches = VerdiktChatApp.T9_PHRASES.filter(phrase =>
-                phrase.toLowerCase().startsWith(lower) || phrase.toLowerCase().includes(lower)
-            );
-            const show = matches.slice(0, 8);
-            if (show.length === 0) {
-                return;
-            }
-            show.forEach(phrase => {
-                const item = document.createElement('button');
-                item.type = 'button';
-                item.className = 't9-suggestion-item';
-                item.setAttribute('role', 'option');
-                item.innerHTML = '<span class="t9-icon"><i class="fas fa-search"></i></span><span class="t9-text"></span>';
-                item.querySelector('.t9-text').textContent = phrase;
-                item.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    input.value = phrase;
-                    input.style.height = 'auto';
-                    input.style.height = Math.min(input.scrollHeight, 200) + 'px';
-                    container.innerHTML = '';
-                    container.classList.remove('has-suggestions');
-                    input.focus();
+            try {
+                const text = (input.value || '').trim();
+                container.innerHTML = '';
+                container.classList.remove('has-suggestions');
+                
+                if (!text || text.length < 1) {
+                    return;
+                }
+                
+                const lower = text.toLowerCase();
+                const matches = VerdiktChatApp.T9_PHRASES.filter(phrase => {
+                    const phraseLower = phrase.toLowerCase();
+                    return phraseLower.startsWith(lower) || phraseLower.includes(lower);
+                }).slice(0, 8);
+                
+                if (matches.length === 0) {
+                    return;
+                }
+                
+                matches.forEach(phrase => {
+                    const item = document.createElement('button');
+                    item.type = 'button';
+                    item.className = 't9-suggestion-item';
+                    item.setAttribute('role', 'option');
+                    
+                    const icon = document.createElement('span');
+                    icon.className = 't9-icon';
+                    icon.innerHTML = '<i class="fas fa-search"></i>';
+                    
+                    const textSpan = document.createElement('span');
+                    textSpan.className = 't9-text';
+                    textSpan.textContent = phrase;
+                    
+                    item.appendChild(icon);
+                    item.appendChild(textSpan);
+                    
+                    item.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        input.value = phrase;
+                        if (input.style) {
+                            input.style.height = 'auto';
+                            input.style.height = Math.min(input.scrollHeight, 200) + 'px';
+                        }
+                        container.innerHTML = '';
+                        container.classList.remove('has-suggestions');
+                        input.focus();
+                    });
+                    
+                    container.appendChild(item);
                 });
-                container.appendChild(item);
-            });
-            container.classList.add('has-suggestions');
+                
+                container.classList.add('has-suggestions');
+            } catch (error) {
+                console.error('T9 updateSuggestions error:', error);
+            }
         };
 
-        input.addEventListener('input', () => {
-            this.elements.messageInput.style.height = 'auto';
-            this.elements.messageInput.style.height = Math.min(this.elements.messageInput.scrollHeight, 200) + 'px';
+        const handleInput = (e) => {
+            if (input.style) {
+                input.style.height = 'auto';
+                input.style.height = Math.min(input.scrollHeight, 200) + 'px';
+            }
             clearTimeout(t9Debounce);
-            t9Debounce = setTimeout(updateSuggestions, 100);
-        });
+            t9Debounce = setTimeout(() => {
+                updateSuggestions();
+            }, 50);
+        };
 
-        input.addEventListener('keyup', () => {
-            clearTimeout(t9Debounce);
-            t9Debounce = setTimeout(updateSuggestions, 80);
+        input.addEventListener('input', handleInput);
+        input.addEventListener('keyup', handleInput);
+        input.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter' || e.shiftKey) {
+                handleInput(e);
+            }
         });
-
+        
         input.addEventListener('focus', () => {
-            if ((input.value || '').trim().length >= 1) updateSuggestions();
+            const text = (input.value || '').trim();
+            if (text.length >= 1) {
+                updateSuggestions();
+            }
         });
 
         input.addEventListener('blur', () => {
@@ -2749,15 +2798,17 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
                 if (!container.contains(document.activeElement)) {
                     container.classList.remove('has-suggestions');
                 }
-            }, 180);
+            }, 200);
         });
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
+            if (e.key === 'Escape' && container.classList.contains('has-suggestions')) {
                 container.innerHTML = '';
                 container.classList.remove('has-suggestions');
             }
         });
+        
+        console.log('T9 suggestions initialized');
     }
 
     togglePresentationMode() {
