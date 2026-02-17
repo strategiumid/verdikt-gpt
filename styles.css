@@ -727,6 +727,111 @@ body {
     display: flex;
     gap: 8px;
     align-items: center;
+    position: relative;
+}
+
+/* AI Mode Selector в старом дизайне */
+.ai-mode-selector-wrapper {
+    position: relative;
+}
+
+.ai-mode-selector-btn {
+    position: relative;
+}
+
+.ai-mode-dropdown {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    right: 0;
+    min-width: 320px;
+    max-width: 400px;
+    background: rgba(44, 44, 46, 0.98);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(20px);
+    padding: 8px;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 1000;
+    animation: fadeInDown 0.2s ease;
+}
+
+.ai-mode-dropdown.show {
+    display: flex;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.mode-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+}
+
+.mode-dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.mode-dropdown-item.active {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.mode-dropdown-item.active .mode-item-check {
+    display: block !important;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.mode-item-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.9);
+    flex-shrink: 0;
+}
+
+.mode-item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.mode-item-name {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.95);
+    margin-bottom: 2px;
+}
+
+.mode-item-desc {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.3;
+}
+
+.mode-item-check {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    flex-shrink: 0;
 }
 
 .input-icon-button {
@@ -2702,28 +2807,7 @@ footer {
         border-radius: 20px;
     }
     
-    .grok-input-container {
-        margin: 12px;
-        gap: 8px;
-    }
-    
-    .grok-input-field {
-        padding: 10px 12px;
-        gap: 8px;
-        border-radius: 20px;
-    }
-    
-    .grok-mode-selector {
-        padding: 6px 8px;
-        font-size: 0.8rem;
-        gap: 4px;
-    }
-    
-    .mode-selector-text {
-        font-size: 0.8rem;
-    }
-    
-    .grok-mode-dropdown {
+    .ai-mode-dropdown {
         min-width: calc(100vw - 24px);
         max-width: calc(100vw - 24px);
         right: auto;
@@ -2731,35 +2815,23 @@ footer {
         bottom: calc(100% + 12px);
     }
     
-    .grok-feature-buttons {
-        gap: 4px;
-        justify-content: space-between;
+    .mode-dropdown-item {
+        padding: 10px;
+        gap: 10px;
     }
     
-    .grok-feature-btn {
-        padding: 6px 8px;
-        font-size: 0.75rem;
-        flex: 1;
-        min-width: 0;
+    .mode-item-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
     }
     
-    .grok-feature-btn span {
-        display: none;
+    .mode-item-name {
+        font-size: 0.9rem;
     }
     
-    .grok-feature-btn i {
-        font-size: 12px;
-    }
-    
-    .grok-attach-button,
-    .grok-voice-button {
-        width: 36px;
-        height: 36px;
-        padding: 6px;
-    }
-    
-    .grok-attach-button i {
-        font-size: 16px;
+    .mode-item-desc {
+        font-size: 0.8rem;
     }
     
     .input-actions-left, .input-actions-right {

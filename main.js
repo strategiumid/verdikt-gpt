@@ -2596,10 +2596,9 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
     
     updateGrokModeSelector(modeId) {
         const modeSelector = document.getElementById('ai-mode-selector');
-        const modeSelectorText = document.getElementById('mode-selector-text');
         const modeDropdown = document.getElementById('ai-mode-dropdown');
         
-        if (!modeSelector || !modeSelectorText || !modeDropdown) return;
+        if (!modeSelector || !modeDropdown) return;
         
         // Update dropdown items
         modeDropdown.querySelectorAll('.mode-dropdown-item').forEach(item => {
@@ -2617,17 +2616,6 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
                 }
             }
         });
-        
-        // Update selector text
-        const mode = this.state.aiModes[modeId];
-        if (mode) {
-            // For "balanced" mode, show "Авто", otherwise show mode name
-            if (modeId === 'balanced') {
-                modeSelectorText.textContent = 'Авто';
-            } else {
-                modeSelectorText.textContent = mode.name;
-            }
-        }
     }
 
     togglePresentationMode() {

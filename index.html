@@ -2622,27 +2622,29 @@
                         </div>
                     </div>
                     <!-- Панель ввода -->
-                    <div class="grok-input-container">
-                        <!-- Основное поле ввода -->
-                        <div class="grok-input-field">
-                            <button class="grok-attach-button" id="attach-button" title="Прикрепить файл">
+                    <div class="input-container-extended">
+                        <div class="input-actions-left">
+                            <button class="input-icon-button" id="attach-button" title="Прикрепить файл">
                                 <i class="fas fa-paperclip"></i>
                             </button>
-                            
-                            <div class="grok-input-wrapper">
-                                <textarea id="message-input" placeholder="Что вы думаете?" maxlength="2000" autocomplete="off"></textarea>
-                            </div>
-                            
+                            <button class="input-icon-button" id="toggle-chat-history" title="История чатов">
+                                <i class="fas fa-history"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="input-wrapper">
+                            <textarea id="message-input" placeholder="Отправить сообщение..." maxlength="2000" autocomplete="off"></textarea>
+                        </div>
+                        
+                        <div class="input-actions-right">
                             <!-- AI Mode Selector -->
-                            <div class="grok-mode-selector-wrapper">
-                                <button class="grok-mode-selector" id="ai-mode-selector" title="Выбрать режим AI">
-                                    <i class="fas fa-rocket"></i>
-                                    <span class="mode-selector-text" id="mode-selector-text">Авто</span>
-                                    <i class="fas fa-chevron-down mode-chevron"></i>
+                            <div class="ai-mode-selector-wrapper">
+                                <button class="input-icon-button ai-mode-selector-btn" id="ai-mode-selector" title="Выбрать режим AI">
+                                    <i class="fas fa-sliders-h"></i>
                                 </button>
                                 
                                 <!-- Dropdown меню режимов -->
-                                <div class="grok-mode-dropdown" id="ai-mode-dropdown">
+                                <div class="ai-mode-dropdown" id="ai-mode-dropdown">
                                     <div class="mode-dropdown-item" data-mode="balanced">
                                         <div class="mode-item-icon">
                                             <i class="fas fa-balance-scale"></i>
@@ -2689,37 +2691,11 @@
                                 </div>
                             </div>
                             
-                            <button class="grok-voice-button" id="voice-input" title="Голосовой ввод">
-                                <div class="voice-wave-icon">
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                </div>
+                            <button class="input-icon-button" id="voice-input" title="Голосовой ввод">
+                                <i class="fas fa-microphone"></i>
                             </button>
-                            
-                            <!-- Hidden send button for compatibility -->
-                            <button class="grok-send-button" id="send-button" title="Отправить сообщение" style="display: none;">
+                            <button class="input-icon-button primary" id="send-button" title="Отправить сообщение">
                                 <i class="fas fa-paper-plane"></i>
-                            </button>
-                        </div>
-                        
-                        <!-- Дополнительные кнопки функций -->
-                        <div class="grok-feature-buttons">
-                            <button class="grok-feature-btn" id="deepsearch-btn">
-                                <i class="fas fa-search"></i>
-                                <span>DeepSearch</span>
-                            </button>
-                            <button class="grok-feature-btn" id="imagine-btn">
-                                <i class="fas fa-image"></i>
-                                <span>Imagine</span>
-                            </button>
-                            <button class="grok-feature-btn" id="news-btn">
-                                <i class="fas fa-newspaper"></i>
-                                <span>Свежие новости</span>
-                            </button>
-                            <button class="grok-feature-btn" id="voice-chat-btn">
-                                <i class="fas fa-microphone-alt"></i>
-                                <span>Голосовой чат</span>
                             </button>
                         </div>
                     </div>
