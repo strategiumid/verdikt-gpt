@@ -126,10 +126,10 @@ body {
 .container {
     max-width: 1200px;
     width: 100%;
-    margin-left: calc(320px + env(safe-area-inset-left, 0px) + max(0px, (100vw - 320px - 1200px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)) / 2)); /* Сайдбар + центрирование */
+    margin-left: calc(320px + env(safe-area-inset-left, 0px));
     margin-right: auto;
     padding: 0;
-    transition: margin-left 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    transition: margin-left 0.35s cubic-bezier(0.32, 0.72, 0, 1);
     padding-top: max(0px, env(safe-area-inset-top));
     padding-left: max(20px, env(safe-area-inset-left));
     padding-right: max(20px, env(safe-area-inset-right));
@@ -145,9 +145,20 @@ body {
     box-sizing: border-box;
 }
 
+/* Центрирование контента с учётом сайдбара */
+@media (min-width: 1520px) {
+    .container {
+        margin-left: calc(320px + env(safe-area-inset-left, 0px) + (100vw - 320px - 1200px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)) / 2);
+    }
+    
+    body.sidebar-collapsed .container {
+        margin-left: calc(72px + env(safe-area-inset-left, 0px) + (100vw - 72px - 1200px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)) / 2);
+    }
+}
+
 /* Центрирование контента с учётом свёрнутого сайдбара */
 body.sidebar-collapsed .container {
-    margin-left: calc(72px + env(safe-area-inset-left, 0px) + max(0px, (100vw - 72px - 1200px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)) / 2));
+    margin-left: calc(72px + env(safe-area-inset-left, 0px));
 }
 
 /* Шапка с навигацией */
@@ -2543,10 +2554,12 @@ footer {
         margin-left: calc(320px + env(safe-area-inset-left, 0px));
         margin-right: auto;
         padding: 15px;
+        transition: margin-left 0.35s cubic-bezier(0.32, 0.72, 0, 1);
     }
     
     body.sidebar-collapsed .container {
         margin-left: calc(72px + env(safe-area-inset-left, 0px));
+        transition: margin-left 0.35s cubic-bezier(0.32, 0.72, 0, 1);
     }
     
     .footer-content {
