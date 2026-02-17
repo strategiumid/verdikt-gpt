@@ -40,6 +40,7 @@ export class VerdiktChatApp {
             isRecording: false,
             isSpeaking: false,
             isModelLoading: false,
+            isResponding: false,
             instructions: '',
             instructionsLoaded: false,
             achievements: {
@@ -2128,14 +2129,23 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
     setupEventListeners() {
         // Send button (if exists)
         if (this.elements.sendButton) {
-            this.elements.sendButton.addEventListener('click', () => this.sendMessage());
+            this.elements.sendButton.addEventListener('click', () => {
+                if (!this.state.isResponding) {
+                    this.sendMessage();
+                }
+            });
+            // Инициализируем состояние кнопки
+            this.updateSendButtonState();
         }
         
         // Enter key to send message
         this.elements.messageInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                this.sendMessage();
+                // Блокируем отправку, если ИИ отвечает
+                if (!this.state.isResponding) {
+                    this.sendMessage();
+                }
             } else if (e.key === 'Enter' && e.shiftKey) {
                 // Allow Shift+Enter for new line
                 return;
@@ -2349,6 +2359,11 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
     }
 
     async sendMessage() {
+        // Блокируем отправку, если ИИ уже отвечает
+        if (this.state.isResponding) {
+            return;
+        }
+        
         const message = this.elements.messageInput.value.trim();
         
         if (!message) {
@@ -2423,6 +2438,11 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         this.elements.messageInput.value = '';
         this.elements.messageInput.style.height = 'auto';
         
+        // Устанавливаем состояние ответа и блокируем интерфейс
+        this.state.isResponding = true;
+        this.updateSendButtonState();
+        this.elements.messageInput.disabled = true;
+        
         this.showTypingIndicator();
         
         try {
@@ -2494,9 +2514,38 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
                     this.showApiSettingsModal();
                 }, 1000);
             }
+        } finally {
+            // Разблокируем интерфейс после завершения ответа
+            this.state.isResponding = false;
+            this.updateSendButtonState();
+            this.elements.messageInput.disabled = false;
         }
         
         this.scrollToBottom();
+    }
+    
+    updateSendButtonState() {
+        const sendButton = this.elements.sendButton;
+        if (!sendButton) return;
+        
+        const icon = sendButton.querySelector('i');
+        if (!icon) return;
+        
+        if (this.state.isResponding) {
+            // Меняем иконку на паузу
+            icon.className = 'fas fa-pause';
+            sendButton.title = 'ИИ отвечает...';
+            sendButton.disabled = true;
+            sendButton.style.opacity = '0.7';
+            sendButton.style.cursor = 'not-allowed';
+        } else {
+            // Возвращаем иконку отправки
+            icon.className = 'fas fa-paper-plane';
+            sendButton.title = 'Отправить сообщение';
+            sendButton.disabled = false;
+            sendButton.style.opacity = '1';
+            sendButton.style.cursor = 'pointer';
+        }
     }
 
     isTopicRelevant(message) {
