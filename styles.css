@@ -376,13 +376,40 @@ body.sidebar-collapsed .container {
 /* Анимированная сфера */
 .animated-sphere {
     position: relative;
-    width: 600px;
-    height: 600px;
+    width: 400px;
+    height: 400px;
     margin: 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;
     filter: drop-shadow(0 0 40px rgba(0, 0, 0, 0.8));
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.animated-sphere:hover {
+    filter: drop-shadow(0 0 60px rgba(0, 0, 0, 0.9));
+}
+
+.animated-sphere:hover .sphere-core {
+    box-shadow: 
+        0 0 150px rgba(0, 0, 0, 1),
+        0 0 100px rgba(0, 0, 0, 0.95),
+        inset 0 0 100px rgba(0, 0, 0, 0.98),
+        inset -30px -30px 60px rgba(0, 0, 0, 0.8),
+        inset 30px 30px 60px rgba(0, 0, 0, 0.7);
+}
+
+.animated-sphere:hover .sphere-ring-1,
+.animated-sphere:hover .sphere-ring-2,
+.animated-sphere:hover .sphere-ring-3 {
+    opacity: 0.8;
+    filter: blur(1px);
+}
+
+.animated-sphere:hover .particle {
+    opacity: 1;
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.8);
 }
 
 /* Эффект черной дыры - искажение пространства */
@@ -392,8 +419,8 @@ body.sidebar-collapsed .container {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 400px;
-    height: 400px;
+    width: 300px;
+    height: 300px;
     border-radius: 50%;
     background: radial-gradient(circle, 
         transparent 0%,
@@ -404,15 +431,22 @@ body.sidebar-collapsed .container {
     animation: blackHoleDistortion 8s ease-in-out infinite;
     pointer-events: none;
     z-index: 1;
+    transition: all 0.3s ease;
+}
+
+.animated-sphere:hover::before {
+    width: 320px;
+    height: 320px;
+    opacity: 0.9;
 }
 
 @keyframes blackHoleDistortion {
     0%, 100% {
-        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+        transform: translate(-50%, -50%) scale(1);
         opacity: 0.6;
     }
     50% {
-        transform: translate(-50%, -50%) scale(1.1) rotate(180deg);
+        transform: translate(-50%, -50%) scale(1.05);
         opacity: 0.8;
     }
 }
@@ -423,8 +457,8 @@ body.sidebar-collapsed .container {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 200px;
-    height: 200px;
+    width: 150px;
+    height: 150px;
     border-radius: 50%;
     background: radial-gradient(circle at 50% 50%, 
         rgba(0, 0, 0, 1) 0%,
@@ -438,8 +472,9 @@ body.sidebar-collapsed .container {
         inset -30px -30px 60px rgba(0, 0, 0, 0.8),
         inset 30px 30px 60px rgba(0, 0, 0, 0.6);
     border: 2px solid rgba(255, 255, 255, 0.05);
-    animation: spherePulse 4s ease-in-out infinite, sphereRotate 20s linear infinite;
+    animation: spherePulse 4s ease-in-out infinite;
     z-index: 2;
+    transition: all 0.3s ease;
 }
 
 /* Аккреционный диск вокруг черной дыры */
@@ -449,8 +484,8 @@ body.sidebar-collapsed .container {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 220px;
-    height: 220px;
+    width: 170px;
+    height: 170px;
     border-radius: 50%;
     background: conic-gradient(
         from 0deg,
@@ -487,8 +522,8 @@ body.sidebar-collapsed .container {
 }
 
 .sphere-ring-1 {
-    width: 240px;
-    height: 240px;
+    width: 180px;
+    height: 180px;
     border-color: rgba(255, 255, 255, 0.2);
     animation-duration: 8s;
     animation-direction: normal;
@@ -496,8 +531,8 @@ body.sidebar-collapsed .container {
 }
 
 .sphere-ring-2 {
-    width: 280px;
-    height: 280px;
+    width: 210px;
+    height: 210px;
     border-color: rgba(255, 255, 255, 0.15);
     animation-duration: 12s;
     animation-direction: reverse;
@@ -505,8 +540,8 @@ body.sidebar-collapsed .container {
 }
 
 .sphere-ring-3 {
-    width: 320px;
-    height: 320px;
+    width: 240px;
+    height: 240px;
     border-color: rgba(255, 255, 255, 0.1);
     animation-duration: 18s;
     animation-direction: normal;
@@ -519,8 +554,8 @@ body.sidebar-collapsed .container {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 250px;
-    height: 250px;
+    width: 200px;
+    height: 200px;
     border-radius: 50%;
     background: radial-gradient(circle, 
         rgba(0, 0, 0, 0.4) 0%,
@@ -659,23 +694,23 @@ body.sidebar-collapsed .container {
 
 @keyframes particleOrbit {
     0% {
-        transform: rotate(0deg) translateX(120px) rotate(0deg);
+        transform: rotate(0deg) translateX(90px) rotate(0deg);
         opacity: 0.8;
     }
     25% {
         opacity: 1;
-        transform: rotate(90deg) translateX(115px) rotate(-90deg);
+        transform: rotate(90deg) translateX(85px) rotate(-90deg);
     }
     50% {
         opacity: 0.9;
-        transform: rotate(180deg) translateX(110px) rotate(-180deg);
+        transform: rotate(180deg) translateX(80px) rotate(-180deg);
     }
     75% {
         opacity: 1;
-        transform: rotate(270deg) translateX(115px) rotate(-270deg);
+        transform: rotate(270deg) translateX(85px) rotate(-270deg);
     }
     100% {
-        transform: rotate(360deg) translateX(120px) rotate(-360deg);
+        transform: rotate(360deg) translateX(90px) rotate(-360deg);
         opacity: 0.8;
     }
 }
@@ -734,6 +769,14 @@ body.sidebar-collapsed .container {
     width: 100%;
     height: 100%;
     pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+.animated-sphere.active .hero-chips {
+    opacity: 1;
+    visibility: visible;
 }
 
 .hero-chip {
@@ -759,7 +802,6 @@ body.sidebar-collapsed .container {
     z-index: 10;
     opacity: 0;
     transform: translate(-50%, -50%) scale(0);
-    animation: chipEmerge 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 .hero-chip:hover {
@@ -783,59 +825,78 @@ body.sidebar-collapsed .container {
     display: inline-block;
 }
 
-/* Позиционирование кнопок ближе к сфере */
+/* Позиционирование кнопок ближе к сфере - равномерно по кругу (6 кнопок) */
 .hero-chip-1 {
     top: 0%;
     left: 50%;
     transform: translate(-50%, -50%);
-    margin-top: -130px; /* Ближе к сфере */
-    animation: chipEmerge 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s forwards,
-               chipFloat 6s ease-in-out 1.5s infinite;
+    margin-top: -90px; /* Ближе к сфере */
 }
 
 .hero-chip-2 {
-    top: 50%;
+    top: 16.666%;
     right: 0%;
     transform: translate(50%, -50%);
-    margin-right: -130px; /* Ближе к сфере */
-    animation: chipEmergeRight 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s forwards,
-               chipFloatRight 6s ease-in-out 1.6s infinite;
+    margin-right: -90px; /* Ближе к сфере */
 }
 
 .hero-chip-3 {
-    bottom: 0%;
-    right: 50%;
+    bottom: 16.666%;
+    right: 0%;
     transform: translate(50%, 50%);
-    margin-bottom: -130px; /* Ближе к сфере */
-    animation: chipEmergeRightBottom 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s forwards,
-               chipFloatRightBottom 6s ease-in-out 1.7s infinite;
+    margin-right: -90px; /* Ближе к сфере */
 }
 
 .hero-chip-4 {
     bottom: 0%;
     left: 50%;
     transform: translate(-50%, 50%);
-    margin-bottom: -130px; /* Ближе к сфере */
-    animation: chipEmergeBottom 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s forwards,
-               chipFloatBottom 6s ease-in-out 1.8s infinite;
+    margin-bottom: -90px; /* Ближе к сфере */
 }
 
 .hero-chip-5 {
-    bottom: 50%;
+    bottom: 16.666%;
     left: 0%;
     transform: translate(-50%, 50%);
-    margin-left: -130px; /* Ближе к сфере */
-    animation: chipEmergeLeftBottom 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s forwards,
-               chipFloatLeftBottom 6s ease-in-out 1.9s infinite;
+    margin-left: -90px; /* Ближе к сфере */
 }
 
 .hero-chip-6 {
-    top: 50%;
+    top: 16.666%;
     left: 0%;
     transform: translate(-50%, -50%);
-    margin-left: -130px; /* Ближе к сфере */
-    animation: chipEmergeLeft 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.6s forwards,
-               chipFloatLeft 6s ease-in-out 2s infinite;
+    margin-left: -90px; /* Ближе к сфере */
+}
+
+/* Анимация появления кнопок при активации сферы */
+.animated-sphere.active .hero-chip-1 {
+    animation: chipEmerge 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s forwards,
+               chipFloat 6s ease-in-out 0.8s infinite;
+}
+
+.animated-sphere.active .hero-chip-2 {
+    animation: chipEmergeRight 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s forwards,
+               chipFloatRight 6s ease-in-out 0.85s infinite;
+}
+
+.animated-sphere.active .hero-chip-3 {
+    animation: chipEmergeRightBottom 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s forwards,
+               chipFloatRightBottom 6s ease-in-out 0.9s infinite;
+}
+
+.animated-sphere.active .hero-chip-4 {
+    animation: chipEmergeBottom 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.25s forwards,
+               chipFloatBottom 6s ease-in-out 0.95s infinite;
+}
+
+.animated-sphere.active .hero-chip-5 {
+    animation: chipEmergeLeftBottom 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s forwards,
+               chipFloatLeftBottom 6s ease-in-out 1s infinite;
+}
+
+.animated-sphere.active .hero-chip-6 {
+    animation: chipEmergeLeft 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.35s forwards,
+               chipFloatLeft 6s ease-in-out 1.05s infinite;
 }
 
 .hero-chip:hover {
@@ -891,6 +952,7 @@ body.sidebar-collapsed .container {
         transform: translate(50%, -50%) scale(1) translateX(0);
     }
 }
+
 
 @keyframes chipEmergeRightBottom {
     0% {
@@ -4336,52 +4398,52 @@ footer {
     }
     
     .animated-sphere {
-        width: 500px;
-        height: 500px;
-    }
-    
-    .animated-sphere::before {
         width: 350px;
         height: 350px;
     }
     
-    .sphere-core {
-        width: 160px;
-        height: 160px;
-    }
-    
-    .sphere-core::before {
-        width: 180px;
-        height: 180px;
-    }
-    
-    .sphere-ring-1 {
-        width: 200px;
-        height: 200px;
-    }
-    
-    .sphere-ring-2 {
-        width: 230px;
-        height: 230px;
-    }
-    
-    .sphere-ring-3 {
+    .animated-sphere::before {
         width: 260px;
         height: 260px;
     }
     
-    .sphere-glow {
+    .sphere-core {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .sphere-core::before {
+        width: 140px;
+        height: 140px;
+    }
+    
+    .sphere-ring-1 {
+        width: 150px;
+        height: 150px;
+    }
+    
+    .sphere-ring-2 {
+        width: 175px;
+        height: 175px;
+    }
+    
+    .sphere-ring-3 {
         width: 200px;
         height: 200px;
+    }
+    
+    .sphere-glow {
+        width: 160px;
+        height: 160px;
     }
     
     .hero-chip {
         font-size: 0.8rem;
         padding: 8px 14px;
-        margin-top: -110px;
-        margin-right: -110px;
-        margin-bottom: -110px;
-        margin-left: -110px;
+        margin-top: -75px;
+        margin-right: -75px;
+        margin-bottom: -75px;
+        margin-left: -75px;
     }
     
     .hero-chip span {
@@ -4600,43 +4662,43 @@ footer {
     }
     
     .animated-sphere {
-        width: 400px;
-        height: 400px;
+        width: 300px;
+        height: 300px;
     }
     
     .animated-sphere::before {
-        width: 280px;
-        height: 280px;
+        width: 220px;
+        height: 220px;
     }
     
     .sphere-core {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .sphere-core::before {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .sphere-ring-1 {
         width: 130px;
         height: 130px;
     }
     
-    .sphere-core::before {
+    .sphere-ring-2 {
         width: 150px;
         height: 150px;
     }
     
-    .sphere-ring-1 {
-        width: 160px;
-        height: 160px;
-    }
-    
-    .sphere-ring-2 {
-        width: 185px;
-        height: 185px;
-    }
-    
     .sphere-ring-3 {
-        width: 210px;
-        height: 210px;
+        width: 170px;
+        height: 170px;
     }
     
     .sphere-glow {
-        width: 160px;
-        height: 160px;
+        width: 130px;
+        height: 130px;
     }
     
     .particle {
@@ -4647,10 +4709,10 @@ footer {
     .hero-chip {
         font-size: 0.75rem;
         padding: 8px 12px;
-        margin-top: -90px;
-        margin-right: -90px;
-        margin-bottom: -90px;
-        margin-left: -90px;
+        margin-top: -65px;
+        margin-right: -65px;
+        margin-bottom: -65px;
+        margin-left: -65px;
     }
     
     .hero-chip span {
@@ -4799,38 +4861,52 @@ footer {
     }
     
     .animated-sphere {
-        width: 350px;
-        height: 350px;
+        width: 280px;
+        height: 280px;
+    }
+    
+    .animated-sphere::before {
+        width: 200px;
+        height: 200px;
     }
     
     .sphere-core {
+        width: 90px;
+        height: 90px;
+    }
+    
+    .sphere-core::before {
         width: 110px;
         height: 110px;
     }
     
     .sphere-ring-1 {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .sphere-ring-2 {
         width: 140px;
         height: 140px;
     }
     
-    .sphere-ring-2 {
+    .sphere-ring-3 {
         width: 160px;
         height: 160px;
     }
     
-    .sphere-ring-3 {
-        width: 180px;
-        height: 180px;
-    }
-    
     .sphere-glow {
-        width: 140px;
-        height: 140px;
+        width: 120px;
+        height: 120px;
     }
     
     .hero-chip {
         font-size: 0.7rem;
         padding: 6px 10px;
+        margin-top: -60px;
+        margin-right: -60px;
+        margin-bottom: -60px;
+        margin-left: -60px;
     }
     
     .hero-chip span {
@@ -4880,11 +4956,21 @@ footer {
 /* iPhone 14/15/16 base, 15 Pro (393px) */
 @media (max-width: 393px) {
     .animated-sphere {
-        width: 320px;
-        height: 320px;
+        width: 260px;
+        height: 260px;
+    }
+    
+    .animated-sphere::before {
+        width: 180px;
+        height: 180px;
     }
     
     .sphere-core {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .sphere-core::before {
         width: 100px;
         height: 100px;
     }
@@ -4892,6 +4978,10 @@ footer {
     .hero-chip {
         font-size: 0.65rem;
         padding: 6px 8px;
+        margin-top: -55px;
+        margin-right: -55px;
+        margin-bottom: -55px;
+        margin-left: -55px;
     }
     
     .hero-chip span {
@@ -4914,38 +5004,52 @@ footer {
         padding-right: max(10px, env(safe-area-inset-right));
     }
     .animated-sphere {
-        width: 300px;
-        height: 300px;
+        width: 240px;
+        height: 240px;
+    }
+    
+    .animated-sphere::before {
+        width: 160px;
+        height: 160px;
     }
     
     .sphere-core {
+        width: 70px;
+        height: 70px;
+    }
+    
+    .sphere-core::before {
         width: 90px;
         height: 90px;
     }
     
     .sphere-ring-1 {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .sphere-ring-2 {
         width: 120px;
         height: 120px;
     }
     
-    .sphere-ring-2 {
+    .sphere-ring-3 {
         width: 140px;
         height: 140px;
     }
     
-    .sphere-ring-3 {
-        width: 160px;
-        height: 160px;
-    }
-    
     .sphere-glow {
-        width: 120px;
-        height: 120px;
+        width: 100px;
+        height: 100px;
     }
     
     .hero-chip {
         font-size: 0.6rem;
         padding: 5px 8px;
+        margin-top: -50px;
+        margin-right: -50px;
+        margin-bottom: -50px;
+        margin-left: -50px;
     }
     
     .hero-chip span {
@@ -4973,33 +5077,43 @@ footer {
         font-size: 14px;
     }
     .animated-sphere {
-        width: 280px;
-        height: 280px;
+        width: 220px;
+        height: 220px;
+    }
+    
+    .animated-sphere::before {
+        width: 140px;
+        height: 140px;
     }
     
     .sphere-core {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .sphere-core::before {
         width: 80px;
         height: 80px;
     }
     
     .sphere-ring-1 {
-        width: 100px;
-        height: 100px;
+        width: 90px;
+        height: 90px;
     }
     
     .sphere-ring-2 {
-        width: 120px;
-        height: 120px;
+        width: 110px;
+        height: 110px;
     }
     
     .sphere-ring-3 {
-        width: 140px;
-        height: 140px;
+        width: 130px;
+        height: 130px;
     }
     
     .sphere-glow {
-        width: 100px;
-        height: 100px;
+        width: 90px;
+        height: 90px;
     }
     
     .particle {
@@ -5010,6 +5124,10 @@ footer {
     .hero-chip {
         font-size: 0.55rem;
         padding: 4px 6px;
+        margin-top: -45px;
+        margin-right: -45px;
+        margin-bottom: -45px;
+        margin-left: -45px;
     }
     
     .hero-chip span {

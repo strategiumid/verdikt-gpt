@@ -2555,15 +2555,32 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
             });
         }
 
+        // Обработчик клика на сферу для показа/скрытия кнопок выбора
+        const animatedSphere = document.querySelector('.animated-sphere');
+        if (animatedSphere) {
+            animatedSphere.addEventListener('click', (e) => {
+                // Не активируем, если клик был по кнопке
+                if (e.target.closest('.hero-chip')) {
+                    return;
+                }
+                animatedSphere.classList.toggle('active');
+            });
+        }
+
         const chips = document.querySelectorAll('.hero-chip');
         chips.forEach(chip => {
             chip.addEventListener('click', (e) => {
+                e.stopPropagation(); // Предотвращаем закрытие при клике на кнопку
                 const question = chip.dataset.question;
                 if (question) {
                     this.elements.messageInput.value = question;
                     this.elements.messageInput.focus();
                     this.elements.messageInput.style.height = 'auto';
                     this.elements.messageInput.style.height = Math.min(this.elements.messageInput.scrollHeight, 200) + 'px';
+                    // Закрываем кнопки после выбора
+                    if (animatedSphere) {
+                        animatedSphere.classList.remove('active');
+                    }
                 }
             });
         });
