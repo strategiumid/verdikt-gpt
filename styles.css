@@ -392,22 +392,22 @@ body.sidebar-collapsed .container {
 
 /* Состояния сферы при подключении к API */
 .animated-sphere.api-connecting {
-    animation: sphereApiConnecting 2s ease-in-out infinite;
+    animation: sphereApiConnecting 2s ease-in-out infinite !important;
     filter: drop-shadow(0 0 60px rgba(59, 130, 246, 0.4)) 
             drop-shadow(0 0 100px rgba(59, 130, 246, 0.3))
-            drop-shadow(0 0 40px rgba(255, 255, 255, 0.2));
+            drop-shadow(0 0 40px rgba(255, 255, 255, 0.2)) !important;
 }
 
 .animated-sphere.api-connecting .sphere-core {
-    border-color: rgba(59, 130, 246, 0.5);
+    border-color: rgba(59, 130, 246, 0.5) !important;
     box-shadow: 
         0 0 120px rgba(59, 130, 246, 0.3),
         0 0 80px rgba(59, 130, 246, 0.2),
         0 0 40px rgba(59, 130, 246, 0.1),
         inset 0 0 80px rgba(0, 0, 0, 0.8),
         inset -30px -30px 60px rgba(0, 0, 0, 0.6),
-        inset 30px 30px 60px rgba(59, 130, 246, 0.15);
-    animation: sphereCoreConnecting 1.5s ease-in-out infinite;
+        inset 30px 30px 60px rgba(59, 130, 246, 0.15) !important;
+    animation: sphereCoreConnecting 1.5s ease-in-out infinite !important;
 }
 
 .animated-sphere.api-connecting .sphere-ring-1,
@@ -438,22 +438,22 @@ body.sidebar-collapsed .container {
 
 /* Состояние: подключено */
 .animated-sphere.api-connected {
-    animation: sphereApiConnected 1s ease-out;
+    animation: sphereApiConnected 1s ease-out !important;
     filter: drop-shadow(0 0 80px rgba(34, 197, 94, 0.5)) 
             drop-shadow(0 0 120px rgba(34, 197, 94, 0.4))
-            drop-shadow(0 0 60px rgba(255, 255, 255, 0.3));
+            drop-shadow(0 0 60px rgba(255, 255, 255, 0.3)) !important;
 }
 
 .animated-sphere.api-connected .sphere-core {
-    border-color: rgba(34, 197, 94, 0.6);
+    border-color: rgba(34, 197, 94, 0.6) !important;
     box-shadow: 
         0 0 150px rgba(34, 197, 94, 0.4),
         0 0 100px rgba(34, 197, 94, 0.3),
         0 0 60px rgba(34, 197, 94, 0.2),
         inset 0 0 80px rgba(0, 0, 0, 0.8),
         inset -30px -30px 60px rgba(0, 0, 0, 0.6),
-        inset 30px 30px 60px rgba(34, 197, 94, 0.2);
-    animation: sphereCoreConnected 0.8s ease-out;
+        inset 30px 30px 60px rgba(34, 197, 94, 0.2) !important;
+    animation: sphereCoreConnected 0.8s ease-out !important;
 }
 
 .animated-sphere.api-connected .sphere-ring-1,
@@ -484,19 +484,19 @@ body.sidebar-collapsed .container {
 
 /* Состояние: ошибка */
 .animated-sphere.api-error {
-    animation: sphereApiError 1s ease-in-out infinite;
+    animation: sphereApiError 1s ease-in-out infinite !important;
     filter: drop-shadow(0 0 60px rgba(239, 68, 68, 0.4)) 
-            drop-shadow(0 0 100px rgba(239, 68, 68, 0.3));
+            drop-shadow(0 0 100px rgba(239, 68, 68, 0.3)) !important;
 }
 
 .animated-sphere.api-error .sphere-core {
-    border-color: rgba(239, 68, 68, 0.5);
+    border-color: rgba(239, 68, 68, 0.5) !important;
     box-shadow: 
         0 0 120px rgba(239, 68, 68, 0.3),
         0 0 80px rgba(239, 68, 68, 0.2),
         inset 0 0 80px rgba(0, 0, 0, 0.8),
         inset -30px -30px 60px rgba(0, 0, 0, 0.6),
-        inset 30px 30px 60px rgba(239, 68, 68, 0.15);
+        inset 30px 30px 60px rgba(239, 68, 68, 0.15) !important;
 }
 
 .animated-sphere.api-error .sphere-ring-1,

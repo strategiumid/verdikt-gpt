@@ -358,7 +358,10 @@ ${instructions ? 'ТВОИ ИНСТРУКЦИИ (следуй этим прав�
         await this.loadInstructions();
         
         this.updateUI();
-        await this.checkApiStatus();
+        // Небольшая задержка, чтобы сфера успела загрузиться в DOM
+        setTimeout(async () => {
+            await this.checkApiStatus();
+        }, 500);
         this.setupKeyboardShortcuts();
         this.setupServiceWorker();
         this.setupSettingsTabs();
@@ -3769,7 +3772,24 @@ hideApiLoadingEffect() {
 }
 
 updateSphereApiState(state) {
-    const sphere = document.querySelector('.animated-sphere');
+    // Пробуем найти сферу несколько раз с задержкой, если она еще не загрузилась
+    let sphere = document.querySelector('.animated-sphere');
+    
+    if (!sphere) {
+        // Если сфера не найдена, пробуем еще раз через небольшую задержку
+        setTimeout(() => {
+            sphere = document.querySelector('.animated-sphere');
+            if (sphere) {
+                this.applySphereApiState(sphere, state);
+            }
+        }, 100);
+        return;
+    }
+    
+    this.applySphereApiState(sphere, state);
+}
+
+applySphereApiState(sphere, state) {
     if (!sphere) return;
     
     // Удаляем все предыдущие классы состояний
@@ -3784,7 +3804,10 @@ updateSphereApiState(state) {
             sphere.classList.add('api-connected');
             // Через 2 секунды убираем эффект подключения
             setTimeout(() => {
-                sphere.classList.remove('api-connected');
+                const currentSphere = document.querySelector('.animated-sphere');
+                if (currentSphere && currentSphere.classList.contains('api-connected')) {
+                    currentSphere.classList.remove('api-connected');
+                }
             }, 2000);
             break;
         case 'error':
