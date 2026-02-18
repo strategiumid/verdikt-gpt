@@ -2120,6 +2120,20 @@ body.sidebar-collapsed .container {
     animation-duration: 1.2s;
 }
 
+/* Сообщение «Ищу в интернете...» — та же анимация, что и «Думаю...» */
+.searching-message .message-sender i.fa-globe {
+    color: rgba(34, 197, 94, 0.9);
+}
+.typing-content-search .typing-text-search {
+    color: rgba(255, 255, 255, 0.7);
+}
+.searching-dots span {
+    animation: thinkingDot 1.2s infinite ease-in-out;
+}
+.searching-dots span:nth-child(1) { animation-delay: 0s; }
+.searching-dots span:nth-child(2) { animation-delay: 0.2s; }
+.searching-dots span:nth-child(3) { animation-delay: 0.4s; }
+
 /* Панель ввода — одна тёмная «таблетка» */
 .input-container-extended {
     flex-shrink: 0;
@@ -2198,6 +2212,16 @@ body.sidebar-collapsed .container {
 
 .input-container-extended.grok-style-input .input-icon-button.primary:hover {
     background: rgba(255, 255, 255, 0.92);
+}
+
+/* Кнопка «Поиск в интернете» — активное состояние */
+.input-container-extended .input-icon-button#search-mode-btn.active,
+.input-icon-button.search-mode-active {
+    background: rgba(34, 197, 94, 0.25);
+    color: #4ade80;
+}
+.input-container-extended .input-icon-button#search-mode-btn.active:hover {
+    background: rgba(34, 197, 94, 0.35);
 }
 
 .input-actions-left {

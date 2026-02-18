@@ -148,9 +148,50 @@ export class UIManager {
         if (tpl && tpl.parentNode) {
             tpl.parentNode.removeChild(tpl);
         }
-        // also hide global indicator if exists
         if (this.elements.typingIndicator) {
             this.elements.typingIndicator.style.display = 'none';
+        }
+    }
+
+    /** Анимация «Ищу в интернете...» — пока идёт поиск (как «Думаю...»). */
+    showSearchingIndicator() {
+        if (this.state.doNotDisturb) return;
+        const heroBlock = document.getElementById('hero-block');
+        if (heroBlock) heroBlock.style.display = 'none';
+        this.app.syncInputPosition && this.app.syncInputPosition();
+        if (document.getElementById('searching-msg')) return;
+        const tpl = document.createElement('div');
+        tpl.className = 'message ai-message typing typing-message-grok searching-message';
+        tpl.id = 'searching-msg';
+        tpl.style.opacity = '0';
+        tpl.style.transform = 'translateY(12px)';
+        tpl.innerHTML = `
+            <div class="message-sender">
+                <i class="fas fa-globe"></i> Эксперт по отношениям
+            </div>
+            <div class="message-content">
+                <div class="typing-content typing-content-grok typing-content-search">
+                    <div class="typing-dots typing-dots-grok searching-dots">
+                        <span></span><span></span><span></span>
+                    </div>
+                    <span class="typing-text typing-text-search">Ищу в интернете...</span>
+                </div>
+            </div>
+        `;
+        this.elements.chatMessages.appendChild(tpl);
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                tpl.style.opacity = '1';
+                tpl.style.transform = 'translateY(0)';
+            });
+        });
+        this.scrollToBottom();
+    }
+
+    hideSearchingIndicator() {
+        const tpl = document.getElementById('searching-msg');
+        if (tpl && tpl.parentNode) {
+            tpl.parentNode.removeChild(tpl);
         }
     }
 }
