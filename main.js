@@ -28,8 +28,8 @@ export class VerdiktChatApp {
         this.API_CONFIG = {
             url: 'https://routerai.ru/api/v1/chat/completions',
             model: 'mistralai/ministral-3b-2512', 
-            maxTokens: 1300,
-            temperature: 0.6,
+            maxTokens: 1400,
+            temperature: 0.5,
             apiKey: "sk-ayshgI6SUUplUxB0ocKzEQ1IK73mbdql"
         };
 
