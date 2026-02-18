@@ -18,6 +18,10 @@
     <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💕</text></svg>">
     
     <style>
+    :root {
+        font-size: clamp(14px, 1.2vw + 12px, 16px);
+    }
+
     /* Стили для бокового меню */
    /* Кнопка сайдбара: только на мобильных, на ПК скрыта */
    .sidebar-toggle {
@@ -130,7 +134,8 @@
         position: fixed;
         top: 0;
         left: env(safe-area-inset-left, 0px); /* Учёт notch на MacBook Pro */
-        width: 320px;
+        width: clamp(72px, 22vw, 320px);
+        max-width: 320px;
         height: 100vh;
         height: 100dvh;
         padding-top: env(safe-area-inset-top, 0px);
@@ -341,7 +346,65 @@
         width: 20px;
         text-align: center;
         font-size: 15px;
-        opacity: 0.9;
+        opacity: 0.95;
+        transition: transform 320ms cubic-bezier(0.22,1,0.36,1), color 200ms ease, opacity 200ms ease;
+        will-change: transform, opacity;
+        transform-origin: center;
+    }
+
+    /* Анимации иконок: hover, active и мягкая флоат-анимация для активного пункта */
+    @keyframes icon-pop {
+        0% { transform: scale(1) translateX(0) rotate(0deg); }
+        50% { transform: scale(1.12) translateX(2px) rotate(-6deg); }
+        100% { transform: scale(1) translateX(0) rotate(0deg); }
+    }
+
+    @keyframes icon-float {
+        0% { transform: translateY(0); }
+        50% { transform: translateY(-2px); }
+        100% { transform: translateY(0); }
+    }
+
+    .nav-item:hover i {
+        transform: translateX(4px) scale(1.08) rotate(-6deg);
+        color: var(--primary, #60a5fa);
+    }
+
+    .nav-item:active i {
+        animation: icon-pop 360ms cubic-bezier(0.2,0.8,0.2,1);
+    }
+
+    .nav-item.active i {
+        animation: icon-float 4s ease-in-out infinite;
+    }
+
+    /* При свёрнутом сайдбаре увеличим фокус на иконке */
+    .sidebar.collapsed .nav-item i {
+        transform: scale(1.05);
+    }
+
+    /* Доп. оптимизации для очень маленьких экранов */
+    @media (max-width: 420px) {
+        :root { font-size: clamp(13px, 3.5vw, 15px); }
+        .sidebar {
+            width: 100%;
+            max-width: 100%;
+            padding-left: env(safe-area-inset-left, 12px);
+            padding-right: env(safe-area-inset-right, 12px);
+        }
+        .sidebar-search-inner {
+            padding: 10px;
+        }
+        .nav-item {
+            padding: 8px 10px;
+            gap: 8px;
+        }
+        .nav-item span {
+            font-size: 0.95rem;
+        }
+        .sidebar-footer, .sidebar-footer-collapse {
+            padding: 12px;
+        }
     }
 
     .sidebar .nav-item .badge {
