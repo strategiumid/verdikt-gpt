@@ -35,28 +35,13 @@ export class UIManager {
     addMessage(content, sender) {
         const messageId = 'msg-' + Date.now();
         const time = this.app.getCurrentTime();
-
+        
         const messageElement = document.createElement('div');
         messageElement.className = `message ${sender}-message`;
         messageElement.id = messageId;
         messageElement.style.opacity = '0';
         messageElement.style.transform = 'translateY(20px)';
-
-        // Кнопки оценки только для AI-сообщений
-        let feedbackHtml = '';
-        if (sender !== 'user') {
-            feedbackHtml = `
-                <div class="message-feedback" style="margin-top:8px;display:flex;gap:8px;">
-                    <button class="feedback-btn" data-feedback="like" data-msgid="${messageId}" title="Было полезно">
-                        <span style="font-size:1.2em;">👍</span>
-                    </button>
-                    <button class="feedback-btn" data-feedback="dislike" data-msgid="${messageId}" title="Не было полезно">
-                        <span style="font-size:1.2em;">👎</span>
-                    </button>
-                </div>
-            `;
-        }
-
+        
         messageElement.innerHTML = `
             <div class="message-actions">
                 <button class="message-action" onclick="window.verdiktApp.copyMessage('${messageId}')">
@@ -72,28 +57,15 @@ export class UIManager {
             </div>
             <div class="message-content">${content}</div>
             <div class="message-time">${time}</div>
-            ${feedbackHtml}
         `;
-
+        
         this.elements.chatMessages.appendChild(messageElement);
-
-        // Навешиваем обработчики на кнопки оценки (делегирование)
-        if (sender !== 'user') {
-            const likeBtn = messageElement.querySelector('.feedback-btn[data-feedback="like"]');
-            const dislikeBtn = messageElement.querySelector('.feedback-btn[data-feedback="dislike"]');
-            if (likeBtn) {
-                likeBtn.addEventListener('click', () => this.app.handleFeedback(messageId, 'like'));
-            }
-            if (dislikeBtn) {
-                dislikeBtn.addEventListener('click', () => this.app.handleFeedback(messageId, 'dislike'));
-            }
-        }
-
+        
         requestAnimationFrame(() => {
             messageElement.style.opacity = '1';
             messageElement.style.transform = 'translateY(0)';
         });
-
+        
         this.scrollToBottom();
     }
 

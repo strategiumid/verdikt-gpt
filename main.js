@@ -6,8 +6,6 @@ import { AuthService } from './authService.js';
 
 // Основной класс 
 export class VerdiktChatApp {
-        // Хранилище статистики оценок AI-сообщений (id сообщения -> like/dislike)
-        feedbackStats = {};
       // Статические словари для анализа тональности
     static NEGATIVE_WORDS = [
         'устал', 'устала', 'больно', 'плохо', 'грустно', 'тоска', 'одиноко', 'депрессия',
@@ -60,7 +58,6 @@ export class VerdiktChatApp {
             isRecording: false,
             isSpeaking: false,
             isModelLoading: false,
-            feedbackStats: {} // дублируем для доступа из state
             isResponding: false,
             instructions: '',
             instructionsLoaded: false,
@@ -236,46 +233,6 @@ export class VerdiktChatApp {
         this.availableModels = [
             { id: 'stepfun/step-3.5-flash', name: 'Verdikt GPT', free: true }
         ];
-        // Загрузка статистики из localStorage
-        this.loadFeedbackStats();
-            // Сохранить оценку (like/dislike) для сообщения AI
-            handleFeedback(messageId, feedback) {
-                // feedback: 'like' | 'dislike'
-                this.feedbackStats[messageId] = feedback;
-                this.state.feedbackStats[messageId] = feedback;
-                // Сохраняем в localStorage
-                try {
-                    localStorage.setItem('verdikt_feedback_stats', JSON.stringify(this.feedbackStats));
-                } catch (e) {
-                    // ignore
-                }
-                // UI: подсветить выбранную кнопку
-                const msgElem = document.getElementById(messageId);
-                if (msgElem) {
-                    const likeBtn = msgElem.querySelector('.feedback-btn[data-feedback="like"]');
-                    const dislikeBtn = msgElem.querySelector('.feedback-btn[data-feedback="dislike"]');
-                    if (likeBtn && dislikeBtn) {
-                        likeBtn.classList.remove('selected');
-                        dislikeBtn.classList.remove('selected');
-                        if (feedback === 'like') likeBtn.classList.add('selected');
-                        if (feedback === 'dislike') dislikeBtn.classList.add('selected');
-                    }
-                }
-            }
-
-            // Загрузка статистики из localStorage при инициализации
-            loadFeedbackStats() {
-                try {
-                    const stats = localStorage.getItem('verdikt_feedback_stats');
-                    if (stats) {
-                        this.feedbackStats = JSON.parse(stats);
-                        this.state.feedbackStats = { ...this.feedbackStats };
-                    }
-                } catch (e) {
-                    this.feedbackStats = {};
-                    this.state.feedbackStats = {};
-                }
-            }
         
         // Старые вкладки настроек больше не используются
     }
