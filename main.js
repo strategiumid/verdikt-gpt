@@ -4,7 +4,7 @@ import { UIManager } from './uiManager.js';
 import { EncryptionService } from './encryptionService.js';
 import { AuthService } from './authService.js';
 
-// Основной класс приложения
+// Основной класс 
 export class VerdiktChatApp {
     constructor() {
         this.API_CONFIG = {
