@@ -36,12 +36,15 @@ export class UIManager {
         const messageId = 'msg-' + Date.now();
         const time = this.app.getCurrentTime();
         
+        // If a typing-placeholder exists, replace it with the real message so feedback appears immediately
+        const typingPlaceholder = document.getElementById('typing-msg');
+
         const messageElement = document.createElement('div');
         messageElement.className = `message ${sender}-message`;
         messageElement.id = messageId;
         messageElement.style.opacity = '0';
         messageElement.style.transform = 'translateY(20px)';
-        
+
         messageElement.innerHTML = `
             <div class="message-actions">
                 <button class="message-action" onclick="window.verdiktApp.copyMessage('${messageId}')">
@@ -64,8 +67,13 @@ export class UIManager {
             ` : ''}
             <div class="message-time">${time}</div>
         `;
-        
-        this.elements.chatMessages.appendChild(messageElement);
+
+        if (typingPlaceholder && sender !== 'user') {
+            // Replace typing placeholder so the feedback buttons appear immediately next to the new message
+            typingPlaceholder.parentNode.replaceChild(messageElement, typingPlaceholder);
+        } else {
+            this.elements.chatMessages.appendChild(messageElement);
+        }
         
         requestAnimationFrame(() => {
             messageElement.style.opacity = '1';
@@ -97,12 +105,44 @@ export class UIManager {
 
     showTypingIndicator() {
         if (this.state.doNotDisturb) return;
-        this.elements.typingIndicator.style.display = 'block';
-        this.scrollToBottom();
+
+        // Render typing indicator as an inline assistant message placeholder
+        if (!document.getElementById('typing-msg')) {
+            const tpl = document.createElement('div');
+            tpl.className = 'message assistant-message typing';
+            tpl.id = 'typing-msg';
+            tpl.innerHTML = `
+                <div class="message-sender">
+                    <i class="fas fa-heart"></i> Эксперт по отношениям
+                </div>
+                <div class="message-content">
+                    <div class="typing-content">
+                        <div class="typing-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                        <span class="typing-text">Думаю...</span>
+                    </div>
+                </div>
+            `;
+
+            this.elements.chatMessages.appendChild(tpl);
+            requestAnimationFrame(() => {
+                tpl.style.opacity = '1';
+                tpl.style.transform = 'translateY(0)';
+            });
+            this.scrollToBottom();
+        }
     }
 
     hideTypingIndicator() {
-        this.elements.typingIndicator.style.display = 'none';
+        const tpl = document.getElementById('typing-msg');
+        if (tpl && tpl.parentNode) {
+            tpl.parentNode.removeChild(tpl);
+        }
+        // also hide global indicator if exists
+        if (this.elements.typingIndicator) {
+            this.elements.typingIndicator.style.display = 'none';
+        }
     }
 }
 
