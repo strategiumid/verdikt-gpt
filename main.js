@@ -213,7 +213,7 @@ export class VerdiktChatApp {
         this.authService = new AuthService(this);
 
         this.availableModels = [
-            { id: 'stepfun/step-3.5-flash', name: 'Verdikt GPT', free: true }
+            { id: 'qwen/qwen3-vl-30b-a3b-thinking', name: 'Verdikt GPT', free: true }
         ];
         
         // Старые вкладки настроек больше не используются
