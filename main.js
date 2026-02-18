@@ -9,7 +9,7 @@ export class VerdiktChatApp {
     constructor() {
         this.API_CONFIG = {
             url: 'https://routerai.ru/api/v1/chat/completions',
-            model: 'stepfun/step-3.5-flash', 
+            model: 'qwen/qwen3-vl-30b-a3b-thinking', 
             maxTokens: 1300,
             temperature: 0.6,
             apiKey: "sk-ayshgI6SUUplUxB0ocKzEQ1IK73mbdql"
@@ -396,7 +396,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНЫЕ ИНСТРУКЦИИ (испол�
             this.API_CONFIG.apiKey = "sk-ayshgI6SUUplUxB0ocKzEQ1IK73mbdql";
         }
         
-        this.API_CONFIG.model = "stepfun/step-3.5-flash";
+        this.API_CONFIG.model = "qwen/qwen3-vl-30b-a3b-thinking";
         localStorage.setItem('verdikt_model', this.API_CONFIG.model);
     }
 
@@ -4718,7 +4718,7 @@ stopStarSuction() {
                     metadata: {
                         exported: new Date().toISOString(),
                         totalMessages: this.state.stats.totalMessages,
-                        model: 'stepfun/step-3.5-flash',
+                        model: 'verdiktgpt',
                         api: 'routerai.ru',
                         topics: {
                             manipulations: this.state.stats.manipulationRequests,
@@ -4754,7 +4754,7 @@ stopStarSuction() {
             metadata: {
                 totalChats: this.chatManager.chats.length,
                 totalMessages: this.state.stats.totalMessages,
-                model: 'stepfun/step-3.5-flash',
+                model: 'verdiktgpt',
                 api: 'routerai.ru'
             }
         };
