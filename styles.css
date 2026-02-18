@@ -1764,6 +1764,29 @@ body.sidebar-collapsed .container {
     white-space: normal;
 }
 
+.message-feedback {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+}
+.feedback-btn {
+    background: rgba(255,255,255,0.03);
+    color: var(--text-primary);
+    border: 1px solid rgba(255,255,255,0.06);
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+.feedback-btn.selected {
+    background: rgba(59,130,246,0.15);
+    border-color: rgba(59,130,246,0.4);
+}
+.feedback-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
 .typing-cursor {
     display: inline-block;
     width: 2px;

@@ -1,4 +1,5 @@
 export class ChatStore {
+    
     constructor(app) {
         this.app = app;
     }
@@ -123,6 +124,10 @@ export class ChatStore {
                 </div>
                 <div class="message-sender"><i class="fas fa-heart"></i> Эксперт по отношениям</div>
                 <div class="message-content">Новый чат начат! Я готов помочь с вопросами об отношениях, знакомствах и манипуляциях. Расскажите, что вас беспокоит? 💕</div>
+                <div class="message-feedback">
+                    <button class="feedback-btn feedback-good" onclick="window.verdiktApp.rateMessage('msg-initial', 1)">👍 Было полезно</button>
+                    <button class="feedback-btn feedback-bad" onclick="window.verdiktApp.rateMessage('msg-initial', -1)">👎 Не было полезно</button>
+                </div>
                 <div class="message-time">${this.app.getCurrentTime()}</div>
             </div>
         `;
@@ -187,6 +192,12 @@ export class ChatStore {
                 </div>
                 <div class="message-sender"><i class="fas fa-${icon}"></i> ${sender}</div>
                 <div class="message-content">${msg.content}</div>
+                ${msg.role !== 'user' ? `
+                <div class="message-feedback">
+                    <button class="feedback-btn feedback-good" onclick="window.verdiktApp.rateMessage('${messageId}', 1)">👍 Было полезно</button>
+                    <button class="feedback-btn feedback-bad" onclick="window.verdiktApp.rateMessage('${messageId}', -1)">👎 Не было полезно</button>
+                </div>
+                ` : ''}
                 <div class="message-time">${this.app.getCurrentTime()}</div>
             `;
             

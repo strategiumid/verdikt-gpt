@@ -468,6 +468,9 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНЫЕ ИНСТРУКЦИИ (испол�
         
         console.log('✅ Verdikt GPT инициализирован');
         console.log('📚 Инструкции загружены:', this.state.instructionsLoaded);
+        // load frontend feedback stats and update analytics
+        this.loadFeedback();
+        this.updateAnalyticsFromFeedback();
     }
 
     loadApiKey() {
@@ -744,6 +747,112 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНЫЕ ИНСТРУКЦИИ (испол�
                 item.classList.remove('unlocked');
             }
         });
+    }
+
+    // ==================== FEEDBACK STORAGE & ANALYTICS (frontend-only) ====================
+
+    loadFeedback() {
+        try {
+            const raw = localStorage.getItem('verdikt_feedback');
+            this.feedbackEntries = raw ? JSON.parse(raw) : [];
+        } catch (e) {
+            console.error('Failed to load feedback:', e);
+            this.feedbackEntries = [];
+        }
+    }
+
+    saveFeedbackEntries() {
+        try {
+            localStorage.setItem('verdikt_feedback', JSON.stringify(this.feedbackEntries || []));
+        } catch (e) {
+            console.error('Failed to save feedback:', e);
+        }
+    }
+
+    classifyTopic(text) {
+        if (!text || typeof text !== 'string') return 'other';
+        const t = text.toLowerCase();
+        if (t.match(/отношен|любов|партн|развод|ссора|ревност/)) return 'relationships';
+        if (t.match(/знаком|свидан|профил|подход|подпис|текст для/)) return 'dating';
+        if (t.match(/манипуляц|манипулир|газлайт|контрол|токсич/)) return 'manipulation';
+        if (t.match(/печаль|депресс|тревог|устал|грустит/)) return 'mental_health';
+        return 'other';
+    }
+
+    rateMessage(messageId, rating) {
+        try {
+            const el = document.getElementById(messageId);
+            if (!el) return;
+
+            const contentEl = el.querySelector('.message-content');
+            const aiContent = contentEl ? contentEl.textContent.trim() : '';
+
+            // find last user message from conversationHistory
+            let userPrompt = '';
+            if (Array.isArray(this.state.conversationHistory)) {
+                for (let i = this.state.conversationHistory.length - 1; i >= 0; i--) {
+                    if (this.state.conversationHistory[i].role === 'user') {
+                        userPrompt = this.state.conversationHistory[i].content || '';
+                        break;
+                    }
+                }
+            }
+
+            this.feedbackEntries = this.feedbackEntries || [];
+            const entry = {
+                id: messageId,
+                chatId: this.chatManager.currentChatId,
+                rating: Number(rating),
+                aiContent,
+                userPrompt,
+                timestamp: Date.now(),
+                topic: this.classifyTopic(userPrompt)
+            };
+
+            this.feedbackEntries.push(entry);
+            this.saveFeedbackEntries();
+
+            const goodBtn = el.querySelector('.feedback-good');
+            const badBtn = el.querySelector('.feedback-bad');
+            if (goodBtn) goodBtn.disabled = true;
+            if (badBtn) badBtn.disabled = true;
+            if (rating > 0 && goodBtn) goodBtn.classList.add('selected');
+            if (rating < 0 && badBtn) badBtn.classList.add('selected');
+
+            this.updateAnalyticsFromFeedback();
+        } catch (e) {
+            console.error('Error in rateMessage:', e);
+        }
+    }
+
+    updateAnalyticsFromFeedback() {
+        try {
+            const entries = this.feedbackEntries || [];
+            const total = entries.length;
+            const helpful = entries.filter(e => Number(e.rating) > 0).length;
+
+            const byTopic = entries.reduce((acc, e) => {
+                acc[e.topic] = (acc[e.topic] || 0) + (Number(e.rating) < 0 ? 1 : 0);
+                return acc;
+            }, {});
+
+            const elTotal = document.getElementById('analytics-total');
+            const elHelpful = document.getElementById('analytics-helpful');
+            const elLikes = document.getElementById('analytics-likes');
+            if (elTotal) elTotal.textContent = total;
+            if (elHelpful) elHelpful.textContent = helpful;
+            if (elLikes) elLikes.textContent = entries.filter(e => e.rating > 0).length;
+
+            // populate a short summary in analytics area (if present)
+            const analyticsSummary = document.getElementById('analytics-summary');
+            if (analyticsSummary) {
+                analyticsSummary.innerHTML = Object.entries(byTopic)
+                    .map(([topic, count]) => `<div><strong>${topic}</strong>: ${count} плохих ответов</div>`)
+                    .join('');
+            }
+        } catch (e) {
+            console.error('Failed to update analytics:', e);
+        }
     }
 
     // ==================== СИСТЕМА УПРАВЛЕНИЯ ЧАТАМИ ====================
