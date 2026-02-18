@@ -828,30 +828,37 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНЫЕ ИНСТРУКЦИИ (испол�
         }
     }
 
+    /** Аналитика только из локальных оценок ответов ИИ (без бэкенда). */
     updateAnalyticsFromFeedback() {
         try {
             const entries = this.feedbackEntries || [];
             const total = entries.length;
-            const helpful = entries.filter(e => Number(e.rating) > 0).length;
+            const useful = entries.filter(e => Number(e.rating) > 0).length;
+            const notUseful = entries.filter(e => Number(e.rating) < 0).length;
 
             const byTopic = entries.reduce((acc, e) => {
-                acc[e.topic] = (acc[e.topic] || 0) + (Number(e.rating) < 0 ? 1 : 0);
+                const t = e.topic || 'other';
+                if (!acc[t]) acc[t] = { useful: 0, notUseful: 0 };
+                if (Number(e.rating) > 0) acc[t].useful++;
+                else acc[t].notUseful++;
                 return acc;
             }, {});
 
             const elTotal = document.getElementById('analytics-total');
             const elHelpful = document.getElementById('analytics-helpful');
-            const elLikes = document.getElementById('analytics-likes');
+            const elDislikes = document.getElementById('analytics-dislikes');
             if (elTotal) elTotal.textContent = total;
-            if (elHelpful) elHelpful.textContent = helpful;
-            if (elLikes) elLikes.textContent = entries.filter(e => e.rating > 0).length;
+            if (elHelpful) elHelpful.textContent = useful;
+            if (elDislikes) elDislikes.textContent = notUseful;
 
-            // populate a short summary in analytics area (if present)
             const analyticsSummary = document.getElementById('analytics-summary');
             if (analyticsSummary) {
-                analyticsSummary.innerHTML = Object.entries(byTopic)
-                    .map(([topic, count]) => `<div><strong>${topic}</strong>: ${count} плохих ответов</div>`)
-                    .join('');
+                const topicLabels = { relationships: 'Отношения', dating: 'Знакомства', manipulation: 'Манипуляции', mental_health: 'Психология', other: 'Другое' };
+                analyticsSummary.innerHTML = Object.entries(byTopic).length
+                    ? Object.entries(byTopic)
+                        .map(([topic, v]) => `<div><strong>${topicLabels[topic] || topic}</strong>: 👍 ${v.useful} · 👎 ${v.notUseful}</div>`)
+                        .join('')
+                    : '<div style="color: var(--text-tertiary);">Пока нет оценок. Оценивайте ответы ИИ кнопками под сообщениями.</div>';
             }
         } catch (e) {
             console.error('Failed to update analytics:', e);
@@ -1041,8 +1048,8 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНЫЕ ИНСТРУКЦИИ (испол�
                 <div class="message-content">${this.formatMessage(msg.content)}</div>
                 ${msg.role !== 'user' ? `
                 <div class="message-feedback">
-                    <button class="feedback-btn feedback-good" onclick="window.verdiktApp.rateMessage('${messageId}', 1)">👍 Было полезно</button>
-                    <button class="feedback-btn feedback-bad" onclick="window.verdiktApp.rateMessage('${messageId}', -1)">👎 Не было полезно</button>
+                    <button class="feedback-btn feedback-good" onclick="window.verdiktApp.rateMessage('${messageId}', 1)">👍 Полезно</button>
+                    <button class="feedback-btn feedback-bad" onclick="window.verdiktApp.rateMessage('${messageId}', -1)">👎 Не полезно</button>
                 </div>
                 ` : ''}
                 <div class="message-time">${this.formatTimestamp(chat.timestamp)}</div>
@@ -5861,46 +5868,70 @@ stopStarSuction() {
         `).join('');
     }
 
+    /** Аналитика только из локальных оценок ответов ИИ (бэкенд не трогаем). */
     renderAnalytics() {
-        const analyticsTotal = document.getElementById('analytics-total');
-        const analyticsHelpful = document.getElementById('analytics-helpful');
-        const analyticsLikes = document.getElementById('analytics-likes');
-        const analyticsComments = document.getElementById('analytics-comments');
+        this.loadFeedback();
+        this.updateAnalyticsFromFeedback();
         const dashboardRating = document.getElementById('dashboard-rating');
-        
-        if (analyticsTotal) analyticsTotal.textContent = this.dashboard.analytics.totalResponses || 0;
-        if (analyticsHelpful) analyticsHelpful.textContent = this.dashboard.analytics.helpfulResponses || 0;
-        if (analyticsLikes) analyticsLikes.textContent = this.dashboard.dashboard?.likes || 0;
-        if (analyticsComments) analyticsComments.textContent = this.dashboard.dashboard?.comments?.length || 0;
-        if (dashboardRating) dashboardRating.textContent = this.dashboard.analytics.averageRating || 0;
-        
+        if (dashboardRating) {
+            const entries = this.feedbackEntries || [];
+            const useful = entries.filter(e => Number(e.rating) > 0).length;
+            dashboardRating.textContent = entries.length ? ((useful / entries.length) * 100).toFixed(0) + '%' : '—';
+        }
         this.createAnalyticsChart();
     }
 
+    /** Активность из локальных оценок ответов ИИ (без бэкенда). */
     renderActivity() {
         const activityList = document.getElementById('activity-list');
         if (!activityList) return;
         
-        const activities = [
-            { type: 'question', text: 'Ответил на вопрос о манипуляциях', time: '2 часа назад' },
-            { type: 'like', text: 'Получил 5 лайков за совет о свиданиях', time: '5 часов назад' },
-            { type: 'comment', text: 'Прокомментировал историю о токсичных отношениях', time: 'Вчера' },
-            { type: 'chat', text: 'Провел консультацию по семейным отношениям', time: '2 дня назад' }
-        ];
+        const entries = (this.feedbackEntries || []).slice().sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)).slice(0, 20);
+        const topicLabels = { relationships: 'отношения', dating: 'знакомства', manipulation: 'манипуляции', mental_health: 'психология', other: 'другое' };
         
-        activityList.innerHTML = activities.map(activity => `
+        if (!entries.length) {
+            activityList.innerHTML = `
+                <div class="question-card" style="text-align: center; padding: 40px;">
+                    <i class="fas fa-thumbs-up" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
+                    <h4>Пока нет оценок</h4>
+                    <p style="color: var(--text-tertiary);">Оценивайте ответы ИИ кнопками «Полезно» / «Не полезно» под сообщениями</p>
+                </div>
+            `;
+            return;
+        }
+        
+        activityList.innerHTML = entries.map(e => {
+            const time = e.timestamp ? this.formatFeedbackTime(e.timestamp) : '';
+            const useful = Number(e.rating) > 0;
+            const topic = topicLabels[e.topic] || e.topic || 'другое';
+            const text = useful ? `Оценён ответ как полезный (${topic})` : `Оценён ответ как неполезный (${topic})`;
+            const color = useful ? 'linear-gradient(135deg, #22c55e, #16a34a)' : 'linear-gradient(135deg, #ef4444, #dc2626)';
+            const icon = useful ? '👍' : '👎';
+            return `
             <div class="question-card">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="width: 40px; height: 40px; border-radius: 10px; background: ${this.getActivityColor(activity.type)}; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white;">
-                        ${this.getActivityIcon(activity.type)}
+                    <div style="width: 40px; height: 40px; border-radius: 10px; background: ${color}; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white;">
+                        ${icon}
                     </div>
-                    <div style="flex: 1;">
-                        <div style="font-weight: 600; margin-bottom: 3px;">${activity.text}</div>
-                        <div style="font-size: 0.8rem; color: var(--text-tertiary);">${activity.time}</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 600; margin-bottom: 3px;">${text}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-tertiary);">${time}</div>
                     </div>
                 </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
+    }
+
+    formatFeedbackTime(timestamp) {
+        const d = new Date(timestamp);
+        const now = Date.now();
+        const diff = now - timestamp;
+        if (diff < 60000) return 'Только что';
+        if (diff < 3600000) return Math.floor(diff / 60000) + ' мин. назад';
+        if (diff < 86400000) return Math.floor(diff / 3600000) + ' ч. назад';
+        if (diff < 604800000) return Math.floor(diff / 86400000) + ' дн. назад';
+        return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
     }
 
     renderAdminUsers() {
@@ -6357,6 +6388,7 @@ stopStarSuction() {
         navigator.vibrate(30);
     }
 
+    /** График строится только по локальным оценкам ответов ИИ (без бэкенда). */
     createAnalyticsChart() {
         const ctx = document.getElementById('analytics-chart')?.getContext('2d');
         if (!ctx) return;
@@ -6365,33 +6397,41 @@ stopStarSuction() {
             this.analyticsChart.destroy();
         }
         
-        const labels = this.dashboard.analytics.activity.map(a => 
-            new Date(a.date).toLocaleDateString('ru-RU', { weekday: 'short' })
-        );
-        
-        const questionsData = this.dashboard.analytics.activity.map(a => a.questions);
-        const responsesData = this.dashboard.analytics.activity.map(a => a.responses);
+        const entries = this.feedbackEntries || [];
+        const days = 14;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const labels = [];
+        const usefulData = [];
+        const notUsefulData = [];
+        for (let i = days - 1; i >= 0; i--) {
+            const d = new Date(today);
+            d.setDate(d.getDate() - i);
+            labels.push(d.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' }));
+            const dayStart = d.getTime();
+            const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+            usefulData.push(entries.filter(e => e.timestamp >= dayStart && e.timestamp < dayEnd && Number(e.rating) > 0).length);
+            notUsefulData.push(entries.filter(e => e.timestamp >= dayStart && e.timestamp < dayEnd && Number(e.rating) < 0).length);
+        }
         
         this.analyticsChart = new Chart(ctx, {
-            type: 'line',
+            type: 'bar',
             data: {
-                labels: labels,
+                labels,
                 datasets: [
                     {
-                        label: 'Вопросы',
-                        data: questionsData,
-                        borderColor: '#ec4899',
-                        backgroundColor: 'rgba(236, 72, 153, 0.1)',
-                        tension: 0.4,
-                        fill: true
+                        label: '👍 Полезно',
+                        data: usefulData,
+                        backgroundColor: 'rgba(34, 197, 94, 0.6)',
+                        borderColor: '#22c55e',
+                        borderWidth: 1
                     },
                     {
-                        label: 'Ответы',
-                        data: responsesData,
-                        borderColor: '#8b5cf6',
-                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                        tension: 0.4,
-                        fill: true
+                        label: '👎 Не полезно',
+                        data: notUsefulData,
+                        backgroundColor: 'rgba(239, 68, 68, 0.6)',
+                        borderColor: '#ef4444',
+                        borderWidth: 1
                     }
                 ]
             },

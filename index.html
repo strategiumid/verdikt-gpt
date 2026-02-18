@@ -1626,23 +1626,20 @@
 
             <div class="dashboard-tab-content" id="analytics-tab">
                 <div style="margin-bottom: 20px;">
-                    <h3 style="margin-bottom: 15px;">Аналитика</h3>
-                    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px;">
+                    <h3 style="margin-bottom: 15px;">Оценки ответов ИИ (локально)</h3>
+                    <p style="color: var(--text-tertiary); font-size: 0.85rem; margin-bottom: 15px;">Данные хранятся только на этом устройстве, бэкенд не используется.</p>
+                    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px;">
                         <div class="stat-card-settings">
                             <div class="stat-value-settings" id="analytics-total">0</div>
-                            <div class="stat-label-settings">Всего ответов</div>
+                            <div class="stat-label-settings">Всего оценок</div>
                         </div>
                         <div class="stat-card-settings">
                             <div class="stat-value-settings" id="analytics-helpful">0</div>
-                            <div class="stat-label-settings">Помогли</div>
+                            <div class="stat-label-settings">👍 Полезно</div>
                         </div>
                         <div class="stat-card-settings">
-                            <div class="stat-value-settings" id="analytics-likes">0</div>
-                            <div class="stat-label-settings">Лайки</div>
-                        </div>
-                        <div class="stat-card-settings">
-                            <div class="stat-value-settings" id="analytics-comments">0</div>
-                            <div class="stat-label-settings">Комментарии</div>
+                            <div class="stat-value-settings" id="analytics-dislikes">0</div>
+                            <div class="stat-label-settings">👎 Не полезно</div>
                         </div>
                     </div>
                     <div style="background: rgba(255, 255, 255, 0.05); border-radius: var(--radius-md); padding: 20px;">

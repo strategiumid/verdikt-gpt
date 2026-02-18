@@ -2041,16 +2041,66 @@ body.sidebar-collapsed .container {
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Поле ввода в стиле Grok: скруглённая таблетка, лёгкое свечение при фокусе */
+/* Поле ввода ровно как на grok.com: пилюля, тёмный фон, минимальная обводка */
 .input-container-extended.grok-style-input {
-    border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(44, 44, 46, 0.95);
+    border-radius: 9999px;
+    padding: 10px 10px 10px 20px;
+    background: #1c1c1e;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    gap: 10px;
+    max-width: min(700px, calc(100% - 48px));
+    transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .input-container-extended.grok-style-input:focus-within {
-    border-color: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
+    background: #2c2c2e;
+}
+
+.input-container-extended.grok-style-input .input-actions-left,
+.input-container-extended.grok-style-input .input-actions-right {
+    gap: 4px;
+}
+
+.input-container-extended.grok-style-input .input-wrapper {
+    min-width: 0;
+}
+
+.input-container-extended.grok-style-input #message-input {
+    min-height: 24px;
+    padding: 10px 8px 10px 4px;
+    font-size: 0.9375rem;
+    line-height: 1.4;
+}
+
+.input-container-extended.grok-style-input #message-input::placeholder {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.input-container-extended.grok-style-input .input-icon-button {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 16px;
+}
+
+.input-container-extended.grok-style-input .input-icon-button:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.input-container-extended.grok-style-input .input-icon-button.primary {
+    background: #fff;
+    color: #000;
+    width: 36px;
+    height: 36px;
+}
+
+.input-container-extended.grok-style-input .input-icon-button.primary:hover {
+    background: rgba(255, 255, 255, 0.92);
 }
 
 .input-actions-left {

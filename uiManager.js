@@ -61,8 +61,8 @@ export class UIManager {
             <div class="message-content">${content}</div>
             ${sender !== 'user' ? `
             <div class="message-feedback">
-                <button class="feedback-btn feedback-good" onclick="window.verdiktApp.rateMessage('${messageId}', 1)">👍 Было полезно</button>
-                <button class="feedback-btn feedback-bad" onclick="window.verdiktApp.rateMessage('${messageId}', -1)">👎 Не было полезно</button>
+                <button class="feedback-btn feedback-good" onclick="window.verdiktApp.rateMessage('${messageId}', 1)">👍 Полезно</button>
+                <button class="feedback-btn feedback-bad" onclick="window.verdiktApp.rateMessage('${messageId}', -1)">👎 Не полезно</button>
             </div>
             ` : ''}
             <div class="message-time">${time}</div>
