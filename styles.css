@@ -28,6 +28,7 @@
     --ios-card: rgba(255, 255, 255, 0.06);
     --primary-rgb: 255, 255, 255;
     --secondary-rgb: 224, 224, 224;
+    --sidebar-width: clamp(72px, 22vw, 320px);
 }
 
 * {
@@ -124,9 +125,9 @@ body {
 
 /* Основной контейнер */
 .container {
-    max-width: 1200px;
+    max-width: min(1400px, calc(100% - var(--sidebar-width) - 40px));
     width: 100%;
-    margin-left: calc(320px + env(safe-area-inset-left, 0px));
+    margin-left: calc(var(--sidebar-width) + env(safe-area-inset-left, 0px));
     margin-right: auto;
     padding: 0;
     transition: margin-left 0.35s cubic-bezier(0.32, 0.72, 0, 1);
@@ -143,6 +144,29 @@ body {
     position: relative;
     z-index: 1;
     box-sizing: border-box;
+}
+
+/* Very large screens: center content and allow more breathing room */
+@media (min-width: 1600px) {
+    .container {
+        max-width: 1400px;
+        margin-left: calc(var(--sidebar-width) + env(safe-area-inset-left, 0px));
+        padding-left: max(32px, env(safe-area-inset-left));
+        padding-right: max(32px, env(safe-area-inset-right));
+    }
+}
+
+/* Small screens: sidebar overlays content, container should be full-width */
+@media (max-width: 768px) {
+    .container {
+        margin-left: 0;
+        max-width: 100%;
+        padding-left: max(12px, env(safe-area-inset-left));
+        padding-right: max(12px, env(safe-area-inset-right));
+    }
+    body.sidebar-collapsed .container {
+        margin-left: 0;
+    }
 }
 
 /* Центрирование контента с учётом свёрнутого сайдбара */
@@ -353,7 +377,7 @@ body.sidebar-collapsed .container {
 .chat-container .input-container-extended {
     position: absolute;
     left: 50%;
-    width: min(960px, calc(100% - 64px));
+    width: min(1100px, calc(100% - 64px));
     max-width: calc(100% - 64px);
     margin-left: 0;
     transition: top 0.5s cubic-bezier(0.4, 0, 0.2, 1),
@@ -371,6 +395,28 @@ body.sidebar-collapsed .container {
     top: auto;
     bottom: 20px;
     transform: translate(-50%, 0);
+}
+
+/* Larger screens: make the input wider and give chat more horizontal space */
+@media (min-width: 1200px) {
+    .chat-container .input-container-extended {
+        width: min(1200px, calc(100% - 120px));
+    }
+}
+
+/* Very small screens: make input full width with safe paddings */
+@media (max-width: 420px) {
+    .chat-container .input-container-extended {
+        left: 50%;
+        transform: translate(-50%, 0) !important;
+        width: calc(100% - 32px);
+        max-width: calc(100% - 32px);
+        bottom: 12px;
+    }
+    .chat-container.input-centered .input-container-extended {
+        top: auto;
+        transform: translate(-50%, 0) !important;
+    }
 }
 
 .chat-container:not(.input-centered) .chat-messages {
