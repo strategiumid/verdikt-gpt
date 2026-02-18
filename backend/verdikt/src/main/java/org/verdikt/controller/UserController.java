@@ -1,5 +1,8 @@
 package org.verdikt.controller;
 
+import org.verdikt.dto.AnalyticsResponse;
+import org.verdikt.dto.FeedbackRequest;
+import org.verdikt.dto.FeedbackResponse;
 import org.verdikt.dto.SetSubscriptionRequest;
 import org.verdikt.dto.SettingsResponse;
 import org.verdikt.dto.UpdateProfileRequest;
@@ -7,6 +10,7 @@ import org.verdikt.dto.UpdateSettingsRequest;
 import org.verdikt.dto.UsageResponse;
 import org.verdikt.dto.UserResponse;
 import org.verdikt.entity.User;
+import org.verdikt.service.FeedbackService;
 import org.verdikt.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -22,9 +26,11 @@ import jakarta.validation.Valid;
 public class UserController {
 
     private final UserService userService;
+    private final FeedbackService feedbackService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, FeedbackService feedbackService) {
         this.userService = userService;
+        this.feedbackService = feedbackService;
     }
 
     /**
@@ -102,5 +108,34 @@ public class UserController {
             return ResponseEntity.status(401).build();
         }
         return ResponseEntity.ok(userService.incrementAiRequests(user.getId()));
+    }
+
+    /**
+     * POST /api/users/me/feedback — сохранить оценку ответа ИИ (полезно / не полезно).
+     */
+    @PostMapping("/me/feedback")
+    public ResponseEntity<FeedbackResponse> saveFeedback(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody FeedbackRequest request
+    ) {
+        if (user == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(feedbackService.save(user.getId(), request));
+    }
+
+    /**
+     * GET /api/users/me/feedback/analytics — сводка по оценкам ответов ИИ (total, helpful, notHelpful, byTopic, recent).
+     * Query: limit (по умолчанию 20) — сколько последних записей в recent.
+     */
+    @GetMapping("/me/feedback/analytics")
+    public ResponseEntity<AnalyticsResponse> getFeedbackAnalytics(
+            @AuthenticationPrincipal User user,
+            @RequestParam(defaultValue = "20") int limit
+    ) {
+        if (user == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(feedbackService.getAnalytics(user.getId(), Math.min(limit, 100)));
     }
 }
