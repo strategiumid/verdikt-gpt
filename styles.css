@@ -1707,11 +1707,9 @@ body.sidebar-collapsed .container {
     overflow-wrap: break-word;
     overflow-x: visible;
     overflow-y: visible;
-    min-height: auto;
-    height: auto;
     opacity: 0;
     transform: translateY(20px);
-    transition: var(--transition);
+    transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     margin: 8px 0;
     box-sizing: border-box;
@@ -2012,6 +2010,19 @@ body.sidebar-collapsed .container {
     }
 }
 
+/* Сообщение «Думаю...» в стиле Grok: плавное появление + лёгкая пульсация */
+.typing-message-grok {
+    transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.typing-content-grok {
+    padding: 4px 0;
+}
+
+.typing-dots-grok span {
+    animation-duration: 1.2s;
+}
+
 /* Панель ввода — одна тёмная «таблетка» */
 .input-container-extended {
     flex-shrink: 0;
@@ -2027,6 +2038,19 @@ body.sidebar-collapsed .container {
     max-width: min(960px, calc(100% - 64px));
     position: relative;
     flex-wrap: wrap;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Поле ввода в стиле Grok: скруглённая таблетка, лёгкое свечение при фокусе */
+.input-container-extended.grok-style-input {
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(44, 44, 46, 0.95);
+}
+
+.input-container-extended.grok-style-input:focus-within {
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
 }
 
 .input-actions-left {
@@ -2737,6 +2761,72 @@ body.sidebar-collapsed .container {
 
 .status-indicator:hover {
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+}
+
+/* Индикатор статуса API в шапке: кружок + текст + лимит запросов */
+.api-status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: var(--transition);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.api-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+
+.api-status-dot--connected {
+    background: #22c55e;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+.api-status-dot--error,
+.api-status-dot--not-configured {
+    background: #ef4444;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
+.api-status-dot--connecting {
+    background: #eab308;
+    animation: api-dot-pulse 1s ease-in-out infinite;
+}
+
+.api-status-dot--unknown {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+@keyframes api-dot-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.1); }
+}
+
+.api-status-indicator.api-connected {
+    background: rgba(34, 197, 94, 0.08);
+    border-color: rgba(34, 197, 94, 0.2);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.api-status-indicator.api-error {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+.api-usage-header {
+    color: var(--text-tertiary);
+    font-size: 0.75rem;
+    font-weight: 400;
 }
 
 /* Подвал */

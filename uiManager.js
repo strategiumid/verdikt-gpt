@@ -106,18 +106,20 @@ export class UIManager {
     showTypingIndicator() {
         if (this.state.doNotDisturb) return;
 
-        // Render typing indicator as an inline assistant message placeholder
+        // Отдельное сообщение «Думаю...» в стиле Grok — пока идёт запрос к API
         if (!document.getElementById('typing-msg')) {
             const tpl = document.createElement('div');
-            tpl.className = 'message assistant-message typing';
+            tpl.className = 'message ai-message typing typing-message-grok';
             tpl.id = 'typing-msg';
+            tpl.style.opacity = '0';
+            tpl.style.transform = 'translateY(12px)';
             tpl.innerHTML = `
                 <div class="message-sender">
                     <i class="fas fa-heart"></i> Эксперт по отношениям
                 </div>
                 <div class="message-content">
-                    <div class="typing-content">
-                        <div class="typing-dots">
+                    <div class="typing-content typing-content-grok">
+                        <div class="typing-dots typing-dots-grok">
                             <span></span><span></span><span></span>
                         </div>
                         <span class="typing-text">Думаю...</span>
@@ -127,8 +129,10 @@ export class UIManager {
 
             this.elements.chatMessages.appendChild(tpl);
             requestAnimationFrame(() => {
-                tpl.style.opacity = '1';
-                tpl.style.transform = 'translateY(0)';
+                requestAnimationFrame(() => {
+                    tpl.style.opacity = '1';
+                    tpl.style.transform = 'translateY(0)';
+                });
             });
             this.scrollToBottom();
         }

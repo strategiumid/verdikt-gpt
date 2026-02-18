@@ -3115,7 +3115,12 @@
         <!-- Шапка приложения -->
         <div class="app-header">
             <div class="header-left">
-                <!-- Логотип и индикатор статуса удалены - статус теперь отображается на сфере -->
+                <!-- Индикатор статуса API и лимита запросов -->
+                <div class="api-status-indicator" id="api-status" title="Статус подключения к API">
+                    <span class="api-status-dot" id="api-status-dot"></span>
+                    <span class="api-status-text" id="api-status-text">—</span>
+                    <span class="api-usage-header" id="api-usage-header"></span>
+                </div>
             </div>
             
             <div class="header-right">
@@ -3253,8 +3258,8 @@
                             <span class="typing-text">Думаю...</span>
                         </div>
                     </div>
-                    <!-- Панель ввода -->
-                    <div class="input-container-extended">
+                    <!-- Панель ввода (стиль Grok: скруглённая «таблетка», focus ring) -->
+                    <div class="input-container-extended grok-style-input">
                         <div class="input-actions-left">
                             <button class="input-icon-button" id="attach-button" title="Прикрепить файл">
                                 <i class="fas fa-paperclip"></i>

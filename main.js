@@ -136,6 +136,9 @@ export class VerdiktChatApp {
             notification: document.getElementById('notification'),
             notificationText: document.getElementById('notification-text'),
             apiStatus: document.getElementById('api-status'),
+            apiStatusDot: document.getElementById('api-status-dot'),
+            apiStatusText: document.getElementById('api-status-text'),
+            apiUsageHeader: document.getElementById('api-usage-header'),
             smartSuggestions: document.getElementById('smart-suggestions'),
             typingIndicator: document.getElementById('typing-indicator'),
             achievementNotification: document.getElementById('achievement-notification'),
@@ -1843,12 +1846,46 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНЫЕ ИНСТРУКЦИИ (испол�
 
     updateSidebarUsage() {
         const el = this.elements.sidebarUsage;
+        if (el) {
+            const u = this.state.usage;
+            if (this.state.user && u) {
+                el.textContent = `Запросов: ${u.used} / ${u.limit} за месяц`;
+                el.style.display = 'block';
+            } else {
+                el.style.display = 'none';
+            }
+        }
+        this.updateHeaderUsage();
+    }
+
+    /** Обновляет индикатор статуса API в шапке: зелёный/красный кружок + подпись */
+    updateHeaderApiStatus(dotState, label) {
+        const dot = this.elements.apiStatusDot;
+        const text = this.elements.apiStatusText;
+        const container = this.elements.apiStatus;
+        if (!container) return;
+        if (dot) {
+            dot.className = 'api-status-dot api-status-dot--' + (dotState || 'unknown');
+            dot.style.display = 'inline-block';
+        }
+        if (text) text.textContent = label || '—';
+        container.classList.remove('api-connecting', 'api-connected', 'api-error');
+        if (dotState === 'connecting') container.classList.add('api-connecting');
+        else if (dotState === 'connected') container.classList.add('api-connected');
+        else if (dotState === 'error' || dotState === 'not-configured') container.classList.add('api-error');
+    }
+
+    /** Обновляет блок «осталось запросов» в шапке */
+    updateHeaderUsage() {
+        const el = this.elements.apiUsageHeader;
         if (!el) return;
         const u = this.state.usage;
         if (this.state.user && u) {
-            el.textContent = `Запросов: ${u.used} / ${u.limit} за месяц`;
-            el.style.display = 'block';
+            const left = Math.max(0, u.limit - u.used);
+            el.textContent = ` · ${left} из ${u.limit}`;
+            el.style.display = 'inline';
         } else {
+            el.textContent = '';
             el.style.display = 'none';
         }
     }
@@ -2885,7 +2922,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНЫЕ ИНСТРУКЦИИ (испол�
         this.updateSendButtonState();
         this.elements.messageInput.disabled = true;
         
-        this.showTypingIndicator();
+        this.uiManager.showTypingIndicator();
         
         try {
             const startTime = Date.now();
@@ -2894,7 +2931,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНЫЕ ИНСТРУКЦИИ (испол�
             
             this.state.responseTimes.push(responseTime);
             
-            this.hideTypingIndicator();
+            this.uiManager.hideTypingIndicator();
             
             this.addAiMessageWithTypingEffect(aiResponse);
             this.state.conversationHistory.push({ role: "assistant", content: aiResponse });
@@ -2939,7 +2976,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНЫЕ ИНСТРУКЦИИ (испол�
             this.state.retryCount = 0;
             
         } catch (error) {
-            this.hideTypingIndicator();
+            this.uiManager.hideTypingIndicator();
             console.error('API Error:', error);
             
             let errorMessage = error.message || "Ошибка при получении ответа";
@@ -2947,11 +2984,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНЫЕ ИНСТРУКЦИИ (испол�
             this.addMessage(`Ошибка: ${errorMessage}`, 'ai');
             this.showNotification(errorMessage, 'error');
             
-            if (this.elements.apiStatus) {
-                this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API';
-                this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
-                this.elements.apiStatus.style.color = '#f87171';
-            }
+            this.updateHeaderApiStatus('error', 'Ошибка API');
             
             if (errorMessage.includes('API ключ') || errorMessage.includes('401')) {
                 setTimeout(() => {

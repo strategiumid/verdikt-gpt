@@ -149,10 +149,8 @@ export class APIClient {
 
     async checkApiStatus() {
         if (!this.apiConfig.apiKey) {
-            if (this.elements.apiStatus) {
-                this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> API ключ не настроен';
-                this.elements.apiStatus.style.background = 'rgba(239, 68, 68, 0.15)';
-                this.elements.apiStatus.style.color = '#f87171';
+            if (this.app.updateHeaderApiStatus) {
+                this.app.updateHeaderApiStatus('not-configured', 'API ключ не настроен');
             }
             this.app.showNotification('Добавьте API ключ в настройках', 'warning');
             this.state.isApiConnected = false;
@@ -162,9 +160,8 @@ export class APIClient {
             return;
         }
 
-        if (this.elements.apiStatus) {
-            this.elements.apiStatus.innerHTML = '<i class="fas fa-circle"></i> Проверка API ключа...';
-            this.elements.apiStatus.classList.add('api-connecting');
+        if (this.app.updateHeaderApiStatus) {
+            this.app.updateHeaderApiStatus('connecting', 'Проверка API...');
         }
         if (this.app.updateSphereApiState) {
             this.app.updateSphereApiState('connecting');
@@ -203,11 +200,8 @@ export class APIClient {
                 if (hasValidResponse) {
                     const selectedModel = this.availableModels.find(m => m.id === this.apiConfig.model);
                     const modelName = selectedModel ? selectedModel.name : this.apiConfig.model;
-                    
-                    if (this.elements.apiStatus) {
-                        this.elements.apiStatus.innerHTML = `<i class="fas fa-circle"></i> ${modelName}`;
-                        this.elements.apiStatus.classList.remove('api-connecting');
-                        this.elements.apiStatus.classList.add('api-connected');
+                    if (this.app.updateHeaderApiStatus) {
+                        this.app.updateHeaderApiStatus('connected', modelName);
                     }
                     this.state.isApiConnected = true;
                     if (this.app.updateSphereApiState) {
@@ -229,10 +223,8 @@ export class APIClient {
                     console.error('Ошибка API (текст):', errorText);
                 }
                 
-                if (this.elements.apiStatus) {
-                    this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка API ключа';
-                    this.elements.apiStatus.classList.remove('api-connecting');
-                    this.elements.apiStatus.classList.add('api-error');
+                if (this.app.updateHeaderApiStatus) {
+                    this.app.updateHeaderApiStatus('error', 'Ошибка API ключа');
                 }
                 this.state.isApiConnected = false;
                 if (this.app.updateSphereApiState) {
@@ -255,10 +247,8 @@ export class APIClient {
         } catch (error) {
             console.error('API check error:', error);
             
-            if (this.elements.apiStatus) {
-                this.elements.apiStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка соединения';
-                this.elements.apiStatus.classList.remove('api-connecting');
-                this.elements.apiStatus.classList.add('api-error');
+            if (this.app.updateHeaderApiStatus) {
+                this.app.updateHeaderApiStatus('error', 'Ошибка соединения');
             }
             this.state.isApiConnected = false;
             if (this.app.updateSphereApiState) {
