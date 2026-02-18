@@ -1583,10 +1583,10 @@
                 <button class="dashboard-tab" data-tab="stories">
                     <i class="fas fa-history"></i> Истории
                 </button>
-                <button class="dashboard-tab" data-tab="analytics">
+                <button class="dashboard-tab admin-only" data-tab="analytics" style="display: none;">
                     <i class="fas fa-chart-bar"></i> Аналитика
                 </button>
-                <button class="dashboard-tab" data-tab="activity">
+                <button class="dashboard-tab admin-only" data-tab="activity" style="display: none;">
                     <i class="fas fa-bolt"></i> Активность
                 </button>
                 <button class="dashboard-tab" data-tab="users">
@@ -1624,10 +1624,10 @@
                 </div>
             </div>
 
-            <div class="dashboard-tab-content" id="analytics-tab">
+            <div class="dashboard-tab-content admin-only" id="analytics-tab" style="display: none;">
                 <div style="margin-bottom: 20px;">
-                    <h3 style="margin-bottom: 15px;">Оценки ответов ИИ (локально)</h3>
-                    <p style="color: var(--text-tertiary); font-size: 0.85rem; margin-bottom: 15px;">Данные хранятся только на этом устройстве, бэкенд не используется.</p>
+                    <h3 style="margin-bottom: 15px;">Оценки ответов ИИ (по всем пользователям)</h3>
+                    <p style="color: var(--text-tertiary); font-size: 0.85rem; margin-bottom: 15px;">Сводка по оценкам от всех пользователей.</p>
                     <div class="stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px;">
                         <div class="stat-card-settings">
                             <div class="stat-value-settings" id="analytics-total">0</div>
@@ -1649,9 +1649,9 @@
                 </div>
             </div>
 
-            <div class="dashboard-tab-content" id="activity-tab">
+            <div class="dashboard-tab-content admin-only" id="activity-tab" style="display: none;">
                 <div style="margin-bottom: 20px;">
-                    <h3 style="margin-bottom: 15px;">Недавняя активность</h3>
+                    <h3 style="margin-bottom: 15px;">Недавняя активность (все пользователи)</h3>
                     <div id="activity-list">
                         <div class="question-card" style="text-align: center; padding: 40px;">
                             <i class="fas fa-bolt" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>

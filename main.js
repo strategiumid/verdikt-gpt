@@ -102,7 +102,8 @@ export class VerdiktChatApp {
             slides: [],
             retryCount: 0,
             maxRetries: 3,
-            searchModeEnabled: false
+            searchModeEnabled: false,
+            feedbackAnalyticsFromBackend: null
         };
 
         this.crypto = new VerdiktCrypto();
@@ -462,9 +463,8 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         
         console.log('✅ Verdikt GPT инициализирован');
         console.log('📚 Инструкции загружены:', this.state.instructionsLoaded);
-        // load frontend feedback stats and update analytics
         this.loadFeedback();
-        this.updateAnalyticsFromFeedback();
+        if (!this.state.user) this.updateAnalyticsFromFeedback();
     }
 
     loadApiKey() {
@@ -784,6 +784,10 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     // ==================== FEEDBACK STORAGE & ANALYTICS (frontend-only) ====================
 
     loadFeedback() {
+        if (this.state.user) {
+            this.feedbackEntries = [];
+            return;
+        }
         try {
             const raw = localStorage.getItem('verdikt_feedback');
             this.feedbackEntries = raw ? JSON.parse(raw) : [];
@@ -819,7 +823,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             const contentEl = el.querySelector('.message-content');
             const aiContent = contentEl ? contentEl.textContent.trim() : '';
 
-            // find last user message from conversationHistory
             let userPrompt = '';
             if (Array.isArray(this.state.conversationHistory)) {
                 for (let i = this.state.conversationHistory.length - 1; i >= 0; i--) {
@@ -829,20 +832,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                     }
                 }
             }
-
-            this.feedbackEntries = this.feedbackEntries || [];
-            const entry = {
-                id: messageId,
-                chatId: this.chatManager.currentChatId,
-                rating: Number(rating),
-                aiContent,
-                userPrompt,
-                timestamp: Date.now(),
-                topic: this.classifyTopic(userPrompt)
-            };
-
-            this.feedbackEntries.push(entry);
-            this.saveFeedbackEntries();
+            const topic = this.classifyTopic(userPrompt);
 
             const goodBtn = el.querySelector('.feedback-good');
             const badBtn = el.querySelector('.feedback-bad');
@@ -851,13 +841,90 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             if (rating > 0 && goodBtn) goodBtn.classList.add('selected');
             if (rating < 0 && badBtn) badBtn.classList.add('selected');
 
-            this.updateAnalyticsFromFeedback();
+            if (this.state.user) {
+                const baseUrl = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
+                fetch(`${baseUrl}/api/users/me/feedback`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        rating: Number(rating),
+                        messageId,
+                        chatId: this.chatManager.currentChatId,
+                        userPrompt,
+                        aiContent: aiContent.substring(0, 10000),
+                        topic
+                    })
+                })
+                    .then(res => res.ok ? this.loadFeedbackAnalyticsFromBackend() : null)
+                    .then(data => {
+                        if (data) {
+                            this.state.feedbackAnalyticsFromBackend = data;
+                            this.applyBackendAnalyticsToUI(data);
+                            this.renderActivity();
+                        }
+                    })
+                    .catch(err => console.warn('Не удалось отправить оценку на сервер', err));
+            } else {
+                this.feedbackEntries = this.feedbackEntries || [];
+                this.feedbackEntries.push({
+                    id: messageId,
+                    chatId: this.chatManager.currentChatId,
+                    rating: Number(rating),
+                    aiContent,
+                    userPrompt,
+                    timestamp: Date.now(),
+                    topic
+                });
+                this.saveFeedbackEntries();
+                this.updateAnalyticsFromFeedback();
+            }
         } catch (e) {
             console.error('Error in rateMessage:', e);
         }
     }
 
-    /** Аналитика только из локальных оценок ответов ИИ (без бэкенда). */
+    /** Применить данные аналитики с бэкенда к UI (счётчики, сводка по темам, рейтинг, график). */
+    applyBackendAnalyticsToUI(data) {
+        if (!data) return;
+        const elTotal = document.getElementById('analytics-total');
+        const elHelpful = document.getElementById('analytics-helpful');
+        const elDislikes = document.getElementById('analytics-dislikes');
+        if (elTotal) elTotal.textContent = data.total;
+        if (elHelpful) elHelpful.textContent = data.helpful;
+        if (elDislikes) elDislikes.textContent = data.notHelpful;
+        const analyticsSummary = document.getElementById('analytics-summary');
+        if (analyticsSummary && data.byTopic) {
+            const topicLabels = { relationships: 'Отношения', dating: 'Знакомства', manipulation: 'Манипуляции', mental_health: 'Психология', other: 'Другое' };
+            analyticsSummary.innerHTML = Object.entries(data.byTopic).length
+                ? Object.entries(data.byTopic)
+                    .map(([topic, v]) => `<div><strong>${topicLabels[topic] || topic}</strong>: 👍 ${v.useful} · 👎 ${v.notUseful}</div>`)
+                    .join('')
+                : '<div style="color: var(--text-tertiary);">Пока нет оценок. Оценивайте ответы ИИ кнопками под сообщениями.</div>';
+        }
+        const dashboardRating = document.getElementById('dashboard-rating');
+        if (dashboardRating) dashboardRating.textContent = data.ratingPercent != null ? data.ratingPercent + '%' : '—';
+        if (data.last14Days) this.createAnalyticsChartFromBackend(data.last14Days);
+    }
+
+    /** Загрузить аналитику оценок с бэкенда. Админ — по всем пользователям, иначе — по текущему. */
+    async loadFeedbackAnalyticsFromBackend() {
+        if (!this.state.user) return null;
+        try {
+            const baseUrl = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
+            const url = this.state.isAdmin
+                ? `${baseUrl}/api/admin/feedback/analytics?limit=20`
+                : `${baseUrl}/api/users/me/feedback/analytics?limit=20`;
+            const res = await fetch(url, { method: 'GET', credentials: 'include' });
+            if (!res.ok) return null;
+            return await res.json();
+        } catch (e) {
+            console.warn('Не удалось загрузить аналитику оценок с сервера', e);
+            return null;
+        }
+    }
+
+    /** Аналитика из локальных оценок ответов ИИ (гости или fallback). */
     updateAnalyticsFromFeedback() {
         try {
             const entries = this.feedbackEntries || [];
@@ -2042,6 +2109,12 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         
         this.loadDashboardData();
         this.showModal('dashboard-modal');
+        this.loadFeedbackAnalyticsFromBackend().then(data => {
+            if (data && data.ratingPercent != null) {
+                const el = document.getElementById('dashboard-rating');
+                if (el) el.textContent = data.ratingPercent + '%';
+            }
+        }).catch(() => {});
     }
 
     // ==================== НАСТРОЙКИ ПРОФИЛЯ ====================
@@ -3873,7 +3946,9 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         }
         this.state.user = null;
         this.state.authToken = null;
+        this.state.feedbackAnalyticsFromBackend = null;
         this.saveUserToStorage();
+        this.loadFeedback();
         this.updateAuthUI();
         this.updateSidebarInfo();
         this.showNotification('Вы вышли из аккаунта', 'info');
@@ -4045,6 +4120,15 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         const adminToggle = document.getElementById('admin-mode-toggle');
         if (adminToggle) adminToggle.style.display = this.state.isAdmin ? '' : 'none';
         document.body.classList.toggle('admin-mode', this.state.isAdmin);
+
+        const analyticsTab = document.querySelector('.dashboard-tab[data-tab="analytics"]');
+        const activityTab = document.querySelector('.dashboard-tab[data-tab="activity"]');
+        const analyticsContent = document.getElementById('analytics-tab');
+        const activityContent = document.getElementById('activity-tab');
+        if (analyticsTab) analyticsTab.style.display = this.state.isAdmin ? '' : 'none';
+        if (activityTab) activityTab.style.display = this.state.isAdmin ? '' : 'none';
+        if (analyticsContent) analyticsContent.style.display = this.state.isAdmin ? '' : 'none';
+        if (activityContent) activityContent.style.display = this.state.isAdmin ? '' : 'none';
     }
 
     getCurrentTime() {
@@ -5926,8 +6010,16 @@ stopStarSuction() {
         `).join('');
     }
 
-    /** Аналитика только из локальных оценок ответов ИИ (бэкенд не трогаем). */
-    renderAnalytics() {
+    /** Аналитика оценок: при авторизации — с бэкенда, иначе — локально. */
+    async renderAnalytics() {
+        const data = await this.loadFeedbackAnalyticsFromBackend();
+        if (this.state.user && data) {
+            this.state.feedbackAnalyticsFromBackend = data;
+            this.applyBackendAnalyticsToUI(data);
+            this.renderActivity();
+            return;
+        }
+        this.state.feedbackAnalyticsFromBackend = null;
         this.loadFeedback();
         this.updateAnalyticsFromFeedback();
         const dashboardRating = document.getElementById('dashboard-rating');
@@ -5939,13 +6031,23 @@ stopStarSuction() {
         this.createAnalyticsChart();
     }
 
-    /** Активность из локальных оценок ответов ИИ (без бэкенда). */
+    /** Активность: при авторизации — из бэкенда (recent), иначе — из локальных оценок. */
     renderActivity() {
         const activityList = document.getElementById('activity-list');
         if (!activityList) return;
-        
-        const entries = (this.feedbackEntries || []).slice().sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)).slice(0, 20);
+
         const topicLabels = { relationships: 'отношения', dating: 'знакомства', manipulation: 'манипуляции', mental_health: 'психология', other: 'другое' };
+        let entries = [];
+        if (this.state.feedbackAnalyticsFromBackend?.recent?.length) {
+            entries = this.state.feedbackAnalyticsFromBackend.recent.map(e => ({
+                timestamp: e.createdAt ? new Date(e.createdAt).getTime() : 0,
+                rating: e.rating,
+                topic: e.topic,
+                userName: e.userName || null
+            }));
+        } else {
+            entries = (this.feedbackEntries || []).slice().sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)).slice(0, 20);
+        }
         
         if (!entries.length) {
             activityList.innerHTML = `
@@ -5965,6 +6067,7 @@ stopStarSuction() {
             const text = useful ? `Оценён ответ как полезный (${topic})` : `Оценён ответ как неполезный (${topic})`;
             const color = useful ? 'linear-gradient(135deg, #22c55e, #16a34a)' : 'linear-gradient(135deg, #ef4444, #dc2626)';
             const icon = useful ? '👍' : '👎';
+            const raterLine = e.userName ? `<div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 2px;">Оценщик: ${e.userName}</div>` : '';
             return `
             <div class="question-card">
                 <div style="display: flex; align-items: center; gap: 10px;">
@@ -5972,6 +6075,7 @@ stopStarSuction() {
                         ${icon}
                     </div>
                     <div style="flex: 1; min-width: 0;">
+                        ${raterLine}
                         <div style="font-weight: 600; margin-bottom: 3px;">${text}</div>
                         <div style="font-size: 0.8rem; color: var(--text-tertiary);">${time}</div>
                     </div>
@@ -6446,7 +6550,36 @@ stopStarSuction() {
         navigator.vibrate(30);
     }
 
-    /** График строится только по локальным оценкам ответов ИИ (без бэкенда). */
+    /** График по данным с бэкенда (last14Days: [{ label, useful, notUseful }]). */
+    createAnalyticsChartFromBackend(last14Days) {
+        const ctx = document.getElementById('analytics-chart')?.getContext('2d');
+        if (!ctx) return;
+        if (this.analyticsChart) this.analyticsChart.destroy();
+        const days = last14Days && last14Days.length ? last14Days : [];
+        const labels = days.map(d => d.label);
+        const usefulData = days.map(d => d.useful || 0);
+        const notUsefulData = days.map(d => d.notUseful || 0);
+        this.analyticsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    { label: '👍 Полезно', data: usefulData, backgroundColor: 'rgba(34, 197, 94, 0.6)', borderColor: '#22c55e', borderWidth: 1 },
+                    { label: '👎 Не полезно', data: notUsefulData, backgroundColor: 'rgba(239, 68, 68, 0.6)', borderColor: '#ef4444', borderWidth: 1 }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { labels: { color: 'var(--text-secondary)' } } },
+                scales: {
+                    x: { ticks: { color: 'var(--text-tertiary)' } },
+                    y: { ticks: { color: 'var(--text-tertiary)' } }
+                }
+            }
+        });
+    }
+
+    /** График по локальным оценкам ответов ИИ (гости или fallback). */
     createAnalyticsChart() {
         const ctx = document.getElementById('analytics-chart')?.getContext('2d');
         if (!ctx) return;
