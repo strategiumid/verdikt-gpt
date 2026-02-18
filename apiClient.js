@@ -160,6 +160,16 @@ export class APIClient {
             return;
         }
 
+        // Уже подключены (например, после создания нового чата) — не показывать «Проверка API...» и не слать лишний запрос
+        if (this.state.isApiConnected) {
+            const selectedModel = this.availableModels.find(m => m.id === this.apiConfig.model);
+            const modelName = selectedModel ? selectedModel.name : this.apiConfig.model;
+            if (this.app.updateHeaderApiStatus) {
+                this.app.updateHeaderApiStatus('connected', modelName);
+            }
+            return;
+        }
+
         if (this.app.updateHeaderApiStatus) {
             this.app.updateHeaderApiStatus('connecting', 'Проверка API...');
         }

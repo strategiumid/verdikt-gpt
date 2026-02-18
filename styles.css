@@ -423,7 +423,7 @@ body.sidebar-collapsed .container {
     padding-bottom: 100px;
 }
 
-/* Hero-блок (пустое состояние) */
+/* Hero-блок (пустое состояние): логотип над полем ввода */
 .hero-block {
     flex: 1 0 auto;
     display: flex;
@@ -434,6 +434,103 @@ body.sidebar-collapsed .container {
     position: relative;
     overflow: visible;
     background: transparent;
+}
+
+.hero-logo-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    animation: heroLogoFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes heroLogoFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.hero-logo-icon {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    animation: heroLogoPulse 3s ease-in-out infinite;
+    filter: grayscale(1);
+}
+
+.hero-logo-icon::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 88px;
+    height: 88px;
+    margin-left: -44px;
+    margin-top: -44px;
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    pointer-events: none;
+    animation: heroLogoGlow 2.5s ease-in-out infinite;
+}
+
+@keyframes heroLogoPulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+    50% {
+        transform: scale(1.03);
+        box-shadow: 0 12px 40px rgba(255, 255, 255, 0.06);
+    }
+}
+
+@keyframes heroLogoGlow {
+    0%, 100% {
+        opacity: 0.5;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.9;
+        transform: scale(1.05);
+    }
+}
+
+.hero-logo-emoji {
+    font-size: 2.5rem;
+    line-height: 1;
+    filter: grayscale(1) contrast(1.1) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.2));
+    position: relative;
+    z-index: 1;
+}
+
+.hero-logo-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    position: relative;
+    z-index: 1;
+}
+
+.hero-logo-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+    font-weight: 500;
+    position: relative;
+    z-index: 1;
 }
 
 .hero-content {

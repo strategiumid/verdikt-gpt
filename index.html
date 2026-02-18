@@ -3237,8 +3237,16 @@
                 <!-- Контейнер чата -->
                 <div class="chat-container input-centered">
                     
-                    <!-- Hero-блок (пустое состояние: только поле ввода по центру) -->
-                    <div class="hero-block" id="hero-block"></div>
+                    <!-- Hero-блок: логотип над полем ввода (скрывается при начале чата или когда ИИ печатает) -->
+                    <div class="hero-block" id="hero-block">
+                        <div class="hero-logo-wrap">
+                            <div class="hero-logo-icon">
+                                <span class="hero-logo-emoji">💕</span>
+                            </div>
+                            <div class="hero-logo-title">Verdikt GPT</div>
+                            <div class="hero-logo-subtitle">Эксперт по отношениям</div>
+                        </div>
+                    </div>
                     
                     <!-- История сообщений -->
                     <div class="chat-messages" id="chat-messages">

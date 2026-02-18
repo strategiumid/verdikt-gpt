@@ -3174,6 +3174,17 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНЫЕ ИНСТРУКЦИИ (испол�
             if (index >= fullText.length) {
                 contentEl.innerHTML = this.formatMessage(fullText);
                 messageElement.classList.remove('ai-message-typing');
+                // Добавляем блок оценки ответа ИИ после контента (перед message-time)
+                const timeEl = messageElement.querySelector('.message-time');
+                if (timeEl && !messageElement.querySelector('.message-feedback')) {
+                    const feedbackDiv = document.createElement('div');
+                    feedbackDiv.className = 'message-feedback';
+                    feedbackDiv.innerHTML = `
+                        <button class="feedback-btn feedback-good" onclick="window.verdiktApp.rateMessage('${messageId}', 1)">👍 Полезно</button>
+                        <button class="feedback-btn feedback-bad" onclick="window.verdiktApp.rateMessage('${messageId}', -1)">👎 Не полезно</button>
+                    `;
+                    messageElement.insertBefore(feedbackDiv, timeEl);
+                }
                 setTimeout(() => hljs.highlightAll(), 50);
                 this.scrollToBottom();
                 return;

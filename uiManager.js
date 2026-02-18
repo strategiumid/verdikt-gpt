@@ -106,6 +106,11 @@ export class UIManager {
     showTypingIndicator() {
         if (this.state.doNotDisturb) return;
 
+        // Скрываем логотип над полем ввода, когда ИИ начинает печатать
+        const heroBlock = document.getElementById('hero-block');
+        if (heroBlock) heroBlock.style.display = 'none';
+        this.app.syncInputPosition && this.app.syncInputPosition();
+
         // Отдельное сообщение «Думаю...» в стиле Grok — пока идёт запрос к API
         if (!document.getElementById('typing-msg')) {
             const tpl = document.createElement('div');
