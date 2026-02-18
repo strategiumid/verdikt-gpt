@@ -1036,6 +1036,12 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНЫЕ ИНСТРУКЦИИ (испол�
                     ${sender}
                 </div>
                 <div class="message-content">${this.formatMessage(msg.content)}</div>
+                ${msg.role !== 'user' ? `
+                <div class="message-feedback">
+                    <button class="feedback-btn feedback-good" onclick="window.verdiktApp.rateMessage('${messageId}', 1)">👍 Было полезно</button>
+                    <button class="feedback-btn feedback-bad" onclick="window.verdiktApp.rateMessage('${messageId}', -1)">👎 Не было полезно</button>
+                </div>
+                ` : ''}
                 <div class="message-time">${this.formatTimestamp(chat.timestamp)}</div>
             `;
             
