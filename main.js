@@ -7055,6 +7055,7 @@ stopStarSuction() {
         });
 
         this._updateSubscriptionButtons = updateSubscriptionButtons;
+        }
     }
 
-    
+    export { VerdiktChatApp };
