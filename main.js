@@ -27,7 +27,7 @@ export class VerdiktChatApp {
     constructor() {
         this.API_CONFIG = {
             url: 'https://routerai.ru/api/v1/chat/completions',
-            model: 'stepfun/step-3.5-flash', 
+            model: 'deepseek/deepseek-v3.2', 
             maxTokens: 2400,
             temperature: 0.5,
             apiKey: "sk-ayshgI6SUUplUxB0ocKzEQ1IK73mbdql"
@@ -237,7 +237,7 @@ export class VerdiktChatApp {
         this.authService = new AuthService(this);
 
         this.availableModels = [
-            { id: 'stepfun/step-3.5-flash', name: 'Verdikt GPT', free: true }
+            { id: 'deepseek/deepseek-v3.2', name: 'Verdikt GPT', free: true }
         ];
         
         // Старые вкладки настроек больше не используются
@@ -475,7 +475,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             this.API_CONFIG.apiKey = "sk-ayshgI6SUUplUxB0ocKzEQ1IK73mbdql";
         }
         
-        this.API_CONFIG.model = "stepfun/step-3.5-flash";
+        this.API_CONFIG.model = "deepseek/deepseek-v3.2";
         localStorage.setItem('verdikt_model', this.API_CONFIG.model);
     }
 
@@ -643,7 +643,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        model: 'stepfun/step-3.5-flash',
+                        model: 'deepseek/deepseek-v3.2',
                         messages: [{ role: 'user', content: 'test' }],
                         max_tokens: 5
                     })
@@ -5124,7 +5124,7 @@ stopStarSuction() {
                     metadata: {
                         exported: new Date().toISOString(),
                         totalMessages: this.state.stats.totalMessages,
-                        model: 'stepfun/step-3.5-flash',
+                        model: 'deepseek/deepseek-v3.2',
                         api: 'routerai.ru',
                         topics: {
                             manipulations: this.state.stats.manipulationRequests,
@@ -5160,7 +5160,7 @@ stopStarSuction() {
             metadata: {
                 totalChats: this.chatManager.chats.length,
                 totalMessages: this.state.stats.totalMessages,
-                model: 'stepfun/step-3.5-flash',
+                model: 'deepseek/deepseek-v3.2',
                 api: 'routerai.ru'
             }
         };
