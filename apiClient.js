@@ -30,125 +30,125 @@ export class APIClient {
     // ===== routerai.ru API =====
 
     async getAIResponse(messages) {
-        // ПОЛУЧАЕМ КОНФИГУРАЦИЮ ДЛЯ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ ИЗ APP
-        const apiConfig = this.app.getAPIConfigForUser();
-        
-        if (!apiConfig.apiKey) {
-            throw new Error('API ключ не настроен. Пожалуйста, добавьте ключ в настройках.');
-        }
-
-        try {
-            console.log('Отправка запроса к API...', {
-                url: apiConfig.url,
-                model: apiConfig.model,
-                messagesCount: messages.length,
-                subscription: this.state.user?.subscription || 'free'
-            });
-
-            // Добавляем инструкцию по форматированию в последнее сообщение
-            const enhancedMessages = [...messages];
-            
-            // Проверяем, есть ли уже инструкция в последнем сообщении пользователя
-            const lastUserMessageIndex = [...enhancedMessages].reverse().findIndex(m => m.role === 'user');
-            if (lastUserMessageIndex !== -1) {
-                const actualIndex = enhancedMessages.length - 1 - lastUserMessageIndex;
-                const lastUserMsg = enhancedMessages[actualIndex];
-                
-                // Добавляем инструкцию по длине ответа, если её ещё нет
-                if (!lastUserMsg.content.includes('[ФОРМАТИРОВАНИЕ]')) {
-                    enhancedMessages[actualIndex] = {
-                        ...lastUserMsg,
-                        content: lastUserMsg.content + `\n\n[ФОРМАТИРОВАНИЕ: без #, заголовки **жирным**, списки через • или -. Завершай каждую мысль полным предложением; не обрывай ответ на полуслове.]`
-                    };
-                }
-            }
-
-            // ИСПОЛЬЗУЕМ ПОЛУЧЕННУЮ КОНФИГУРАЦИЮ
-            const response = await fetch(apiConfig.url, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${apiConfig.apiKey}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: apiConfig.model,
-                    messages: enhancedMessages,
-                    max_tokens: this.apiConfig.maxTokens,
-                    temperature: this.apiConfig.temperature,
-                    stream: false
-                })
-            });
-
-            console.log('Статус ответа:', response.status);
-
-            if (!response.ok) {
-                let errorMessage = "Ошибка API: ";
-                
-                try {
-                    const errorData = await response.json();
-                    console.error('API Error:', errorData);
-                    if (errorData.error?.message) {
-                        errorMessage += errorData.error.message;
-                    } else {
-                        errorMessage += `HTTP ${response.status}`;
-                    }
-                } catch {
-                    errorMessage += `HTTP ${response.status}`;
-                }
-                
-                if (response.status === 401) {
-                    errorMessage = "Неверный API ключ. Проверьте ключ в настройках.";
-                } else if (response.status === 429) {
-                    errorMessage = "Превышен лимит запросов. Попробуйте позже.";
-                } else if (response.status === 503) {
-                    errorMessage = "Сервер временно недоступен. Попробуйте позже.";
-                }
-                
-                throw new Error(errorMessage);
-            }
-
-            const data = await response.json();
-            console.log('Ответ API получен:', data);
-            
-            let aiResponse = '';
-            
-            // Проверяем различные форматы ответа
-            if (data.choices && data.choices[0]?.message?.content) {
-                aiResponse = data.choices[0].message.content.trim();
-            } else if (data.choices && data.choices[0]?.text) {
-                aiResponse = data.choices[0].text.trim();
-            } else if (data.response) {
-                aiResponse = data.response.trim();
-            } else if (data.content) {
-                aiResponse = data.content.trim();
-            } else if (data.message?.content) {
-                aiResponse = data.message.content.trim();
-            } else {
-                console.error('Неизвестный формат ответа:', data);
-                throw new Error('Неверный формат ответа от API');
-            }
-            
-            // Пост-обработка ответа: удаляем решетки, если вдруг появились
-            aiResponse = aiResponse.replace(/#{1,6}\s*/g, '**');
-            
-            return aiResponse;
-            
-        } catch (error) {
-            console.error('Error in getAIResponse:', error);
-            
-            if (error.message.includes('API ключ') || error.message.includes('401')) {
-                throw new Error('Пожалуйста, настройте API ключ в настройках приложения.');
-            }
-            
-            throw error;
-        }
+    if (!this.apiConfig.apiKey) {
+        throw new Error('API ключ не настроен. Пожалуйста, добавьте ключ в настройках.');
     }
 
-    async checkApiStatus() {
-        // ПОЛУЧАЕМ КОНФИГУРАЦИЮ ДЛЯ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ ИЗ APP
-        const apiConfig = this.app.getAPIConfigForUser();
+    try {
+        console.log('Отправка запроса к API...', {
+            url: this.apiConfig.url,
+            model: this.apiConfig.model,
+            messagesCount: messages.length
+        });
+
+        // Добавляем инструкцию по форматированию в последнее сообщение
+        const enhancedMessages = [...messages];
         
-        if (!apiConfig.apiKey) {
+        // Проверяем, есть ли уже инструкция в последнем сообщении пользователя
+        const lastUserMessageIndex = [...enhancedMessages].reverse().findIndex(m => m.role === 'user');
+        if (lastUserMessageIndex !== -1) {
+            const actualIndex = enhancedMessages.length - 1 - lastUserMessageIndex;
+            const lastUserMsg = enhancedMessages[actualIndex];
+            
+            // Добавляем инструкцию по длине ответа, если её ещё нет
+             if (!lastUserMsg.content.includes('[ФОРМАТИРОВАНИЕ]')) {
+        enhancedMessages[actualIndex] = {
+            ...lastUserMsg,
+            content: lastUserMsg.content + `\n\n[ФОРМАТИРОВАНИЕ: без #, заголовки **жирным**, списки через • или -. Завершай каждую мысль полным предложением; не обрывай ответ на полуслове.]`
+        };
+    }
+}
+        const response = await fetch(this.apiConfig.url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.apiConfig.apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: this.apiConfig.model,
+                messages: enhancedMessages,
+                max_tokens: this.apiConfig.maxTokens,
+                temperature: this.apiConfig.temperature,
+                stream: false
+            })
+        });
+
+        console.log('Статус ответа:', response.status);
+
+        if (!response.ok) {
+            let errorMessage = "Ошибка API: ";
+            
+            try {
+                const errorData = await response.json();
+                console.error('API Error:', errorData);
+                if (errorData.error?.message) {
+                    errorMessage += errorData.error.message;
+                } else {
+                    errorMessage += `HTTP ${response.status}`;
+                }
+            } catch {
+                errorMessage += `HTTP ${response.status}`;
+            }
+            
+            if (response.status === 401) {
+                errorMessage = "Неверный API ключ. Проверьте ключ в настройках.";
+            } else if (response.status === 429) {
+                errorMessage = "Превышен лимит запросов. Попробуйте позже.";
+            } else if (response.status === 503) {
+                errorMessage = "Сервер временно недоступен. Попробуйте позже.";
+            }
+            
+            throw new Error(errorMessage);
+        }
+
+        const data = await response.json();
+        console.log('Ответ API получен:', data);
+        
+        let aiResponse = '';
+        
+        // Проверяем различные форматы ответа
+        if (data.choices && data.choices[0]?.message?.content) {
+            aiResponse = data.choices[0].message.content.trim();
+        } else if (data.choices && data.choices[0]?.text) {
+            aiResponse = data.choices[0].text.trim();
+        } else if (data.response) {
+            aiResponse = data.response.trim();
+        } else if (data.content) {
+            aiResponse = data.content.trim();
+        } else if (data.message?.content) {
+            aiResponse = data.message.content.trim();
+        } else {
+            console.error('Неизвестный формат ответа:', data);
+            throw new Error('Неверный формат ответа от API');
+        }
+        
+        // Пост-обработка ответа: удаляем решетки, если вдруг появились
+     aiResponse = aiResponse.replace(/#{1,6}\s*/g, '**'); // Заменяем заголовки с # на жирный текст
+        
+        // Проверяем, не оборван ли ответ (не заканчивается на знак препинания или многоточие)
+          /*   const lastChar = aiResponse[aiResponse.length - 1];
+        const endsProperly = /[.!?…]/.test(lastChar) || lastChar === '"' || lastChar === "'" || lastChar === ')' || lastChar === ']' || lastChar === '}';
+        
+        if (!endsProperly && aiResponse.length > 50) {
+            // Если ответ явно оборван, добавляем многоточие и сообщение
+            aiResponse += '...\n\n*Извините, ответ был обрезан из-за ограничения по длине. Пожалуйста, задайте уточняющий вопрос, и я продолжу.*';
+        }
+        */
+        return aiResponse;
+        
+    } catch (error) {
+        console.error('Error in getAIResponse:', error);
+        
+        if (error.message.includes('API ключ') || error.message.includes('401')) {
+            throw new Error('Пожалуйста, настройте API ключ в настройках приложения.');
+        }
+        
+        throw error;
+    }
+}
+
+    async checkApiStatus() {
+        if (!this.apiConfig.apiKey) {
             if (this.app.updateHeaderApiStatus) {
                 this.app.updateHeaderApiStatus('not-configured', 'API ключ не настроен');
             }
@@ -160,16 +160,10 @@ export class APIClient {
             return;
         }
 
-        // Уже подключены — не показывать «Проверка API...» и не слать лишний запрос
+        // Уже подключены (например, после создания нового чата) — не показывать «Проверка API...» и не слать лишний запрос
         if (this.state.isApiConnected) {
-            // ПОКАЗЫВАЕМ НАЗВАНИЕ МОДЕЛИ В ЗАВИСИМОСТИ ОТ ПОДПИСКИ
-            let modelName = apiConfig.model;
-            if (modelName.includes('stepfun')) {
-                modelName = 'Verdikt GPT';
-            } else if (modelName.includes('deepseek')) {
-                modelName = 'DeepSeek V3.2 (Ultimate)';
-            }
-            
+            const selectedModel = this.availableModels.find(m => m.id === this.apiConfig.model);
+            const modelName = selectedModel ? selectedModel.name : this.apiConfig.model;
             if (this.app.updateHeaderApiStatus) {
                 this.app.updateHeaderApiStatus('connected', modelName);
             }
@@ -184,18 +178,18 @@ export class APIClient {
         }
         
         try {
-            console.log('Проверка API с ключом:', apiConfig.apiKey.substring(0, 10) + '...');
-            console.log('URL:', apiConfig.url);
-            console.log('Модель:', apiConfig.model);
+            console.log('Проверка API с ключом:', this.apiConfig.apiKey.substring(0, 10) + '...');
+            console.log('URL:', this.apiConfig.url);
             
-            const response = await fetch(apiConfig.url, {
+            // Отправляем тестовый запрос
+            const response = await fetch(this.apiConfig.url, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${apiConfig.apiKey}`,
+                    'Authorization': `Bearer ${this.apiConfig.apiKey}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    model: apiConfig.model,
+                    model: this.apiConfig.model,
                     messages: [{ role: 'user', content: 'test' }],
                     max_tokens: 5,
                     temperature: 0.5
@@ -208,18 +202,14 @@ export class APIClient {
                 const data = await response.json();
                 console.log('Ответ API при проверке:', data);
                 
+                // Проверяем, что ответ содержит ожидаемые поля
                 const hasValidResponse = data.choices && 
                                         data.choices[0] && 
                                         (data.choices[0].message || data.choices[0].text);
                 
                 if (hasValidResponse) {
-                    let modelName = apiConfig.model;
-                    if (modelName.includes('stepfun')) {
-                        modelName = 'Verdikt GPT';
-                    } else if (modelName.includes('deepseek')) {
-                        modelName = 'DeepSeek V3.2 (Ultimate)';
-                    }
-                    
+                    const selectedModel = this.availableModels.find(m => m.id === this.apiConfig.model);
+                    const modelName = selectedModel ? selectedModel.name : this.apiConfig.model;
                     if (this.app.updateHeaderApiStatus) {
                         this.app.updateHeaderApiStatus('connected', modelName);
                     }
