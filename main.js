@@ -3248,77 +3248,102 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     }
 
     addAiMessageWithTypingEffect(fullText) {
-        const messageId = 'msg-' + Date.now();
-        const time = this.getCurrentTime();
+    const messageId = 'msg-' + Date.now();
+    const time = this.getCurrentTime();
 
-        const messageElement = document.createElement('div');
-        messageElement.className = 'message ai-message ai-message-typing';
-        messageElement.id = messageId;
-        messageElement.style.opacity = '1';
-        messageElement.style.transform = 'translateY(0)';
+    const messageElement = document.createElement('div');
+    messageElement.className = 'message ai-message ai-message-typing';
+    messageElement.id = messageId;
+    messageElement.style.opacity = '1';
+    messageElement.style.transform = 'translateY(0)';
 
-        messageElement.innerHTML = `
-            <div class="message-actions">
-                <button class="message-action" onclick="window.verdiktApp.copyMessage('${messageId}')">
-                    <i class="fas fa-copy"></i>
-                </button>
-                <button class="message-action" onclick="window.verdiktApp.speakMessage('${messageId}')">
-                    <i class="fas fa-volume-up"></i>
-                </button>
-                <button class="message-action" onclick="window.verdiktApp.regenerateMessage('${messageId}')">
-                    <i class="fas fa-redo"></i>
-                </button>
-            </div>
-            <div class="message-sender">
-                <i class="fas fa-heart"></i> Эксперт по отношениям
-            </div>
-            <div class="message-content"><span class="typing-cursor"></span></div>
-            <div class="message-time">${time}</div>
-        `;
+    messageElement.innerHTML = `
+        <div class="message-actions">
+            <button class="message-action" onclick="window.verdiktApp.copyMessage('${messageId}')">
+                <i class="fas fa-copy"></i>
+            </button>
+            <button class="message-action" onclick="window.verdiktApp.speakMessage('${messageId}')">
+                <i class="fas fa-volume-up"></i>
+            </button>
+            <button class="message-action" onclick="window.verdiktApp.regenerateMessage('${messageId}')">
+                <i class="fas fa-redo"></i>
+            </button>
+        </div>
+        <div class="message-sender">
+            <i class="fas fa-heart"></i> Эксперт по отношениям
+        </div>
+        <div class="message-content"><span class="typing-cursor"></span></div>
+        <div class="message-time">${time}</div>
+    `;
 
-        this.elements.chatMessages.appendChild(messageElement);
-        this.scrollToBottom();
+    this.elements.chatMessages.appendChild(messageElement);
+    this.scrollToBottom();
 
-        const heroBlock = document.getElementById('hero-block');
-        if (heroBlock) heroBlock.style.display = 'none';
-        this.syncInputPosition();
+    const heroBlock = document.getElementById('hero-block');
+    if (heroBlock) heroBlock.style.display = 'none';
+    this.syncInputPosition();
 
-        const contentEl = messageElement.querySelector('.message-content');
-        const cursorHtml = '<span class="typing-cursor"></span>';
-        const chunkMin = 1;
-        const chunkMax = 3;
-        const delayMs = 15;
-        let index = 0;
-
-        const typeNext = () => {
-            if (index >= fullText.length) {
-                contentEl.innerHTML = this.formatMessage(fullText);
-                messageElement.classList.remove('ai-message-typing');
-                // Добавляем блок оценки ответа ИИ после контента (перед message-time)
-                const timeEl = messageElement.querySelector('.message-time');
-                if (timeEl && !messageElement.querySelector('.message-feedback')) {
-                    const feedbackDiv = document.createElement('div');
-                    feedbackDiv.className = 'message-feedback';
-                    feedbackDiv.innerHTML = `
-                        <button class="feedback-btn feedback-good" onclick="window.verdiktApp.rateMessage('${messageId}', 1)">👍 Полезно</button>
-                        <button class="feedback-btn feedback-bad" onclick="window.verdiktApp.rateMessage('${messageId}', -1)">👎 Не полезно</button>
-                    `;
-                    messageElement.insertBefore(feedbackDiv, timeEl);
-                }
-                setTimeout(() => hljs.highlightAll(), 50);
-                this.scrollToBottom();
-                return;
-            }
-            const chunkSize = Math.min(chunkMin + Math.floor(Math.random() * (chunkMax - chunkMin + 1)), fullText.length - index);
-            index += chunkSize;
-            const accumulated = fullText.slice(0, index);
-            contentEl.innerHTML = this.formatMessage(accumulated) + cursorHtml;
-            this.scrollToBottom();
-            setTimeout(typeNext, delayMs);
-        };
-
-        setTimeout(typeNext, 80);
+    const contentEl = messageElement.querySelector('.message-content');
+    const cursorHtml = '<span class="typing-cursor"></span>';
+    
+    // АДАПТИВНАЯ СКОРОСТЬ
+    const textLength = fullText.length;
+    
+    // Определяем параметры анимации в зависимости от длины текста
+    let chunkMin, chunkMax, delayMs;
+    
+    if (textLength < 100) {
+        // Короткие ответы (до 100 символов) — очень быстро
+        chunkMin = 10;
+        chunkMax = 30;
+        delayMs = 5;
+    } else if (textLength < 500) {
+        // Средние ответы (100-500 символов) — быстро
+        chunkMin = 5;
+        chunkMax = 15;
+        delayMs = 8;
+    } else {
+        // Длинные ответы (более 500 символов) — очень быстро, чтобы не ждать
+        chunkMin = 20;
+        chunkMax = 50;
+        delayMs = 5;
     }
+    
+    let index = 0;
+
+    const typeNext = () => {
+        if (index >= fullText.length) {
+            contentEl.innerHTML = this.formatMessage(fullText);
+            messageElement.classList.remove('ai-message-typing');
+            
+            const timeEl = messageElement.querySelector('.message-time');
+            if (timeEl && !messageElement.querySelector('.message-feedback')) {
+                const feedbackDiv = document.createElement('div');
+                feedbackDiv.className = 'message-feedback';
+                feedbackDiv.innerHTML = `
+                    <button class="feedback-btn feedback-good" onclick="window.verdiktApp.rateMessage('${messageId}', 1)">👍 Полезно</button>
+                    <button class="feedback-btn feedback-bad" onclick="window.verdiktApp.rateMessage('${messageId}', -1)">👎 Не полезно</button>
+                `;
+                messageElement.insertBefore(feedbackDiv, timeEl);
+            }
+            setTimeout(() => hljs.highlightAll(), 50);
+            this.scrollToBottom();
+            return;
+        }
+        
+        const chunkSize = Math.min(
+            chunkMin + Math.floor(Math.random() * (chunkMax - chunkMin + 1)), 
+            fullText.length - index
+        );
+        index += chunkSize;
+        const accumulated = fullText.slice(0, index);
+        contentEl.innerHTML = this.formatMessage(accumulated) + cursorHtml;
+        this.scrollToBottom();
+        setTimeout(typeNext, delayMs);
+    };
+
+    setTimeout(typeNext, 80);
+}
 
     formatMessage(text) {
         return text
