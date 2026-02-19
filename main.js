@@ -135,7 +135,6 @@ export class VerdiktChatApp {
             searchModeBtn: document.getElementById('search-mode-btn'),
             voiceInput: document.getElementById('voice-input'),
             newChat: document.getElementById('new-chat'),
-            // settingsButton удалена - настройки теперь в профиле
             presentationMode: document.getElementById('presentation-mode'),
             notification: document.getElementById('notification'),
             notificationText: document.getElementById('notification-text'),
@@ -156,12 +155,9 @@ export class VerdiktChatApp {
             nextSlide: document.getElementById('next-slide'),
             exitPresentation: document.getElementById('exit-presentation'),
             
-            // settingsClose больше не нужен - настройки теперь в профиле
             exportClose: document.getElementById('export-close'),
             exportCancel: document.getElementById('export-cancel'),
             statsClose: document.getElementById('stats-close'),
-            // saveSettings больше не нужен - настройки сохраняются автоматически
-            // temperatureSlider и temperatureValue теперь в настройках профиля
             
             toggleChatHistory: document.getElementById('toggle-chat-history'),
             
@@ -195,7 +191,6 @@ export class VerdiktChatApp {
             navSettings: document.getElementById('nav-settings'),
             navSecurity: document.getElementById('nav-security'),
             navNotifications: document.getElementById('nav-notifications'),
-            // НОВЫЙ ПУНКТ
             navSubscription: document.getElementById('nav-subscription'),
             questionsBadge: document.getElementById('questions-badge'),
             likesBadge: document.getElementById('likes-badge'),
@@ -221,7 +216,6 @@ export class VerdiktChatApp {
             
             reloadInstructions: document.getElementById('reload-instructions'),
 
-            // НОВЫЙ ЭЛЕМЕНТ ДЛЯ ЗАКРЫТИЯ ПОДПИСОК
             subscriptionClose: document.getElementById('subscription-close')
         };
 
@@ -240,11 +234,9 @@ export class VerdiktChatApp {
         this.availableModels = [
             { id: 'stepfun/step-3.5-flash', name: 'Verdikt GPT', free: true }
         ];
-        
-        // Старые вкладки настроек больше не используются
     }
 
-    // ============ НОВЫЙ МЕТОД (ДОБАВЬТЕ ПОСЛЕ КОНСТРУКТОРА) ============
+    // ============ НОВЫЙ МЕТОД ДЛЯ ULTIMATE ПОДПИСКИ ============
     /**
      * ПОЛУЧЕНИЕ КОНФИГУРАЦИИ API В ЗАВИСИМОСТИ ОТ ПОДПИСКИ ПОЛЬЗОВАТЕЛЯ
      * Если у пользователя подписка Ultimate - используем DeepSeek V3.2
@@ -277,6 +269,7 @@ export class VerdiktChatApp {
         // Для всех остальных случаев используем стандартную конфигурацию
         return defaultConfig;
     }
+
     createSystemPromptMessage() {
         const instructions = this.state?.instructions || '';
         
@@ -367,7 +360,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     analyzeUserType(message) {
         const messageLower = message.toLowerCase();
 
-        // 1. Анализ на преследователя (как и было)
         const pursuitIndicators = [
             'бегал', 'унижал', 'прощал измены', 'умолял', 'выпрашивал',
             'писал первым', 'звонил', 'добивался', 'уговоры', 'доказательства',
@@ -375,31 +367,25 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         ];
         let isPursuer = pursuitIndicators.some(indicator => messageLower.includes(indicator));
 
-        // 2. Анализ тональности (sentiment analysis)
         let sentimentScore = 0;
-        // Считаем негативные слова
         VerdiktChatApp.NEGATIVE_WORDS.forEach(word => {
             if (messageLower.includes(word)) {
                 sentimentScore -= 1;
             }
         });
-        // Считаем позитивные слова
         VerdiktChatApp.POSITIVE_WORDS.forEach(word => {
             if (messageLower.includes(word)) {
                 sentimentScore += 1;
             }
         });
 
-        // 3. Анализ энергии (количество знаков ! и ?)
         const exclamationCount = (message.match(/!/g) || []).length;
         const questionCount = (message.match(/\?/g) || []).length;
         const isHighEnergy = (exclamationCount + questionCount) > 2 || VerdiktChatApp.HIGH_ENERGY_WORDS.some(word => messageLower.includes(word));
 
-        // 4. Анализ длины сообщения
         const wordCount = message.split(/\s+/).length;
-        const isLongMessage = wordCount > 30; // Сообщения длиннее 30 слов считаем подробными
+        const isLongMessage = wordCount > 30;
 
-        // 5. Определяем тип эмоционального состояния
         let emotionalState = 'neutral';
         if (sentimentScore < -1) {
             emotionalState = 'negative';
@@ -408,12 +394,10 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         }
 
         let exhaustionState = '';
-        // Проверка на эмоциональное выгорание (много негатива + длинное сообщение)
         if (sentimentScore < -1 && isLongMessage && messageLower.includes('устал')) {
             exhaustionState = 'exhausted';
         }
 
-        // Формируем расширенный контекст для AI
         let contextParts = [];
         if (isPursuer) {
             contextParts.push('Пользователь описывает себя как бывшего преследователя.');
@@ -440,7 +424,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             emotionalState: emotionalState,
             isHighEnergy: isHighEnergy,
             exhaustionState: exhaustionState,
-            context: contextString, // Этот текст мы добавим к сообщению
+            context: contextString,
             advice: isPursuer ?
                 'Ты был в роли преследователя. Сейчас тебе нужно полностью стереть старую матрицу и начать с чистого листа, но уже в новой роли. Игнор для тебя — единственный способ.' :
                 'Твоя позиция не выглядит как классическое преследование, но стратегия игнора всё равно работает на укрепление твоих позиций.'
@@ -462,7 +446,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         await this.loadInstructions();
         
         this.updateUI();
-        // Проверка API при загрузке не выполняется — подключение к API только при входе в аккаунт
         this.setupKeyboardShortcuts();
         this.setupServiceWorker();
         this.setupSettingsTabs();
@@ -492,7 +475,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         
         this.startAutoSave();
 
-        // НОВЫЙ ВЫЗОВ
         this.setupSubscriptionModal();
         
         console.log('✅ Verdikt GPT инициализирован');
@@ -527,7 +509,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         return this.apiClient.getAIResponse(messages);
     }
 
-    /** Поиск в интернете (DuckDuckGo). Возвращает текст результатов для контекста ИИ. */
     async searchWeb(query) {
         const q = (query || '').trim().slice(0, 200);
         if (!q) return '';
@@ -569,11 +550,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         return this.apiClient.checkApiStatus();
     }
 
-    setupApiSettingsListeners() {
-        // Кнопка API настроек теперь в настройках профиля (в HTML)
-        // Обработчик события для неё уже настроен в setupProfileSettings()
-        // Эта функция оставлена для совместимости, но больше ничего не делает
-    }
+    setupApiSettingsListeners() {}
 
     showApiSettingsModal() {
         const modalHTML = `
@@ -587,50 +564,50 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                     <i class="fas fa-key"></i> Настройки API
                 </h2>
                 
-               
-                               
-                        
-                        <div style="
-                            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
-                            border-left: 3px solid #10b981;
-                            padding: 15px;
-                            border-radius: var(--radius-md);
-                            margin: 20px 0;
-                        ">
-                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
-                                <div style="
-                                    width: 40px;
-                                    height: 40px;
-                                    background: linear-gradient(135deg, #10b981, #059669);
-                                    border-radius: 10px;
-                                    display: flex;
-                                    align-items: center;
-                                    justify-content: center;
-                                    color: white;
-                                    font-size: 18px;
-                                ">
-                                    <i class="fas fa-robot"></i>
-                                </div>
-                                <div>
-                                    <h4 style="margin: 0; font-size: 1.1rem;">Активная модель</h4>
-                                    <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">Verdikt GPT</p>
-                                </div>
-                            </div>
-                            <p style="font-size: 0.9rem; margin: 0; color: var(--text-secondary);">
-                                <i class="fas fa-check-circle" style="color: #10b981;"></i> 
-                                Бесплатная модель с хорошей производительностью.
-                            </p>
-                        </div>
-                        
-                        <div id="api-test-result" style="
-                            display: none;
-                            padding: 12px;
-                            border-radius: var(--radius-sm);
-                            margin-bottom: 15px;
-                            font-size: 0.9rem;
-                        "></div>
-                    </div>
+                <div class="form-group">
+                    <label for="api-key-input">API ключ</label>
+                    <input type="password" id="api-key-input" class="form-control" placeholder="sk-..." value="${this.API_CONFIG.apiKey || ''}">
                 </div>
+                
+                <div style="
+                    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
+                    border-left: 3px solid #10b981;
+                    padding: 15px;
+                    border-radius: var(--radius-md);
+                    margin: 20px 0;
+                ">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+                        <div style="
+                            width: 40px;
+                            height: 40px;
+                            background: linear-gradient(135deg, #10b981, #059669);
+                            border-radius: 10px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            color: white;
+                            font-size: 18px;
+                        ">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div>
+                            <h4 style="margin: 0; font-size: 1.1rem;">Активная модель</h4>
+                            <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">Verdikt GPT</p>
+                        </div>
+                    </div>
+                    <p style="font-size: 0.9rem; margin: 0; color: var(--text-secondary);">
+                        <i class="fas fa-check-circle" style="color: #10b981;"></i> 
+                        Бесплатная модель с хорошей производительностью.
+                    </p>
+                </div>
+                
+                <div id="api-test-result" style="
+                    display: none;
+                    padding: 12px;
+                    border-radius: var(--radius-sm);
+                    margin-bottom: 15px;
+                    font-size: 0.9rem;
+                "></div>
                 
                 <div class="modal-buttons" style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <button class="ios-button secondary" id="test-api-key" style="flex: 1;">
@@ -733,11 +710,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         });
     }
 
-    // ==================== НАСТРОЙКА ВКЛАДОК НАСТРОЕК ====================
-
     setupSettingsTabs() {
-        // Старые вкладки настроек больше не используются - навигация теперь в профиле
-        // Обновляем статистику и достижения при инициализации
         this.updateSettingsStats();
         this.updateSettingsAchievements();
     }
@@ -814,8 +787,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             }
         });
     }
-
-    // ==================== FEEDBACK STORAGE & ANALYTICS (frontend-only) ====================
 
     loadFeedback() {
         if (this.state.user) {
@@ -918,7 +889,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         }
     }
 
-    /** Применить данные аналитики с бэкенда к UI (счётчики, сводка по темам, рейтинг, график). */
     applyBackendAnalyticsToUI(data) {
         if (!data) return;
         const elTotal = document.getElementById('analytics-total');
@@ -941,7 +911,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         if (data.last14Days) this.createAnalyticsChartFromBackend(data.last14Days);
     }
 
-    /** Загрузить аналитику оценок с бэкенда. Админ — по всем пользователям, иначе — по текущему. */
     async loadFeedbackAnalyticsFromBackend() {
         if (!this.state.user) return null;
         try {
@@ -958,7 +927,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         }
     }
 
-    /** Аналитика из локальных оценок ответов ИИ (гости или fallback). */
     updateAnalyticsFromFeedback() {
         try {
             const entries = this.feedbackEntries || [];
@@ -994,8 +962,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             console.error('Failed to update analytics:', e);
         }
     }
-
-    // ==================== СИСТЕМА УПРАВЛЕНИЯ ЧАТАМИ ====================
 
     async loadChats() {
         try {
@@ -1270,8 +1236,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         
         return `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear()}`;
     }
-
-    // ==================== ШИФРОВАНИЕ И БЕЗОПАСНОСТЬ ====================
 
     async setupEncryption() {
         if (!this.crypto.isSupported()) {
@@ -1723,8 +1687,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         }
     }
 
-    // ==================== ФУНКЦИИ БОКОВОГО МЕНЮ ====================
-
     setupSidebar() {
         if (this.elements.sidebarToggle) {
             this.elements.sidebarToggle.addEventListener('click', () => {
@@ -1826,7 +1788,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             });
         }
 
-        // НОВЫЙ ОБРАБОТЧИК ДЛЯ ПОДПИСОК
         if (this.elements.navSubscription) {
             this.elements.navSubscription.addEventListener('click', () => {
                 this.showSubscriptionModal();
@@ -1995,36 +1956,32 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         this.updateHeaderUsage();
     }
 
-    /** Обновляет индикатор статуса API в шапке: зелёный/красный кружок + подпись */
     updateHeaderApiStatus(dotState, label) {
-    const dot = this.elements.apiStatusDot;
-    const text = this.elements.apiStatusText;
-    const container = this.elements.apiStatus;
-    
-    if (!container) return;
-    
-    if (dot) {
-        dot.className = 'api-status-dot api-status-dot--' + (dotState || 'unknown');
-        dot.style.display = 'inline-block';
+        const dot = this.elements.apiStatusDot;
+        const text = this.elements.apiStatusText;
+        const container = this.elements.apiStatus;
+        
+        if (!container) return;
+        
+        if (dot) {
+            dot.className = 'api-status-dot api-status-dot--' + (dotState || 'unknown');
+            dot.style.display = 'inline-block';
+        }
+        
+        if (this.state.user && this.state.user.subscription === 'ultimate' && dotState === 'connected') {
+            container.classList.add('api-ultimate');
+            if (text) text.textContent = (label || '—') + ' (Ultimate)';
+        } else {
+            container.classList.remove('api-ultimate');
+            if (text) text.textContent = label || '—';
+        }
+        
+        container.classList.remove('api-connecting', 'api-connected', 'api-error');
+        if (dotState === 'connecting') container.classList.add('api-connecting');
+        else if (dotState === 'connected') container.classList.add('api-connected');
+        else if (dotState === 'error' || dotState === 'not-configured') container.classList.add('api-error');
     }
-    
-    // ДОБАВЛЯЕМ ПРОВЕРКУ НА ULTIMATE ПОДПИСКУ ДЛЯ ВИЗУАЛЬНОЙ ИНДИКАЦИИ
-    if (this.state.user && this.state.user.subscription === 'ultimate' && dotState === 'connected') {
-        // Добавляем специальный класс для Ultimate
-        container.classList.add('api-ultimate');
-        if (text) text.textContent = (label || '—') + ' (Ultimate)';
-    } else {
-        container.classList.remove('api-ultimate');
-        if (text) text.textContent = label || '—';
-    }
-    
-    container.classList.remove('api-connecting', 'api-connected', 'api-error');
-    if (dotState === 'connecting') container.classList.add('api-connecting');
-    else if (dotState === 'connected') container.classList.add('api-connected');
-    else if (dotState === 'error' || dotState === 'not-configured') container.classList.add('api-error');
-}
 
-    /** Обновляет блок «осталось запросов» в шапке */
     updateHeaderUsage() {
         const el = this.elements.apiUsageHeader;
         if (!el) return;
@@ -2053,8 +2010,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             btn.disabled = isCurrent;
         });
     }
-
-    // ==================== ДАШБОРД ====================
 
     setupDashboard() {
         this.elements.dashboardTabs = document.querySelectorAll('.dashboard-tab');
@@ -2163,8 +2118,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         }).catch(() => {});
     }
 
-    // ==================== НАСТРОЙКИ ПРОФИЛЯ ====================
-
     setupProfileSettings() {
         if (this.elements.profileSettingsClose) {
             this.elements.profileSettingsClose.addEventListener('click', () => {
@@ -2172,24 +2125,19 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             });
         }
         
-        // Навигация по секциям настроек профиля
         const navItems = document.querySelectorAll('.profile-nav-item');
         navItems.forEach(item => {
             item.addEventListener('click', () => {
                 const section = item.dataset.section;
                 
-                // Убираем активный класс со всех элементов навигации
                 navItems.forEach(nav => nav.classList.remove('active'));
-                // Добавляем активный класс к выбранному элементу
                 item.classList.add('active');
                 
-                // Скрываем все секции
                 document.querySelectorAll('.profile-settings-section').forEach(sec => {
                     sec.classList.remove('active');
                     sec.style.display = 'none';
                 });
                 
-                // Показываем выбранную секцию
                 const targetSection = document.getElementById(`${section}-section`);
                 if (targetSection) {
                     targetSection.classList.add('active');
@@ -2198,7 +2146,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             });
         });
         
-        // Редактирование описания профиля
         const profileBioEditBtn = document.getElementById('profile-bio-edit-btn');
         const profileBioDisplay = document.getElementById('profile-bio-display');
         const profileBioSection = document.getElementById('profile-bio-section');
@@ -2220,7 +2167,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             });
         }
         
-        // Сохранение описания профиля
         const profileBioSave = document.getElementById('profile-bio-save');
         const profileBioCancel = document.getElementById('profile-bio-cancel');
         const profileBioInput = document.getElementById('profile-bio-input');
@@ -2258,8 +2204,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             });
         }
         
-        
-        // Загрузка аватарки
         const avatarInput = document.getElementById('profile-avatar-input');
         if (avatarInput) {
             avatarInput.addEventListener('change', (e) => {
@@ -2283,20 +2227,17 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             });
         }
         
-        // Выбор темы (только фронтенд, без отправки на бэкенд)
         const themeOptions = document.querySelectorAll('.theme-option-profile');
         themeOptions.forEach(option => {
             option.addEventListener('click', () => {
                 const theme = option.dataset.theme;
                 themeOptions.forEach(opt => opt.classList.remove('active'));
                 option.classList.add('active');
-                // Используем setTheme с флагом skipBackend, чтобы не отправлять на бэкенд
                 this.setTheme(theme, { skipBackend: true });
                 this.showNotification(`Тема изменена на ${theme === 'dark' ? 'темную' : 'светлую'}`, 'success');
             });
         });
         
-        // Выбор подписки
         const subscriptionCards = document.querySelectorAll('.subscription-card-profile');
         const subscriptionButtons = document.querySelectorAll('.subscription-select-btn');
         
@@ -2308,19 +2249,16 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 const card = document.querySelector(`.subscription-card-profile[data-subscription="${subscription}"]`);
                 if (card) {
                     card.classList.add('active');
-                    // Сохраняем подписку только локально (фронтенд)
                     localStorage.setItem('verdikt_user_subscription', subscription);
                     this.showNotification(`Подписка изменена на ${subscription.toUpperCase()}`, 'success');
                 }
             });
         });
         
-        // Промо код
         const profilePromoInput = document.getElementById('profile-promo-input');
         const profilePromoApply = document.getElementById('profile-promo-apply');
         const profilePromoStatus = document.getElementById('profile-promo-status');
         
-        // Загружаем сохраненный промо код
         if (profilePromoInput) {
             const savedPromo = localStorage.getItem('verdikt_promo_code') || '';
             profilePromoInput.value = savedPromo;
@@ -2329,14 +2267,12 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             }
         }
         
-        // Применение промо кода
         if (profilePromoApply) {
             profilePromoApply.addEventListener('click', () => {
                 this.applyPromoCode();
             });
         }
         
-        // Применение по Enter
         if (profilePromoInput) {
             profilePromoInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
@@ -2346,7 +2282,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             });
         }
         
-        // Режимы AI в настройках профиля
         const modeItems = document.querySelectorAll('.mode-item-settings');
         modeItems.forEach(item => {
             item.addEventListener('click', () => {
@@ -2359,7 +2294,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             });
         });
         
-        // Температура AI
         const temperatureSlider = document.getElementById('temperature-slider');
         const temperatureValue = document.getElementById('temperature-value');
         if (temperatureSlider && temperatureValue) {
@@ -2374,7 +2308,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             });
         }
         
-        // Кнопка настроек API
         const apiSettingsButton = document.getElementById('api-settings-button');
         if (apiSettingsButton) {
             apiSettingsButton.addEventListener('click', () => {
@@ -2382,7 +2315,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             });
         }
         
-        // Кнопка управления шифрованием
         const encryptionManager = document.getElementById('encryption-manager');
         if (encryptionManager) {
             encryptionManager.addEventListener('click', () => {
@@ -2390,13 +2322,10 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             });
         }
         
-        // Обновление статистики при открытии секции статистики
         const statsSection = document.getElementById('stats-section');
         if (statsSection) {
-            // Обновляем статистику сразу при открытии настроек профиля
             this.updateSettingsStats();
             
-            // Также обновляем при переключении на секцию статистики
             const observer = new MutationObserver(() => {
                 if (statsSection.style.display !== 'none' && statsSection.classList.contains('active')) {
                     this.updateSettingsStats();
@@ -2405,7 +2334,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             observer.observe(statsSection, { attributes: true, attributeFilter: ['style', 'class'] });
         }
         
-        // Обновление достижений при открытии секции достижений
         const achievementsSection = document.getElementById('achievements-section');
         if (achievementsSection) {
             this.updateSettingsAchievements();
@@ -2417,9 +2345,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             });
             observer.observe(achievementsSection, { attributes: true, attributeFilter: ['style', 'class'] });
         }
-        
-        // Форма профиля больше не используется - все настройки сохраняются локально
-        // Функция saveProfileSettings оставлена для совместимости, но не вызывается
     }
     
     applyPromoCode() {
@@ -2435,19 +2360,15 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             return;
         }
         
-        // Валидация промо кода (только фронтенд)
         if (promoCode.length < 3) {
             this.updatePromoStatus('error', 'Промо код должен содержать минимум 3 символа');
             return;
         }
         
-        // Сохраняем промо код локально
         localStorage.setItem('verdikt_promo_code', promoCode);
         
-        // Обновляем статус
         this.updatePromoStatus('success', `Промо код "${promoCode}" успешно применен!`);
         
-        // Очищаем поле ввода после успешного применения
         setTimeout(() => {
             profilePromoInput.value = promoCode;
         }, 100);
@@ -2474,7 +2395,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         const bioDisplayText = document.getElementById('profile-bio-display-text');
         if (bioDisplayText) {
             if (bio && bio.trim()) {
-                // Экранируем HTML для безопасности
                 const escapedBio = bio
                     .replace(/&/g, '&amp;')
                     .replace(/</g, '&lt;')
@@ -2494,7 +2414,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             return;
         }
         
-        // Обновляем отображение профиля в новом формате
         const displayName = document.getElementById('profile-display-name');
         const displayEmail = document.getElementById('profile-display-email');
         const profileAvatar = document.querySelector('.profile-avatar');
@@ -2507,7 +2426,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         }
         const avatarDisplay = document.getElementById('profile-avatar-display');
         if (avatarDisplay) {
-            // Загружаем сохраненную аватарку или генерируем инициалы
             const savedAvatar = localStorage.getItem('verdikt_user_avatar');
             if (savedAvatar) {
                 avatarDisplay.style.backgroundImage = `url(${savedAvatar})`;
@@ -2516,7 +2434,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                     this.state.user.avatar = savedAvatar;
                 }
             } else if (this.state.user && this.state.user.name) {
-                // Генерируем инициалы из имени
                 const initials = this.state.user.name
                     .split(' ')
                     .map(word => word[0])
@@ -2528,7 +2445,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             }
         }
         
-        // Загружаем и отображаем описание профиля
         const savedBio = localStorage.getItem('verdikt_user_bio') || '';
         if (this.state.user) {
             this.state.user.bio = savedBio;
@@ -2540,7 +2456,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             profileBioInput.value = savedBio;
         }
         
-        // Загружаем промо код
         const profilePromoInput = document.getElementById('profile-promo-input');
         const savedPromo = localStorage.getItem('verdikt_promo_code') || '';
         if (profilePromoInput) {
@@ -2556,7 +2471,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             }
         }
         
-        // Устанавливаем активную тему
         const currentTheme = localStorage.getItem('verdikt_theme') || 'dark';
         const themeOptions = document.querySelectorAll('.theme-option-profile');
         themeOptions.forEach(option => {
@@ -2565,14 +2479,12 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             }
         });
         
-        // Устанавливаем активную подписку
         const currentSubscription = localStorage.getItem('verdikt_user_subscription') || 'free';
         const subscriptionCard = document.querySelector(`.subscription-card-profile[data-subscription="${currentSubscription}"]`);
         if (subscriptionCard) {
             subscriptionCard.classList.add('active');
         }
         
-        // Устанавливаем активный режим AI
         const currentAIMode = localStorage.getItem('verdikt_ai_mode') || this.state.currentMode || 'balanced';
         const modeItems = document.querySelectorAll('.mode-item-settings');
         modeItems.forEach(item => {
@@ -2581,7 +2493,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             }
         });
         
-        // Загружаем температуру из localStorage
         const savedTemperature = localStorage.getItem('verdikt_temperature');
         if (savedTemperature) {
             this.API_CONFIG.temperature = parseFloat(savedTemperature);
@@ -2591,7 +2502,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             if (tempValue) tempValue.textContent = this.API_CONFIG.temperature;
         }
         
-        // Старые поля формы (если они еще используются)
         const profileNameInput = document.getElementById('profile-name');
         const profileEmailInput = document.getElementById('profile-email');
         if (profileNameInput) profileNameInput.value = this.state.user.name || '';
@@ -2696,10 +2606,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         }
     }
 
-    // ==================== ОСНОВНЫЕ ФУНКЦИИ ЧАТА ====================
-
     setupEventListeners() {
-        // Send button (if exists)
         if (this.elements.sendButton) {
             this.elements.sendButton.addEventListener('click', () => {
                 if (!this.state.isResponding) {
@@ -2717,7 +2624,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             });
         }
         
-        // Enter key to send message
         if (!this.elements.messageInput) {
             console.error('messageInput element not found');
             return;
@@ -2726,12 +2632,10 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         this.elements.messageInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                // Блокируем отправку, если ИИ отвечает
                 if (!this.state.isResponding) {
                     this.sendMessage();
                 }
             } else if (e.key === 'Enter' && e.shiftKey) {
-                // Allow Shift+Enter for new line
                 return;
             }
         });
@@ -2740,13 +2644,8 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             this.elements.voiceInput.addEventListener('click', () => this.toggleVoiceRecording());
         }
         
-        // Обработчики для режимов AI теперь настраиваются в setupProfileSettings()
-        // Этот код выполняется при инициализации, когда элементы могут еще не существовать
-        
-        // Grok-style AI Mode Selector
         this.setupGrokModeSelector();
         
-        // Обработчики для примеров вопросов (если они существуют)
         const exampleButtons = document.querySelectorAll('.example-button');
         if (exampleButtons.length > 0) {
             exampleButtons.forEach(btn => {
@@ -2764,7 +2663,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         if (this.elements.newChat) {
             this.elements.newChat.addEventListener('click', () => this.createNewChat());
         }
-        // Кнопка настроек удалена - настройки теперь в профиле
         if (this.elements.presentationMode) {
             this.elements.presentationMode.addEventListener('click', () => this.togglePresentationMode());
         }
@@ -2857,8 +2755,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             });
         }
         
-        // Обработчик для слайдера температуры теперь в setupProfileSettings()
-        // Эти элементы больше не находятся в this.elements, так как они в настройках профиля
         const temperatureSlider = document.getElementById('temperature-slider');
         const temperatureValue = document.getElementById('temperature-value');
         if (temperatureSlider && temperatureValue) {
@@ -2869,7 +2765,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             });
         }
         
-        // Обработчики для выбора темы (если элементы существуют)
         const themeOptions = document.querySelectorAll('.theme-option');
         if (themeOptions.length > 0) {
             themeOptions.forEach(theme => {
@@ -2883,7 +2778,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             });
         }
         
-        // Обработчики для опций экспорта (если модальное окно существует)
         const exportOptions = document.querySelectorAll('#export-modal .export-option');
         if (exportOptions.length > 0) {
             exportOptions.forEach(option => {
@@ -2894,8 +2788,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             });
         }
         
-        // Обработчики для старого модального окна настроек больше не нужны
-        // Все настройки теперь в профиле
         if (this.elements.exportClose) {
             this.elements.exportClose.addEventListener('click', () => this.hideModal('export-modal'));
         }
@@ -2917,12 +2809,10 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         }
         
         if (this.elements.messageInput) {        
-        if (this.elements.messageInput) {
             this.elements.messageInput.addEventListener('input', () => {
                 this.elements.messageInput.style.height = 'auto';
                 this.elements.messageInput.style.height = Math.min(this.elements.messageInput.scrollHeight, 200) + 'px';
             });
-        }
         }
         
         window.addEventListener('online', () => this.updateOnlineStatus(true));
@@ -2959,11 +2849,9 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             });
         }
 
-        // Обработчик клика на сферу для показа/скрытия кнопок выбора
         const animatedSphere = document.querySelector('.animated-sphere');
         if (animatedSphere) {
             animatedSphere.addEventListener('click', (e) => {
-                // Не активируем, если клик был по кнопке
                 if (e.target.closest('.hero-chip')) {
                     return;
                 }
@@ -2974,14 +2862,13 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         const chips = document.querySelectorAll('.hero-chip');
         chips.forEach(chip => {
             chip.addEventListener('click', (e) => {
-                e.stopPropagation(); // Предотвращаем закрытие при клике на кнопку
+                e.stopPropagation();
                 const question = chip.dataset.question;
                 if (question) {
                     this.elements.messageInput.value = question;
                     this.elements.messageInput.focus();
                     this.elements.messageInput.style.height = 'auto';
                     this.elements.messageInput.style.height = Math.min(this.elements.messageInput.scrollHeight, 200) + 'px';
-                    // Закрываем кнопки после выбора
                     if (animatedSphere) {
                         animatedSphere.classList.remove('active');
                     }
@@ -2989,7 +2876,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             });
         });
 
-        // НОВЫЙ ОБРАБОТЧИК ДЛЯ ЗАКРЫТИЯ ПОДПИСОК
         if (this.elements.subscriptionClose) {
             this.elements.subscriptionClose.addEventListener('click', () => {
                 this.hideModal('subscription-modal');
@@ -2998,7 +2884,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     }
 
     async sendMessage() {
-        // Блокируем отправку, если ИИ уже отвечает
         if (this.state.isResponding) {
             return;
         }
@@ -3021,11 +2906,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 return;
             }
         }
-        
-        //if (!this.isTopicRelevant(message)) {
-            this.showNotification('Я специализируюсь только на отношениях, знакомствах и манипуляциях.', 'warning');
-            //return;
-        //}
 
         if (!this.API_CONFIG.apiKey) {
             this.showNotification('Пожалуйста, настройте API ключ в настройках', 'error');
@@ -3057,11 +2937,8 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         
         this.addMessage(message, 'user');
         
-       // Получаем расширенный анализ сообщения
         const userAnalysis = this.analyzeUserType(message);
         
-        // Добавляем к сообщению контекст из анализа, если он есть
-        // Используем новый userAnalysis.context, который мы сформировали
         const enhancedMessage = message + (userAnalysis.context ? userAnalysis.context : '');
         
         this.state.conversationHistory.push({ role: "user", content: enhancedMessage });
@@ -3079,7 +2956,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         this.elements.messageInput.value = '';
         this.elements.messageInput.style.height = 'auto';
         
-        // Устанавливаем состояние ответа и блокируем интерфейс
         this.state.isResponding = true;
         this.updateSendButtonState();
         this.elements.messageInput.disabled = true;
@@ -3110,12 +2986,12 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             this.state.stats.totalMessages++;
             this.state.stats.aiMessages++;
             
-           if (this.state.conversationHistory.length > 50) {
-    this.state.conversationHistory = [
-        this.state.conversationHistory[0],
-        ...this.state.conversationHistory.slice(-48)
-    ];
-}
+            if (this.state.conversationHistory.length > 50) {
+                this.state.conversationHistory = [
+                    this.state.conversationHistory[0],
+                    ...this.state.conversationHistory.slice(-48)
+                ];
+            }
             
             this.showNotification(`Ответ получен за ${responseTime.toFixed(1)}с ✅`, 'success');
 
@@ -3165,7 +3041,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 }, 1000);
             }
         } finally {
-            // Разблокируем интерфейс после завершения ответа
             this.state.isResponding = false;
             this.updateSendButtonState();
             this.elements.messageInput.disabled = false;
@@ -3182,14 +3057,12 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         if (!icon) return;
         
         if (this.state.isResponding) {
-            // Меняем иконку на паузу
             icon.className = 'fas fa-pause';
             sendButton.title = 'ИИ отвечает...';
             sendButton.disabled = true;
             sendButton.style.opacity = '0.7';
             sendButton.style.cursor = 'not-allowed';
         } else {
-            // Возвращаем иконку отправки
             icon.className = 'fas fa-paper-plane';
             sendButton.title = 'Отправить сообщение';
             sendButton.disabled = false;
@@ -3340,7 +3213,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             if (index >= fullText.length) {
                 contentEl.innerHTML = this.formatMessage(fullText);
                 messageElement.classList.remove('ai-message-typing');
-                // Добавляем блок оценки ответа ИИ после контента (перед message-time)
                 const timeEl = messageElement.querySelector('.message-time');
                 if (timeEl && !messageElement.querySelector('.message-feedback')) {
                     const feedbackDiv = document.createElement('div');
@@ -3446,7 +3318,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             activeMode.classList.add('active');
         }
         
-        // Update Grok mode selector UI
         this.updateGrokModeSelector(modeId);
         
         this.showNotification(`Режим изменен на: ${this.state.aiModes[modeId].name}`, 'info');
@@ -3479,21 +3350,18 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             }
         };
         
-        // Кнопка: сворачивает и разворачивает список режимов
         modeSelector.addEventListener('click', (e) => {
             e.stopPropagation();
             const isOpen = modeDropdown.classList.contains('show');
             setDropdownOpen(!isOpen);
         });
         
-        // Клик вне области — сворачиваем список
         document.addEventListener('click', (e) => {
             if (wrapper && !wrapper.contains(e.target)) {
                 setDropdownOpen(false);
             }
         });
         
-        // Выбор режима — применяем и сворачиваем список
         modeDropdown.querySelectorAll('.mode-dropdown-item').forEach(item => {
             item.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -3514,7 +3382,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         
         if (!modeSelector || !modeDropdown) return;
         
-        // Update dropdown items
         modeDropdown.querySelectorAll('.mode-dropdown-item').forEach(item => {
             item.classList.remove('active');
             const checkIcon = item.querySelector('.mode-item-check');
@@ -3532,7 +3399,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         });
     }
 
-    /** Подсказки в стиле Т9 при вводе */
     static T9_PHRASES = [
         'Как распознать манипуляцию в отношениях?',
         'Как правильно вести себя на первом свидании?',
@@ -3730,7 +3596,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         localStorage.setItem('verdikt_theme', theme);
         this.saveChats();
         
-        // Отправляем на бэкенд только если пользователь авторизован, не из сервера и не пропущен флаг skipBackend
         if (this.state.user && !fromServer && !skipBackend) {
             const url = `${this.AUTH_CONFIG.baseUrl}/api/users/me/settings`;
             fetch(url, {
@@ -3741,7 +3606,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             }).catch(() => {});
         }
         
-        // Показываем уведомление только если не из сервера и не пропущен флаг skipBackend
         if (!fromServer && !skipBackend) {
             this.showNotification(`Тема изменена: ${theme}`, 'info');
         }
@@ -3763,8 +3627,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             if (savedTheme) this.setTheme(savedTheme, { fromServer: true });
         }
     }
-
-    // ==================== СИСТЕМА УВЕДОМЛЕНИЙ ====================
 
     showNotification(text, type = 'info') {
         if (this.state.doNotDisturb) {
@@ -3823,8 +3685,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         }
     }
 
-    // ==================== ЛОКАЛЬНОЕ ХРАНИЛИЩЕ ====================
-
     loadFromLocalStorage() {
         const encryptionSetup = localStorage.getItem('verdikt_encryption_setup');
         
@@ -3852,8 +3712,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     async saveToLocalStorage() {
         await this.saveChats();
     }
-
-    // ==================== АДМИН-РЕЖИМ ====================
 
     setupAdminMode() {
         const btn = this.elements.adminModeToggle;
@@ -3921,8 +3779,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         });
     }
 
-    // ==================== АВТОРИЗАЦИЯ ====================
-
     loadUserFromStorage() {
         try {
             const userJson = localStorage.getItem('verdikt_user');
@@ -3974,20 +3830,19 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     }
 
     setUser(user, _token) {
-    this.state.user = user;
-    this.state.authToken = null;
-    this.saveUserToStorage();
-    this.updateAuthUI();
-    this.updateSidebarInfo();
-    
-    // ДОБАВЬТЕ ЭТОТ КОД - перепроверяем статус API при смене пользователя
-    if (user) {
-        setTimeout(() => {
-            this.checkApiStatus(); // перепроверим статус API с новой подпиской
-            this.loadDashboardData();
-        }, 1000);
+        this.state.user = user;
+        this.state.authToken = null;
+        this.saveUserToStorage();
+        this.updateAuthUI();
+        this.updateSidebarInfo();
+        
+        if (user) {
+            setTimeout(() => {
+                this.checkApiStatus();
+                this.loadDashboardData();
+            }, 1000);
+        }
     }
-}
 
     async logout() {
         try {
@@ -4194,193 +4049,175 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     }
 
     showTypingIndicator() {
-    if (this.state.doNotDisturb) return;
-    const indicator = this.elements.typingIndicator;
-    if (indicator) {
-        indicator.classList.add('visible');
-        this.scrollToBottom();
+        if (this.state.doNotDisturb) return;
+        const indicator = this.elements.typingIndicator;
+        if (indicator) {
+            indicator.classList.add('visible');
+            this.scrollToBottom();
+        }
     }
-}
 
-hideTypingIndicator() {
-    const indicator = this.elements.typingIndicator;
-    if (indicator) {
-        indicator.classList.remove('visible');
+    hideTypingIndicator() {
+        const indicator = this.elements.typingIndicator;
+        if (indicator) {
+            indicator.classList.remove('visible');
+        }
     }
-}
 
-showApiLoadingEffect() {
-    const overlay = document.getElementById('api-loading-overlay');
-    if (overlay) {
-        overlay.classList.add('active');
+    showApiLoadingEffect() {
+        const overlay = document.getElementById('api-loading-overlay');
+        if (overlay) {
+            overlay.classList.add('active');
+        }
     }
-}
 
-hideApiLoadingEffect() {
-    const overlay = document.getElementById('api-loading-overlay');
-    if (overlay) {
-        overlay.classList.remove('active');
+    hideApiLoadingEffect() {
+        const overlay = document.getElementById('api-loading-overlay');
+        if (overlay) {
+            overlay.classList.remove('active');
+        }
     }
-}
 
-syncInputPosition() {
-    const heroBlock = document.getElementById('hero-block');
-    const chatContainer = document.querySelector('.chat-container');
-    if (heroBlock && chatContainer) {
-        const isCentered = heroBlock.style.display !== 'none';
-        chatContainer.classList.toggle('input-centered', isCentered);
+    syncInputPosition() {
+        const heroBlock = document.getElementById('hero-block');
+        const chatContainer = document.querySelector('.chat-container');
+        if (heroBlock && chatContainer) {
+            const isCentered = heroBlock.style.display !== 'none';
+            chatContainer.classList.toggle('input-centered', isCentered);
+        }
     }
-}
 
-updateSphereApiState(state) {
-    // Пробуем найти сферу несколько раз с задержкой, если она еще не загрузилась
-    let sphere = document.querySelector('.animated-sphere');
-    
-    if (!sphere) {
-        // Если сфера не найдена, пробуем еще раз через небольшую задержку
-        setTimeout(() => {
-            sphere = document.querySelector('.animated-sphere');
-            if (sphere) {
-                this.applySphereApiState(sphere, state);
-            }
-        }, 100);
-        return;
-    }
-    
-    this.applySphereApiState(sphere, state);
-}
-
-applySphereApiState(sphere, state) {
-    if (!sphere) return;
-    
-    // Удаляем все предыдущие классы состояний
-    sphere.classList.remove('api-connecting', 'api-connected', 'api-error', 'api-not-configured');
-    
-    // Добавляем новый класс состояния
-    switch(state) {
-        case 'connecting':
-            sphere.classList.add('api-connecting');
-            this.startStarSuction(sphere);
-            break;
-        case 'connected':
-            sphere.classList.add('api-connected');
-            this.startStarSuction(sphere);
-            // Сфера должна светиться зеленым постоянно при подключении
-            // Не убираем класс api-connected
-            break;
-        case 'error':
-            sphere.classList.add('api-error');
-            this.startStarSuction(sphere);
-            break;
-        case 'not-configured':
-            sphere.classList.add('api-not-configured');
-            this.stopStarSuction();
-            break;
-        default:
-            this.stopStarSuction();
-            break;
-    }
-}
-
-startStarSuction(sphere) {
-    // Останавливаем предыдущий интервал, если он существует
-    if (this.starSuctionInterval) {
-        clearInterval(this.starSuctionInterval);
-    }
-    
-    const starContainer = sphere.querySelector('.sphere-star-suction');
-    if (!starContainer) return;
-    
-    // Очищаем предыдущие звезды
-    starContainer.innerHTML = '';
-    
-    // Функция создания звезды со спиральным движением
-    const createStar = () => {
-        const star = document.createElement('div');
-        star.className = 'star-suction-particle';
+    updateSphereApiState(state) {
+        let sphere = document.querySelector('.animated-sphere');
         
-        // Генерируем случайную позицию на краю контейнера (вокруг сферы)
-        const startAngle = Math.random() * Math.PI * 2;
-        const startDistance = 225 + Math.random() * 100; // Расстояние от центра (225-325px) для сферы 500px
-        const startX = Math.cos(startAngle) * startDistance;
-        const startY = Math.sin(startAngle) * startDistance;
-        
-        // Устанавливаем начальную позицию
-        star.style.left = '50%';
-        star.style.top = '50%';
-        star.style.transform = `translate(${startX}px, ${startY}px)`;
-        
-        // Количество оборотов спирали (2-4 оборота)
-        const rotations = 2 + Math.random() * 2;
-        const duration = 2 + Math.random() * 0.5; // Длительность анимации 2-2.5 секунды
-        
-        // Создаем keyframes для спирального движения
-        const animationName = `starSuction_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const styleSheet = document.createElement('style');
-        
-        // Генерируем ключевые кадры для спирального движения
-        const keyframes = [];
-        const steps = 20;
-        for (let i = 0; i <= steps; i++) {
-            const progress = i / steps;
-            const currentAngle = startAngle + (rotations * Math.PI * 2 * progress);
-            const currentDistance = startDistance * (1 - progress); // Уменьшаем расстояние к центру
-            const currentX = Math.cos(currentAngle) * currentDistance;
-            const currentY = Math.sin(currentAngle) * currentDistance;
-            const scale = 1 - progress * 0.9; // Уменьшаем размер
-            const opacity = progress < 0.1 ? progress * 10 : (progress > 0.9 ? (1 - progress) * 10 : 1);
-            
-            keyframes.push(`
-                ${progress * 100}% {
-                    opacity: ${opacity};
-                    transform: translate(${currentX}px, ${currentY}px) scale(${scale});
+        if (!sphere) {
+            setTimeout(() => {
+                sphere = document.querySelector('.animated-sphere');
+                if (sphere) {
+                    this.applySphereApiState(sphere, state);
                 }
-            `);
+            }, 100);
+            return;
         }
         
-        styleSheet.textContent = `
-            @keyframes ${animationName} {
-                ${keyframes.join('\n')}
-            }
-            .star-suction-particle.${animationName} {
-                animation: ${animationName} ${duration}s ease-in forwards;
-            }
-        `;
-        document.head.appendChild(styleSheet);
-        star.classList.add(animationName);
-        
-        starContainer.appendChild(star);
-        
-        // Удаляем звезду и стили после анимации
-        setTimeout(() => {
-            star.remove();
-            styleSheet.remove();
-        }, duration * 1000 + 100);
-    };
-    
-    // Создаем звезды периодически
-    this.starSuctionInterval = setInterval(() => {
-        createStar();
-    }, 250); // Новая звезда каждые 250мс для более плавного эффекта
-}
+        this.applySphereApiState(sphere, state);
+    }
 
-stopStarSuction() {
-    if (this.starSuctionInterval) {
-        clearInterval(this.starSuctionInterval);
-        this.starSuctionInterval = null;
+    applySphereApiState(sphere, state) {
+        if (!sphere) return;
+        
+        sphere.classList.remove('api-connecting', 'api-connected', 'api-error', 'api-not-configured');
+        
+        switch(state) {
+            case 'connecting':
+                sphere.classList.add('api-connecting');
+                this.startStarSuction(sphere);
+                break;
+            case 'connected':
+                sphere.classList.add('api-connected');
+                this.startStarSuction(sphere);
+                break;
+            case 'error':
+                sphere.classList.add('api-error');
+                this.startStarSuction(sphere);
+                break;
+            case 'not-configured':
+                sphere.classList.add('api-not-configured');
+                this.stopStarSuction();
+                break;
+            default:
+                this.stopStarSuction();
+                break;
+        }
     }
-    
-    // Очищаем контейнер звезд
-    const starContainer = document.querySelector('.sphere-star-suction');
-    if (starContainer) {
+
+    startStarSuction(sphere) {
+        if (this.starSuctionInterval) {
+            clearInterval(this.starSuctionInterval);
+        }
+        
+        const starContainer = sphere.querySelector('.sphere-star-suction');
+        if (!starContainer) return;
+        
         starContainer.innerHTML = '';
+        
+        const createStar = () => {
+            const star = document.createElement('div');
+            star.className = 'star-suction-particle';
+            
+            const startAngle = Math.random() * Math.PI * 2;
+            const startDistance = 225 + Math.random() * 100;
+            const startX = Math.cos(startAngle) * startDistance;
+            const startY = Math.sin(startAngle) * startDistance;
+            
+            star.style.left = '50%';
+            star.style.top = '50%';
+            star.style.transform = `translate(${startX}px, ${startY}px)`;
+            
+            const rotations = 2 + Math.random() * 2;
+            const duration = 2 + Math.random() * 0.5;
+            
+            const animationName = `starSuction_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const styleSheet = document.createElement('style');
+            
+            const keyframes = [];
+            const steps = 20;
+            for (let i = 0; i <= steps; i++) {
+                const progress = i / steps;
+                const currentAngle = startAngle + (rotations * Math.PI * 2 * progress);
+                const currentDistance = startDistance * (1 - progress);
+                const currentX = Math.cos(currentAngle) * currentDistance;
+                const currentY = Math.sin(currentAngle) * currentDistance;
+                const scale = 1 - progress * 0.9;
+                const opacity = progress < 0.1 ? progress * 10 : (progress > 0.9 ? (1 - progress) * 10 : 1);
+                
+                keyframes.push(`
+                    ${progress * 100}% {
+                        opacity: ${opacity};
+                        transform: translate(${currentX}px, ${currentY}px) scale(${scale});
+                    }
+                `);
+            }
+            
+            styleSheet.textContent = `
+                @keyframes ${animationName} {
+                    ${keyframes.join('\n')}
+                }
+                .star-suction-particle.${animationName} {
+                    animation: ${animationName} ${duration}s ease-in forwards;
+                }
+            `;
+            document.head.appendChild(styleSheet);
+            star.classList.add(animationName);
+            
+            starContainer.appendChild(star);
+            
+            setTimeout(() => {
+                star.remove();
+                styleSheet.remove();
+            }, duration * 1000 + 100);
+        };
+        
+        this.starSuctionInterval = setInterval(() => {
+            createStar();
+        }, 250);
     }
-}
+
+    stopStarSuction() {
+        if (this.starSuctionInterval) {
+            clearInterval(this.starSuctionInterval);
+            this.starSuctionInterval = null;
+        }
+        
+        const starContainer = document.querySelector('.sphere-star-suction');
+        if (starContainer) {
+            starContainer.innerHTML = '';
+        }
+    }
 
     updateUI() {
         this.updateSettingsStats();
         this.updateSidebarInfo();
-        // Update Grok mode selector if it exists
         if (this.state.currentMode) {
             this.updateGrokModeSelector(this.state.currentMode);
         }
@@ -4494,8 +4331,6 @@ stopStarSuction() {
         }
     }
 
-    // ==================== МОДАЛЬНЫЕ ОКНА ====================
-
     showModal(modalId) {
         document.getElementById(modalId).classList.add('active');
         document.body.style.overflow = 'hidden';
@@ -4507,8 +4342,6 @@ stopStarSuction() {
     }
 
     showSettingsModal() {
-        // Функция больше не используется - настройки теперь в профиле
-        // Открываем настройки профиля вместо старого модального окна
         this.showProfileSettingsModal();
     }
 
@@ -4727,8 +4560,6 @@ stopStarSuction() {
         });
     }
 
-    // ==================== ПРОЧИЕ ФУНКЦИИ ====================
-
     setupSpeechRecognition() {
         if (this.SpeechRecognition) {
             this.recognition = new this.SpeechRecognition();
@@ -4818,8 +4649,6 @@ stopStarSuction() {
         const cores = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
             ? navigator.hardwareConcurrency
             : 2;
-        // По запросу: не ограничиваем анимации даже на "слабых" устройствах
-        // и не учитываем prefers-reduced-motion для отключения анимаций.
         return { cores, reducedMotion: false, isLowEnd: false };
     }
 
@@ -5050,8 +4879,6 @@ stopStarSuction() {
     }
 
     saveSettings() {
-        // Настройки теперь сохраняются автоматически при изменении
-        // Эта функция оставлена для совместимости
         const temperatureSlider = document.getElementById('temperature-slider');
         if (temperatureSlider) {
             const temperature = parseFloat(temperatureSlider.value);
@@ -5238,8 +5065,6 @@ stopStarSuction() {
             setTimeout(() => particle.remove(), 1500);
         }
     }
-
-    // ==================== ИМПОРТ/ЭКСПОРТ ====================
 
     setupImportListeners() {
         this.elements.importDropzone.addEventListener('click', () => {
@@ -6061,7 +5886,6 @@ stopStarSuction() {
         `).join('');
     }
 
-    /** Аналитика оценок: при авторизации — с бэкенда, иначе — локально. */
     async renderAnalytics() {
         const data = await this.loadFeedbackAnalyticsFromBackend();
         if (this.state.user && data) {
@@ -6082,7 +5906,6 @@ stopStarSuction() {
         this.createAnalyticsChart();
     }
 
-    /** Активность: при авторизации — из бэкенда (recent), иначе — из локальных оценок. */
     renderActivity() {
         const activityList = document.getElementById('activity-list');
         if (!activityList) return;
@@ -6601,7 +6424,6 @@ stopStarSuction() {
         navigator.vibrate(30);
     }
 
-    /** График по данным с бэкенда (last14Days: [{ label, useful, notUseful }]). */
     createAnalyticsChartFromBackend(last14Days) {
         const ctx = document.getElementById('analytics-chart')?.getContext('2d');
         if (!ctx) return;
@@ -6630,7 +6452,6 @@ stopStarSuction() {
         });
     }
 
-    /** График по локальным оценкам ответов ИИ (гости или fallback). */
     createAnalyticsChart() {
         const ctx = document.getElementById('analytics-chart')?.getContext('2d');
         if (!ctx) return;
@@ -7001,9 +6822,7 @@ stopStarSuction() {
         });
     }
 
-    
     setupHeroChips() {
-        // Этот метод вызывается в init(), но не определен
         console.log('Hero chips initialized');
     }
 
@@ -7053,15 +6872,5 @@ stopStarSuction() {
                 }
             });
         });
-
-        this._updateSubscriptionButtons = updateSubscriptionButtons;
-    } // Закрытие метода setupSubscriptionModal
-} // Закрытие класса VerdiktChatApp
-
-// Глобальная функция для обновления кнопок подписок (если нужна)
-function updateSubscriptionButtons() {
-    // Логика обновления кнопок подписок
-    console.log('Subscription buttons updated');
+    }
 }
-
-    
