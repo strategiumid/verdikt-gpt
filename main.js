@@ -6,7 +6,7 @@ import { AuthService } from './authService.js';
 
 // Основной класс 
 export class VerdiktChatApp {
-      // Статические словари для анализа тональности
+    // Статические словари для анализа тональности
     static NEGATIVE_WORDS = [
         'устал', 'устала', 'больно', 'плохо', 'грустно', 'тоска', 'одиноко', 'депрессия',
         'ненавижу', 'бесит', 'раздражает', 'обидно', 'обида', 'страшно', 'тревожно',
@@ -24,34 +24,15 @@ export class VerdiktChatApp {
         '!!!!', '???', 'Срочно', 'немедленно', 'помогите', 'спасите', 'крик души',
         'почему', 'зачем', 'когда же', 'сколько можно'
     ];
+
     constructor() {
-        getAPIConfigForUser() {
-    // Базовая конфигурация (по умолчанию)
-    const defaultConfig = {
-        url: 'https://routerai.ru/api/v1/chat/completions',
-        model: 'stepfun/step-3.5-flash',
-        apiKey: "sk-ayshgI6SUUplUxB0ocKzEQ1IK73mbdql"
-    };
-    
-    // Конфигурация для Ultimate подписки
-    const ultimateConfig = {
-        url: 'https://routerai.ru/api/v1/chat/completions', // тот же URL
-        model: 'deepseek/deepseek-v3.2',
-        apiKey: "sk-LJTwkqk_kTbSO0_h39nc5i6UElbsdfmF"
-    };
-    
-    // Проверяем, есть ли пользователь и его подписка
-    if (this.state.user) {
-        const subscription = (this.state.user.subscription || '').toLowerCase();
-        if (subscription === 'ultimate') {
-            console.log('🎯 Ultimate подписка: используем модель Ultimate');
-            return ultimateConfig;
-        }
-    }
-    
-    // Для всех остальных случаев используем стандартную конфигурацию
-    return defaultConfig;
-}
+        this.API_CONFIG = {
+            url: 'https://routerai.ru/api/v1/chat/completions',
+            model: 'stepfun/step-3.5-flash', 
+            maxTokens: 1700,
+            temperature: 0.8,
+            apiKey: "sk-ayshgI6SUUplUxB0ocKzEQ1IK73mbdql"
+        };
 
         this.AUTH_CONFIG = {
             baseUrl: (window && window.VERDIKT_BACKEND_URL) || window.location.origin,
@@ -263,6 +244,39 @@ export class VerdiktChatApp {
         // Старые вкладки настроек больше не используются
     }
 
+    // ============ НОВЫЙ МЕТОД (ДОБАВЬТЕ ПОСЛЕ КОНСТРУКТОРА) ============
+    /**
+     * ПОЛУЧЕНИЕ КОНФИГУРАЦИИ API В ЗАВИСИМОСТИ ОТ ПОДПИСКИ ПОЛЬЗОВАТЕЛЯ
+     * Если у пользователя подписка Ultimate - используем DeepSeek V3.2
+     * Для всех остальных - стандартную модель
+     */
+    getAPIConfigForUser() {
+        // Базовая конфигурация (по умолчанию)
+        const defaultConfig = {
+            url: 'https://routerai.ru/api/v1/chat/completions',
+            model: 'stepfun/step-3.5-flash',
+            apiKey: "sk-ayshgI6SUUplUxB0ocKzEQ1IK73mbdql"
+        };
+        
+        // Конфигурация для Ultimate подписки
+        const ultimateConfig = {
+            url: 'https://routerai.ru/api/v1/chat/completions',
+            model: 'deepseek/deepseek-v3.2',
+            apiKey: "sk-LJTwkqk_kTbSO0_h39nc5i6UElbsdfmF"
+        };
+        
+        // Проверяем, есть ли пользователь и его подписка
+        if (this.state && this.state.user) {
+            const subscription = (this.state.user.subscription || '').toLowerCase();
+            if (subscription === 'ultimate') {
+                console.log('🎯 Ultimate подписка: используем модель DeepSeek V3.2');
+                return ultimateConfig;
+            }
+        }
+        
+        // Для всех остальных случаев используем стандартную конфигурацию
+        return defaultConfig;
+    }
     createSystemPromptMessage() {
         const instructions = this.state?.instructions || '';
         
@@ -7043,8 +7057,4 @@ stopStarSuction() {
         this._updateSubscriptionButtons = updateSubscriptionButtons;
     }
 
-    showSubscriptionModal() {
-        this.showModal('subscription-modal');
-        if (this._updateSubscriptionButtons) this._updateSubscriptionButtons();
-    }
-}
+    
