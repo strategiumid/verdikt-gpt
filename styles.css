@@ -6382,3 +6382,18 @@ footer {
 .subscription-card .ios-button {
     margin-top: auto;
 }
+/* Стиль для индикатора Ultimate подписки */
+.api-ultimate .api-status-dot {
+    background: #fbbf24;
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+}
+
+.api-ultimate .api-status-text {
+    color: #fbbf24;
+    font-weight: 600;
+}
+
+.api-ultimate.api-connected {
+    background: rgba(251, 191, 36, 0.08);
+    border-color: rgba(251, 191, 36, 0.2);
+}

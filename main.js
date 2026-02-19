@@ -25,13 +25,33 @@ export class VerdiktChatApp {
         'почему', 'зачем', 'когда же', 'сколько можно'
     ];
     constructor() {
-        this.API_CONFIG = {
-            url: 'https://routerai.ru/api/v1/chat/completions',
-            model: 'stepfun/step-3.5-flash', 
-            maxTokens: 1700,
-            temperature: 0.8,
-            apiKey: "sk-ayshgI6SUUplUxB0ocKzEQ1IK73mbdql"
-        };
+        getAPIConfigForUser() {
+    // Базовая конфигурация (по умолчанию)
+    const defaultConfig = {
+        url: 'https://routerai.ru/api/v1/chat/completions',
+        model: 'stepfun/step-3.5-flash',
+        apiKey: "sk-ayshgI6SUUplUxB0ocKzEQ1IK73mbdql"
+    };
+    
+    // Конфигурация для Ultimate подписки
+    const ultimateConfig = {
+        url: 'https://routerai.ru/api/v1/chat/completions', // тот же URL
+        model: 'deepseek/deepseek-v3.2',
+        apiKey: "sk-LJTwkqk_kTbSO0_h39nc5i6UElbsdfmF"
+    };
+    
+    // Проверяем, есть ли пользователь и его подписка
+    if (this.state.user) {
+        const subscription = (this.state.user.subscription || '').toLowerCase();
+        if (subscription === 'ultimate') {
+            console.log('🎯 Ultimate подписка: используем модель Ultimate');
+            return ultimateConfig;
+        }
+    }
+    
+    // Для всех остальных случаев используем стандартную конфигурацию
+    return defaultConfig;
+}
 
         this.AUTH_CONFIG = {
             baseUrl: (window && window.VERDIKT_BACKEND_URL) || window.location.origin,
