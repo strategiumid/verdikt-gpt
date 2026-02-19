@@ -34,10 +34,10 @@ export class VerdiktChatApp {
         };
  // +++ НОВОЕ: лимиты токенов +++
     this.tokenLimits = {
-        min: 1000,     // Абсолютный минимум
-        base: 1000,    // Базовое значение
-        standard: 1700, // Стандартный
-        max: 2000,    // Максимум
+        min: 500,     // Абсолютный минимум
+        base: 500,    // Базовое значение
+        standard: 1000, // Стандартный
+        max: 1500,    // Максимум
         ultra: 2400    // Экстра (только для очень сложных случаев)
     };
         this.AUTH_CONFIG = {
@@ -252,9 +252,9 @@ export class VerdiktChatApp {
 
     createSystemPromptMessage() {
         const instructions = this.state?.instructions || '';
-        const baseTokenLimit = this.API_CONFIG?.maxTokens || 1000;
-    const minTokens = this.tokenLimits?.min || 1000;
-    const maxTokens = this.tokenLimits?.max || 2400;
+        const baseTokenLimit = this.API_CONFIG?.maxTokens || 500;
+    const minTokens = this.tokenLimits?.min || 500;
+    const maxTokens = this.tokenLimits?.max || 1500;
         return {
             role: "system",
             content: `Ты — Verdikt GPT, премиум-консультант по отношениям, знакомствам и психологии манипуляций. Твой стиль: тёплый, уважительный, без осуждения, с опорой на практическую психологию и чёткую структуру.
@@ -483,16 +483,16 @@ calculateDynamicMaxTokens(message, userAnalysis) {
     
     if (wordCount < 5) {
         // Очень короткие вопросы (до 5 слов)
-        multiplier = 1; // 1000 токенов 
+        multiplier = 0.5; // 500 токенов 
     } else if (wordCount < 15) {
         // Короткие вопросы (5-15 слов)
-        multiplier = 1.4; // 1400 токенов
+        multiplier = 0.8; // 800 токенов
     } else if (wordCount < 30) {
         // Средние вопросы (15-30 слов)
-        multiplier = 1.7; // 1700 токенов
+        multiplier = 1.1; // 1100 токенов
     } else if (wordCount < 50) {
         // Длинные вопросы (30-50 слов)
-        multiplier = 2; // 2000 токенов
+        multiplier = 1.7; // 1700 токенов
     } else {
         // Очень длинные вопросы (более 50 слов)
         multiplier = 2.4; // 2400 токенов
