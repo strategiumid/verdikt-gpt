@@ -29,7 +29,7 @@ export class APIClient {
 
     // ===== routerai.ru API =====
 
-    async getAIResponse(messages) {
+    async getAIResponse(messages, maxTokens = null) {
     if (!this.apiConfig.apiKey) {
         throw new Error('API ключ не настроен. Пожалуйста, добавьте ключ в настройках.');
     }
@@ -38,17 +38,19 @@ export class APIClient {
         console.log('Отправка запроса к API...', {
             url: this.apiConfig.url,
             model: this.apiConfig.model,
-            messagesCount: messages.length
+            messagesCount: messages.length,
+            maxTokens: maxTokens || this.apiConfig.maxTokens // Логируем используемый лимит
         });
 
         // Добавляем инструкцию по форматированию в последнее сообщение
         const enhancedMessages = [...messages];
         
         // Проверяем, есть ли уже инструкция в последнем сообщении пользователя
-        const lastUserMessageIndex = [...enhancedMessages].reverse().findIndex(m => m.role === 'user');
+       const lastUserMessageIndex = [...enhancedMessages].reverse().findIndex(m => m.role === 'user');
         if (lastUserMessageIndex !== -1) {
             const actualIndex = enhancedMessages.length - 1 - lastUserMessageIndex;
             const lastUserMsg = enhancedMessages[actualIndex];
+            
             
             // Добавляем инструкцию по длине ответа, если её ещё нет
              if (!lastUserMsg.content.includes('[ФОРМАТИРОВАНИЕ]')) {
@@ -58,7 +60,7 @@ export class APIClient {
         };
     }
 }
-        const response = await fetch(this.apiConfig.url, {
+         const response = await fetch(this.apiConfig.url, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${this.apiConfig.apiKey}`,
@@ -67,7 +69,8 @@ export class APIClient {
             body: JSON.stringify({
                 model: this.apiConfig.model,
                 messages: enhancedMessages,
-                max_tokens: this.apiConfig.maxTokens,
+                // ИСПОЛЬЗУЕМ ПЕРЕДАННЫЙ maxTokens ИЛИ ЗНАЧЕНИЕ ПО УМОЛЧАНИЮ
+                max_tokens: maxTokens || this.apiConfig.maxTokens,
                 temperature: this.apiConfig.temperature,
                 stream: false
             })

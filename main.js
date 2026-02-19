@@ -249,7 +249,8 @@ export class VerdiktChatApp {
         return {
             role: "system",
             content: `Ты — Verdikt GPT, премиум-консультант по отношениям, знакомствам и психологии манипуляций. Твой стиль: тёплый, уважительный, без осуждения, с опорой на практическую психологию и чёткую структуру.
-
+**ВАЖНОЕ ОГРАНИЧЕНИЕ:**
+У тебя есть лимит на длину ответа, который может меняться от ${Math.round(baseTokenLimit * 0.6)} до ${Math.round(baseTokenLimit * 2.5)} токенов в зависимости от сложности вопроса.
 **ИДЕНТИЧНОСТЬ И ТОН**
 • Обращайся на «вы», если пользователь сам не перешёл на «ты». Сохраняй достоинство и профессионализм.
 • Поддерживай и признавай чувства, но не раздувай драму. Фокус на решении и следующих шагах.
@@ -412,7 +413,102 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 'Твоя позиция не выглядит как классическое преследование, но стратегия игнора всё равно работает на укрепление твоих позиций.'
         };
     }
+/**
+ * Вычисляет оптимальное количество max_tokens на основе сообщения пользователя
+ * @param {string} message - Сообщение пользователя
+ * @param {Object} userAnalysis - Результат анализа пользователя из analyzeUserType
+ * @returns {number} - Оптимальное количество токенов
+ */
+calculateDynamicMaxTokens(message, userAnalysis) {
+    const baseTokens = this.API_CONFIG.maxTokens; // 1000 по умолчанию
+    
+    // 1. Анализируем длину сообщения
+    const wordCount = message.split(/\s+/).length;
+    const charCount = message.length;
+    
+    // 2. Анализируем сложность по ключевым словам
+    const messageLower = message.toLowerCase();
+    const complexityKeywords = [
+        'подробно', 'детально', 'развернуто', 'объясни', 'расскажи все',
+        'ситуация', 'история', 'случилось', 'произошло', 'отношения',
+        'как быть', 'что делать', 'посоветуй', 'помоги разобраться'
+    ];
+    
+    // Считаем количество ключевых слов сложности
+    const complexityScore = complexityKeywords.reduce((score, keyword) => {
+        return score + (messageLower.includes(keyword) ? 1 : 0);
+    }, 0);
+    
+    // 3. Определяем множитель на основе длины и сложности
+    let multiplier = 1.0;
+    
+    // Короткие вопросы (до 10 слов) - экономим токены
+    if (wordCount < 10 && complexityScore === 0) {
+        multiplier = 0.6; // 600 токенов
+    }
+    // Средние вопросы (10-30 слов)
+    else if (wordCount < 30) {
+        multiplier = 1.0; // 1000 токенов
+    }
+    // Длинные вопросы (30-80 слов)
+    else if (wordCount < 80) {
+        multiplier = 1.5; // 1500 токенов
+    }
+    // Очень длинные вопросы (более 80 слов)
+    else {
+        multiplier = 2.0; // 2000 токенов
+    }
+    
+    // Увеличиваем множитель, если есть ключевые слова сложности
+    if (complexityScore > 0) {
+        multiplier += 0.2 * complexityScore;
+    }
+    
+    // Учитываем эмоциональное состояние пользователя
+    if (userAnalysis.emotionalState === 'negative' && userAnalysis.exhaustionState === 'exhausted') {
+        // Если пользователь в тяжелом состоянии, даем чуть больше места для поддержки
+        multiplier += 0.3;
+    }
+    
+    // Учитываем, включен ли режим поиска (требует больше места для ответа с источниками)
+    if (this.state.searchModeEnabled) {
+        multiplier += 0.3;
+    }
+    
+    // Ограничиваем множитель разумными пределами (минимум 0.5, максимум 2.5)
+    multiplier = Math.max(0.5, Math.min(2.5, multiplier));
+    
+    // Вычисляем финальное значение
+    const calculatedTokens = Math.round(baseTokens * multiplier);
+    
+    // Округляем до ближайшего "красивого" числа (кратного 100)
+    const roundedTokens = Math.round(calculatedTokens / 100) * 100;
+    
+    return roundedTokens;
+}
 
+/**
+ * Сжимает историю диалога для экономии токенов
+ * @param {Array} history - Полная история сообщений
+ * @param {number} maxMessages - Максимальное количество сообщений для отправки (включая system prompt)
+ * @returns {Array} - Сжатая история
+ */
+compressConversationHistory(history, maxMessages = 8) {
+    if (!history || history.length <= maxMessages) {
+        return history;
+    }
+    
+    // Всегда сохраняем system prompt (первый элемент)
+    const systemPrompt = history[0];
+    
+    // Берем последние (maxMessages - 1) сообщений из оставшейся истории
+    // (минус 1, потому что system prompt уже учтен)
+    const recentMessages = history.slice(-(maxMessages - 1));
+    
+    console.log(`📜 История сжата: ${history.length} -> ${maxMessages} сообщений`);
+    
+    return [systemPrompt, ...recentMessages];
+}
     async init() {
         this.setupCookieNotification();
         this.loadApiKey();
@@ -2952,181 +3048,192 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     }
 
     async sendMessage() {
-        // Блокируем отправку, если ИИ уже отвечает
-        if (this.state.isResponding) {
-            return;
-        }
-        
-        const message = this.elements.messageInput.value.trim();
-        
-        if (!message) {
-            this.showNotification('Введите сообщение', 'warning');
-            return;
-        }
+    // Блокируем отправку, если ИИ уже отвечает
+    if (this.state.isResponding) {
+        return;
+    }
+    
+    const message = this.elements.messageInput.value.trim();
+    
+    if (!message) {
+        this.showNotification('Введите сообщение', 'warning');
+        return;
+    }
 
-        if (!this.state.user) {
-            this.showNotification('Чтобы отправить сообщение, пожалуйста, авторизуйтесь', 'warning');
+    if (!this.state.user) {
+        this.showNotification('Чтобы отправить сообщение, пожалуйста, авторизуйтесь', 'warning');
+        return;
+    }
+    
+    if (message.startsWith('/')) {
+        if (this.handleCommand(message)) {
+            this.elements.messageInput.value = '';
             return;
         }
+    }
+
+    if (!this.API_CONFIG.apiKey) {
+        this.showNotification('Пожалуйста, настройте API ключ в настройках', 'error');
+        this.showApiSettingsModal();
+        return;
+    }
+    
+    if (!this.state.isApiConnected) {
+        this.showNotification('API не подключен. Проверьте настройки.', 'error');
+        this.checkApiStatus();
+        return;
+    }
+
+    if (this.state.user) {
+        try {
+            const baseUrl = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
+            const res = await fetch(`${baseUrl}/api/users/me/usage`, { method: 'GET', credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.used >= data.limit) {
+                    this.showNotification('Исчерпан лимит запросов на этот месяц. Смените план в «План подписок».', 'warning');
+                    return;
+                }
+            }
+        } catch (e) {
+            console.warn('Не удалось проверить лимит запросов', e);
+        }
+    }
+    
+    this.addMessage(message, 'user');
+    
+    // Получаем расширенный анализ сообщения
+    const userAnalysis = this.analyzeUserType(message);
+    
+    // Добавляем к сообщению контекст из анализа, если он есть
+    const enhancedMessage = message + (userAnalysis.context ? userAnalysis.context : '');
+    
+    this.state.conversationHistory.push({ role: "user", content: enhancedMessage });
+    this.state.messageCount++;
+    this.state.stats.totalMessages++;
+    this.state.stats.userMessages++;
+    
+    this.updateTopicStats(message);
+    
+    const currentHour = new Date().getHours();
+    this.state.stats.activityByHour[currentHour]++;
+    
+    this.checkAchievements();
+    
+    this.elements.messageInput.value = '';
+    this.elements.messageInput.style.height = 'auto';
+    
+    // Устанавливаем состояние ответа и блокируем интерфейс
+    this.state.isResponding = true;
+    this.updateSendButtonState();
+    this.elements.messageInput.disabled = true;
+    
+    try {
+        // +++ НОВАЯ ЛОГИКА: ОПРЕДЕЛЯЕМ ОПТИМАЛЬНЫЙ max_tokens +++
+        const dynamicMaxTokens = this.calculateDynamicMaxTokens(message, userAnalysis);
+        console.log(`📊 Динамический max_tokens: ${dynamicMaxTokens} (базовый: ${this.API_CONFIG.maxTokens})`);
         
-        if (message.startsWith('/')) {
-            if (this.handleCommand(message)) {
-                this.elements.messageInput.value = '';
-                return;
+        let messagesForApi = this.state.conversationHistory;
+        
+        if (this.state.searchModeEnabled) {
+            this.uiManager.showSearchingIndicator();
+            let searchContext = await this.searchWeb(message);
+            this.uiManager.hideSearchingIndicator();
+            if (searchContext) {
+                // Обрезаем контекст поиска, если он слишком длинный
+                if (searchContext.length > 1500) {
+                    searchContext = searchContext.substring(0, 1500) + '... [обрезано]';
+                }
+                
+                const lastMsg = messagesForApi[messagesForApi.length - 1];
+                const augmented = lastMsg.content + '\n\n[Пользователь включил поиск в интернете. Актуальные данные из поиска:\n' + searchContext + '\n\nОтветь с опорой на эти данные, при необходимости укажи источники.]';
+                messagesForApi = [...messagesForApi.slice(0, -1), { ...lastMsg, content: augmented }];
             }
         }
         
-        //if (!this.isTopicRelevant(message)) {
-            this.showNotification('Я специализируюсь только на отношениях, знакомствах и манипуляциях.', 'warning');
-            //return;
-        //}
-
-        if (!this.API_CONFIG.apiKey) {
-            this.showNotification('Пожалуйста, настройте API ключ в настройках', 'error');
-            this.showApiSettingsModal();
-            return;
+        // Сжимаем историю для экономии токенов
+        messagesForApi = this.compressConversationHistory(messagesForApi, 8);
+        
+        this.uiManager.showTypingIndicator();
+        const startTime = Date.now();
+        
+        // +++ ПЕРЕДАЁМ ДИНАМИЧЕСКИЙ max_tokens В API ВЫЗОВ +++
+        const aiResponse = await this.apiClient.getAIResponse(messagesForApi, dynamicMaxTokens);
+        
+        const responseTime = (Date.now() - startTime) / 1000;
+        
+        this.state.responseTimes.push(responseTime);
+        
+        this.uiManager.hideTypingIndicator();
+        
+        this.addAiMessageWithTypingEffect(aiResponse);
+        this.state.conversationHistory.push({ role: "assistant", content: aiResponse });
+        this.state.stats.totalMessages++;
+        this.state.stats.aiMessages++;
+        
+        if (this.state.conversationHistory.length > 50) {
+            this.state.conversationHistory = [
+                this.state.conversationHistory[0],
+                ...this.state.conversationHistory.slice(-48)
+            ];
         }
         
-        if (!this.state.isApiConnected) {
-            this.showNotification('API не подключен. Проверьте настройки.', 'error');
-            this.checkApiStatus();
-            return;
-        }
+        this.showNotification(`Ответ получен за ${responseTime.toFixed(1)}с ✅`, 'success');
 
         if (this.state.user) {
             try {
                 const baseUrl = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
-                const res = await fetch(`${baseUrl}/api/users/me/usage`, { method: 'GET', credentials: 'include' });
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.used >= data.limit) {
-                        this.showNotification('Исчерпан лимит запросов на этот месяц. Смените план в «План подписок».', 'warning');
-                        return;
-                    }
+                const incRes = await fetch(`${baseUrl}/api/users/me/usage/increment`, { method: 'POST', credentials: 'include' });
+                if (incRes.ok) {
+                    const data = await incRes.json();
+                    this.state.usage = { used: data.used, limit: data.limit };
+                    this.updateSidebarUsage();
+                } else if (incRes.status === 429) {
+                    this.showNotification('Лимит запросов на этот месяц исчерпан.', 'warning');
                 }
             } catch (e) {
-                console.warn('Не удалось проверить лимит запросов', e);
+                console.warn('Не удалось обновить счётчик запросов', e);
             }
         }
+
+        this.triggerHapticFeedback();
+        this.updateUI();
+        this.updateSettingsStats();
+        await this.saveChats();
+
+        if (this.state.stats.aiMessages >= 10 && !this.state.balanceShown) {
+            this.state.balanceShown = true;
+            this.showBalanceModal(true);
+        }
         
-        this.addMessage(message, 'user');
+        this.state.retryCount = 0;
         
-       // Получаем расширенный анализ сообщения
-        const userAnalysis = this.analyzeUserType(message);
+    } catch (error) {
+        this.uiManager.hideSearchingIndicator();
+        this.uiManager.hideTypingIndicator();
+        console.error('API Error:', error);
         
-        // Добавляем к сообщению контекст из анализа, если он есть
-        // Используем новый userAnalysis.context, который мы сформировали
-        const enhancedMessage = message + (userAnalysis.context ? userAnalysis.context : '');
+        let errorMessage = error.message || "Ошибка при получении ответа";
         
-        this.state.conversationHistory.push({ role: "user", content: enhancedMessage });
-        this.state.messageCount++;
-        this.state.stats.totalMessages++;
-        this.state.stats.userMessages++;
+        this.addMessage(`Ошибка: ${errorMessage}`, 'ai');
+        this.showNotification(errorMessage, 'error');
         
-        this.updateTopicStats(message);
+        this.updateHeaderApiStatus('error', 'Ошибка API');
         
-        const currentHour = new Date().getHours();
-        this.state.stats.activityByHour[currentHour]++;
-        
-        this.checkAchievements();
-        
-        this.elements.messageInput.value = '';
-        this.elements.messageInput.style.height = 'auto';
-        
-        // Устанавливаем состояние ответа и блокируем интерфейс
-        this.state.isResponding = true;
+        if (errorMessage.includes('API ключ') || errorMessage.includes('401')) {
+            setTimeout(() => {
+                this.showApiSettingsModal();
+            }, 1000);
+        }
+    } finally {
+        // Разблокируем интерфейс после завершения ответа
+        this.state.isResponding = false;
         this.updateSendButtonState();
-        this.elements.messageInput.disabled = true;
-        
-        try {
-            let messagesForApi = this.state.conversationHistory;
-            if (this.state.searchModeEnabled) {
-                this.uiManager.showSearchingIndicator();
-                const searchContext = await this.searchWeb(message);
-                this.uiManager.hideSearchingIndicator();
-                if (searchContext) {
-                    const lastMsg = messagesForApi[messagesForApi.length - 1];
-                    const augmented = lastMsg.content + '\n\n[Пользователь включил поиск в интернете. Актуальные данные из поиска:\n' + searchContext + '\n\nОтветь с опорой на эти данные, при необходимости укажи источники.]';
-                    messagesForApi = [...messagesForApi.slice(0, -1), { ...lastMsg, content: augmented }];
-                }
-            }
-            this.uiManager.showTypingIndicator();
-            const startTime = Date.now();
-            const aiResponse = await this.getAIResponse(messagesForApi);
-            const responseTime = (Date.now() - startTime) / 1000;
-            
-            this.state.responseTimes.push(responseTime);
-            
-            this.uiManager.hideTypingIndicator();
-            
-            this.addAiMessageWithTypingEffect(aiResponse);
-            this.state.conversationHistory.push({ role: "assistant", content: aiResponse });
-            this.state.stats.totalMessages++;
-            this.state.stats.aiMessages++;
-            
-           if (this.state.conversationHistory.length > 50) {
-    this.state.conversationHistory = [
-        this.state.conversationHistory[0],
-        ...this.state.conversationHistory.slice(-48)
-    ];
-}
-            
-            this.showNotification(`Ответ получен за ${responseTime.toFixed(1)}с ✅`, 'success');
-
-            if (this.state.user) {
-                try {
-                    const baseUrl = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
-                    const incRes = await fetch(`${baseUrl}/api/users/me/usage/increment`, { method: 'POST', credentials: 'include' });
-                    if (incRes.ok) {
-                        const data = await incRes.json();
-                        this.state.usage = { used: data.used, limit: data.limit };
-                        this.updateSidebarUsage();
-                    } else if (incRes.status === 429) {
-                        this.showNotification('Лимит запросов на этот месяц исчерпан.', 'warning');
-                    }
-                } catch (e) {
-                    console.warn('Не удалось обновить счётчик запросов', e);
-                }
-            }
-
-            this.triggerHapticFeedback();
-            this.updateUI();
-            this.updateSettingsStats();
-            await this.saveChats();
-
-            if (this.state.stats.aiMessages >= 10 && !this.state.balanceShown) {
-                this.state.balanceShown = true;
-                this.showBalanceModal(true);
-            }
-            
-            this.state.retryCount = 0;
-            
-        } catch (error) {
-            this.uiManager.hideSearchingIndicator();
-            this.uiManager.hideTypingIndicator();
-            console.error('API Error:', error);
-            
-            let errorMessage = error.message || "Ошибка при получении ответа";
-            
-            this.addMessage(`Ошибка: ${errorMessage}`, 'ai');
-            this.showNotification(errorMessage, 'error');
-            
-            this.updateHeaderApiStatus('error', 'Ошибка API');
-            
-            if (errorMessage.includes('API ключ') || errorMessage.includes('401')) {
-                setTimeout(() => {
-                    this.showApiSettingsModal();
-                }, 1000);
-            }
-        } finally {
-            // Разблокируем интерфейс после завершения ответа
-            this.state.isResponding = false;
-            this.updateSendButtonState();
-            this.elements.messageInput.disabled = false;
-        }
-        
-        this.scrollToBottom();
+        this.elements.messageInput.disabled = false;
     }
+    
+    this.scrollToBottom();
+}
     
     updateSendButtonState() {
         const sendButton = this.elements.sendButton;
