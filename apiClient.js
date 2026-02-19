@@ -27,44 +27,11 @@ export class APIClient {
         return this.app.getAuthHeaders();
     }
 
-    /**
-     * ПОЛУЧЕНИЕ КОНФИГУРАЦИИ API В ЗАВИСИМОСТИ ОТ ПОДПИСКИ ПОЛЬЗОВАТЕЛЯ
-     * Если у пользователя подписка Ultimate - используем DeepSeek V3.2
-     * Для всех остальных - стандартную модель
-     */
-    getAPIConfigForUser() {
-        // Базовая конфигурация (по умолчанию)
-        const defaultConfig = {
-            url: 'https://routerai.ru/api/v1/chat/completions',
-            model: 'stepfun/step-3.5-flash',
-            apiKey: "sk-ayshgI6SUUplUxB0ocKzEQ1IK73mbdql"
-        };
-        
-        // Конфигурация для Ultimate подписки
-        const ultimateConfig = {
-            url: 'https://routerai.ru/api/v1/chat/completions', // тот же URL
-            model: 'deepseek/deepseek-v3.2',
-            apiKey: "sk-LJTwkqk_kTbSO0_h39nc5i6UElbsdfmF"
-        };
-        
-        // Проверяем, есть ли пользователь и его подписка
-        if (this.state.user) {
-            const subscription = (this.state.user.subscription || '').toLowerCase();
-            if (subscription === 'ultimate') {
-                console.log('🎯 Ultimate подписка: используем модель DeepSeek V3.2');
-                return ultimateConfig;
-            }
-        }
-        
-        // Для всех остальных случаев используем стандартную конфигурацию
-        return defaultConfig;
-    }
-
     // ===== routerai.ru API =====
 
     async getAIResponse(messages) {
-        // ПОЛУЧАЕМ КОНФИГУРАЦИЮ ДЛЯ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ
-        const apiConfig = this.getAPIConfigForUser();
+        // ПОЛУЧАЕМ КОНФИГУРАЦИЮ ДЛЯ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ ИЗ APP
+        const apiConfig = this.app.getAPIConfigForUser();
         
         if (!apiConfig.apiKey) {
             throw new Error('API ключ не настроен. Пожалуйста, добавьте ключ в настройках.');
@@ -106,8 +73,8 @@ export class APIClient {
                 body: JSON.stringify({
                     model: apiConfig.model,
                     messages: enhancedMessages,
-                    max_tokens: this.apiConfig.maxTokens, // оставляем из this.apiConfig
-                    temperature: this.apiConfig.temperature, // оставляем из this.apiConfig
+                    max_tokens: this.apiConfig.maxTokens,
+                    temperature: this.apiConfig.temperature,
                     stream: false
                 })
             });
@@ -162,7 +129,7 @@ export class APIClient {
             }
             
             // Пост-обработка ответа: удаляем решетки, если вдруг появились
-            aiResponse = aiResponse.replace(/#{1,6}\s*/g, '**'); // Заменяем заголовки с # на жирный текст
+            aiResponse = aiResponse.replace(/#{1,6}\s*/g, '**');
             
             return aiResponse;
             
@@ -178,8 +145,8 @@ export class APIClient {
     }
 
     async checkApiStatus() {
-        // ПОЛУЧАЕМ КОНФИГУРАЦИЮ ДЛЯ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ
-        const apiConfig = this.getAPIConfigForUser();
+        // ПОЛУЧАЕМ КОНФИГУРАЦИЮ ДЛЯ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ ИЗ APP
+        const apiConfig = this.app.getAPIConfigForUser();
         
         if (!apiConfig.apiKey) {
             if (this.app.updateHeaderApiStatus) {
@@ -193,7 +160,7 @@ export class APIClient {
             return;
         }
 
-        // Уже подключены (например, после создания нового чата) — не показывать «Проверка API...» и не слать лишний запрос
+        // Уже подключены — не показывать «Проверка API...» и не слать лишний запрос
         if (this.state.isApiConnected) {
             // ПОКАЗЫВАЕМ НАЗВАНИЕ МОДЕЛИ В ЗАВИСИМОСТИ ОТ ПОДПИСКИ
             let modelName = apiConfig.model;
@@ -221,7 +188,6 @@ export class APIClient {
             console.log('URL:', apiConfig.url);
             console.log('Модель:', apiConfig.model);
             
-            // ИСПОЛЬЗУЕМ ПОЛУЧЕННУЮ КОНФИГУРАЦИЮ
             const response = await fetch(apiConfig.url, {
                 method: 'POST',
                 headers: {
@@ -242,13 +208,11 @@ export class APIClient {
                 const data = await response.json();
                 console.log('Ответ API при проверке:', data);
                 
-                // Проверяем, что ответ содержит ожидаемые поля
                 const hasValidResponse = data.choices && 
                                         data.choices[0] && 
                                         (data.choices[0].message || data.choices[0].text);
                 
                 if (hasValidResponse) {
-                    // ПОКАЗЫВАЕМ НАЗВАНИЕ МОДЕЛИ В ЗАВИСИМОСТИ ОТ ПОДПИСКИ
                     let modelName = apiConfig.model;
                     if (modelName.includes('stepfun')) {
                         modelName = 'Verdikt GPT';

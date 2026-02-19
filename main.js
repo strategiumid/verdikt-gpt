@@ -1983,20 +1983,32 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
 
     /** Обновляет индикатор статуса API в шапке: зелёный/красный кружок + подпись */
     updateHeaderApiStatus(dotState, label) {
-        const dot = this.elements.apiStatusDot;
-        const text = this.elements.apiStatusText;
-        const container = this.elements.apiStatus;
-        if (!container) return;
-        if (dot) {
-            dot.className = 'api-status-dot api-status-dot--' + (dotState || 'unknown');
-            dot.style.display = 'inline-block';
-        }
-        if (text) text.textContent = label || '—';
-        container.classList.remove('api-connecting', 'api-connected', 'api-error');
-        if (dotState === 'connecting') container.classList.add('api-connecting');
-        else if (dotState === 'connected') container.classList.add('api-connected');
-        else if (dotState === 'error' || dotState === 'not-configured') container.classList.add('api-error');
+    const dot = this.elements.apiStatusDot;
+    const text = this.elements.apiStatusText;
+    const container = this.elements.apiStatus;
+    
+    if (!container) return;
+    
+    if (dot) {
+        dot.className = 'api-status-dot api-status-dot--' + (dotState || 'unknown');
+        dot.style.display = 'inline-block';
     }
+    
+    // ДОБАВЛЯЕМ ПРОВЕРКУ НА ULTIMATE ПОДПИСКУ ДЛЯ ВИЗУАЛЬНОЙ ИНДИКАЦИИ
+    if (this.state.user && this.state.user.subscription === 'ultimate' && dotState === 'connected') {
+        // Добавляем специальный класс для Ultimate
+        container.classList.add('api-ultimate');
+        if (text) text.textContent = (label || '—') + ' (Ultimate)';
+    } else {
+        container.classList.remove('api-ultimate');
+        if (text) text.textContent = label || '—';
+    }
+    
+    container.classList.remove('api-connecting', 'api-connected', 'api-error');
+    if (dotState === 'connecting') container.classList.add('api-connecting');
+    else if (dotState === 'connected') container.classList.add('api-connected');
+    else if (dotState === 'error' || dotState === 'not-configured') container.classList.add('api-error');
+}
 
     /** Обновляет блок «осталось запросов» в шапке */
     updateHeaderUsage() {
@@ -3948,15 +3960,20 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     }
 
     setUser(user, _token) {
-        this.state.user = user;
-        this.state.authToken = null;
-        this.saveUserToStorage();
-        this.updateAuthUI();
-        this.updateSidebarInfo();
-        if (user) {
-            setTimeout(() => this.loadDashboardData(), 1000);
-        }
+    this.state.user = user;
+    this.state.authToken = null;
+    this.saveUserToStorage();
+    this.updateAuthUI();
+    this.updateSidebarInfo();
+    
+    // ДОБАВЬТЕ ЭТОТ КОД - перепроверяем статус API при смене пользователя
+    if (user) {
+        setTimeout(() => {
+            this.checkApiStatus(); // перепроверим статус API с новой подпиской
+            this.loadDashboardData();
+        }, 1000);
     }
+}
 
     async logout() {
         try {
