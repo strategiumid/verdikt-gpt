@@ -7058,4 +7058,4 @@ stopStarSuction() {
         }
     }
 
-    export { VerdiktChatApp };
+    
