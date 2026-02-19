@@ -32,7 +32,14 @@ export class VerdiktChatApp {
             temperature: 0.8,
             apiKey: "sk-ayshgI6SUUplUxB0ocKzEQ1IK73mbdql"
         };
-
+ // +++ НОВОЕ: лимиты токенов +++
+    this.tokenLimits = {
+        min: 1000,     // Абсолютный минимум
+        base: 1000,    // Базовое значение
+        standard: 1700, // Стандартный
+        max: 2000,    // Максимум
+        ultra: 2400    // Экстра (только для очень сложных случаев)
+    };
         this.AUTH_CONFIG = {
             baseUrl: (window && window.VERDIKT_BACKEND_URL) || window.location.origin,
             endpoints: {
@@ -245,7 +252,9 @@ export class VerdiktChatApp {
 
     createSystemPromptMessage() {
         const instructions = this.state?.instructions || '';
-        
+        const baseTokenLimit = this.API_CONFIG?.maxTokens || 1000;
+    const minTokens = this.tokenLimits?.min || 1000;
+    const maxTokens = this.tokenLimits?.max || 2400;
         return {
             role: "system",
             content: `Ты — Verdikt GPT, премиум-консультант по отношениям, знакомствам и психологии манипуляций. Твой стиль: тёплый, уважительный, без осуждения, с опорой на практическую психологию и чёткую структуру.
