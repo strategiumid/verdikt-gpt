@@ -28,8 +28,8 @@ export class VerdiktChatApp {
         this.API_CONFIG = {
             url: 'https://routerai.ru/api/v1/chat/completions',
             model: 'stepfun/step-3.5-flash', 
-            maxTokens: 1200,
-            temperature: 0.8,
+            maxTokens: 2000,
+            temperature: 0.7,
             apiKey: "sk-ayshgI6SUUplUxB0ocKzEQ1IK73mbdql"
         };
 
