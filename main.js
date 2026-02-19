@@ -28,7 +28,7 @@ export class VerdiktChatApp {
         this.API_CONFIG = {
             url: 'https://routerai.ru/api/v1/chat/completions',
             model: 'deepseek/deepseek-v3.2', 
-            maxTokens: 1700,
+            maxTokens: 800,
             temperature: 0.8,
             apiKey: "sk-ayshgI6SUUplUxB0ocKzEQ1IK73mbdql"
         };
