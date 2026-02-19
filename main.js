@@ -28,18 +28,11 @@ export class VerdiktChatApp {
         this.API_CONFIG = {
             url: 'https://routerai.ru/api/v1/chat/completions',
             model: 'stepfun/step-3.5-flash', 
-            maxTokens: 1000,
+            maxTokens: 1200,
             temperature: 0.8,
             apiKey: "sk-ayshgI6SUUplUxB0ocKzEQ1IK73mbdql"
         };
- // +++ НОВОЕ: лимиты токенов +++
-    this.tokenLimits = {
-        min: 500,     // Абсолютный минимум
-        base: 500,    // Базовое значение
-        standard: 1000, // Стандартный
-        max: 1500,    // Максимум
-        ultra: 2400    // Экстра (только для очень сложных случаев)
-    };
+
         this.AUTH_CONFIG = {
             baseUrl: (window && window.VERDIKT_BACKEND_URL) || window.location.origin,
             endpoints: {
@@ -252,14 +245,11 @@ export class VerdiktChatApp {
 
     createSystemPromptMessage() {
         const instructions = this.state?.instructions || '';
-        const baseTokenLimit = this.API_CONFIG?.maxTokens || 500;
-    const minTokens = this.tokenLimits?.min || 500;
-    const maxTokens = this.tokenLimits?.max || 1500;
+        
         return {
             role: "system",
             content: `Ты — Verdikt GPT, премиум-консультант по отношениям, знакомствам и психологии манипуляций. Твой стиль: тёплый, уважительный, без осуждения, с опорой на практическую психологию и чёткую структуру.
-**ВАЖНОЕ ОГРАНИЧЕНИЕ:**
-У тебя есть лимит на длину ответа, который может меняться от ${Math.round(baseTokenLimit * 0.6)} до ${Math.round(baseTokenLimit * 2.5)} токенов в зависимости от сложности вопроса.
+
 **ИДЕНТИЧНОСТЬ И ТОН**
 • Обращайся на «вы», если пользователь сам не перешёл на «ты». Сохраняй достоинство и профессионализм.
 • Поддерживай и признавай чувства, но не раздувай драму. Фокус на решении и следующих шагах.
@@ -422,153 +412,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 'Твоя позиция не выглядит как классическое преследование, но стратегия игнора всё равно работает на укрепление твоих позиций.'
         };
     }
-/**
- * Вычисляет оптимальное количество max_tokens на основе сообщения пользователя
- * @param {string} message - Сообщение пользователя
- * @param {Object} userAnalysis - Результат анализа пользователя из analyzeUserType
- * @returns {number} - Оптимальное количество токенов
- */
-calculateDynamicMaxTokens(message, userAnalysis) {
-    const baseTokens = this.API_CONFIG.maxTokens; // 1000 по умолчанию
-    
-    // 1. Базовый анализ длины
-    const wordCount = message.split(/\s+/).length;
-    
-    // 2. Расширенный анализ сложности для психологических тем
-    const messageLower = message.toLowerCase();
-    
-    // Категории вопросов, требующие больше токенов
-    const categories = {
-        // Ситуации, требующие развернутого анализа
-        complexSituations: [
-            'отношения', 'любовь', 'брак', 'расставание', 'развод',
-            'измена', 'ссора', 'конфликт', 'кризис', 'проблема',
-            'ситуация', 'случилось', 'произошло'
-        ],
-        // Запросы на развернутый ответ
-        detailedRequests: [
-            'подробно', 'детально', 'развернуто', 'объясни',
-            'расскажи', 'посоветуй', 'помоги', 'что делать',
-            'как быть', 'как понять', 'стоит ли'
-        ],
-        // Эмоционально заряженные темы (требуют эмпатии = больше токенов)
-        emotionalTopics: [
-            'больно', 'тяжело', 'сложно', 'страшно', 'тревожно',
-            'обидно', 'одиноко', 'депрессия', 'устал', 'страдаю'
-        ],
-        // Манипуляции и абьюз (требуют осторожных формулировок)
-        manipulationTopics: [
-            'манипуляция', 'абьюз', 'токсичный', 'газлайтинг',
-            'контроль', 'унижение', 'оскорбление'
-        ]
-    };
-    
-    // Подсчет баллов по каждой категории
-    let categoryScore = 0;
-    for (const [category, keywords] of Object.entries(categories)) {
-        const matches = keywords.filter(kw => messageLower.includes(kw)).length;
-        if (matches > 0) {
-            categoryScore += matches;
-            console.log(`📊 Категория "${category}": +${matches} баллов`);
-        }
-    }
-    
-    // 3. Анализ структуры вопроса
-    const hasQuestionMark = message.includes('?');
-    const hasExclamationMark = message.includes('!');
-    const sentenceCount = message.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
-    
-    // 4. Определяем базовый множитель по длине (более щадящий)
-    let multiplier = 1.0; // По умолчанию 1000 токенов
-    
-    if (wordCount < 5) {
-        // Очень короткие вопросы (до 5 слов)
-        multiplier = 0.5; // 500 токенов 
-    } else if (wordCount < 15) {
-        // Короткие вопросы (5-15 слов)
-        multiplier = 0.8; // 800 токенов
-    } else if (wordCount < 30) {
-        // Средние вопросы (15-30 слов)
-        multiplier = 1.1; // 1100 токенов
-    } else if (wordCount < 50) {
-        // Длинные вопросы (30-50 слов)
-        multiplier = 1.7; // 1700 токенов
-    } else {
-        // Очень длинные вопросы (более 50 слов)
-        multiplier = 2.4; // 2400 токенов
-    }
-    
-    // 5. Увеличиваем множитель на основе категорий
-    if (categoryScore > 0) {
-        // Каждый балл категории добавляет 0.1 к множителю
-        // Но не более +0.8
-        multiplier += Math.min(0.8, categoryScore * 0.1);
-    }
-    
-    // 6. Учитываем эмоциональное состояние
-    if (userAnalysis.emotionalState === 'negative') {
-        // Негативный фон требует больше эмпатии
-        multiplier += 0.2;
-    }
-    if (userAnalysis.isHighEnergy) {
-        // Высокая энергия = срочность = нужен полный ответ
-        multiplier += 0.2;
-    }
-    
-    // 7. Учитываем структуру вопроса
-    if (hasQuestionMark && sentenceCount > 2) {
-        // Несколько предложений с вопросом = сложный запрос
-        multiplier += 0.2;
-    }
-    
-    // 8. ВСЕГДА даем минимум 800 токенов для любых вопросов
-    const minTokens = 800;
-    
-    // Вычисляем финальное значение
-    let calculatedTokens = Math.round(baseTokens * multiplier);
-    
-    // Применяем минимум
-    calculatedTokens = Math.max(minTokens, calculatedTokens);
-    
-    // Ограничиваем максимум (но можно увеличить, если нужно)
-    calculatedTokens = Math.min(2500, calculatedTokens);
-    
-    // Округляем до ближайшего "красивого" числа (кратного 100)
-    const roundedTokens = Math.round(calculatedTokens / 100) * 100;
-    
-    console.log(`📊 Динамический max_tokens:`, {
-        слов: wordCount,
-        категорий: categoryScore,
-        эмоции: userAnalysis.emotionalState,
-        множитель: multiplier.toFixed(2),
-        токенов: roundedTokens
-    });
-    
-    return roundedTokens;
-}
 
-/**
- * Сжимает историю диалога для экономии токенов
- * @param {Array} history - Полная история сообщений
- * @param {number} maxMessages - Максимальное количество сообщений для отправки (включая system prompt)
- * @returns {Array} - Сжатая история
- */
-compressConversationHistory(history, maxMessages = 8) {
-    if (!history || history.length <= maxMessages) {
-        return history;
-    }
-    
-    // Всегда сохраняем system prompt (первый элемент)
-    const systemPrompt = history[0];
-    
-    // Берем последние (maxMessages - 1) сообщений из оставшейся истории
-    // (минус 1, потому что system prompt уже учтен)
-    const recentMessages = history.slice(-(maxMessages - 1));
-    
-    console.log(`📜 История сжата: ${history.length} -> ${maxMessages} сообщений`);
-    
-    return [systemPrompt, ...recentMessages];
-}
     async init() {
         this.setupCookieNotification();
         this.loadApiKey();
@@ -1215,37 +1059,32 @@ compressConversationHistory(history, maxMessages = 8) {
     }
 
     async createNewChat() {
-    const newChatId = 'chat-' + this.chatManager.nextChatId++;
-    
-    this.chatManager.currentChatId = newChatId;
-    
-    // +++ ИЗМЕНЕНИЕ: создаем инструкцию ОДИН РАЗ и сохраняем в истории +++
-    const systemPrompt = this.createSystemPromptMessage();
-    this.state.conversationHistory = [systemPrompt];
-    
-    // Сохраняем инструкцию отдельно, чтобы знать, что она уже загружена
-    this.state.systemPromptLoaded = true;
-    
-    this.state.messageCount = 0;
-    this.state.stats.totalMessages = 0;
-    this.state.stats.userMessages = 0;
-    this.state.stats.aiMessages = 0;
-    this.state.retryCount = 0;
+        const newChatId = 'chat-' + this.chatManager.nextChatId++;
+        
+        this.chatManager.currentChatId = newChatId;
+        
+        this.state.conversationHistory = [this.createSystemPromptMessage()];
+        
+        this.state.messageCount = 0;
+        this.state.stats.totalMessages = 0;
+        this.state.stats.userMessages = 0;
+        this.state.stats.aiMessages = 0;
+        this.state.retryCount = 0;
 
-    const heroBlock = document.getElementById('hero-block');
-    if (heroBlock) {
-        heroBlock.style.display = 'flex';
+        const heroBlock = document.getElementById('hero-block');
+        if (heroBlock) {
+            heroBlock.style.display = 'flex';
+        }
+        this.syncInputPosition();
+
+        this.elements.chatMessages.innerHTML = '';
+
+        await this.saveChats();
+        
+        this.showNotification('Новый чат создан 💬', 'success');
+        this.updateUI();
+        this.updateSettingsStats();
     }
-    this.syncInputPosition();
-
-    this.elements.chatMessages.innerHTML = '';
-
-    await this.saveChats();
-    
-    this.showNotification('Новый чат создан 💬', 'success');
-    this.updateUI();
-    this.updateSettingsStats();
-}
 
     async loadChat(chatId) {
         const chat = this.chatManager.chats.find(c => c.id === chatId);
@@ -3113,192 +2952,181 @@ compressConversationHistory(history, maxMessages = 8) {
     }
 
     async sendMessage() {
-    // Блокируем отправку, если ИИ уже отвечает
-    if (this.state.isResponding) {
-        return;
-    }
-    
-    const message = this.elements.messageInput.value.trim();
-    
-    if (!message) {
-        this.showNotification('Введите сообщение', 'warning');
-        return;
-    }
-
-    if (!this.state.user) {
-        this.showNotification('Чтобы отправить сообщение, пожалуйста, авторизуйтесь', 'warning');
-        return;
-    }
-    
-    if (message.startsWith('/')) {
-        if (this.handleCommand(message)) {
-            this.elements.messageInput.value = '';
+        // Блокируем отправку, если ИИ уже отвечает
+        if (this.state.isResponding) {
             return;
         }
-    }
-
-    if (!this.API_CONFIG.apiKey) {
-        this.showNotification('Пожалуйста, настройте API ключ в настройках', 'error');
-        this.showApiSettingsModal();
-        return;
-    }
-    
-    if (!this.state.isApiConnected) {
-        this.showNotification('API не подключен. Проверьте настройки.', 'error');
-        this.checkApiStatus();
-        return;
-    }
-
-    if (this.state.user) {
-        try {
-            const baseUrl = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
-            const res = await fetch(`${baseUrl}/api/users/me/usage`, { method: 'GET', credentials: 'include' });
-            if (res.ok) {
-                const data = await res.json();
-                if (data.used >= data.limit) {
-                    this.showNotification('Исчерпан лимит запросов на этот месяц. Смените план в «План подписок».', 'warning');
-                    return;
-                }
-            }
-        } catch (e) {
-            console.warn('Не удалось проверить лимит запросов', e);
+        
+        const message = this.elements.messageInput.value.trim();
+        
+        if (!message) {
+            this.showNotification('Введите сообщение', 'warning');
+            return;
         }
-    }
-    
-    this.addMessage(message, 'user');
-    
-    // Получаем расширенный анализ сообщения
-    const userAnalysis = this.analyzeUserType(message);
-    
-    // Добавляем к сообщению контекст из анализа, если он есть
-    const enhancedMessage = message + (userAnalysis.context ? userAnalysis.context : '');
-    
-    this.state.conversationHistory.push({ role: "user", content: enhancedMessage });
-    this.state.messageCount++;
-    this.state.stats.totalMessages++;
-    this.state.stats.userMessages++;
-    
-    this.updateTopicStats(message);
-    
-    const currentHour = new Date().getHours();
-    this.state.stats.activityByHour[currentHour]++;
-    
-    this.checkAchievements();
-    
-    this.elements.messageInput.value = '';
-    this.elements.messageInput.style.height = 'auto';
-    
-    // Устанавливаем состояние ответа и блокируем интерфейс
-    this.state.isResponding = true;
-    this.updateSendButtonState();
-    this.elements.messageInput.disabled = true;
-    
-    try {
-        // +++ НОВАЯ ЛОГИКА: ОПРЕДЕЛЯЕМ ОПТИМАЛЬНЫЙ max_tokens +++
-        const dynamicMaxTokens = this.calculateDynamicMaxTokens(message, userAnalysis);
-        console.log(`📊 Динамический max_tokens: ${dynamicMaxTokens} (базовый: ${this.API_CONFIG.maxTokens})`);
+
+        if (!this.state.user) {
+            this.showNotification('Чтобы отправить сообщение, пожалуйста, авторизуйтесь', 'warning');
+            return;
+        }
         
-        let messagesForApi = this.state.conversationHistory;
-        
-        if (this.state.searchModeEnabled) {
-            this.uiManager.showSearchingIndicator();
-            let searchContext = await this.searchWeb(message);
-            this.uiManager.hideSearchingIndicator();
-            if (searchContext) {
-                // Обрезаем контекст поиска, если он слишком длинный
-                if (searchContext.length > 1500) {
-                    searchContext = searchContext.substring(0, 1500) + '... [обрезано]';
-                }
-                
-                const lastMsg = messagesForApi[messagesForApi.length - 1];
-                const augmented = lastMsg.content + '\n\n[Пользователь включил поиск в интернете. Актуальные данные из поиска:\n' + searchContext + '\n\nОтветь с опорой на эти данные, при необходимости укажи источники.]';
-                messagesForApi = [...messagesForApi.slice(0, -1), { ...lastMsg, content: augmented }];
+        if (message.startsWith('/')) {
+            if (this.handleCommand(message)) {
+                this.elements.messageInput.value = '';
+                return;
             }
         }
         
-        // Сжимаем историю для экономии токенов
-        messagesForApi = this.compressConversationHistory(messagesForApi, 8);
-        
-        this.uiManager.showTypingIndicator();
-        const startTime = Date.now();
-        
-        // +++ ПЕРЕДАЁМ ДИНАМИЧЕСКИЙ max_tokens В API ВЫЗОВ +++
-        const aiResponse = await this.apiClient.getAIResponse(messagesForApi, dynamicMaxTokens);
-        
-        const responseTime = (Date.now() - startTime) / 1000;
-        
-        this.state.responseTimes.push(responseTime);
-        
-        this.uiManager.hideTypingIndicator();
-        
-        this.addAiMessageWithTypingEffect(aiResponse);
-        this.state.conversationHistory.push({ role: "assistant", content: aiResponse });
-        this.state.stats.totalMessages++;
-        this.state.stats.aiMessages++;
-        
-        if (this.state.conversationHistory.length > 50) {
-            this.state.conversationHistory = [
-                this.state.conversationHistory[0],
-                ...this.state.conversationHistory.slice(-48)
-            ];
+        //if (!this.isTopicRelevant(message)) {
+            this.showNotification('Я специализируюсь только на отношениях, знакомствах и манипуляциях.', 'warning');
+            //return;
+        //}
+
+        if (!this.API_CONFIG.apiKey) {
+            this.showNotification('Пожалуйста, настройте API ключ в настройках', 'error');
+            this.showApiSettingsModal();
+            return;
         }
         
-        this.showNotification(`Ответ получен за ${responseTime.toFixed(1)}с ✅`, 'success');
+        if (!this.state.isApiConnected) {
+            this.showNotification('API не подключен. Проверьте настройки.', 'error');
+            this.checkApiStatus();
+            return;
+        }
 
         if (this.state.user) {
             try {
                 const baseUrl = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
-                const incRes = await fetch(`${baseUrl}/api/users/me/usage/increment`, { method: 'POST', credentials: 'include' });
-                if (incRes.ok) {
-                    const data = await incRes.json();
-                    this.state.usage = { used: data.used, limit: data.limit };
-                    this.updateSidebarUsage();
-                } else if (incRes.status === 429) {
-                    this.showNotification('Лимит запросов на этот месяц исчерпан.', 'warning');
+                const res = await fetch(`${baseUrl}/api/users/me/usage`, { method: 'GET', credentials: 'include' });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.used >= data.limit) {
+                        this.showNotification('Исчерпан лимит запросов на этот месяц. Смените план в «План подписок».', 'warning');
+                        return;
+                    }
                 }
             } catch (e) {
-                console.warn('Не удалось обновить счётчик запросов', e);
+                console.warn('Не удалось проверить лимит запросов', e);
             }
         }
-
-        this.triggerHapticFeedback();
-        this.updateUI();
-        this.updateSettingsStats();
-        await this.saveChats();
-
-        if (this.state.stats.aiMessages >= 10 && !this.state.balanceShown) {
-            this.state.balanceShown = true;
-            this.showBalanceModal(true);
-        }
         
-        this.state.retryCount = 0;
+        this.addMessage(message, 'user');
         
-    } catch (error) {
-        this.uiManager.hideSearchingIndicator();
-        this.uiManager.hideTypingIndicator();
-        console.error('API Error:', error);
+       // Получаем расширенный анализ сообщения
+        const userAnalysis = this.analyzeUserType(message);
         
-        let errorMessage = error.message || "Ошибка при получении ответа";
+        // Добавляем к сообщению контекст из анализа, если он есть
+        // Используем новый userAnalysis.context, который мы сформировали
+        const enhancedMessage = message + (userAnalysis.context ? userAnalysis.context : '');
         
-        this.addMessage(`Ошибка: ${errorMessage}`, 'ai');
-        this.showNotification(errorMessage, 'error');
+        this.state.conversationHistory.push({ role: "user", content: enhancedMessage });
+        this.state.messageCount++;
+        this.state.stats.totalMessages++;
+        this.state.stats.userMessages++;
         
-        this.updateHeaderApiStatus('error', 'Ошибка API');
+        this.updateTopicStats(message);
         
-        if (errorMessage.includes('API ключ') || errorMessage.includes('401')) {
-            setTimeout(() => {
-                this.showApiSettingsModal();
-            }, 1000);
-        }
-    } finally {
-        // Разблокируем интерфейс после завершения ответа
-        this.state.isResponding = false;
+        const currentHour = new Date().getHours();
+        this.state.stats.activityByHour[currentHour]++;
+        
+        this.checkAchievements();
+        
+        this.elements.messageInput.value = '';
+        this.elements.messageInput.style.height = 'auto';
+        
+        // Устанавливаем состояние ответа и блокируем интерфейс
+        this.state.isResponding = true;
         this.updateSendButtonState();
-        this.elements.messageInput.disabled = false;
-    }
-    
-    this.scrollToBottom();
+        this.elements.messageInput.disabled = true;
+        
+        try {
+            let messagesForApi = this.state.conversationHistory;
+            if (this.state.searchModeEnabled) {
+                this.uiManager.showSearchingIndicator();
+                const searchContext = await this.searchWeb(message);
+                this.uiManager.hideSearchingIndicator();
+                if (searchContext) {
+                    const lastMsg = messagesForApi[messagesForApi.length - 1];
+                    const augmented = lastMsg.content + '\n\n[Пользователь включил поиск в интернете. Актуальные данные из поиска:\n' + searchContext + '\n\nОтветь с опорой на эти данные, при необходимости укажи источники.]';
+                    messagesForApi = [...messagesForApi.slice(0, -1), { ...lastMsg, content: augmented }];
+                }
+            }
+            this.uiManager.showTypingIndicator();
+            const startTime = Date.now();
+            const aiResponse = await this.getAIResponse(messagesForApi);
+            const responseTime = (Date.now() - startTime) / 1000;
+            
+            this.state.responseTimes.push(responseTime);
+            
+            this.uiManager.hideTypingIndicator();
+            
+            this.addAiMessageWithTypingEffect(aiResponse);
+            this.state.conversationHistory.push({ role: "assistant", content: aiResponse });
+            this.state.stats.totalMessages++;
+            this.state.stats.aiMessages++;
+            
+           if (this.state.conversationHistory.length > 50) {
+    this.state.conversationHistory = [
+        this.state.conversationHistory[0],
+        ...this.state.conversationHistory.slice(-48)
+    ];
 }
+            
+            this.showNotification(`Ответ получен за ${responseTime.toFixed(1)}с ✅`, 'success');
+
+            if (this.state.user) {
+                try {
+                    const baseUrl = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
+                    const incRes = await fetch(`${baseUrl}/api/users/me/usage/increment`, { method: 'POST', credentials: 'include' });
+                    if (incRes.ok) {
+                        const data = await incRes.json();
+                        this.state.usage = { used: data.used, limit: data.limit };
+                        this.updateSidebarUsage();
+                    } else if (incRes.status === 429) {
+                        this.showNotification('Лимит запросов на этот месяц исчерпан.', 'warning');
+                    }
+                } catch (e) {
+                    console.warn('Не удалось обновить счётчик запросов', e);
+                }
+            }
+
+            this.triggerHapticFeedback();
+            this.updateUI();
+            this.updateSettingsStats();
+            await this.saveChats();
+
+            if (this.state.stats.aiMessages >= 10 && !this.state.balanceShown) {
+                this.state.balanceShown = true;
+                this.showBalanceModal(true);
+            }
+            
+            this.state.retryCount = 0;
+            
+        } catch (error) {
+            this.uiManager.hideSearchingIndicator();
+            this.uiManager.hideTypingIndicator();
+            console.error('API Error:', error);
+            
+            let errorMessage = error.message || "Ошибка при получении ответа";
+            
+            this.addMessage(`Ошибка: ${errorMessage}`, 'ai');
+            this.showNotification(errorMessage, 'error');
+            
+            this.updateHeaderApiStatus('error', 'Ошибка API');
+            
+            if (errorMessage.includes('API ключ') || errorMessage.includes('401')) {
+                setTimeout(() => {
+                    this.showApiSettingsModal();
+                }, 1000);
+            }
+        } finally {
+            // Разблокируем интерфейс после завершения ответа
+            this.state.isResponding = false;
+            this.updateSendButtonState();
+            this.elements.messageInput.disabled = false;
+        }
+        
+        this.scrollToBottom();
+    }
     
     updateSendButtonState() {
         const sendButton = this.elements.sendButton;
