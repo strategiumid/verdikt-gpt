@@ -1215,32 +1215,37 @@ compressConversationHistory(history, maxMessages = 8) {
     }
 
     async createNewChat() {
-        const newChatId = 'chat-' + this.chatManager.nextChatId++;
-        
-        this.chatManager.currentChatId = newChatId;
-        
-        this.state.conversationHistory = [this.createSystemPromptMessage()];
-        
-        this.state.messageCount = 0;
-        this.state.stats.totalMessages = 0;
-        this.state.stats.userMessages = 0;
-        this.state.stats.aiMessages = 0;
-        this.state.retryCount = 0;
+    const newChatId = 'chat-' + this.chatManager.nextChatId++;
+    
+    this.chatManager.currentChatId = newChatId;
+    
+    // +++ ИЗМЕНЕНИЕ: создаем инструкцию ОДИН РАЗ и сохраняем в истории +++
+    const systemPrompt = this.createSystemPromptMessage();
+    this.state.conversationHistory = [systemPrompt];
+    
+    // Сохраняем инструкцию отдельно, чтобы знать, что она уже загружена
+    this.state.systemPromptLoaded = true;
+    
+    this.state.messageCount = 0;
+    this.state.stats.totalMessages = 0;
+    this.state.stats.userMessages = 0;
+    this.state.stats.aiMessages = 0;
+    this.state.retryCount = 0;
 
-        const heroBlock = document.getElementById('hero-block');
-        if (heroBlock) {
-            heroBlock.style.display = 'flex';
-        }
-        this.syncInputPosition();
-
-        this.elements.chatMessages.innerHTML = '';
-
-        await this.saveChats();
-        
-        this.showNotification('Новый чат создан 💬', 'success');
-        this.updateUI();
-        this.updateSettingsStats();
+    const heroBlock = document.getElementById('hero-block');
+    if (heroBlock) {
+        heroBlock.style.display = 'flex';
     }
+    this.syncInputPosition();
+
+    this.elements.chatMessages.innerHTML = '';
+
+    await this.saveChats();
+    
+    this.showNotification('Новый чат создан 💬', 'success');
+    this.updateUI();
+    this.updateSettingsStats();
+}
 
     async loadChat(chatId) {
         const chat = this.chatManager.chats.find(c => c.id === chatId);
