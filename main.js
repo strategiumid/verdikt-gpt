@@ -7055,7 +7055,13 @@ stopStarSuction() {
         });
 
         this._updateSubscriptionButtons = updateSubscriptionButtons;
-        }
-    }
+    } // Закрытие метода setupSubscriptionModal
+} // Закрытие класса VerdiktChatApp
+
+// Глобальная функция для обновления кнопок подписок (если нужна)
+function updateSubscriptionButtons() {
+    // Логика обновления кнопок подписок
+    console.log('Subscription buttons updated');
+}
 
     
