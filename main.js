@@ -254,7 +254,7 @@ export class VerdiktChatApp {
         const ultimateConfig = {
             url: 'https://routerai.ru/api/v1/chat/completions',
             model: 'deepseek/deepseek-v3.2',
-            apiKey: "sk-LJTwkqk_kTbSO0_h39nc5i6UElbsdfmF"
+            apiKey: "sk-ayshgI6SUUplUxB0ocKzEQ1IK73mbdql"
         };
         
         // Проверяем, есть ли пользователь и его подписка
