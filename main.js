@@ -474,19 +474,19 @@ calculateDynamicMaxTokens(message, userAnalysis) {
     
     if (wordCount < 5) {
         // Очень короткие вопросы (до 5 слов)
-        multiplier = 0.8; // 800 токенов 
+        multiplier = 1; // 1000 токенов 
     } else if (wordCount < 15) {
         // Короткие вопросы (5-15 слов)
-        multiplier = 1.0; // 1000 токенов
+        multiplier = 1.4; // 1400 токенов
     } else if (wordCount < 30) {
         // Средние вопросы (15-30 слов)
-        multiplier = 1.3; // 1300 токенов
+        multiplier = 1.7; // 1700 токенов
     } else if (wordCount < 50) {
         // Длинные вопросы (30-50 слов)
-        multiplier = 1.6; // 1600 токенов
+        multiplier = 2; // 2000 токенов
     } else {
         // Очень длинные вопросы (более 50 слов)
-        multiplier = 2.0; // 2000 токенов
+        multiplier = 2.4; // 2400 токенов
     }
     
     // 5. Увеличиваем множитель на основе категорий
