@@ -3389,26 +3389,21 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     const contentEl = messageElement.querySelector('.message-content');
     const cursorHtml = '<span class="typing-cursor typing-cursor-grok"></span>';
     
-    // Стиль печати как у Grok: по 1–3 символа, переменная задержка, естественный ритм
-    const textLength = fullText.length;
-    let chunkMin = 1, chunkMax = 3, baseDelayMs = 28;
-    if (textLength > 800) {
-        chunkMin = 2;
-        chunkMax = 5;
-        baseDelayMs = 18;
-    } else if (textLength > 300) {
-        chunkMin = 1;
-        chunkMax = 4;
-        baseDelayMs = 22;
+    // Стиль как на grok.com: вывод по словам (streaming-like), ровный ритм
+    const tokens = fullText.split(/(\s+)/);
+    if (tokens.length === 0 || (tokens.length === 1 && !tokens[0])) {
+        contentEl.innerHTML = this.formatMessage(fullText);
+        messageElement.classList.remove('ai-message-typing');
+        return;
     }
-    
-    let index = 0;
+    const baseDelayMs = 42;
+    let accumulated = '';
+    let tokenIndex = 0;
 
     const typeNext = () => {
-        if (index >= fullText.length) {
+        if (tokenIndex >= tokens.length) {
             contentEl.innerHTML = this.formatMessage(fullText);
             messageElement.classList.remove('ai-message-typing');
-            
             const timeEl = messageElement.querySelector('.message-time');
             if (timeEl && !messageElement.querySelector('.message-feedback')) {
                 const feedbackDiv = document.createElement('div');
@@ -3423,20 +3418,16 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             this.scrollToBottom();
             return;
         }
-        
-        const chunkSize = Math.min(
-            chunkMin + Math.floor(Math.random() * (chunkMax - chunkMin + 1)),
-            fullText.length - index
-        );
-        index += chunkSize;
-        const accumulated = fullText.slice(0, index);
+        accumulated += tokens[tokenIndex];
+        tokenIndex++;
         contentEl.innerHTML = this.formatMessage(accumulated) + cursorHtml;
         this.scrollToBottom();
-        const delay = baseDelayMs + Math.floor(Math.random() * 25);
+        const isSpaceOrNewline = /^[\s\n]+$/.test(tokens[tokenIndex - 1]);
+        const delay = isSpaceOrNewline ? Math.max(8, baseDelayMs - 15) : baseDelayMs + Math.floor(Math.random() * 20);
         setTimeout(typeNext, delay);
     };
 
-    setTimeout(typeNext, 120);
+    setTimeout(typeNext, 80);
 }
 
     formatMessage(text) {

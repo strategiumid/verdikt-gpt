@@ -1938,20 +1938,20 @@ body.sidebar-collapsed .container {
     animation: typing-cursor-blink 0.9s step-end infinite;
 }
 
-/* Стиль курсора как у Grok: блок, мягкое мерцание */
+/* Курсор как на grok.com: тонкая вертикальная черта, чёткое мигание */
 .typing-cursor-grok {
-    width: 3px;
-    height: 1.15em;
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 1px;
-    margin-left: 2px;
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
-    animation: typing-cursor-grok-blink 1s step-end infinite;
+    display: inline-block;
+    width: 2px;
+    height: 1.05em;
+    background: currentColor;
+    margin-left: 1px;
+    vertical-align: text-bottom;
+    animation: typing-cursor-grok-blink 1.05s step-end infinite;
 }
 
 @keyframes typing-cursor-grok-blink {
-    0%, 70% { opacity: 1; }
-    71%, 100% { opacity: 0.35; }
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
 }
 
 @keyframes typing-cursor-blink {
