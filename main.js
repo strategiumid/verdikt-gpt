@@ -3405,37 +3405,52 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         messageElement.className = `message ${sender}-message`;
         messageElement.id = messageId;
         messageElement.style.opacity = '0';
-        messageElement.style.transform = 'translateY(20px)';
+        messageElement.style.transform = 'translateY(16px)';
+        messageElement.style.willChange = 'transform, opacity';
         
-    // Структура сообщения в стиле Grok xAI
-    const avatarHtml = sender === 'user' 
-        ? `<div class="message-avatar user-avatar"><i class="fas fa-user"></i></div>`
-        : `<div class="message-avatar"><span>V</span></div>`;
-    
-    messageElement.innerHTML = `
-        <div class="message-actions">
-            <button class="message-action" onclick="window.verdiktApp.copyMessage('${messageId}')">
-                <i class="fas fa-copy"></i>
-            </button>
-            <button class="message-action" onclick="window.verdiktApp.speakMessage('${messageId}')">
-                <i class="fas fa-volume-up"></i>
-            </button>
-            <button class="message-action" onclick="window.verdiktApp.regenerateMessage('${messageId}')">
-                <i class="fas fa-redo"></i>
-            </button>
-        </div>
-        ${sender === 'ai' ? avatarHtml : ''}
-        <div class="message-content-wrapper">
-            <div class="message-sender">
-                ${sender === 'user' ? 'Вы' : 'Эксперт по отношениям'}
+        // Структура сообщения в стиле Grok xAI
+        const avatarHtml = sender === 'user' 
+            ? `<div class="message-avatar user-avatar"><i class="fas fa-user"></i></div>`
+            : `<div class="message-avatar"><span>V</span></div>`;
+        
+        messageElement.innerHTML = `
+            <div class="message-actions">
+                <button class="message-action" onclick="window.verdiktApp.copyMessage('${messageId}')">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <button class="message-action" onclick="window.verdiktApp.speakMessage('${messageId}')">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+                ${sender === 'user' ? '' : `<button class="message-action" onclick="window.verdiktApp.regenerateMessage('${messageId}')">
+                    <i class="fas fa-redo"></i>
+                </button>`}
             </div>
-            <div class="message-content">${this.formatMessage(content)}${imageHtml}</div>
-            <div class="message-time">${time}</div>
-        </div>
-        ${sender === 'user' ? avatarHtml : ''}
-    `;
+            ${sender === 'ai' ? avatarHtml : ''}
+            <div class="message-content-wrapper">
+                <div class="message-sender">
+                    ${sender === 'user' ? 'Вы' : 'Эксперт по отношениям'}
+                </div>
+                <div class="message-content">${this.formatMessage(content)}${imageHtml}</div>
+                <div class="message-time">${time}</div>
+            </div>
+            ${sender === 'user' ? avatarHtml : ''}
+        `;
         
         this.elements.chatMessages.appendChild(messageElement);
+        
+        // Анимация появления в стиле Grok: fade-in + slide-up
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                messageElement.style.opacity = '1';
+                messageElement.style.transform = 'translateY(0)';
+                messageElement.style.transition = 'opacity 350ms cubic-bezier(0.16, 1, 0.3, 1), transform 350ms cubic-bezier(0.16, 1, 0.3, 1)';
+            });
+        });
+        
+        // Убираем will-change после анимации для производительности
+        setTimeout(() => {
+            messageElement.style.willChange = 'auto';
+        }, 400);
         
         setTimeout(() => {
             hljs.highlightAll();
