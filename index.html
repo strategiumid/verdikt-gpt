@@ -3263,10 +3263,18 @@
                             <span class="typing-text">Думаю...</span>
                         </div>
                     </div>
+                    <!-- Превью прикреплённого изображения -->
+                    <div class="attach-preview-wrapper" id="attach-preview-wrapper" style="display:none">
+                        <div class="attach-preview" id="attach-preview">
+                            <img id="attach-preview-img" src="" alt="Превью">
+                            <button type="button" class="attach-preview-remove" id="attach-preview-remove" title="Удалить">×</button>
+                        </div>
+                    </div>
                     <!-- Панель ввода (стиль Grok: скруглённая «таблетка», focus ring) -->
                     <div class="input-container-extended grok-style-input">
                         <div class="input-actions-left">
-                            <button class="input-icon-button" id="attach-button" title="Прикрепить файл">
+                            <input type="file" id="attach-file-input" accept="image/*" capture="environment" style="display:none" aria-hidden="true">
+                            <button class="input-icon-button" id="attach-button" title="Прикрепить скриншот или изображение" type="button">
                                 <i class="fas fa-paperclip"></i>
                             </button>
                             <button class="input-icon-button" id="deep-reflection-btn" title="Глубокое Размышление">

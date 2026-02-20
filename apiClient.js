@@ -44,22 +44,22 @@ export class APIClient {
 
         // Добавляем инструкцию по форматированию в последнее сообщение
         const enhancedMessages = [...messages];
+        const formatHint = `\n\n[ФОРМАТИРОВАНИЕ: без #, заголовки **жирным**, списки через • или -. Завершай каждую мысль полным предложением; не обрывай ответ на полуслове.]`;
         
-        // Проверяем, есть ли уже инструкция в последнем сообщении пользователя
-       const lastUserMessageIndex = [...enhancedMessages].reverse().findIndex(m => m.role === 'user');
+        const lastUserMessageIndex = [...enhancedMessages].reverse().findIndex(m => m.role === 'user');
         if (lastUserMessageIndex !== -1) {
             const actualIndex = enhancedMessages.length - 1 - lastUserMessageIndex;
             const lastUserMsg = enhancedMessages[actualIndex];
-            
-            
-            // Добавляем инструкцию по длине ответа, если её ещё нет
-             if (!lastUserMsg.content.includes('[ФОРМАТИРОВАНИЕ]')) {
-        enhancedMessages[actualIndex] = {
-            ...lastUserMsg,
-            content: lastUserMsg.content + `\n\n[ФОРМАТИРОВАНИЕ: без #, заголовки **жирным**, списки через • или -. Завершай каждую мысль полным предложением; не обрывай ответ на полуслове.]`
-        };
-    }
-}
+            const hasFormatHint = (c) => typeof c === 'string' ? c.includes('[ФОРМАТИРОВАНИЕ]') : (Array.isArray(c) && c.some(p => p.type === 'text' && p.text && p.text.includes('[ФОРМАТИРОВАНИЕ]')));
+            if (!hasFormatHint(lastUserMsg.content)) {
+                if (Array.isArray(lastUserMsg.content)) {
+                    const newContent = lastUserMsg.content.map(p => p.type === 'text' ? { ...p, text: (p.text || '') + formatHint } : p);
+                    enhancedMessages[actualIndex] = { ...lastUserMsg, content: newContent };
+                } else {
+                    enhancedMessages[actualIndex] = { ...lastUserMsg, content: lastUserMsg.content + formatHint };
+                }
+            }
+        }
          const response = await fetch(this.apiConfig.url, {
             method: 'POST',
             headers: {

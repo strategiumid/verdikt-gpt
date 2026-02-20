@@ -104,7 +104,8 @@ export class VerdiktChatApp {
             maxRetries: 3,
             searchModeEnabled: false,
             deepReflectionMode: false,
-            feedbackAnalyticsFromBackend: null
+            feedbackAnalyticsFromBackend: null,
+            attachedImage: null
         };
 
         this.crypto = new VerdiktCrypto();
@@ -164,6 +165,11 @@ export class VerdiktChatApp {
             // temperatureSlider и temperatureValue теперь в настройках профиля
             
             deepReflectionBtn: document.getElementById('deep-reflection-btn'),
+            attachButton: document.getElementById('attach-button'),
+            attachFileInput: document.getElementById('attach-file-input'),
+            attachPreview: document.getElementById('attach-preview'),
+            attachPreviewImg: document.getElementById('attach-preview-img'),
+            attachPreviewRemove: document.getElementById('attach-preview-remove'),
             
             importModal: document.getElementById('import-modal'),
             importFileInput: document.getElementById('import-file-input'),
@@ -2837,6 +2843,29 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 };
                 reader.readAsText(file, 'utf-8');
             });
+            
+            inputContainer.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const file = dt && dt.files && dt.files[0];
+                if (!file) return;
+                if (file.type.startsWith('image/')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.setAttachedImage(file);
+                }
+            }, true);
+        }
+        
+        if (this.elements.attachButton && this.elements.attachFileInput) {
+            this.elements.attachButton.addEventListener('click', () => this.elements.attachFileInput.click());
+            this.elements.attachFileInput.addEventListener('change', (e) => {
+                const file = e.target && e.target.files && e.target.files[0];
+                if (file && file.type.startsWith('image/')) this.setAttachedImage(file);
+                e.target.value = '';
+            });
+        }
+        if (this.elements.attachPreviewRemove) {
+            this.elements.attachPreviewRemove.addEventListener('click', () => this.clearAttachedImage());
         }
         
         // Обработчик для слайдера температуры теперь в setupProfileSettings()
@@ -2979,16 +3008,46 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         }
     }
 
+    setAttachedImage(file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const dataUrl = reader.result;
+            if (!dataUrl || typeof dataUrl !== 'string') return;
+            this.state.attachedImage = { dataUrl, name: file.name };
+            const wrapper = document.getElementById('attach-preview-wrapper');
+            const img = this.elements.attachPreviewImg;
+            if (wrapper && img) {
+                img.src = dataUrl;
+                img.alt = file.name || 'Скриншот';
+                wrapper.style.display = 'block';
+            }
+            this.updateSendButtonState && this.updateSendButtonState();
+        };
+        reader.onerror = () => this.showNotification('Не удалось загрузить изображение', 'error');
+        reader.readAsDataURL(file);
+    }
+
+    clearAttachedImage() {
+        this.state.attachedImage = null;
+        const wrapper = document.getElementById('attach-preview-wrapper');
+        const img = this.elements.attachPreviewImg;
+        if (wrapper) wrapper.style.display = 'none';
+        if (img) img.src = '';
+        if (this.elements.attachFileInput) this.elements.attachFileInput.value = '';
+        this.updateSendButtonState && this.updateSendButtonState();
+    }
+
     async sendMessage() {
         // Блокируем отправку, если ИИ уже отвечает
         if (this.state.isResponding) {
             return;
         }
         
-        const message = this.elements.messageInput.value.trim();
+        const message = (this.elements.messageInput && this.elements.messageInput.value) ? this.elements.messageInput.value.trim() : '';
+        const hasImage = !!(this.state.attachedImage && this.state.attachedImage.dataUrl);
         
-        if (!message) {
-            this.showNotification('Введите сообщение', 'warning');
+        if (!message && !hasImage) {
+            this.showNotification('Введите сообщение или прикрепите скриншот', 'warning');
             return;
         }
 
@@ -2997,9 +3056,10 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             return;
         }
         
-        if (message.startsWith('/')) {
+        if (message && message.startsWith('/')) {
             if (this.handleCommand(message)) {
                 this.elements.messageInput.value = '';
+                this.clearAttachedImage && this.clearAttachedImage();
                 return;
             }
         }
@@ -3037,45 +3097,57 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             }
         }
         
-        this.addMessage(message, 'user');
+        const displayText = message || 'Скриншот / изображение';
+        this.addMessage(displayText, 'user', { imageDataUrl: hasImage ? this.state.attachedImage.dataUrl : null });
         
-       // Получаем расширенный анализ сообщения
-        const userAnalysis = this.analyzeUserType(message);
-        
-        // Добавляем к сообщению контекст из анализа, если он есть
-        // Используем новый userAnalysis.context, который мы сформировали
-        const enhancedMessage = message + (userAnalysis.context ? userAnalysis.context : '');
+        const userAnalysis = this.analyzeUserType(message || '');
+        const enhancedMessage = (message || '') + (userAnalysis.context ? userAnalysis.context : '');
+        const imageHint = hasImage ? '\n\n[Пользователь приложил изображение. Проанализируй его и ответь с учётом содержимого.]' : '';
         
         this.state.conversationHistory.push({ role: "user", content: enhancedMessage });
         this.state.messageCount++;
         this.state.stats.totalMessages++;
         this.state.stats.userMessages++;
         
-        this.updateTopicStats(message);
+        this.updateTopicStats(displayText);
         
         const currentHour = new Date().getHours();
         this.state.stats.activityByHour[currentHour]++;
         
         this.checkAchievements();
         
+        const attachedDataUrl = hasImage && this.state.attachedImage ? this.state.attachedImage.dataUrl : null;
         this.elements.messageInput.value = '';
         this.elements.messageInput.style.height = 'auto';
+        if (hasImage) this.clearAttachedImage();
         
-        // Устанавливаем состояние ответа и блокируем интерфейс
         this.state.isResponding = true;
         this.updateSendButtonState();
         this.elements.messageInput.disabled = true;
         
         try {
-            let messagesForApi = this.state.conversationHistory;
+            let messagesForApi = [...this.state.conversationHistory];
+            if (attachedDataUrl) {
+                const lastUser = messagesForApi[messagesForApi.length - 1];
+                const visionContent = [
+                    { type: 'text', text: enhancedMessage + imageHint },
+                    { type: 'image_url', image_url: { url: attachedDataUrl } }
+                ];
+                messagesForApi = messagesForApi.slice(0, -1).concat([{ ...lastUser, content: visionContent }]);
+            }
             if (this.state.searchModeEnabled) {
                 this.uiManager.showSearchingIndicator();
-                const searchContext = await this.searchWeb(message);
+                const searchContext = await this.searchWeb(displayText);
                 this.uiManager.hideSearchingIndicator();
                 if (searchContext) {
                     const lastMsg = messagesForApi[messagesForApi.length - 1];
-                    const augmented = lastMsg.content + '\n\n[Пользователь включил поиск в интернете. Актуальные данные из поиска:\n' + searchContext + '\n\nОтветь с опорой на эти данные, при необходимости укажи источники.]';
-                    messagesForApi = [...messagesForApi.slice(0, -1), { ...lastMsg, content: augmented }];
+                    const searchBlock = '\n\n[Пользователь включил поиск в интернете. Актуальные данные из поиска:\n' + searchContext + '\n\nОтветь с опорой на эти данные, при необходимости укажи источники.]';
+                    if (Array.isArray(lastMsg.content)) {
+                        const newContent = lastMsg.content.map(p => p.type === 'text' ? { ...p, text: p.text + searchBlock } : p);
+                        messagesForApi = messagesForApi.slice(0, -1).concat([{ ...lastMsg, content: newContent }]);
+                    } else {
+                        messagesForApi = messagesForApi.slice(0, -1).concat([{ ...lastMsg, content: lastMsg.content + searchBlock }]);
+                    }
                 }
             }
             this.uiManager.showTypingIndicator();
@@ -3230,9 +3302,12 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         }
     }
 
-    addMessage(content, sender) {
+    addMessage(content, sender, opts = {}) {
         const messageId = 'msg-' + Date.now();
         const time = this.getCurrentTime();
+        const imageHtml = (opts.imageDataUrl)
+            ? `<div class="message-attached-image"><img src="${opts.imageDataUrl.replace(/"/g, '&quot;')}" alt="Скриншот" loading="lazy"></div>`
+            : '';
         
         const messageElement = document.createElement('div');
         messageElement.className = `message ${sender}-message`;
@@ -3256,7 +3331,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 <i class="fas fa-${sender === 'user' ? 'user' : 'heart'}"></i>
                 ${sender === 'user' ? 'Вы' : 'Эксперт по отношениям'}
             </div>
-            <div class="message-content">${this.formatMessage(content)}</div>
+            <div class="message-content">${this.formatMessage(content)}${imageHtml}</div>
             <div class="message-time">${time}</div>
         `;
         
@@ -3312,29 +3387,19 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     this.syncInputPosition();
 
     const contentEl = messageElement.querySelector('.message-content');
-    const cursorHtml = '<span class="typing-cursor"></span>';
+    const cursorHtml = '<span class="typing-cursor typing-cursor-grok"></span>';
     
-    // АДАПТИВНАЯ СКОРОСТЬ
+    // Стиль печати как у Grok: по 1–3 символа, переменная задержка, естественный ритм
     const textLength = fullText.length;
-    
-    // Определяем параметры анимации в зависимости от длины текста
-    let chunkMin, chunkMax, delayMs;
-    
-    if (textLength < 100) {
-        // Короткие ответы (до 100 символов) — очень быстро
-        chunkMin = 10;
-        chunkMax = 30;
-        delayMs = 5;
-    } else if (textLength < 500) {
-        // Средние ответы (100-500 символов) — быстро
-        chunkMin = 5;
-        chunkMax = 15;
-        delayMs = 8;
-    } else {
-        // Длинные ответы (более 500 символов) — очень быстро, чтобы не ждать
-        chunkMin = 20;
-        chunkMax = 50;
-        delayMs = 5;
+    let chunkMin = 1, chunkMax = 3, baseDelayMs = 28;
+    if (textLength > 800) {
+        chunkMin = 2;
+        chunkMax = 5;
+        baseDelayMs = 18;
+    } else if (textLength > 300) {
+        chunkMin = 1;
+        chunkMax = 4;
+        baseDelayMs = 22;
     }
     
     let index = 0;
@@ -3360,17 +3425,18 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         }
         
         const chunkSize = Math.min(
-            chunkMin + Math.floor(Math.random() * (chunkMax - chunkMin + 1)), 
+            chunkMin + Math.floor(Math.random() * (chunkMax - chunkMin + 1)),
             fullText.length - index
         );
         index += chunkSize;
         const accumulated = fullText.slice(0, index);
         contentEl.innerHTML = this.formatMessage(accumulated) + cursorHtml;
         this.scrollToBottom();
-        setTimeout(typeNext, delayMs);
+        const delay = baseDelayMs + Math.floor(Math.random() * 25);
+        setTimeout(typeNext, delay);
     };
 
-    setTimeout(typeNext, 80);
+    setTimeout(typeNext, 120);
 }
 
     formatMessage(text) {

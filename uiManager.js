@@ -32,10 +32,14 @@ export class UIManager {
         }, 3000);
     }
 
-    addMessage(content, sender) {
+    addMessage(content, sender, opts = {}) {
         const messageId = 'msg-' + Date.now();
         const time = this.app.getCurrentTime();
-        
+        const escapedContent = content.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        const imageHtml = (opts.imageDataUrl) 
+            ? `<div class="message-attached-image"><img src="${opts.imageDataUrl.replace(/"/g, '&quot;')}" alt="Скриншот" loading="lazy"></div>` 
+            : '';
+
         // If a typing-placeholder exists, replace it with the real message so feedback appears immediately
         const typingPlaceholder = document.getElementById('typing-msg');
 
@@ -58,7 +62,7 @@ export class UIManager {
                 <i class="fas fa-${sender === 'user' ? 'user' : 'heart'}"></i> 
                 ${sender === 'user' ? 'Вы' : 'Эксперт по отношениям'}
             </div>
-            <div class="message-content">${content}</div>
+            <div class="message-content">${escapedContent.replace(/\n/g, '<br>')}${imageHtml}</div>
             ${sender !== 'user' ? `
             <div class="message-feedback">
                 <button class="feedback-btn feedback-good" onclick="window.verdiktApp.rateMessage('${messageId}', 1)">👍 Полезно</button>

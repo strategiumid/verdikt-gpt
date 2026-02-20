@@ -1938,6 +1938,22 @@ body.sidebar-collapsed .container {
     animation: typing-cursor-blink 0.9s step-end infinite;
 }
 
+/* Стиль курсора как у Grok: блок, мягкое мерцание */
+.typing-cursor-grok {
+    width: 3px;
+    height: 1.15em;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 1px;
+    margin-left: 2px;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+    animation: typing-cursor-grok-blink 1s step-end infinite;
+}
+
+@keyframes typing-cursor-grok-blink {
+    0%, 70% { opacity: 1; }
+    71%, 100% { opacity: 0.35; }
+}
+
 @keyframes typing-cursor-blink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0; }
@@ -2212,6 +2228,62 @@ body.sidebar-collapsed .container {
 
 .input-container-extended.grok-style-input .input-icon-button.primary:hover {
     background: rgba(255, 255, 255, 0.92);
+}
+
+/* Превью прикреплённого изображения над полем ввода */
+.attach-preview-wrapper {
+    margin-left: 32px;
+    margin-right: 32px;
+    margin-bottom: 8px;
+    max-width: min(700px, calc(100% - 48px));
+}
+.attach-preview {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.attach-preview img {
+    max-width: 120px;
+    max-height: 90px;
+    object-fit: contain;
+    border-radius: 8px;
+    display: block;
+}
+.attach-preview-remove {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+.attach-preview-remove:hover {
+    background: rgba(255, 82, 82, 0.7);
+}
+
+/* Миниатюра изображения в сообщении пользователя */
+.message-attached-image {
+    margin-top: 10px;
+}
+.message-attached-image img {
+    max-width: 100%;
+    max-height: 280px;
+    object-fit: contain;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Кнопка «Поиск в интернете» — активное состояние */
