@@ -342,21 +342,23 @@ body {
         margin-left: 0;
     }
     
-    /* Центрирование логотипа и поля ввода когда сайдбар скрыт */
+    /* Правильное позиционирование элементов когда сайдбар скрыт */
     .sidebar:not(.active) ~ .container .app-header {
-        justify-content: center;
+        justify-content: space-between;
     }
     
     .sidebar:not(.active) ~ .container .app-header .header-left {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
+        position: relative;
+        left: auto;
+        transform: none;
+        flex: 0 0 auto;
     }
     
     .sidebar:not(.active) ~ .container .app-header .header-right {
-        position: absolute;
-        right: 20px;
-        margin-left: 0;
+        position: relative;
+        right: auto;
+        margin-left: auto;
+        flex: 0 0 auto;
     }
     
     .sidebar:not(.active) ~ .container .chat-container .input-container-extended {
@@ -370,6 +372,25 @@ body {
 /* Центрирование контента с учётом свёрнутого сайдбара */
 body.sidebar-collapsed .container {
     margin-left: calc(72px + env(safe-area-inset-left, 0px));
+}
+
+/* Правильное позиционирование элементов когда сайдбар свернут на десктопе */
+body.sidebar-collapsed .app-header {
+    justify-content: space-between;
+}
+
+body.sidebar-collapsed .app-header .header-left {
+    position: relative;
+    left: auto;
+    transform: none;
+    flex: 0 0 auto;
+}
+
+body.sidebar-collapsed .app-header .header-right {
+    position: relative;
+    right: auto;
+    margin-left: auto;
+    flex: 0 0 auto;
 }
 
 /* Шапка с навигацией */

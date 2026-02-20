@@ -85,45 +85,23 @@
         box-shadow: 16px 0 48px rgba(0, 0, 0, 0.4);
     }
     
-    /* Центрирование логотипа и поля ввода когда сайдбар скрыт */
-    body:not(:has(.sidebar.active)) .app-header {
-        justify-content: center;
-    }
-    
-    body:not(:has(.sidebar.active)) .app-header .header-left {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-    }
-    
-    body:not(:has(.sidebar.active)) .app-header .header-right {
-        position: absolute;
-        right: 20px;
-        margin-left: 0;
-    }
-    
-    body:not(:has(.sidebar.active)) .chat-container .input-container-extended {
-        left: 50%;
-        transform: translateX(-50%);
-        margin-left: 0;
-        margin-right: 0;
-    }
-    
-    /* Альтернативный вариант для браузеров без поддержки :has() */
+    /* Правильное позиционирование элементов когда сайдбар скрыт */
     .sidebar:not(.active) ~ .container .app-header {
-        justify-content: center;
+        justify-content: space-between;
     }
     
     .sidebar:not(.active) ~ .container .app-header .header-left {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
+        position: relative;
+        left: auto;
+        transform: none;
+        flex: 0 0 auto;
     }
     
     .sidebar:not(.active) ~ .container .app-header .header-right {
-        position: absolute;
-        right: 20px;
-        margin-left: 0;
+        position: relative;
+        right: auto;
+        margin-left: auto;
+        flex: 0 0 auto;
     }
     
     .sidebar:not(.active) ~ .container .chat-container .input-container-extended {
