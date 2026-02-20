@@ -477,7 +477,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         this.setupProfileSettings();
         
         await this.loadChats();
-        this.updateQuestionsSidebar();
+        setTimeout(() => this.updateQuestionsSidebar(), 200);
         
         if (this.state.user) {
             await this.loadUserSettings();
@@ -3144,7 +3144,11 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         const enhancedMessage = (message || '') + (userAnalysis.context ? userAnalysis.context : '');
         const imageHint = hasImage ? '\n\n[Пользователь приложил изображение. Проанализируй его и ответь с учётом содержимого.]' : '';
         
-        this.state.conversationHistory.push({ role: "user", content: enhancedMessage });
+        this.state.conversationHistory.push({ 
+            role: "user", 
+            content: enhancedMessage,
+            originalText: displayText
+        });
         this.state.messageCount++;
         this.state.stats.totalMessages++;
         this.state.stats.userMessages++;
@@ -3464,7 +3468,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         return;
     }
     
-    const baseDelayMs = 22;
+    const baseDelayMs = 15;
     let accumulated = '';
     let tokenIndex = 0;
 
@@ -3502,16 +3506,16 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         const isPunctuation = /^[.,!?;:]+$/.test(tokens[tokenIndex - 1]);
         let delay;
         if (isSpaceOrNewline) {
-            delay = 8;
+            delay = 4;
         } else if (isPunctuation) {
-            delay = baseDelayMs + 8;
+            delay = baseDelayMs + 4;
         } else {
-            delay = baseDelayMs + Math.floor(Math.random() * 10);
+            delay = baseDelayMs + Math.floor(Math.random() * 6);
         }
         setTimeout(typeNext, delay);
     };
 
-    setTimeout(typeNext, 80);
+    setTimeout(typeNext, 30);
 }
 
     formatMessage(text) {
@@ -4386,7 +4390,8 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         const list = this.elements.questionsList;
         if (!sidebar || !list) return;
 
-        const userMessages = this.state.conversationHistory.filter(msg => msg.role === 'user');
+        const userMessages = this.state.conversationHistory.filter(msg => msg && msg.role === 'user');
+        
         if (userMessages.length === 0) {
             sidebar.style.display = 'none';
             return;
@@ -4395,19 +4400,29 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         sidebar.style.display = 'flex';
         list.innerHTML = '';
 
+        let addedCount = 0;
         userMessages.forEach((msg, idx) => {
             let content = '';
-            if (typeof msg.content === 'string') {
+            if (msg.originalText) {
+                content = msg.originalText;
+            } else if (typeof msg.content === 'string') {
                 content = msg.content;
             } else if (Array.isArray(msg.content)) {
                 const textPart = msg.content.find(p => p.type === 'text');
                 content = textPart ? textPart.text : '';
             }
             
-            if (!content || content.trim().length === 0) return;
+            if (!content || typeof content !== 'string') return;
 
-            const cleanContent = content.trim().replace(/\[ФОРМАТИРОВАНИЕ.*?\]/g, '').trim();
-            if (!cleanContent) return;
+            let cleanContent = content.trim();
+            cleanContent = cleanContent
+                .replace(/\[ФОРМАТИРОВАНИЕ[^\]]*\]/g, '')
+                .replace(/\[Пользователь включил поиск[^\]]*\]/gs, '')
+                .replace(/\[Пользователь приложил изображение[^\]]*\]/gs, '')
+                .replace(/\[Поиск в интернете[^\]]*\]/gs, '')
+                .trim();
+            
+            if (!cleanContent || cleanContent.length < 3) return;
 
             const questionText = cleanContent.substring(0, 50);
             const questionItem = document.createElement('div');
@@ -4425,9 +4440,14 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             });
 
             list.appendChild(questionItem);
+            addedCount++;
         });
 
-        this.updateQuestionsScrollIndicators();
+        if (addedCount === 0) {
+            sidebar.style.display = 'none';
+        } else {
+            this.updateQuestionsScrollIndicators();
+        }
     }
 
     scrollToQuestion(questionIndex) {
