@@ -142,7 +142,6 @@ export class VerdiktChatApp {
             notificationText: document.getElementById('notification-text'),
             questionsNavigation: document.getElementById('questions-navigation'),
             questionsNavList: document.getElementById('questions-nav-list'),
-            questionsNavToggle: document.getElementById('questions-nav-toggle'),
             apiStatus: document.getElementById('api-status'),
             apiStatusDot: document.getElementById('api-status-dot'),
             apiStatusText: document.getElementById('api-status-text'),
@@ -4522,30 +4521,49 @@ stopStarSuction() {
         const userMessages = Array.from(this.elements.chatMessages.querySelectorAll('.user-message'));
         
         if (userMessages.length === 0) {
-            this.elements.questionsNavigation.style.display = 'none';
+            this.elements.questionsNavigation.classList.add('hidden');
             return;
         }
         
-        this.elements.questionsNavigation.style.display = 'flex';
+        this.elements.questionsNavigation.classList.remove('hidden');
         this.elements.questionsNavList.innerHTML = '';
+        
+        // Calculate positions for navigation dots
+        const chatMessages = this.elements.chatMessages;
+        const totalHeight = chatMessages.scrollHeight;
+        const visibleHeight = chatMessages.clientHeight;
         
         userMessages.forEach((messageEl, index) => {
             const messageContent = messageEl.querySelector('.message-content');
             if (!messageContent) return;
             
             const text = messageContent.textContent.trim();
-            const preview = text.length > 60 ? text.substring(0, 60) + '...' : text;
+            const preview = text.length > 80 ? text.substring(0, 80) + '...' : text;
             const questionNumber = index + 1;
+            
+            // Calculate relative position
+            const messageRect = messageEl.getBoundingClientRect();
+            const containerRect = chatMessages.getBoundingClientRect();
+            const relativeTop = messageEl.offsetTop;
+            const positionPercent = (relativeTop / totalHeight) * 100;
             
             const navItem = document.createElement('button');
             navItem.className = 'questions-nav-item';
             navItem.setAttribute('data-message-id', messageEl.id);
-            navItem.innerHTML = `
-                <span class="questions-nav-item-number">${questionNumber}</span>
-                <span class="questions-nav-item-text">${preview}</span>
-            `;
+            navItem.setAttribute('data-number', questionNumber);
+            navItem.style.position = 'absolute';
+            navItem.style.top = `${Math.max(2, Math.min(98, positionPercent))}%`;
+            navItem.style.left = '50%';
+            navItem.style.transform = 'translate(-50%, -50%)';
             
-            navItem.addEventListener('click', () => {
+            // Add tooltip
+            const tooltip = document.createElement('div');
+            tooltip.className = 'questions-nav-item-tooltip';
+            tooltip.textContent = `${questionNumber}. ${preview}`;
+            navItem.appendChild(tooltip);
+            
+            navItem.addEventListener('click', (e) => {
+                e.stopPropagation();
                 this.scrollToQuestion(messageEl.id);
             });
             
@@ -4577,9 +4595,9 @@ stopStarSuction() {
             block: 'center' 
         });
         
-        // Highlight message briefly
+        // Highlight message briefly with white glow
         messageEl.style.transition = 'box-shadow 0.3s ease';
-        messageEl.style.boxShadow = '0 0 20px rgba(236, 72, 153, 0.5)';
+        messageEl.style.boxShadow = '0 0 20px rgba(255, 255, 255, 0.3), 0 0 40px rgba(255, 255, 255, 0.15)';
         setTimeout(() => {
             messageEl.style.boxShadow = '';
         }, 2000);
@@ -7239,27 +7257,30 @@ stopStarSuction() {
     }
 
     setupQuestionsNavigation() {
-        if (!this.elements.questionsNavigation || !this.elements.questionsNavToggle) return;
+        if (!this.elements.questionsNavigation) return;
         
-        const navHeader = this.elements.questionsNavigation.querySelector('.questions-nav-header');
-        
-        // Toggle collapse/expand on header click
-        if (navHeader) {
-            navHeader.addEventListener('click', () => {
-                this.elements.questionsNavigation.classList.toggle('collapsed');
+        // Update active question on scroll with throttling
+        let scrollTimeout;
+        if (this.elements.chatMessages) {
+            this.elements.chatMessages.addEventListener('scroll', () => {
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    this.updateActiveQuestion();
+                }, 50);
             });
         }
         
-        // Toggle collapse/expand on toggle button click
-        this.elements.questionsNavToggle.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.elements.questionsNavigation.classList.toggle('collapsed');
+        // Update navigation when messages are added/removed
+        const observer = new MutationObserver(() => {
+            setTimeout(() => {
+                this.updateQuestionsNavigation();
+            }, 100);
         });
         
-        // Update active question on scroll
         if (this.elements.chatMessages) {
-            this.elements.chatMessages.addEventListener('scroll', () => {
-                this.updateActiveQuestion();
+            observer.observe(this.elements.chatMessages, {
+                childList: true,
+                subtree: true
             });
         }
         
