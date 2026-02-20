@@ -1985,7 +1985,7 @@ body.sidebar-collapsed .container {
     overflow-y: visible;
     opacity: 0;
     transform: translateY(16px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     margin: 8px 0;
     box-sizing: border-box;
     will-change: transform, opacity;
@@ -2015,30 +2015,38 @@ body.sidebar-collapsed .container {
 
 .user-message {
     align-self: flex-end;
-    background: rgba(255, 255, 255, 0.08);
+    background: #111111;
     color: white;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: none;
     border-bottom-right-radius: 6px;
     margin-left: auto;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 12px;
 }
 
 .user-message:hover {
-    background: rgba(255, 255, 255, 0.12);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    background: #151515;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .ai-message {
     align-self: flex-start;
-    background: rgba(255, 255, 255, 0.05);
+    background: #1a1a1a;
     color: var(--text-primary);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: none;
     border-bottom-left-radius: 6px;
     margin-right: auto;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 12px;
 }
 
 .ai-message:hover {
-    background: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    background: #1f1f1f;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 /* Анимации сообщений - обновлены для Grok стиля */
@@ -2064,22 +2072,54 @@ body.sidebar-collapsed .container {
     80% { transform: translateX(3px); }
 }
 
+.message-content-wrapper {
+    flex: 1;
+    min-width: 0;
+}
+
 .message-sender {
-    font-size: 0.85rem;
+    font-size: 14px;
     font-weight: 600;
     margin-bottom: 8px;
     display: flex;
     align-items: center;
     gap: 6px;
+    color: var(--text-primary);
 }
 
 .message-content {
-    font-size: 1rem;
+    font-size: 16px;
     line-height: 1.6;
     overflow: visible;
     max-height: none;
     height: auto;
     white-space: normal;
+    color: var(--text-primary);
+}
+
+/* Аватар для сообщений */
+.message-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(147, 51, 234, 0.3);
+}
+
+.message-avatar.user-avatar {
+    background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+    box-shadow: 0 2px 8px rgba(75, 85, 99, 0.2);
+}
+
+.message-avatar i {
+    font-size: 14px;
 }
 
 .message-feedback {
@@ -2155,7 +2195,8 @@ body.sidebar-collapsed .container {
 }
 
 .message-time {
-    font-size: 0.75rem;
+    font-size: 13px;
+    color: var(--text-secondary);
     opacity: 0.7;
     margin-top: 10px;
     text-align: right;
@@ -3299,6 +3340,20 @@ body.sidebar-collapsed .container {
 .input-icon-button.primary:hover {
     background: var(--primary-dark);
     box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.4);
+}
+
+/* Анимация spinner для кнопки отправки */
+.input-icon-button.primary i.fa-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* Кнопки внутри поля ввода — без своего фона, часть «таблетки» */

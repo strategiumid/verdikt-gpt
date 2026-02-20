@@ -2950,6 +2950,12 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             this.elements.messageInput.addEventListener('input', () => {
                 this.elements.messageInput.style.height = 'auto';
                 this.elements.messageInput.style.height = Math.min(this.elements.messageInput.scrollHeight, 200) + 'px';
+                
+                // Показываем кнопку отправки при вводе текста
+                const hasText = this.elements.messageInput.value.trim().length > 0;
+                if (hasText && !this.state.isResponding) {
+                    this.showSendButton();
+                }
             });
         }
         }
@@ -3115,6 +3121,10 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             }
         }
         
+        // Анимация превращения стрелки в spinner при отправке
+        // Кнопка уже видна, просто меняем иконку на spinner
+        this.showSendButtonSpinner();
+        
         const displayText = message || 'Скриншот / изображение';
         this.addMessage(displayText, 'user', { imageDataUrl: hasImage ? this.state.attachedImage.dataUrl : null });
         
@@ -3239,11 +3249,65 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         } finally {
             // Разблокируем интерфейс после завершения ответа
             this.state.isResponding = false;
-            this.updateSendButtonState();
             this.elements.messageInput.disabled = false;
+            // Показываем кнопку отправки снова
+            this.showSendButton();
+            this.updateSendButtonState();
         }
         
         this.scrollToBottom();
+    }
+    
+    showSendButtonSpinner() {
+        const sendButton = this.elements.sendButton;
+        if (!sendButton) return;
+        
+        const icon = sendButton.querySelector('i');
+        if (!icon) return;
+        
+        // Убеждаемся, что кнопка видна перед анимацией
+        if (sendButton.style.opacity === '0' || sendButton.style.display === 'none') {
+            sendButton.style.display = '';
+            sendButton.style.opacity = '1';
+            sendButton.style.transform = 'scale(1)';
+        }
+        
+        // Анимация превращения стрелки в spinner
+        icon.style.transition = 'opacity 200ms ease-out, transform 200ms ease-out';
+        icon.style.opacity = '0';
+        icon.style.transform = 'scale(0.8) rotate(90deg)';
+        
+        setTimeout(() => {
+            icon.className = 'fas fa-spinner fa-spin';
+            icon.style.opacity = '1';
+            icon.style.transform = 'scale(1) rotate(0deg)';
+            sendButton.disabled = true;
+            sendButton.style.opacity = '0.7';
+            sendButton.style.cursor = 'not-allowed';
+            
+            // После показа spinner, через небольшую задержку исчезаем кнопку
+            setTimeout(() => {
+                sendButton.style.transition = 'opacity 300ms ease-out, transform 300ms ease-out';
+                sendButton.style.opacity = '0';
+                sendButton.style.transform = 'scale(0.9)';
+                sendButton.style.pointerEvents = 'none';
+            }, 500);
+        }, 200);
+    }
+    
+    showSendButton() {
+        const sendButton = this.elements.sendButton;
+        if (!sendButton) return;
+        
+        sendButton.style.pointerEvents = '';
+        sendButton.style.opacity = '0';
+        sendButton.style.transform = 'scale(0.9)';
+        
+        requestAnimationFrame(() => {
+            sendButton.style.transition = 'opacity 300ms ease-out, transform 300ms ease-out';
+            sendButton.style.opacity = '1';
+            sendButton.style.transform = 'scale(1)';
+        });
     }
     
     updateSendButtonState() {
@@ -3254,19 +3318,29 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         if (!icon) return;
         
         if (this.state.isResponding) {
-            // Меняем иконку на паузу
-            icon.className = 'fas fa-pause';
+            // Показываем spinner (уже установлен в showSendButtonSpinner)
+            if (!icon.classList.contains('fa-spinner')) {
+                icon.className = 'fas fa-spinner fa-spin';
+            }
             sendButton.title = 'ИИ отвечает...';
             sendButton.disabled = true;
             sendButton.style.opacity = '0.7';
             sendButton.style.cursor = 'not-allowed';
         } else {
-            // Возвращаем иконку отправки
-            icon.className = 'fas fa-paper-plane';
-            sendButton.title = 'Отправить сообщение';
-            sendButton.disabled = false;
-            sendButton.style.opacity = '1';
-            sendButton.style.cursor = 'pointer';
+            // Возвращаем иконку отправки с анимацией
+            // Кнопка уже показана через showSendButton(), просто меняем иконку
+            icon.style.transition = 'opacity 200ms ease-out, transform 200ms ease-out';
+            icon.style.opacity = '0';
+            icon.style.transform = 'scale(0.8) rotate(-90deg)';
+            
+            setTimeout(() => {
+                icon.className = 'fas fa-paper-plane';
+                icon.style.opacity = '1';
+                icon.style.transform = 'scale(1) rotate(0deg)';
+                sendButton.title = 'Отправить сообщение';
+                sendButton.disabled = false;
+                sendButton.style.cursor = 'pointer';
+            }, 200);
         }
     }
 
@@ -3333,25 +3407,33 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         messageElement.style.opacity = '0';
         messageElement.style.transform = 'translateY(20px)';
         
-        messageElement.innerHTML = `
-            <div class="message-actions">
-                <button class="message-action" onclick="window.verdiktApp.copyMessage('${messageId}')">
-                    <i class="fas fa-copy"></i>
-                </button>
-                <button class="message-action" onclick="window.verdiktApp.speakMessage('${messageId}')">
-                    <i class="fas fa-volume-up"></i>
-                </button>
-                <button class="message-action" onclick="window.verdiktApp.regenerateMessage('${messageId}')">
-                    <i class="fas fa-redo"></i>
-                </button>
-            </div>
+    // Структура сообщения в стиле Grok xAI
+    const avatarHtml = sender === 'user' 
+        ? `<div class="message-avatar user-avatar"><i class="fas fa-user"></i></div>`
+        : `<div class="message-avatar"><span>V</span></div>`;
+    
+    messageElement.innerHTML = `
+        <div class="message-actions">
+            <button class="message-action" onclick="window.verdiktApp.copyMessage('${messageId}')">
+                <i class="fas fa-copy"></i>
+            </button>
+            <button class="message-action" onclick="window.verdiktApp.speakMessage('${messageId}')">
+                <i class="fas fa-volume-up"></i>
+            </button>
+            <button class="message-action" onclick="window.verdiktApp.regenerateMessage('${messageId}')">
+                <i class="fas fa-redo"></i>
+            </button>
+        </div>
+        ${sender === 'ai' ? avatarHtml : ''}
+        <div class="message-content-wrapper">
             <div class="message-sender">
-                <i class="fas fa-${sender === 'user' ? 'user' : 'heart'}"></i>
                 ${sender === 'user' ? 'Вы' : 'Эксперт по отношениям'}
             </div>
             <div class="message-content">${this.formatMessage(content)}${imageHtml}</div>
             <div class="message-time">${time}</div>
-        `;
+        </div>
+        ${sender === 'user' ? avatarHtml : ''}
+    `;
         
         this.elements.chatMessages.appendChild(messageElement);
         
@@ -3384,6 +3466,9 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     messageElement.style.transform = 'translateY(16px)';
     messageElement.style.willChange = 'transform, opacity';
 
+    // Аватар для AI сообщений
+    const avatarHtml = `<div class="message-avatar"><span>V</span></div>`;
+    
     messageElement.innerHTML = `
         <div class="message-actions">
             <button class="message-action" onclick="window.verdiktApp.copyMessage('${messageId}')">
@@ -3396,11 +3481,12 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 <i class="fas fa-redo"></i>
             </button>
         </div>
-        <div class="message-sender">
-            <i class="fas fa-heart"></i> Эксперт по отношениям
+        ${avatarHtml}
+        <div class="message-content-wrapper">
+            <div class="message-sender">Эксперт по отношениям</div>
+            <div class="message-content streaming-content"></div>
+            <div class="message-time">${time}</div>
         </div>
-        <div class="message-content streaming-content"></div>
-        <div class="message-time">${time}</div>
     `;
 
     this.elements.chatMessages.appendChild(messageElement);
@@ -3431,7 +3517,15 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     
     let accumulated = '';
     let charIndex = 0;
-    const baseDelayMs = 15; // ~10-30ms на символ как в Grok
+    const baseDelayMs = 20; // ~15-30ms на символ для более плавного эффекта
+    
+    // Улучшенный streaming: учитываем пробелы и знаки препинания
+    const getCharDelay = (char) => {
+        if (/\s/.test(char)) return 5; // Быстрее для пробелов
+        if (/[.,!?;:]/.test(char)) return 30; // Медленнее для знаков препинания
+        if (/[а-яА-ЯёЁ]/.test(char)) return baseDelayMs + Math.floor(Math.random() * 8); // Русские буквы
+        return baseDelayMs + Math.floor(Math.random() * 10); // Остальные символы
+    };
 
     const streamNext = () => {
         if (charIndex >= chars.length) {
@@ -3440,15 +3534,20 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             messageElement.classList.remove('ai-message-typing', 'streaming');
             messageElement.style.willChange = 'auto';
             
-            const timeEl = messageElement.querySelector('.message-time');
-            if (timeEl && !messageElement.querySelector('.message-feedback')) {
+            const contentWrapper = messageElement.querySelector('.message-content-wrapper');
+            if (contentWrapper && !messageElement.querySelector('.message-feedback')) {
                 const feedbackDiv = document.createElement('div');
                 feedbackDiv.className = 'message-feedback';
                 feedbackDiv.innerHTML = `
                     <button class="feedback-btn feedback-good" onclick="window.verdiktApp.rateMessage('${messageId}', 1)">👍 Полезно</button>
                     <button class="feedback-btn feedback-bad" onclick="window.verdiktApp.rateMessage('${messageId}', -1)">👎 Не полезно</button>
                 `;
-                messageElement.insertBefore(feedbackDiv, timeEl);
+                const timeEl = contentWrapper.querySelector('.message-time');
+                if (timeEl) {
+                    contentWrapper.insertBefore(feedbackDiv, timeEl);
+                } else {
+                    contentWrapper.appendChild(feedbackDiv);
+                }
             }
             setTimeout(() => hljs.highlightAll(), 50);
             this.smoothScrollToBottom();
@@ -3458,17 +3557,17 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         accumulated += chars[charIndex];
         charIndex++;
         
-        // Форматируем накопленный текст и добавляем streaming класс для новых символов
+        // Форматируем накопленный текст
         const formatted = this.formatMessage(accumulated);
         contentEl.innerHTML = formatted;
         
-        // Плавная прокрутка во время streaming
-        if (charIndex % 10 === 0) {
+        // Плавная прокрутка во время streaming (чаще для лучшего UX)
+        if (charIndex % 8 === 0 || chars[charIndex - 1] === '\n') {
             this.smoothScrollToBottom();
         }
         
-        // Задержка между символами: 15-25ms (как в Grok)
-        const delay = baseDelayMs + Math.floor(Math.random() * 10);
+        // Динамическая задержка в зависимости от символа
+        const delay = getCharDelay(chars[charIndex - 1]);
         setTimeout(streamNext, delay);
     };
 

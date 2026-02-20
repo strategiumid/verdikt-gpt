@@ -47,6 +47,11 @@ export class UIManager {
         messageElement.className = `message ${sender}-message`;
         messageElement.id = messageId;
 
+        // Структура сообщения в стиле Grok xAI
+        const avatarHtml = sender === 'user' 
+            ? `<div class="message-avatar user-avatar"><i class="fas fa-user"></i></div>`
+            : `<div class="message-avatar"><span>V</span></div>`;
+        
         messageElement.innerHTML = `
             <div class="message-actions">
                 <button class="message-action" onclick="window.verdiktApp.copyMessage('${messageId}')">
@@ -56,18 +61,21 @@ export class UIManager {
                     <i class="fas fa-volume-up"></i>
                 </button>
             </div>
-            <div class="message-sender">
-                <i class="fas fa-${sender === 'user' ? 'user' : 'heart'}"></i> 
-                ${sender === 'user' ? 'Вы' : 'Эксперт по отношениям'}
+            ${sender === 'ai' ? avatarHtml : ''}
+            <div class="message-content-wrapper">
+                <div class="message-sender">
+                    ${sender === 'user' ? 'Вы' : 'Эксперт по отношениям'}
+                </div>
+                <div class="message-content">${escapedContent.replace(/\n/g, '<br>')}${imageHtml}</div>
+                ${sender !== 'user' ? `
+                <div class="message-feedback">
+                    <button class="feedback-btn feedback-good" onclick="window.verdiktApp.rateMessage('${messageId}', 1)">👍 Полезно</button>
+                    <button class="feedback-btn feedback-bad" onclick="window.verdiktApp.rateMessage('${messageId}', -1)">👎 Не полезно</button>
+                </div>
+                ` : ''}
+                <div class="message-time">${time}</div>
             </div>
-            <div class="message-content">${escapedContent.replace(/\n/g, '<br>')}${imageHtml}</div>
-            ${sender !== 'user' ? `
-            <div class="message-feedback">
-                <button class="feedback-btn feedback-good" onclick="window.verdiktApp.rateMessage('${messageId}', 1)">👍 Полезно</button>
-                <button class="feedback-btn feedback-bad" onclick="window.verdiktApp.rateMessage('${messageId}', -1)">👎 Не полезно</button>
-            </div>
-            ` : ''}
-            <div class="message-time">${time}</div>
+            ${sender === 'user' ? avatarHtml : ''}
         `;
 
         if (typingPlaceholder && sender !== 'user') {
@@ -180,16 +188,18 @@ export class UIManager {
             const tpl = document.createElement('div');
             tpl.className = `message ai-message typing ${typingClass}`;
             tpl.id = 'typing-msg';
+            const avatarHtml = `<div class="message-avatar"><span>V</span></div>`;
             tpl.innerHTML = `
-                <div class="message-sender">
-                    <i class="fas fa-heart"></i> Эксперт по отношениям
-                </div>
-                <div class="message-content">
-                    <div class="typing-content typing-content-grok">
-                        <div class="typing-dots typing-dots-grok">
-                            <span></span><span></span><span></span>
+                ${avatarHtml}
+                <div class="message-content-wrapper">
+                    <div class="message-sender">Эксперт по отношениям</div>
+                    <div class="message-content">
+                        <div class="typing-content typing-content-grok">
+                            <div class="typing-dots typing-dots-grok">
+                                <span></span><span></span><span></span>
+                            </div>
+                            <span class="typing-text ${isDeepReflection ? 'deep-reflection-thinking' : ''}">${typingText}</span>
                         </div>
-                        <span class="typing-text ${isDeepReflection ? 'deep-reflection-thinking' : ''}">${typingText}</span>
                     </div>
                 </div>
             `;
@@ -227,16 +237,18 @@ export class UIManager {
         const tpl = document.createElement('div');
         tpl.className = 'message ai-message typing typing-message-grok searching-message';
         tpl.id = 'searching-msg';
+        const avatarHtml = `<div class="message-avatar"><span>V</span></div>`;
         tpl.innerHTML = `
-            <div class="message-sender">
-                <i class="fas fa-globe"></i> Эксперт по отношениям
-            </div>
-            <div class="message-content">
-                <div class="typing-content typing-content-grok typing-content-search">
-                    <div class="typing-dots typing-dots-grok searching-dots">
-                        <span></span><span></span><span></span>
+            ${avatarHtml}
+            <div class="message-content-wrapper">
+                <div class="message-sender">Эксперт по отношениям</div>
+                <div class="message-content">
+                    <div class="typing-content typing-content-grok typing-content-search">
+                        <div class="typing-dots typing-dots-grok searching-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                        <span class="typing-text typing-text-search">Ищу в интернете...</span>
                     </div>
-                    <span class="typing-text typing-text-search">Ищу в интернете...</span>
                 </div>
             </div>
         `;
