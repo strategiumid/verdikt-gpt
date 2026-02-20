@@ -3111,10 +3111,6 @@
     <div class="container">
         <!-- Шапка приложения -->
         <div class="app-header">
-            <!-- Кнопка для открытия панели вопросов на мобильных -->
-            <button class="questions-toggle-mobile" id="questions-toggle-mobile" aria-label="Показать вопросы" style="display: none;">
-                <i class="fas fa-list"></i>
-            </button>
             <div class="header-left">
                 <!-- Индикатор статуса API и лимита запросов -->
                 <div class="api-status-indicator" id="api-status" title="Статус подключения к API">
@@ -3355,23 +3351,18 @@
                     </div>
                 </div>
                 
-                <!-- Боковая панель с вопросами (как на grok.com) -->
-                <div class="questions-sidebar" id="questions-sidebar">
-                    <div class="questions-sidebar-content" id="questions-sidebar-content">
-                        <div class="questions-list" id="questions-list">
+                <!-- Новая навигация по вопросам (горизонтальная панель сверху) -->
+                <div class="questions-navigation" id="questions-navigation">
+                    <div class="questions-nav-container" id="questions-nav-container">
+                        <div class="questions-nav-list" id="questions-nav-list">
                             <!-- Список вопросов будет добавлен динамически -->
                         </div>
-                        <div class="questions-sidebar-scroll-indicators">
-                            <button class="questions-scroll-btn questions-scroll-up" id="questions-scroll-up" aria-label="Прокрутить вверх">
-                                <i class="fas fa-chevron-up"></i>
-                            </button>
-                            <div class="questions-scroll-dots" id="questions-scroll-dots">
-                                <span></span><span></span><span></span>
-                            </div>
-                            <button class="questions-scroll-btn questions-scroll-down" id="questions-scroll-down" aria-label="Прокрутить вниз">
-                                <i class="fas fa-chevron-down"></i>
-                            </button>
-                        </div>
+                        <button class="questions-nav-scroll-btn questions-nav-scroll-left" id="questions-nav-scroll-left" aria-label="Прокрутить влево">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="questions-nav-scroll-btn questions-nav-scroll-right" id="questions-nav-scroll-right" aria-label="Прокрутить вправо">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
                     </div>
                 </div>
             </div>

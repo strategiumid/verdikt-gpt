@@ -390,23 +390,143 @@ body {
     position: relative;
     height: 100%;
     min-height: 0;
-    order: 1;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
-/* Боковая панель с вопросами (как на grok.com) - справа */
-.questions-sidebar {
+/* Новая горизонтальная навигация по вопросам */
+.questions-navigation {
     display: none;
-    flex-direction: column;
-    width: 300px;
-    min-width: 300px;
-    max-width: 300px;
-    background: transparent;
-    height: 100%;
+    position: fixed;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 1200px;
+    z-index: 100;
+    padding: 0 20px;
+    pointer-events: none;
+}
+
+.questions-navigation.active {
+    display: block;
+    pointer-events: auto;
+}
+
+.questions-nav-container {
     position: relative;
+    background: rgba(26, 26, 26, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    padding: 12px 40px;
+    overflow: hidden;
+}
+
+.questions-nav-list {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 4px 0;
+}
+
+.questions-nav-list::-webkit-scrollbar {
+    display: none;
+}
+
+.questions-nav-item {
     flex-shrink: 0;
-    order: 2;
-    padding: 16px 12px;
-    box-sizing: border-box;
+    background: rgba(44, 44, 46, 0.8);
+    border-radius: 10px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    white-space: nowrap;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.questions-nav-item:hover {
+    background: rgba(52, 52, 54, 0.9);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.questions-nav-item:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.questions-nav-item.active {
+    background: rgba(60, 60, 62, 0.95);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+}
+
+.questions-nav-item-number {
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.75rem;
+}
+
+.questions-nav-item-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.questions-nav-scroll-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(44, 44, 46, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 10;
+    font-size: 12px;
+}
+
+.questions-nav-scroll-btn:hover {
+    background: rgba(52, 52, 54, 0.95);
+    color: rgba(255, 255, 255, 1);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.questions-nav-scroll-btn:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+.questions-nav-scroll-left {
+    left: 8px;
+}
+
+.questions-nav-scroll-right {
+    right: 8px;
+}
+
+.questions-nav-scroll-btn.hidden {
+    display: none;
 }
 
 /* На десктопе панель показывается через класс desktop-visible */
@@ -658,6 +778,11 @@ body {
     top: auto;
     bottom: 20px;
     transform: translate(-50%, 0);
+}
+
+/* Отступ сверху для навигации по вопросам */
+.chat-container:not(.input-centered) .chat-messages {
+    padding-top: 80px;
 }
 
 /* Larger screens: make the input wider and give chat more horizontal space */

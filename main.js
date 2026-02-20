@@ -170,12 +170,11 @@ export class VerdiktChatApp {
             attachPreview: document.getElementById('attach-preview'),
             attachPreviewImg: document.getElementById('attach-preview-img'),
             attachPreviewRemove: document.getElementById('attach-preview-remove'),
-            questionsSidebar: document.getElementById('questions-sidebar'),
-            questionsList: document.getElementById('questions-list'),
-            questionsSidebarContent: document.getElementById('questions-sidebar-content'),
-            questionsScrollUp: document.getElementById('questions-scroll-up'),
-            questionsScrollDown: document.getElementById('questions-scroll-down'),
-            questionsToggleMobile: document.getElementById('questions-toggle-mobile'),
+            questionsNavigation: document.getElementById('questions-navigation'),
+            questionsNavList: document.getElementById('questions-nav-list'),
+            questionsNavContainer: document.getElementById('questions-nav-container'),
+            questionsNavScrollLeft: document.getElementById('questions-nav-scroll-left'),
+            questionsNavScrollRight: document.getElementById('questions-nav-scroll-right'),
             
             importModal: document.getElementById('import-modal'),
             importFileInput: document.getElementById('import-file-input'),
@@ -2903,53 +2902,8 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             this.elements.attachPreviewRemove.addEventListener('click', () => this.clearAttachedImage());
         }
         
-        if (this.elements.questionsScrollUp) {
-            this.elements.questionsScrollUp.addEventListener('click', () => {
-                const content = this.elements.questionsSidebarContent;
-                if (content) {
-                    content.scrollBy({ top: -100, behavior: 'smooth' });
-                }
-            });
-        }
-        
-        if (this.elements.questionsScrollDown) {
-            this.elements.questionsScrollDown.addEventListener('click', () => {
-                const content = this.elements.questionsSidebarContent;
-                if (content) {
-                    content.scrollBy({ top: 100, behavior: 'smooth' });
-                }
-            });
-        }
-        
-        // Кнопка для открытия панели вопросов на мобильных
-        if (this.elements.questionsToggleMobile) {
-            this.elements.questionsToggleMobile.addEventListener('click', () => {
-                const sidebar = this.elements.questionsSidebar;
-                if (sidebar) {
-                    sidebar.classList.toggle('mobile-open');
-                    // Обновляем иконку
-                    const icon = this.elements.questionsToggleMobile.querySelector('i');
-                    if (icon) {
-                        icon.className = sidebar.classList.contains('mobile-open') 
-                            ? 'fas fa-times' 
-                            : 'fas fa-list';
-                    }
-                }
-            });
-        }
-        
-        // Закрытие панели вопросов при клике вне её на мобильных
-        if (this.elements.questionsSidebar) {
-            this.elements.questionsSidebar.addEventListener('click', (e) => {
-                if (e.target === this.elements.questionsSidebar) {
-                    this.elements.questionsSidebar.classList.remove('mobile-open');
-                    const icon = this.elements.questionsToggleMobile?.querySelector('i');
-                    if (icon) {
-                        icon.className = 'fas fa-list';
-                    }
-                }
-            });
-        }
+        // Инициализация новой навигации по вопросам
+        this.updateQuestionsNavScrollButtons();
         
         if (this.elements.chatMessages) {
             let overlapCheckScheduled = false;
@@ -4464,36 +4418,21 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     }
 
     updateQuestionsSidebar() {
-        const sidebar = this.elements.questionsSidebar;
-        const list = this.elements.questionsList;
-        if (!sidebar || !list) {
-            console.warn('Questions sidebar elements not found');
+        const navigation = this.elements.questionsNavigation;
+        const list = this.elements.questionsNavList;
+        if (!navigation || !list) {
+            console.warn('Questions navigation elements not found');
             return;
         }
 
         const userMessages = this.state.conversationHistory.filter(msg => msg && msg.role === 'user');
-        console.log('Updating questions sidebar:', {
-            totalHistory: this.state.conversationHistory.length,
-            userMessagesCount: userMessages.length,
-            sidebarExists: !!sidebar,
-            listExists: !!list
-        });
         
         if (userMessages.length === 0) {
-            sidebar.style.display = 'none';
-            // Скрываем кнопку на мобильных, если нет вопросов
-            if (this.elements.questionsToggleMobile) {
-                this.elements.questionsToggleMobile.style.display = 'none';
-            }
+            navigation.classList.remove('active');
             return;
         }
 
-        // Показываем кнопку на мобильных, если есть вопросы
-        if (this.elements.questionsToggleMobile) {
-            this.elements.questionsToggleMobile.style.display = 'flex';
-        }
-
-        sidebar.style.display = 'flex';
+        navigation.classList.add('active');
         list.innerHTML = '';
 
         let addedCount = 0;
@@ -4512,14 +4451,12 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             }
             
             if (!content || typeof content !== 'string') {
-                console.log('Skipping message', idx, 'no content', msg);
                 return;
             }
 
             let cleanContent = content.trim();
-            const originalLength = cleanContent.length;
             
-            if (originalLength > 0) {
+            if (cleanContent.length > 0) {
                 cleanContent = cleanContent
                     .replace(/\[ФОРМАТИРОВАНИЕ[^\]]*\]/gi, '')
                     .replace(/\[Пользователь включил поиск[^\]]*\]/gis, '')
@@ -4530,29 +4467,19 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             }
             
             if (!cleanContent || cleanContent.length < 2) {
-                console.log('Skipping message', idx, {
-                    afterCleaning: cleanContent.length,
-                    original: originalLength,
-                    preview: content.substring(0, 60),
-                    hasOriginalText: !!msg.originalText
-                });
                 return;
             }
 
-            // Берем больше текста для отображения (до 80 символов)
-            const questionText = cleanContent.length > 80 ? cleanContent.substring(0, 80) + '...' : cleanContent;
+            // Берем текст для отображения (до 50 символов для горизонтальной навигации)
+            const questionText = cleanContent.length > 50 ? cleanContent.substring(0, 50) + '...' : cleanContent;
             const questionItem = document.createElement('div');
-            questionItem.className = 'question-card';
+            questionItem.className = 'questions-nav-item';
             questionItem.dataset.messageId = messageId;
             questionItem.setAttribute('data-question-index', idx);
             
-            const formattedText = this.formatQuestionText(questionText, cleanContent.length > 80);
             questionItem.innerHTML = `
-                <div class="question-card-header">
-                    <i class="fas fa-question-circle"></i>
-                    Вопрос ${idx + 1}
-                </div>
-                <div class="question-card-content">${formattedText}</div>
+                <span class="questions-nav-item-number">${idx + 1}</span>
+                <span class="questions-nav-item-text">${this.escapeHtml(questionText)}</span>
             `;
 
             questionItem.addEventListener('click', (e) => {
@@ -4567,70 +4494,47 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 
                 // Переходим к вопросу
                 this.scrollToQuestion(messageId);
-                
-                // Закрываем панель на мобильных после клика
-                if (window.innerWidth <= 768 && sidebar.classList.contains('mobile-open')) {
-                    setTimeout(() => {
-                        sidebar.classList.remove('mobile-open');
-                        const icon = this.elements.questionsToggleMobile?.querySelector('i');
-                        if (icon) {
-                            icon.className = 'fas fa-list';
-                        }
-                    }, 300);
-                }
             });
 
             list.appendChild(questionItem);
             addedCount++;
-            console.log('Added question card', idx, messageId, questionText.substring(0, 30));
         });
 
-        console.log('Questions sidebar update complete:', addedCount, 'cards added');
-        const isMobile = window.innerWidth <= 768;
+        // Обновляем кнопки прокрутки
+        this.updateQuestionsNavScrollButtons();
         
-        if (addedCount === 0) {
-            sidebar.style.display = 'none';
-            sidebar.classList.remove('mobile-open', 'desktop-visible');
-            // Скрываем кнопку на мобильных, если нет вопросов
-            if (this.elements.questionsToggleMobile) {
-                this.elements.questionsToggleMobile.style.display = 'none';
-            }
-        } else {
-            // На десктопе показываем панель справа
-            if (!isMobile) {
-                sidebar.style.display = 'flex';
-                sidebar.classList.remove('mobile-open');
-                sidebar.classList.add('desktop-visible');
-                console.log('Desktop: showing questions sidebar, width:', window.innerWidth);
-            } else {
-                // На мобильных скрываем панель, но показываем кнопку
-                sidebar.style.display = 'none';
-                sidebar.classList.remove('mobile-open', 'desktop-visible');
-                if (this.elements.questionsToggleMobile) {
-                    this.elements.questionsToggleMobile.style.display = 'flex';
-                }
-                console.log('Mobile: sidebar hidden, button shown');
-            }
-            this.updateQuestionsScrollIndicators();
-            // Обновляем активный вопрос после обновления панели
-            setTimeout(() => {
-                this.updateActiveQuestion();
-            }, 100);
-        }
-        
-        // Дополнительная проверка видимости
+        // Обновляем активный вопрос после обновления навигации
         setTimeout(() => {
-            const computedStyle = window.getComputedStyle(sidebar);
-            console.log('Sidebar visibility check:', {
-                display: sidebar.style.display,
-                computedDisplay: computedStyle.display,
-                width: window.innerWidth,
-                isMobile: isMobile,
-                hasCards: addedCount > 0,
-                visibility: computedStyle.visibility,
-                opacity: computedStyle.opacity
-            });
+            this.updateActiveQuestion();
         }, 100);
+    }
+
+    updateQuestionsNavScrollButtons() {
+        const list = this.elements.questionsNavList;
+        const leftBtn = this.elements.questionsNavScrollLeft;
+        const rightBtn = this.elements.questionsNavScrollRight;
+        
+        if (!list || !leftBtn || !rightBtn) return;
+
+        const updateButtons = () => {
+            const canScrollLeft = list.scrollLeft > 0;
+            const canScrollRight = list.scrollLeft < (list.scrollWidth - list.clientWidth - 10);
+            
+            leftBtn.classList.toggle('hidden', !canScrollLeft);
+            rightBtn.classList.toggle('hidden', !canScrollRight);
+        };
+
+        updateButtons();
+        list.addEventListener('scroll', updateButtons);
+        
+        // Обработчики прокрутки
+        leftBtn.addEventListener('click', () => {
+            list.scrollBy({ left: -200, behavior: 'smooth' });
+        });
+        
+        rightBtn.addEventListener('click', () => {
+            list.scrollBy({ left: 200, behavior: 'smooth' });
+        });
     }
 
     scrollToQuestion(messageId) {
@@ -4689,9 +4593,9 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     }
 
     updateActiveQuestion() {
-        // Обновляем активную карточку вопроса на основе видимости сообщений
-        const questionCards = this.elements.questionsList?.querySelectorAll('.question-card');
-        if (!questionCards || questionCards.length === 0) return;
+        // Обновляем активный элемент навигации на основе видимости сообщений
+        const questionItems = this.elements.questionsNavList?.querySelectorAll('.questions-nav-item');
+        if (!questionItems || questionItems.length === 0) return;
 
         const messagesContainer = this.elements.chatMessages;
         const containerRect = messagesContainer.getBoundingClientRect();
@@ -4722,33 +4626,22 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             }
         });
 
-        // Обновляем классы активных карточек
-        questionCards.forEach(card => {
-            if (card.dataset.messageId === activeMessageId) {
-                card.classList.add('active');
+        // Обновляем классы активных элементов навигации
+        questionItems.forEach(item => {
+            if (item.dataset.messageId === activeMessageId) {
+                item.classList.add('active');
+                // Прокручиваем к активному элементу, если он не виден
+                const itemRect = item.getBoundingClientRect();
+                const containerRect = this.elements.questionsNavList.getBoundingClientRect();
+                if (itemRect.left < containerRect.left || itemRect.right > containerRect.right) {
+                    item.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                }
             } else {
-                card.classList.remove('active');
+                item.classList.remove('active');
             }
         });
     }
 
-    updateQuestionsScrollIndicators() {
-        const content = this.elements.questionsSidebarContent;
-        const upBtn = this.elements.questionsScrollUp;
-        const downBtn = this.elements.questionsScrollDown;
-        if (!content || !upBtn || !downBtn) return;
-
-        const updateButtons = () => {
-            const { scrollTop, scrollHeight, clientHeight } = content;
-            upBtn.style.opacity = scrollTop > 10 ? '1' : '0.3';
-            upBtn.style.pointerEvents = scrollTop > 10 ? 'auto' : 'none';
-            downBtn.style.opacity = scrollTop < scrollHeight - clientHeight - 10 ? '1' : '0.3';
-            downBtn.style.pointerEvents = scrollTop < scrollHeight - clientHeight - 10 ? 'auto' : 'none';
-        };
-
-        content.addEventListener('scroll', updateButtons);
-        updateButtons();
-    }
 
     escapeHtml(text) {
         const div = document.createElement('div');
