@@ -4532,20 +4532,47 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         });
 
         console.log('Questions sidebar update complete:', addedCount, 'cards added');
+        const isMobile = window.innerWidth <= 768;
+        
         if (addedCount === 0) {
             sidebar.style.display = 'none';
+            sidebar.classList.remove('mobile-open', 'desktop-visible');
             // Скрываем кнопку на мобильных, если нет вопросов
             if (this.elements.questionsToggleMobile) {
                 this.elements.questionsToggleMobile.style.display = 'none';
             }
         } else {
-            sidebar.style.display = 'flex';
-            // Показываем кнопку на мобильных, если есть вопросы
-            if (this.elements.questionsToggleMobile && window.innerWidth <= 768) {
-                this.elements.questionsToggleMobile.style.display = 'flex';
+            // На десктопе показываем панель справа
+            if (!isMobile) {
+                sidebar.style.display = 'flex';
+                sidebar.classList.remove('mobile-open');
+                sidebar.classList.add('desktop-visible');
+                console.log('Desktop: showing questions sidebar, width:', window.innerWidth);
+            } else {
+                // На мобильных скрываем панель, но показываем кнопку
+                sidebar.style.display = 'none';
+                sidebar.classList.remove('mobile-open', 'desktop-visible');
+                if (this.elements.questionsToggleMobile) {
+                    this.elements.questionsToggleMobile.style.display = 'flex';
+                }
+                console.log('Mobile: sidebar hidden, button shown');
             }
             this.updateQuestionsScrollIndicators();
         }
+        
+        // Дополнительная проверка видимости
+        setTimeout(() => {
+            const computedStyle = window.getComputedStyle(sidebar);
+            console.log('Sidebar visibility check:', {
+                display: sidebar.style.display,
+                computedDisplay: computedStyle.display,
+                width: window.innerWidth,
+                isMobile: isMobile,
+                hasCards: addedCount > 0,
+                visibility: computedStyle.visibility,
+                opacity: computedStyle.opacity
+            });
+        }, 100);
     }
 
     scrollToQuestion(questionIndex) {

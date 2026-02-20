@@ -391,6 +391,45 @@ body.sidebar-collapsed .container {
     box-sizing: border-box;
 }
 
+/* На десктопе панель показывается через класс desktop-visible */
+@media (min-width: 769px) {
+    /* Показываем панель на десктопе через класс или inline стиль */
+    .chat-area .questions-sidebar.desktop-visible,
+    .chat-area .questions-sidebar[style*="display: flex"],
+    .chat-area .questions-sidebar[style*="display:flex"],
+    .chat-area .questions-sidebar[style*="display: flex;"],
+    .chat-area .questions-sidebar[style*="display:flex;"] {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    /* Убеждаемся, что на десктопе панель не скрыта мобильными правилами */
+    .chat-area .questions-sidebar {
+        position: relative !important;
+        width: 300px !important;
+        min-width: 300px !important;
+        max-width: 300px !important;
+        height: 100% !important;
+        border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-top: none !important;
+        border-radius: 0 !important;
+        padding: 16px 12px !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        background: transparent !important;
+        bottom: auto !important;
+        left: auto !important;
+        right: auto !important;
+        order: 2 !important;
+    }
+    
+    /* Скрываем кнопку мобильного переключения на десктопе */
+    .questions-toggle-mobile {
+        display: none !important;
+    }
+}
+
 .questions-sidebar-header {
     display: none;
 }
@@ -6850,8 +6889,17 @@ footer {
     }
     
     /* Панель вопросов: скрываем на мобильных или делаем выдвижной снизу */
-    .questions-sidebar {
+    .questions-sidebar:not(.mobile-open) {
         display: none !important;
+    }
+    
+    /* Убеждаемся, что inline стили не перекрываются на мобильных для закрытой панели */
+    .questions-sidebar:not(.mobile-open)[style*="display: flex"],
+    .questions-sidebar:not(.mobile-open)[style*="display:flex"] {
+        display: none !important;
+    }
+    
+    .questions-sidebar {
         position: fixed;
         bottom: 0;
         left: 0;
