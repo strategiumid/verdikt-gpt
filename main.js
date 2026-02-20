@@ -175,6 +175,7 @@ export class VerdiktChatApp {
             questionsSidebarContent: document.getElementById('questions-sidebar-content'),
             questionsScrollUp: document.getElementById('questions-scroll-up'),
             questionsScrollDown: document.getElementById('questions-scroll-down'),
+            questionsToggleMobile: document.getElementById('questions-toggle-mobile'),
             
             importModal: document.getElementById('import-modal'),
             importFileInput: document.getElementById('import-file-input'),
@@ -475,6 +476,9 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         this.setupDashboard();
         this.setupHeroChips();
         this.setupProfileSettings();
+        
+        this.state.deepReflectionMode = false;
+        this.updateDeepReflectionButtonState();
         
         await this.loadChats();
         setTimeout(() => this.updateQuestionsSidebar(), 200);
@@ -1101,6 +1105,9 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         
         this.chatManager.currentChatId = newChatId;
         
+        this.state.deepReflectionMode = false;
+        this.updateDeepReflectionButtonState();
+        
         this.state.conversationHistory = [this.createSystemPromptMessage()];
         
         this.state.messageCount = 0;
@@ -1144,6 +1151,9 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         }
         
         this.state.messageCount = chat.messages.length + 1;
+        
+        this.state.deepReflectionMode = false;
+        this.updateDeepReflectionButtonState();
         
         if (chat.mode) {
             this.setAIMode(chat.mode);
@@ -2893,6 +2903,36 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             });
         }
         
+        // Кнопка для открытия панели вопросов на мобильных
+        if (this.elements.questionsToggleMobile) {
+            this.elements.questionsToggleMobile.addEventListener('click', () => {
+                const sidebar = this.elements.questionsSidebar;
+                if (sidebar) {
+                    sidebar.classList.toggle('mobile-open');
+                    // Обновляем иконку
+                    const icon = this.elements.questionsToggleMobile.querySelector('i');
+                    if (icon) {
+                        icon.className = sidebar.classList.contains('mobile-open') 
+                            ? 'fas fa-times' 
+                            : 'fas fa-list';
+                    }
+                }
+            });
+        }
+        
+        // Закрытие панели вопросов при клике вне её на мобильных
+        if (this.elements.questionsSidebar) {
+            this.elements.questionsSidebar.addEventListener('click', (e) => {
+                if (e.target === this.elements.questionsSidebar) {
+                    this.elements.questionsSidebar.classList.remove('mobile-open');
+                    const icon = this.elements.questionsToggleMobile?.querySelector('i');
+                    if (icon) {
+                        icon.className = 'fas fa-list';
+                    }
+                }
+            });
+        }
+        
         if (this.elements.chatMessages) {
             let overlapCheckScheduled = false;
             const scheduleOverlapCheck = () => {
@@ -3154,7 +3194,10 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         this.state.stats.userMessages++;
         
         this.updateTopicStats(displayText);
-        this.updateQuestionsSidebar();
+        
+        requestAnimationFrame(() => {
+            this.updateQuestionsSidebar();
+        });
         
         const currentHour = new Date().getHours();
         this.state.stats.activityByHour[currentHour]++;
@@ -3574,6 +3617,8 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
 
     clearChat() {
         if (confirm('Очистить текущий чат? Сообщения будут удалены.')) {
+            this.state.deepReflectionMode = false;
+            this.updateDeepReflectionButtonState();
             this.state.conversationHistory = [this.createSystemPromptMessage()];
             const heroBlock = document.getElementById('hero-block');
             if (heroBlock) heroBlock.style.display = 'flex';
@@ -4388,13 +4433,31 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     updateQuestionsSidebar() {
         const sidebar = this.elements.questionsSidebar;
         const list = this.elements.questionsList;
-        if (!sidebar || !list) return;
+        if (!sidebar || !list) {
+            console.warn('Questions sidebar elements not found');
+            return;
+        }
 
         const userMessages = this.state.conversationHistory.filter(msg => msg && msg.role === 'user');
+        console.log('Updating questions sidebar:', {
+            totalHistory: this.state.conversationHistory.length,
+            userMessagesCount: userMessages.length,
+            sidebarExists: !!sidebar,
+            listExists: !!list
+        });
         
         if (userMessages.length === 0) {
             sidebar.style.display = 'none';
+            // Скрываем кнопку на мобильных, если нет вопросов
+            if (this.elements.questionsToggleMobile) {
+                this.elements.questionsToggleMobile.style.display = 'none';
+            }
             return;
+        }
+
+        // Показываем кнопку на мобильных, если есть вопросы
+        if (this.elements.questionsToggleMobile) {
+            this.elements.questionsToggleMobile.style.display = 'flex';
         }
 
         sidebar.style.display = 'flex';
@@ -4412,17 +4475,33 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 content = textPart ? textPart.text : '';
             }
             
-            if (!content || typeof content !== 'string') return;
+            if (!content || typeof content !== 'string') {
+                console.log('Skipping message', idx, 'no content', msg);
+                return;
+            }
 
             let cleanContent = content.trim();
-            cleanContent = cleanContent
-                .replace(/\[ФОРМАТИРОВАНИЕ[^\]]*\]/g, '')
-                .replace(/\[Пользователь включил поиск[^\]]*\]/gs, '')
-                .replace(/\[Пользователь приложил изображение[^\]]*\]/gs, '')
-                .replace(/\[Поиск в интернете[^\]]*\]/gs, '')
-                .trim();
+            const originalLength = cleanContent.length;
             
-            if (!cleanContent || cleanContent.length < 3) return;
+            if (originalLength > 0) {
+                cleanContent = cleanContent
+                    .replace(/\[ФОРМАТИРОВАНИЕ[^\]]*\]/gi, '')
+                    .replace(/\[Пользователь включил поиск[^\]]*\]/gis, '')
+                    .replace(/\[Пользователь приложил изображение[^\]]*\]/gis, '')
+                    .replace(/\[Поиск в интернете[^\]]*\]/gis, '')
+                    .replace(/\[.*?\]/g, '')
+                    .trim();
+            }
+            
+            if (!cleanContent || cleanContent.length < 2) {
+                console.log('Skipping message', idx, {
+                    afterCleaning: cleanContent.length,
+                    original: originalLength,
+                    preview: content.substring(0, 60),
+                    hasOriginalText: !!msg.originalText
+                });
+                return;
+            }
 
             const questionText = cleanContent.substring(0, 50);
             const questionItem = document.createElement('div');
@@ -4437,15 +4516,34 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
 
             questionItem.addEventListener('click', () => {
                 this.scrollToQuestion(idx);
+                // Закрываем панель на мобильных после клика
+                if (window.innerWidth <= 768 && sidebar.classList.contains('mobile-open')) {
+                    sidebar.classList.remove('mobile-open');
+                    const icon = this.elements.questionsToggleMobile?.querySelector('i');
+                    if (icon) {
+                        icon.className = 'fas fa-list';
+                    }
+                }
             });
 
             list.appendChild(questionItem);
             addedCount++;
+            console.log('Added question card', idx, questionText.substring(0, 30));
         });
 
+        console.log('Questions sidebar update complete:', addedCount, 'cards added');
         if (addedCount === 0) {
             sidebar.style.display = 'none';
+            // Скрываем кнопку на мобильных, если нет вопросов
+            if (this.elements.questionsToggleMobile) {
+                this.elements.questionsToggleMobile.style.display = 'none';
+            }
         } else {
+            sidebar.style.display = 'flex';
+            // Показываем кнопку на мобильных, если есть вопросы
+            if (this.elements.questionsToggleMobile && window.innerWidth <= 768) {
+                this.elements.questionsToggleMobile.style.display = 'flex';
+            }
             this.updateQuestionsScrollIndicators();
         }
     }
