@@ -85,6 +85,13 @@ export class UIManager {
         });
         
         this.scrollToBottom();
+        
+        // Update questions navigation after adding message
+        if (this.app && this.app.updateQuestionsNavigation) {
+            setTimeout(() => {
+                this.app.updateQuestionsNavigation();
+            }, 100);
+        }
     }
 
     showModal(modalId) {
@@ -120,7 +127,7 @@ export class UIManager {
         const typingText = isDeepReflection ? 'Глубоко размышляю...' : 'Думаю...';
         const typingClass = isDeepReflection ? 'typing-message-grok deep-reflection-thinking' : 'typing-message-grok';
 
-        // Индикатор «Думаю...» в стиле Grok — пока идёт запрос к API
+        // Отдельное сообщение «Думаю...» или «Глубоко размышляю...» в стиле Grok — пока идёт запрос к API
         if (!document.getElementById('typing-msg')) {
             const tpl = document.createElement('div');
             tpl.className = `message ai-message typing ${typingClass}`;
