@@ -3412,7 +3412,12 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         return scrollHeight - scrollTop - clientHeight <= scrollThreshold;
     };
 
+    let lastScrollCheck = 0;
+    const scrollThrottleMs = 150;
     const scrollToBottomIfNeeded = () => {
+        const now = Date.now();
+        if (now - lastScrollCheck < scrollThrottleMs) return;
+        lastScrollCheck = now;
         if (isNearBottom()) this.scrollToBottom();
     };
 

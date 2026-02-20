@@ -2077,7 +2077,7 @@ body.sidebar-collapsed .container {
     background: rgba(255, 255, 255, 0.7);
     border-radius: 50%;
     display: inline-block;
-    animation: thinkingDot 1.4s infinite ease-in-out;
+    animation: thinkingDot 0.85s infinite ease-in-out;
     box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
 }
 
@@ -2086,18 +2086,18 @@ body.sidebar-collapsed .container {
 }
 
 .typing-dots span:nth-child(2) {
-    animation-delay: 0.2s;
+    animation-delay: 0.12s;
 }
 
 .typing-dots span:nth-child(3) {
-    animation-delay: 0.4s;
+    animation-delay: 0.24s;
 }
 
 .typing-text {
     color: rgba(255, 255, 255, 0.6);
     font-size: 0.9rem;
     font-style: italic;
-    animation: thinkingText 2s ease-in-out infinite;
+    animation: thinkingText 1.1s ease-in-out infinite;
 }
 
 @keyframes thinkingText {
@@ -2123,17 +2123,64 @@ body.sidebar-collapsed .container {
     }
 }
 
-/* Сообщение «Думаю...» в стиле Grok: плавное появление + лёгкая пульсация */
+/* Сообщение «Думаю...» в стиле Grok: быстрое появление */
 .typing-message-grok {
-    transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .typing-content-grok {
     padding: 4px 0;
+    display: flex;
+    align-items: center;
 }
 
-.typing-dots-grok span {
-    animation-duration: 1.2s;
+/* Анимированный квадратик с заполнением (черно-белый) */
+.typing-square-loader {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    background: rgba(0, 0, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+    animation: typing-square-pulse 1s ease-in-out infinite;
+}
+
+.typing-square-loader::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    animation: typing-square-fill 1s ease-in-out infinite;
+    transform-origin: top left;
+}
+
+@keyframes typing-square-pulse {
+    0%, 100% {
+        border-color: rgba(255, 255, 255, 0.4);
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.1);
+    }
+    50% {
+        border-color: rgba(255, 255, 255, 0.8);
+        box-shadow: 0 0 6px 1px rgba(255, 255, 255, 0.2);
+    }
+}
+
+@keyframes typing-square-fill {
+    0% {
+        transform: scale(0);
+        opacity: 0.9;
+    }
+    50% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0);
+        opacity: 0.9;
+    }
 }
 
 /* Сообщение «Ищу в интернете...» — та же анимация, что и «Думаю...» */
@@ -2144,11 +2191,11 @@ body.sidebar-collapsed .container {
     color: rgba(255, 255, 255, 0.7);
 }
 .searching-dots span {
-    animation: thinkingDot 1.2s infinite ease-in-out;
+    animation: thinkingDot 0.8s infinite ease-in-out;
 }
 .searching-dots span:nth-child(1) { animation-delay: 0s; }
-.searching-dots span:nth-child(2) { animation-delay: 0.2s; }
-.searching-dots span:nth-child(3) { animation-delay: 0.4s; }
+.searching-dots span:nth-child(2) { animation-delay: 0.12s; }
+.searching-dots span:nth-child(3) { animation-delay: 0.24s; }
 
 /* Панель ввода — одна тёмная «таблетка» */
 .input-container-extended {
@@ -2391,11 +2438,11 @@ body.sidebar-collapsed .container {
 }
 
 .typing-message-grok.deep-reflection-thinking .typing-dots span:nth-child(2) {
-    animation-delay: 0.2s;
+    animation-delay: 0.12s;
 }
 
 .typing-message-grok.deep-reflection-thinking .typing-dots span:nth-child(3) {
-    animation-delay: 0.4s;
+    animation-delay: 0.24s;
 }
 
 .input-actions-left {
