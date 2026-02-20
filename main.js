@@ -3529,8 +3529,19 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
 
     const streamNext = () => {
         if (charIndex >= chars.length) {
-            // Завершение streaming
-            contentEl.innerHTML = this.formatMessage(fullText);
+            // Завершение streaming - финальный рендеринг с markdown
+            const formatted = this.formatMessage(fullText);
+            contentEl.innerHTML = formatted;
+            
+            // Подсветка кода после завершения streaming
+            if (typeof hljs !== 'undefined') {
+                setTimeout(() => {
+                    contentEl.querySelectorAll('pre code').forEach((block) => {
+                        hljs.highlightElement(block);
+                    });
+                }, 50);
+            }
+            
             messageElement.classList.remove('ai-message-typing', 'streaming');
             messageElement.style.willChange = 'auto';
             
@@ -3549,7 +3560,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                     contentWrapper.appendChild(feedbackDiv);
                 }
             }
-            setTimeout(() => hljs.highlightAll(), 50);
             this.smoothScrollToBottom();
             return;
         }
@@ -3557,8 +3567,14 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         accumulated += chars[charIndex];
         charIndex++;
         
-        // Форматируем накопленный текст
-        const formatted = this.formatMessage(accumulated);
+        // Форматируем накопленный текст с markdown (для streaming)
+        // Используем простой форматинг во время streaming для производительности
+        const formatted = accumulated
+            .replace(/\n/g, '<br>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/`{3}([\s\S]*?)`{3}/g, '<pre><code>$1</code></pre>')
+            .replace(/`([^`]+)`/g, '<code>$1</code>');
         contentEl.innerHTML = formatted;
         
         // Плавная прокрутка во время streaming (чаще для лучшего UX)
@@ -3576,6 +3592,49 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
 }
 
     formatMessage(text) {
+        if (!text) return '';
+        
+        // Используем marked.js для полноценного markdown-рендеринга
+        if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
+            try {
+                // Настройка marked для лучшего рендеринга
+                marked.setOptions({
+                    breaks: true,
+                    gfm: true,
+                    highlight: function(code, lang) {
+                        if (lang && typeof hljs !== 'undefined' && hljs.getLanguage(lang)) {
+                            try {
+                                return hljs.highlight(code, { language: lang }).value;
+                            } catch (err) {
+                                console.warn('Highlight error:', err);
+                            }
+                        }
+                        if (typeof hljs !== 'undefined') {
+                            return hljs.highlightAuto(code).value;
+                        }
+                        return code;
+                    }
+                });
+                
+                // Парсим markdown
+                const html = marked.parse(text);
+                
+                // Санитизируем HTML для безопасности
+                const clean = DOMPurify.sanitize(html, {
+                    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 's', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 
+                                   'ul', 'ol', 'li', 'code', 'pre', 'blockquote', 'a', 'hr', 'table', 
+                                   'thead', 'tbody', 'tr', 'th', 'td'],
+                    ALLOWED_ATTR: ['href', 'class', 'target', 'rel']
+                });
+                
+                return clean;
+            } catch (err) {
+                console.warn('Markdown parsing error, falling back to simple formatting:', err);
+                // Fallback на простой форматинг
+            }
+        }
+        
+        // Простой fallback форматирование
         return text
             .replace(/\n/g, '<br>')
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')

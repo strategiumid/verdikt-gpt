@@ -2097,6 +2097,102 @@ body.sidebar-collapsed .container {
     color: var(--text-primary);
 }
 
+/* Markdown стили для сообщений */
+.message-content :deep(h1),
+.message-content :deep(h2),
+.message-content :deep(h3),
+.message-content :deep(h4),
+.message-content :deep(h5),
+.message-content :deep(h6) {
+    font-weight: 600;
+    margin-top: 16px;
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.message-content :deep(h1) { font-size: 24px; }
+.message-content :deep(h2) { font-size: 20px; }
+.message-content :deep(h3) { font-size: 18px; }
+
+.message-content :deep(p) {
+    margin: 8px 0;
+}
+
+.message-content :deep(code) {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.message-content :deep(pre) {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 12px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 12px 0;
+    border: 1px solid var(--border-color);
+}
+
+.message-content :deep(pre code) {
+    background: none;
+    padding: 0;
+    border-radius: 0;
+}
+
+.message-content :deep(ul),
+.message-content :deep(ol) {
+    margin: 12px 0;
+    padding-left: 24px;
+}
+
+.message-content :deep(li) {
+    margin: 6px 0;
+}
+
+.message-content :deep(blockquote) {
+    border-left: 3px solid var(--accent-purple);
+    padding-left: 16px;
+    margin: 12px 0;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.message-content :deep(a) {
+    color: var(--accent-purple);
+    text-decoration: none;
+}
+
+.message-content :deep(a:hover) {
+    text-decoration: underline;
+}
+
+.message-content :deep(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+}
+
+.message-content :deep(th),
+.message-content :deep(td) {
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    text-align: left;
+}
+
+.message-content :deep(th) {
+    background: rgba(255, 255, 255, 0.05);
+    font-weight: 600;
+}
+
+.message-content :deep(hr) {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 16px 0;
+}
+
 /* Аватар для сообщений */
 .message-avatar {
     width: 32px;
