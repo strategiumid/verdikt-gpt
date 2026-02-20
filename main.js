@@ -3403,15 +3403,26 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
 
     const contentEl = messageElement.querySelector('.message-content');
     const cursorHtml = '<span class="typing-cursor typing-cursor-grok"></span>';
-    
-    // Стиль как на grok.com: вывод по словам (streaming-like), ровный ритм
+    const chatMessages = this.elements.chatMessages;
+    const scrollThreshold = 120;
+
+    const isNearBottom = () => {
+        if (!chatMessages) return true;
+        const { scrollTop, scrollHeight, clientHeight } = chatMessages;
+        return scrollHeight - scrollTop - clientHeight <= scrollThreshold;
+    };
+
+    const scrollToBottomIfNeeded = () => {
+        if (isNearBottom()) this.scrollToBottom();
+    };
+
     const tokens = fullText.split(/(\s+)/);
     if (tokens.length === 0 || (tokens.length === 1 && !tokens[0])) {
         contentEl.innerHTML = this.formatMessage(fullText);
         messageElement.classList.remove('ai-message-typing');
         return;
     }
-    const baseDelayMs = 42;
+    const baseDelayMs = 28;
     let accumulated = '';
     let tokenIndex = 0;
 
@@ -3430,19 +3441,19 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 messageElement.insertBefore(feedbackDiv, timeEl);
             }
             setTimeout(() => hljs.highlightAll(), 50);
-            this.scrollToBottom();
+            scrollToBottomIfNeeded();
             return;
         }
         accumulated += tokens[tokenIndex];
         tokenIndex++;
         contentEl.innerHTML = this.formatMessage(accumulated) + cursorHtml;
-        this.scrollToBottom();
+        scrollToBottomIfNeeded();
         const isSpaceOrNewline = /^[\s\n]+$/.test(tokens[tokenIndex - 1]);
-        const delay = isSpaceOrNewline ? Math.max(8, baseDelayMs - 15) : baseDelayMs + Math.floor(Math.random() * 20);
+        const delay = isSpaceOrNewline ? Math.max(6, baseDelayMs - 12) : baseDelayMs + Math.floor(Math.random() * 14);
         setTimeout(typeNext, delay);
     };
 
-    setTimeout(typeNext, 80);
+    setTimeout(typeNext, 50);
 }
 
     formatMessage(text) {
