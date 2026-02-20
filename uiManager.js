@@ -46,8 +46,6 @@ export class UIManager {
         const messageElement = document.createElement('div');
         messageElement.className = `message ${sender}-message`;
         messageElement.id = messageId;
-        messageElement.style.opacity = '0';
-        messageElement.style.transform = 'translateY(20px)';
 
         messageElement.innerHTML = `
             <div class="message-actions">
@@ -79,10 +77,17 @@ export class UIManager {
             this.elements.chatMessages.appendChild(messageElement);
         }
         
+        // Анимация появления в стиле Grok: fade-in + slide-up
         requestAnimationFrame(() => {
             messageElement.style.opacity = '1';
             messageElement.style.transform = 'translateY(0)';
+            messageElement.style.transition = 'opacity 350ms cubic-bezier(0.16, 1, 0.3, 1), transform 350ms cubic-bezier(0.16, 1, 0.3, 1)';
         });
+        
+        // Убираем will-change после анимации для производительности
+        setTimeout(() => {
+            messageElement.style.willChange = 'auto';
+        }, 400);
         
         this.scrollToBottom();
         
@@ -97,6 +102,8 @@ export class UIManager {
     showModal(modalId) {
         const el = document.getElementById(modalId);
         if (!el) return;
+        // Удаляем класс closing если он был установлен
+        el.classList.remove('closing');
         el.classList.add('active');
         document.body.style.overflow = 'hidden';
     }
@@ -104,14 +111,55 @@ export class UIManager {
     hideModal(modalId) {
         const el = document.getElementById(modalId);
         if (!el) return;
-        el.classList.remove('active');
-        document.body.style.overflow = '';
+        // Добавляем класс для анимации закрытия
+        el.classList.add('closing');
+        const modalContent = el.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.classList.add('closing');
+        }
+        setTimeout(() => {
+            el.classList.remove('active', 'closing');
+            if (modalContent) {
+                modalContent.classList.remove('closing');
+            }
+            document.body.style.overflow = '';
+        }, 300);
     }
 
     scrollToBottom() {
         setTimeout(() => {
             this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
         }, 100);
+    }
+    
+    smoothScrollToBottom() {
+        const container = this.elements.chatMessages;
+        const targetScroll = container.scrollHeight;
+        const currentScroll = container.scrollTop;
+        const distance = targetScroll - currentScroll;
+        
+        if (distance < 50) {
+            container.scrollTop = targetScroll;
+            return;
+        }
+        
+        // Плавная прокрутка с easing
+        const duration = Math.min(300, distance * 0.5);
+        const startTime = performance.now();
+        const startScroll = currentScroll;
+        
+        const animateScroll = (currentTime) => {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const ease = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+            container.scrollTop = startScroll + (distance * ease);
+            
+            if (progress < 1) {
+                requestAnimationFrame(animateScroll);
+            }
+        };
+        
+        requestAnimationFrame(animateScroll);
     }
 
     showTypingIndicator() {
@@ -132,8 +180,6 @@ export class UIManager {
             const tpl = document.createElement('div');
             tpl.className = `message ai-message typing ${typingClass}`;
             tpl.id = 'typing-msg';
-            tpl.style.opacity = '0';
-            tpl.style.transform = 'translateY(12px)';
             tpl.innerHTML = `
                 <div class="message-sender">
                     <i class="fas fa-heart"></i> Эксперт по отношениям
@@ -149,13 +195,15 @@ export class UIManager {
             `;
 
             this.elements.chatMessages.appendChild(tpl);
+            // Анимация появления индикатора печати в стиле Grok
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     tpl.style.opacity = '1';
                     tpl.style.transform = 'translateY(0)';
+                    tpl.style.transition = 'opacity 350ms cubic-bezier(0.16, 1, 0.3, 1), transform 350ms cubic-bezier(0.16, 1, 0.3, 1)';
                 });
             });
-            this.scrollToBottom();
+            this.smoothScrollToBottom();
         }
     }
 
@@ -179,8 +227,6 @@ export class UIManager {
         const tpl = document.createElement('div');
         tpl.className = 'message ai-message typing typing-message-grok searching-message';
         tpl.id = 'searching-msg';
-        tpl.style.opacity = '0';
-        tpl.style.transform = 'translateY(12px)';
         tpl.innerHTML = `
             <div class="message-sender">
                 <i class="fas fa-globe"></i> Эксперт по отношениям
@@ -195,13 +241,15 @@ export class UIManager {
             </div>
         `;
         this.elements.chatMessages.appendChild(tpl);
+        // Анимация появления индикатора поиска в стиле Grok
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 tpl.style.opacity = '1';
                 tpl.style.transform = 'translateY(0)';
+                tpl.style.transition = 'opacity 350ms cubic-bezier(0.16, 1, 0.3, 1), transform 350ms cubic-bezier(0.16, 1, 0.3, 1)';
             });
         });
-        this.scrollToBottom();
+        this.smoothScrollToBottom();
     }
 
     hideSearchingIndicator() {

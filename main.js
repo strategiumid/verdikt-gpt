@@ -3378,10 +3378,11 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     const time = this.getCurrentTime();
 
     const messageElement = document.createElement('div');
-    messageElement.className = 'message ai-message ai-message-typing';
+    messageElement.className = 'message ai-message ai-message-typing streaming';
     messageElement.id = messageId;
-    messageElement.style.opacity = '1';
-    messageElement.style.transform = 'translateY(0)';
+    messageElement.style.opacity = '0';
+    messageElement.style.transform = 'translateY(16px)';
+    messageElement.style.willChange = 'transform, opacity';
 
     messageElement.innerHTML = `
         <div class="message-actions">
@@ -3398,35 +3399,47 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         <div class="message-sender">
             <i class="fas fa-heart"></i> Эксперт по отношениям
         </div>
-        <div class="message-content"><span class="typing-cursor"></span></div>
+        <div class="message-content streaming-content"></div>
         <div class="message-time">${time}</div>
     `;
 
     this.elements.chatMessages.appendChild(messageElement);
-    this.scrollToBottom();
+    
+    // Анимация появления сообщения
+    requestAnimationFrame(() => {
+        messageElement.style.opacity = '1';
+        messageElement.style.transform = 'translateY(0)';
+        messageElement.style.transition = 'opacity 350ms cubic-bezier(0.16, 1, 0.3, 1), transform 350ms cubic-bezier(0.16, 1, 0.3, 1)';
+    });
+
+    this.smoothScrollToBottom();
 
     const heroBlock = document.getElementById('hero-block');
     if (heroBlock) heroBlock.style.display = 'none';
     this.syncInputPosition();
 
     const contentEl = messageElement.querySelector('.message-content');
-    const cursorHtml = '<span class="typing-cursor typing-cursor-grok"></span>';
     
-    // Стиль как на grok.com: вывод по словам (streaming-like), ровный ритм
-    const tokens = fullText.split(/(\s+)/);
-    if (tokens.length === 0 || (tokens.length === 1 && !tokens[0])) {
+    // Streaming эффект: посимвольное появление с fade-in
+    const chars = fullText.split('');
+    if (chars.length === 0) {
         contentEl.innerHTML = this.formatMessage(fullText);
-        messageElement.classList.remove('ai-message-typing');
+        messageElement.classList.remove('ai-message-typing', 'streaming');
+        messageElement.style.willChange = 'auto';
         return;
     }
-    const baseDelayMs = 42;
+    
     let accumulated = '';
-    let tokenIndex = 0;
+    let charIndex = 0;
+    const baseDelayMs = 15; // ~10-30ms на символ как в Grok
 
-    const typeNext = () => {
-        if (tokenIndex >= tokens.length) {
+    const streamNext = () => {
+        if (charIndex >= chars.length) {
+            // Завершение streaming
             contentEl.innerHTML = this.formatMessage(fullText);
-            messageElement.classList.remove('ai-message-typing');
+            messageElement.classList.remove('ai-message-typing', 'streaming');
+            messageElement.style.willChange = 'auto';
+            
             const timeEl = messageElement.querySelector('.message-time');
             if (timeEl && !messageElement.querySelector('.message-feedback')) {
                 const feedbackDiv = document.createElement('div');
@@ -3438,19 +3451,29 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 messageElement.insertBefore(feedbackDiv, timeEl);
             }
             setTimeout(() => hljs.highlightAll(), 50);
-            this.scrollToBottom();
+            this.smoothScrollToBottom();
             return;
         }
-        accumulated += tokens[tokenIndex];
-        tokenIndex++;
-        contentEl.innerHTML = this.formatMessage(accumulated) + cursorHtml;
-        this.scrollToBottom();
-        const isSpaceOrNewline = /^[\s\n]+$/.test(tokens[tokenIndex - 1]);
-        const delay = isSpaceOrNewline ? Math.max(8, baseDelayMs - 15) : baseDelayMs + Math.floor(Math.random() * 20);
-        setTimeout(typeNext, delay);
+        
+        accumulated += chars[charIndex];
+        charIndex++;
+        
+        // Форматируем накопленный текст и добавляем streaming класс для новых символов
+        const formatted = this.formatMessage(accumulated);
+        contentEl.innerHTML = formatted;
+        
+        // Плавная прокрутка во время streaming
+        if (charIndex % 10 === 0) {
+            this.smoothScrollToBottom();
+        }
+        
+        // Задержка между символами: 15-25ms (как в Grok)
+        const delay = baseDelayMs + Math.floor(Math.random() * 10);
+        setTimeout(streamNext, delay);
     };
 
-    setTimeout(typeNext, 80);
+    // Начинаем streaming через небольшую задержку после появления сообщения
+    setTimeout(streamNext, 100);
 }
 
     formatMessage(text) {
@@ -4297,6 +4320,21 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     }
 
     scrollToBottom() {
+        // Используем плавную прокрутку через uiManager
+        if (this.uiManager && this.uiManager.smoothScrollToBottom) {
+            this.uiManager.smoothScrollToBottom();
+        } else {
+            setTimeout(() => {
+                this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
+            }, 100);
+        }
+    }
+    
+    smoothScrollToBottom() {
+        if (this.uiManager && this.uiManager.smoothScrollToBottom) {
+            this.uiManager.smoothScrollToBottom();
+            return;
+        }
         setTimeout(() => {
             this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
             this.updateInputOverlapState && this.updateInputOverlapState();
