@@ -52,6 +52,13 @@ export class UIManager {
             ? `<div class="message-avatar user-avatar"><i class="fas fa-user"></i></div>`
             : `<div class="message-avatar"><span>V</span></div>`;
         
+        // Share функциональность для AI сообщений
+        const shareBtnHtml = sender === 'ai' ? `
+            <button class="message-share-btn" onclick="window.verdiktApp.toggleShareMenu('${messageId}')" title="Поделиться">
+                <i class="fas fa-share"></i>
+            </button>
+        ` : '';
+        
         messageElement.innerHTML = `
             <div class="message-actions">
                 <button class="message-action" onclick="window.verdiktApp.copyMessage('${messageId}')">
@@ -76,6 +83,7 @@ export class UIManager {
                 <div class="message-time">${time}</div>
             </div>
             ${sender === 'user' ? avatarHtml : ''}
+            ${shareBtnHtml}
         `;
 
         if (typingPlaceholder && sender !== 'user') {

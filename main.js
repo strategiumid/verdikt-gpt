@@ -3469,6 +3469,13 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     // Аватар для AI сообщений
     const avatarHtml = `<div class="message-avatar"><span>V</span></div>`;
     
+    // Share кнопка для AI сообщений
+    const shareBtnHtml = `
+        <button class="message-share-btn" onclick="window.verdiktApp.toggleShareMenu('${messageId}')" title="Поделиться">
+            <i class="fas fa-share"></i>
+        </button>
+    `;
+    
     messageElement.innerHTML = `
         <div class="message-actions">
             <button class="message-action" onclick="window.verdiktApp.copyMessage('${messageId}')">
@@ -3487,6 +3494,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             <div class="message-content streaming-content"></div>
             <div class="message-time">${time}</div>
         </div>
+        ${shareBtnHtml}
     `;
 
     this.elements.chatMessages.appendChild(messageElement);
@@ -7539,5 +7547,74 @@ stopStarSuction() {
     showSubscriptionModal() {
         this.showModal('subscription-modal');
         if (this._updateSubscriptionButtons) this._updateSubscriptionButtons();
+    }
+    
+    // === Share функциональность ===
+    toggleShareMenu(messageId) {
+        const messageElement = document.getElementById(messageId);
+        if (!messageElement) return;
+        
+        const existingMenu = messageElement.querySelector('.share-menu');
+        if (existingMenu) {
+            existingMenu.remove();
+            return;
+        }
+        
+        const content = messageElement.querySelector('.message-content').textContent.trim();
+        const preview = content.length > 140 ? content.slice(0, 137) + '...' : content;
+        const shareText = `"${preview}"\n\n— Verdikt GPT\n${window.location.href.split('#')[0]}#${messageId}`;
+        const encodedText = encodeURIComponent(shareText);
+        const encodedUrl = encodeURIComponent(window.location.href.split('#')[0]);
+        
+        const shareMenu = document.createElement('div');
+        shareMenu.className = 'share-menu';
+        shareMenu.innerHTML = `
+            <div class="share-menu-item" onclick="window.verdiktApp.shareMessage('email', '${encodedText}')">
+                <i class="fas fa-envelope"></i> Email
+            </div>
+            <div class="share-menu-item" onclick="window.verdiktApp.shareMessage('x', '${encodedText}')">
+                <i class="fab fa-x-twitter"></i> X (Twitter)
+            </div>
+            <div class="share-menu-item" onclick="window.verdiktApp.shareMessage('facebook', '${encodedUrl}')">
+                <i class="fab fa-facebook"></i> Facebook
+            </div>
+            <div class="share-menu-item" onclick="window.verdiktApp.shareMessage('linkedin', '${encodedUrl}')">
+                <i class="fab fa-linkedin"></i> LinkedIn
+            </div>
+            <div class="share-menu-item" onclick="window.verdiktApp.shareMessage('bluesky', '${encodedText}')">
+                <i class="fas fa-cloud"></i> Bluesky
+            </div>
+        `;
+        
+        messageElement.appendChild(shareMenu);
+        
+        // Закрытие при клике вне меню
+        setTimeout(() => {
+            const closeHandler = (e) => {
+                if (!messageElement.contains(e.target)) {
+                    shareMenu.remove();
+                    document.removeEventListener('click', closeHandler);
+                }
+            };
+            document.addEventListener('click', closeHandler);
+        }, 100);
+    }
+    
+    shareMessage(platform, data) {
+        const urls = {
+            email: `mailto:?subject=Verdikt%20GPT%20Response&body=${data}`,
+            x: `https://twitter.com/intent/tweet?text=${data}`,
+            facebook: `https://www.facebook.com/sharer/sharer.php?u=${data}`,
+            linkedin: `https://www.linkedin.com/shareArticle?mini=true&url=${data}&summary=${data}`,
+            bluesky: `https://bsky.app/intent/compose?text=${data}`
+        };
+        
+        if (urls[platform]) {
+            window.open(urls[platform], '_blank', 'width=600,height=400');
+        }
+        
+        // Закрываем меню
+        const menus = document.querySelectorAll('.share-menu');
+        menus.forEach(menu => menu.remove());
     }
 }
