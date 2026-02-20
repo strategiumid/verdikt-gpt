@@ -2868,6 +2868,21 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             this.elements.attachPreviewRemove.addEventListener('click', () => this.clearAttachedImage());
         }
         
+        if (this.elements.chatMessages) {
+            let overlapCheckScheduled = false;
+            const scheduleOverlapCheck = () => {
+                if (overlapCheckScheduled) return;
+                overlapCheckScheduled = true;
+                requestAnimationFrame(() => {
+                    this.updateInputOverlapState && this.updateInputOverlapState();
+                    overlapCheckScheduled = false;
+                });
+            };
+            this.elements.chatMessages.addEventListener('scroll', scheduleOverlapCheck);
+            window.addEventListener('resize', scheduleOverlapCheck);
+            scheduleOverlapCheck();
+        }
+        
         // Обработчик для слайдера температуры теперь в setupProfileSettings()
         // Эти элементы больше не находятся в this.elements, так как они в настройках профиля
         const temperatureSlider = document.getElementById('temperature-slider');
@@ -4276,7 +4291,25 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     scrollToBottom() {
         setTimeout(() => {
             this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
+            this.updateInputOverlapState && this.updateInputOverlapState();
         }, 100);
+    }
+
+    updateInputOverlapState() {
+        const inputEl = this.elements.messageInput && this.elements.messageInput.closest('.input-container-extended');
+        const messagesEl = this.elements.chatMessages;
+        if (!inputEl || !messagesEl) return;
+        const inputRect = inputEl.getBoundingClientRect();
+        const messages = messagesEl.querySelectorAll('.message');
+        let overlaps = false;
+        for (const msg of messages) {
+            const r = msg.getBoundingClientRect();
+            if (r.bottom > inputRect.top && r.top < inputRect.bottom && r.right > inputRect.left && r.left < inputRect.right) {
+                overlaps = true;
+                break;
+            }
+        }
+        inputEl.classList.toggle('input-overlaps-message', overlaps);
     }
 
     showTypingIndicator() {

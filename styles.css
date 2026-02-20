@@ -2184,6 +2184,20 @@ body.sidebar-collapsed .container {
     background: #2c2c2e;
 }
 
+/* Прозрачность поля ввода при пересечении с сообщениями в чате */
+.input-container-extended.grok-style-input.input-overlaps-message {
+    background: rgba(28, 28, 30, 0.72);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-color: rgba(255, 255, 255, 0.08);
+    transition: background 0.25s ease, backdrop-filter 0.25s ease, border-color 0.2s ease;
+}
+
+.input-container-extended.grok-style-input.input-overlaps-message:focus-within {
+    background: rgba(44, 44, 46, 0.85);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
 .input-container-extended.grok-style-input .input-actions-left,
 .input-container-extended.grok-style-input .input-actions-right {
     gap: 4px;
