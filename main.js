@@ -3540,14 +3540,14 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     
     let accumulated = '';
     let charIndex = 0;
-    const baseDelayMs = 20; // ~15-30ms на символ для более плавного эффекта
+    const baseDelayMs = 8; // Ускорено: ~5-15ms на символ для более быстрого эффекта
     
     // Улучшенный streaming: учитываем пробелы и знаки препинания
     const getCharDelay = (char) => {
-        if (/\s/.test(char)) return 5; // Быстрее для пробелов
-        if (/[.,!?;:]/.test(char)) return 30; // Медленнее для знаков препинания
-        if (/[а-яА-ЯёЁ]/.test(char)) return baseDelayMs + Math.floor(Math.random() * 8); // Русские буквы
-        return baseDelayMs + Math.floor(Math.random() * 10); // Остальные символы
+        if (/\s/.test(char)) return 2; // Быстрее для пробелов
+        if (/[.,!?;:]/.test(char)) return 12; // Медленнее для знаков препинания
+        if (/[а-яА-ЯёЁ]/.test(char)) return baseDelayMs + Math.floor(Math.random() * 4); // Русские буквы
+        return baseDelayMs + Math.floor(Math.random() * 5); // Остальные символы
     };
 
     const streamNext = () => {
