@@ -120,7 +120,7 @@ export class UIManager {
         const typingText = isDeepReflection ? 'Глубоко размышляю...' : 'Думаю...';
         const typingClass = isDeepReflection ? 'typing-message-grok deep-reflection-thinking' : 'typing-message-grok';
 
-        // Индикатор загрузки с анимированным квадратиком — пока идёт запрос к API
+        // Индикатор «Думаю...» в стиле Grok — пока идёт запрос к API
         if (!document.getElementById('typing-msg')) {
             const tpl = document.createElement('div');
             tpl.className = `message ai-message typing ${typingClass}`;
@@ -133,7 +133,10 @@ export class UIManager {
                 </div>
                 <div class="message-content">
                     <div class="typing-content typing-content-grok">
-                        <div class="typing-square-loader"></div>
+                        <div class="typing-dots typing-dots-grok">
+                            <span></span><span></span><span></span>
+                        </div>
+                        <span class="typing-text ${isDeepReflection ? 'deep-reflection-thinking' : ''}">${typingText}</span>
                     </div>
                 </div>
             `;
@@ -177,7 +180,10 @@ export class UIManager {
             </div>
             <div class="message-content">
                 <div class="typing-content typing-content-grok typing-content-search">
-                    <div class="typing-square-loader"></div>
+                    <div class="typing-dots typing-dots-grok searching-dots">
+                        <span></span><span></span><span></span>
+                    </div>
+                    <span class="typing-text typing-text-search">Ищу в интернете...</span>
                 </div>
             </div>
         `;

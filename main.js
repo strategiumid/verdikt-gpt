@@ -171,7 +171,6 @@ export class VerdiktChatApp {
             attachPreviewImg: document.getElementById('attach-preview-img'),
             attachPreviewRemove: document.getElementById('attach-preview-remove'),
             questionsSidebar: document.getElementById('questions-sidebar'),
-            questionsSidebarClose: document.getElementById('questions-sidebar-close'),
             questionsList: document.getElementById('questions-list'),
             questionsSidebarContent: document.getElementById('questions-sidebar-content'),
             questionsScrollUp: document.getElementById('questions-scroll-up'),
@@ -2876,14 +2875,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             this.elements.attachPreviewRemove.addEventListener('click', () => this.clearAttachedImage());
         }
         
-        if (this.elements.questionsSidebarClose) {
-            this.elements.questionsSidebarClose.addEventListener('click', () => {
-                if (this.elements.questionsSidebar) {
-                    this.elements.questionsSidebar.style.display = 'none';
-                }
-            });
-        }
-        
         if (this.elements.questionsScrollUp) {
             this.elements.questionsScrollUp.addEventListener('click', () => {
                 const content = this.elements.questionsSidebarContent;
@@ -4418,12 +4409,15 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             const cleanContent = content.trim().replace(/\[ФОРМАТИРОВАНИЕ.*?\]/g, '').trim();
             if (!cleanContent) return;
 
-            const questionText = cleanContent.substring(0, 55);
+            const questionText = cleanContent.substring(0, 50);
             const questionItem = document.createElement('div');
-            questionItem.className = 'question-item';
+            questionItem.className = 'question-card';
             questionItem.dataset.messageIndex = idx;
+            
+            const formattedText = this.formatQuestionText(questionText, cleanContent.length > 50);
             questionItem.innerHTML = `
-                <span class="question-text">${this.escapeHtml(questionText)}${cleanContent.length > 55 ? '...' : ''}</span>
+                <div class="question-card-header">Grok</div>
+                <div class="question-card-content">${formattedText}</div>
             `;
 
             questionItem.addEventListener('click', () => {
@@ -4481,6 +4475,12 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    formatQuestionText(text, isTruncated) {
+        const escaped = this.escapeHtml(text);
+        const displayText = escaped + (isTruncated ? '...' : '');
+        return displayText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     }
 
     // Метод showTypingIndicator теперь в uiManager - используем его через this.uiManager.showTypingIndicator()
