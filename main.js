@@ -3408,10 +3408,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         messageElement.style.transform = 'translateY(16px)';
         messageElement.style.willChange = 'transform, opacity';
         
-        // Структура сообщения в стиле Grok xAI
-        const avatarHtml = sender === 'user' 
-            ? `<div class="message-avatar user-avatar"><i class="fas fa-user"></i></div>`
-            : `<div class="message-avatar"><span>V</span></div>`;
+        const avatarHtmlUser = `<div class="message-avatar user-avatar"><i class="fas fa-user"></i></div>`;
         
         messageElement.innerHTML = `
             <div class="message-actions">
@@ -3425,15 +3422,13 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                     <i class="fas fa-redo"></i>
                 </button>`}
             </div>
-            ${sender === 'ai' ? avatarHtml : ''}
+            ${sender === 'user' ? '' : ''}
             <div class="message-content-wrapper">
-                <div class="message-sender">
-                    ${sender === 'user' ? 'Вы' : 'Эксперт по отношениям'}
-                </div>
+                ${sender === 'user' ? '<div class="message-sender">Вы</div>' : ''}
                 <div class="message-content">${this.formatMessage(content)}${imageHtml}</div>
                 <div class="message-time">${time}</div>
             </div>
-            ${sender === 'user' ? avatarHtml : ''}
+            ${sender === 'user' ? avatarHtmlUser : ''}
         `;
         
         this.elements.chatMessages.appendChild(messageElement);
@@ -3481,10 +3476,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     messageElement.style.transform = 'translateY(16px)';
     messageElement.style.willChange = 'transform, opacity';
 
-    // Аватар для AI сообщений
-    const avatarHtml = `<div class="message-avatar"><span>V</span></div>`;
-    
-    // Share кнопка для AI сообщений
+    // Без аватара и имени ИИ — только ответ
     const shareBtnHtml = `
         <button class="message-share-btn" onclick="window.verdiktApp.toggleShareMenu('${messageId}')" title="Поделиться">
             <i class="fas fa-share"></i>
@@ -3503,9 +3495,8 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 <i class="fas fa-redo"></i>
             </button>
         </div>
-        ${avatarHtml}
-        <div class="message-content-wrapper">
-            <div class="message-sender">Эксперт по отношениям</div>
+        <div class="message-content-wrapper ai-reveal-from-lines">
+            <div class="ai-reveal-stripes" aria-hidden="true"></div>
             <div class="message-content streaming-content"></div>
             <div class="message-time">${time}</div>
         </div>
@@ -3540,14 +3531,12 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     
     let accumulated = '';
     let charIndex = 0;
-    const baseDelayMs = 3; // Ускорено: ~2-8ms на символ для очень быстрого эффекта
+    const baseDelayMs = 0; // Максимально быстрое печатание
     
-    // Улучшенный streaming: учитываем пробелы и знаки препинания
     const getCharDelay = (char) => {
-        if (/\s/.test(char)) return 1; // Быстрее для пробелов
-        if (/[.,!?;:]/.test(char)) return 6; // Медленнее для знаков препинания
-        if (/[а-яА-ЯёЁ]/.test(char)) return baseDelayMs + Math.floor(Math.random() * 3); // Русские буквы
-        return baseDelayMs + Math.floor(Math.random() * 3); // Остальные символы
+        if (/\s/.test(char)) return 0;
+        if (/[.,!?;:]/.test(char)) return 2;
+        return baseDelayMs + Math.floor(Math.random() * 2); // 0–2 ms на символ
     };
 
     const streamNext = () => {
@@ -3583,7 +3572,13 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                     contentWrapper.appendChild(feedbackDiv);
                 }
             }
-            this.smoothScrollToBottom();
+            // Финальная плавная прокрутка после завершения стриминга
+            if (this.uiManager && this.uiManager.isUserNearBottom(200)) {
+                this.uiManager.smoothScrollToBottom(true);
+            }
+            setTimeout(() => {
+                this.updateInputOverlapState && this.updateInputOverlapState();
+            }, 300);
             return;
         }
         
@@ -3600,9 +3595,11 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             .replace(/`([^`]+)`/g, '<code>$1</code>');
         contentEl.innerHTML = formatted;
         
-        // Плавная прокрутка во время streaming (чаще для лучшего UX)
-        if (charIndex % 8 === 0 || chars[charIndex - 1] === '\n') {
-            this.smoothScrollToBottom();
+        // Адекватный автоскролл во время ответа ИИ: часто и только если пользователь у низа
+        if (this.uiManager && this.uiManager.isUserNearBottom(120)) {
+            if (charIndex % 3 === 0 || chars[charIndex - 1] === '\n') {
+                this.uiManager.scrollToBottomInstant();
+            }
         }
         
         // Динамическая задержка в зависимости от символа
@@ -3610,8 +3607,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         setTimeout(streamNext, delay);
     };
 
-    // Начинаем streaming через небольшую задержку после появления сообщения
-    setTimeout(streamNext, 50);
+    setTimeout(streamNext, 20);
 }
 
     formatMessage(text) {
@@ -4745,6 +4741,16 @@ stopStarSuction() {
         }
         
         this.elements.questionsNavigation.classList.remove('hidden');
+        
+        // Показываем подсказку при первом появлении навигации (если еще не показывали)
+        if (!sessionStorage.getItem('questions-nav-hint-shown')) {
+            this.elements.questionsNavigation.classList.add('show-hint');
+            setTimeout(() => {
+                this.elements.questionsNavigation.classList.remove('show-hint');
+                sessionStorage.setItem('questions-nav-hint-shown', 'true');
+            }, 4500);
+        }
+        
         this.elements.questionsNavList.innerHTML = '';
         
         // Calculate positions for navigation dots

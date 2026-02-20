@@ -47,12 +47,7 @@ export class UIManager {
         messageElement.className = `message ${sender}-message`;
         messageElement.id = messageId;
 
-        // Структура сообщения в стиле Grok xAI
-        const avatarHtml = sender === 'user' 
-            ? `<div class="message-avatar user-avatar"><i class="fas fa-user"></i></div>`
-            : `<div class="message-avatar"><span>V</span></div>`;
-        
-        // Share функциональность для AI сообщений
+        const avatarHtmlUser = `<div class="message-avatar user-avatar"><i class="fas fa-user"></i></div>`;
         const shareBtnHtml = sender === 'ai' ? `
             <button class="message-share-btn" onclick="window.verdiktApp.toggleShareMenu('${messageId}')" title="Поделиться">
                 <i class="fas fa-share"></i>
@@ -68,11 +63,9 @@ export class UIManager {
                     <i class="fas fa-volume-up"></i>
                 </button>
             </div>
-            ${sender === 'ai' ? avatarHtml : ''}
+            ${sender === 'ai' ? '' : ''}
             <div class="message-content-wrapper">
-                <div class="message-sender">
-                    ${sender === 'user' ? 'Вы' : 'Эксперт по отношениям'}
-                </div>
+                ${sender === 'user' ? '<div class="message-sender">Вы</div>' : ''}
                 <div class="message-content">${escapedContent.replace(/\n/g, '<br>')}${imageHtml}</div>
                 ${sender !== 'user' ? `
                 <div class="message-feedback">
@@ -82,7 +75,7 @@ export class UIManager {
                 ` : ''}
                 <div class="message-time">${time}</div>
             </div>
-            ${sender === 'user' ? avatarHtml : ''}
+            ${sender === 'user' ? avatarHtmlUser : ''}
             ${shareBtnHtml}
         `;
 
@@ -147,20 +140,46 @@ export class UIManager {
             this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
         }, 100);
     }
-    
-    smoothScrollToBottom() {
+
+    /** Мгновенная прокрутка вниз (для стриминга, без анимации). */
+    scrollToBottomInstant() {
         const container = this.elements.chatMessages;
+        if (!container) return;
+        container.scrollTop = container.scrollHeight;
+    }
+
+    /** Возвращает true, если пользователь уже близко к низу чата (в пределах threshold px). */
+    isUserNearBottom(threshold = 150) {
+        const container = this.elements.chatMessages;
+        if (!container) return true;
+        const { scrollTop, scrollHeight, clientHeight } = container;
+        return scrollHeight - scrollTop - clientHeight <= threshold;
+    }
+
+    /**
+     * Прокрутка вниз во время ответа ИИ: только если пользователь и так у низа,
+     * чтобы не отнимать прокрутку у того, кто читает выше.
+     */
+    scrollToBottomIfNear(threshold = 150) {
+        if (!this.isUserNearBottom(threshold)) return;
+        this.scrollToBottomInstant();
+    }
+    
+    smoothScrollToBottom(force = false) {
+        const container = this.elements.chatMessages;
+        if (!container) return;
         const targetScroll = container.scrollHeight;
         const currentScroll = container.scrollTop;
         const distance = targetScroll - currentScroll;
         
-        if (distance < 50) {
+        if (distance <= 0) return;
+        if (!force && distance < 30) {
             container.scrollTop = targetScroll;
             return;
         }
         
-        // Плавная прокрутка с easing
-        const duration = Math.min(300, distance * 0.5);
+        // Плавная прокрутка с easing, короткая длительность для отзывчивости
+        const duration = Math.min(250, Math.max(80, distance * 0.15));
         const startTime = performance.now();
         const startScroll = currentScroll;
         
@@ -196,11 +215,8 @@ export class UIManager {
             const tpl = document.createElement('div');
             tpl.className = `message ai-message typing ${typingClass}`;
             tpl.id = 'typing-msg';
-            const avatarHtml = `<div class="message-avatar"><span>V</span></div>`;
             tpl.innerHTML = `
-                ${avatarHtml}
                 <div class="message-content-wrapper">
-                    <div class="message-sender">Эксперт по отношениям</div>
                     <div class="message-content">
                         <div class="typing-content typing-content-grok">
                             <div class="typing-dots typing-dots-grok">
@@ -245,11 +261,8 @@ export class UIManager {
         const tpl = document.createElement('div');
         tpl.className = 'message ai-message typing typing-message-grok searching-message';
         tpl.id = 'searching-msg';
-        const avatarHtml = `<div class="message-avatar"><span>V</span></div>`;
         tpl.innerHTML = `
-            ${avatarHtml}
             <div class="message-content-wrapper">
-                <div class="message-sender">Эксперт по отношениям</div>
                 <div class="message-content">
                     <div class="typing-content typing-content-grok typing-content-search">
                         <div class="typing-dots typing-dots-grok searching-dots">
