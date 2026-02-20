@@ -1166,10 +1166,14 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         this.elements.chatMessages.innerHTML = '';
         
         chat.messages.forEach((msg, index) => {
-            const messageId = `msg-${chatId}-${index}`;
+            const messageId = msg.messageId || `msg-${chatId}-${index}`;
             const messageElement = document.createElement('div');
             messageElement.className = `message ${msg.role === 'user' ? 'user' : 'ai'}-message`;
             messageElement.id = messageId;
+            // Добавляем data-атрибут для навигации по вопросам
+            if (msg.role === 'user') {
+                messageElement.setAttribute('data-user-message-id', messageId);
+            }
             messageElement.style.opacity = '1';
             messageElement.style.transform = 'translateY(0)';
             
@@ -1202,11 +1206,25 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             this.elements.chatMessages.appendChild(messageElement);
         });
         
+        // Восстанавливаем conversationHistory с messageId для навигации
+        this.state.conversationHistory = chat.messages.map((msg, index) => {
+            const msgId = msg.messageId || `msg-${chatId}-${index}`;
+            return {
+                ...msg,
+                messageId: msgId
+            };
+        });
+        
         const heroBlock = document.getElementById('hero-block');
         if (heroBlock) {
             heroBlock.style.display = chat.messages.length > 0 ? 'none' : 'flex';
         }
         this.syncInputPosition();
+        
+        // Обновляем панель вопросов после загрузки чата
+        requestAnimationFrame(() => {
+            this.updateQuestionsSidebar();
+        });
 
         this.showNotification(`Загружен чат: ${chat.title}`, 'success');
         this.scrollToBottom();
@@ -2946,6 +2964,11 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             this.elements.chatMessages.addEventListener('scroll', scheduleOverlapCheck);
             window.addEventListener('resize', scheduleOverlapCheck);
             scheduleOverlapCheck();
+            
+            // Обновляем активный вопрос при прокрутке
+            this.elements.chatMessages.addEventListener('scroll', () => {
+                this.updateActiveQuestion();
+            });
         }
         
         // Обработчик для слайдера температуры теперь в setupProfileSettings()
@@ -3178,7 +3201,12 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         }
         
         const displayText = message || 'Скриншот / изображение';
-        this.addMessage(displayText, 'user', { imageDataUrl: hasImage ? this.state.attachedImage.dataUrl : null });
+        // Генерируем уникальный ID для сообщения пользователя
+        const userMessageId = 'user-msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        this.addMessage(displayText, 'user', { 
+            imageDataUrl: hasImage ? this.state.attachedImage.dataUrl : null,
+            messageId: userMessageId
+        });
         
         const userAnalysis = this.analyzeUserType(message || '');
         const enhancedMessage = (message || '') + (userAnalysis.context ? userAnalysis.context : '');
@@ -3187,7 +3215,8 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         this.state.conversationHistory.push({ 
             role: "user", 
             content: enhancedMessage,
-            originalText: displayText
+            originalText: displayText,
+            messageId: userMessageId // Сохраняем ID для навигации
         });
         this.state.messageCount++;
         this.state.stats.totalMessages++;
@@ -3392,7 +3421,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     }
 
     addMessage(content, sender, opts = {}) {
-        const messageId = 'msg-' + Date.now();
+        const messageId = opts.messageId || 'msg-' + Date.now();
         const time = this.getCurrentTime();
         const imageHtml = (opts.imageDataUrl)
             ? `<div class="message-attached-image"><img src="${opts.imageDataUrl.replace(/"/g, '&quot;')}" alt="Скриншот" loading="lazy"></div>`
@@ -3401,6 +3430,10 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         const messageElement = document.createElement('div');
         messageElement.className = `message ${sender}-message`;
         messageElement.id = messageId;
+        // Добавляем data-атрибут для навигации по вопросам
+        if (sender === 'user') {
+            messageElement.setAttribute('data-user-message-id', messageId);
+        }
         messageElement.style.opacity = '0';
         messageElement.style.transform = 'translateY(20px)';
         
@@ -4465,6 +4498,9 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
 
         let addedCount = 0;
         userMessages.forEach((msg, idx) => {
+            // Используем messageId для навигации
+            const messageId = msg.messageId || `user-msg-${idx}`;
+            
             let content = '';
             if (msg.originalText) {
                 content = msg.originalText;
@@ -4503,32 +4539,50 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 return;
             }
 
-            const questionText = cleanContent.substring(0, 50);
+            // Берем больше текста для отображения (до 80 символов)
+            const questionText = cleanContent.length > 80 ? cleanContent.substring(0, 80) + '...' : cleanContent;
             const questionItem = document.createElement('div');
             questionItem.className = 'question-card';
-            questionItem.dataset.messageIndex = idx;
+            questionItem.dataset.messageId = messageId;
+            questionItem.setAttribute('data-question-index', idx);
             
-            const formattedText = this.formatQuestionText(questionText, cleanContent.length > 50);
+            const formattedText = this.formatQuestionText(questionText, cleanContent.length > 80);
             questionItem.innerHTML = `
-                <div class="question-card-header">Grok</div>
+                <div class="question-card-header">
+                    <i class="fas fa-question-circle"></i>
+                    Вопрос ${idx + 1}
+                </div>
                 <div class="question-card-content">${formattedText}</div>
             `;
 
-            questionItem.addEventListener('click', () => {
-                this.scrollToQuestion(idx);
+            questionItem.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Добавляем визуальную обратную связь
+                questionItem.classList.add('question-card-clicked');
+                setTimeout(() => {
+                    questionItem.classList.remove('question-card-clicked');
+                }, 200);
+                
+                // Переходим к вопросу
+                this.scrollToQuestion(messageId);
+                
                 // Закрываем панель на мобильных после клика
                 if (window.innerWidth <= 768 && sidebar.classList.contains('mobile-open')) {
-                    sidebar.classList.remove('mobile-open');
-                    const icon = this.elements.questionsToggleMobile?.querySelector('i');
-                    if (icon) {
-                        icon.className = 'fas fa-list';
-                    }
+                    setTimeout(() => {
+                        sidebar.classList.remove('mobile-open');
+                        const icon = this.elements.questionsToggleMobile?.querySelector('i');
+                        if (icon) {
+                            icon.className = 'fas fa-list';
+                        }
+                    }, 300);
                 }
             });
 
             list.appendChild(questionItem);
             addedCount++;
-            console.log('Added question card', idx, questionText.substring(0, 30));
+            console.log('Added question card', idx, messageId, questionText.substring(0, 30));
         });
 
         console.log('Questions sidebar update complete:', addedCount, 'cards added');
@@ -4558,6 +4612,10 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 console.log('Mobile: sidebar hidden, button shown');
             }
             this.updateQuestionsScrollIndicators();
+            // Обновляем активный вопрос после обновления панели
+            setTimeout(() => {
+                this.updateActiveQuestion();
+            }, 100);
         }
         
         // Дополнительная проверка видимости
@@ -4575,27 +4633,103 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         }, 100);
     }
 
-    scrollToQuestion(questionIndex) {
-        const userMessages = this.state.conversationHistory.filter(msg => msg.role === 'user');
-        if (questionIndex < 0 || questionIndex >= userMessages.length) return;
-
-        const messageElements = Array.from(this.elements.chatMessages.querySelectorAll('.user-message'));
-        if (questionIndex < messageElements.length) {
-            const targetMessage = messageElements[questionIndex];
-            targetMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            
-            const highlightStyle = {
-                outline: '2px solid rgba(255, 255, 255, 0.4)',
-                outlineOffset: '4px',
-                transition: 'outline 0.2s ease'
-            };
-            Object.assign(targetMessage.style, highlightStyle);
-            
-            setTimeout(() => {
-                targetMessage.style.outline = '';
-                targetMessage.style.outlineOffset = '';
-            }, 2000);
+    scrollToQuestion(messageId) {
+        if (!messageId) {
+            console.warn('scrollToQuestion: messageId is required');
+            return;
         }
+
+        // Ищем сообщение по ID
+        const targetMessage = this.elements.chatMessages.querySelector(`[data-user-message-id="${messageId}"]`) ||
+                              this.elements.chatMessages.querySelector(`#${messageId}`);
+        
+        if (!targetMessage) {
+            console.warn('scrollToQuestion: message not found', messageId);
+            // Пробуем найти по старому способу (для обратной совместимости)
+            const userMessages = this.state.conversationHistory.filter(msg => msg.role === 'user');
+            const questionIndex = typeof messageId === 'number' ? messageId : parseInt(messageId);
+            if (!isNaN(questionIndex) && questionIndex >= 0 && questionIndex < userMessages.length) {
+                const messageElements = Array.from(this.elements.chatMessages.querySelectorAll('.user-message'));
+                if (questionIndex < messageElements.length) {
+                    this.highlightAndScrollTo(messageElements[questionIndex]);
+                }
+            }
+            return;
+        }
+
+        this.highlightAndScrollTo(targetMessage);
+    }
+
+    highlightAndScrollTo(targetMessage) {
+        // Прокручиваем к сообщению с плавной анимацией
+        targetMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Добавляем визуальное выделение
+        targetMessage.classList.add('question-highlight');
+        
+        // Улучшенное выделение с анимацией
+        const highlightStyle = {
+            outline: '3px solid rgba(255, 255, 255, 0.6)',
+            outlineOffset: '6px',
+            borderRadius: '12px',
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            transition: 'all 0.3s ease',
+            transform: 'scale(1.02)'
+        };
+        Object.assign(targetMessage.style, highlightStyle);
+        
+        // Убираем выделение через 3 секунды
+        setTimeout(() => {
+            targetMessage.classList.remove('question-highlight');
+            targetMessage.style.outline = '';
+            targetMessage.style.outlineOffset = '';
+            targetMessage.style.backgroundColor = '';
+            targetMessage.style.transform = '';
+        }, 3000);
+    }
+
+    updateActiveQuestion() {
+        // Обновляем активную карточку вопроса на основе видимости сообщений
+        const questionCards = this.elements.questionsList?.querySelectorAll('.question-card');
+        if (!questionCards || questionCards.length === 0) return;
+
+        const messagesContainer = this.elements.chatMessages;
+        const containerRect = messagesContainer.getBoundingClientRect();
+        const viewportTop = containerRect.top;
+        const viewportBottom = containerRect.bottom;
+        const viewportCenter = viewportTop + (viewportBottom - viewportTop) / 2;
+
+        let activeMessageId = null;
+        let minDistance = Infinity;
+
+        questionCards.forEach(card => {
+            const messageId = card.dataset.messageId;
+            if (!messageId) return;
+
+            const messageElement = messagesContainer.querySelector(`[data-user-message-id="${messageId}"]`) ||
+                                  messagesContainer.querySelector(`#${messageId}`);
+            
+            if (messageElement) {
+                const messageRect = messageElement.getBoundingClientRect();
+                const messageCenter = messageRect.top + (messageRect.bottom - messageRect.top) / 2;
+                const distance = Math.abs(messageCenter - viewportCenter);
+
+                // Если сообщение видно и ближе к центру экрана
+                if (messageRect.top < viewportBottom && messageRect.bottom > viewportTop && distance < minDistance) {
+                    minDistance = distance;
+                    activeMessageId = messageId;
+                }
+            }
+        });
+
+        // Обновляем классы активных карточек
+        questionCards.forEach(card => {
+            if (card.dataset.messageId === activeMessageId) {
+                card.classList.add('active');
+            } else {
+                card.classList.remove('active');
+            }
+        });
     }
 
     updateQuestionsScrollIndicators() {
