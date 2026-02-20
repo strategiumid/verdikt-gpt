@@ -103,6 +103,7 @@ export class VerdiktChatApp {
             retryCount: 0,
             maxRetries: 3,
             searchModeEnabled: false,
+            deepReflectionMode: false,
             feedbackAnalyticsFromBackend: null
         };
 
@@ -162,7 +163,7 @@ export class VerdiktChatApp {
             // saveSettings больше не нужен - настройки сохраняются автоматически
             // temperatureSlider и temperatureValue теперь в настройках профиля
             
-            toggleChatHistory: document.getElementById('toggle-chat-history'),
+            deepReflectionBtn: document.getElementById('deep-reflection-btn'),
             
             importModal: document.getElementById('import-modal'),
             importFileInput: document.getElementById('import-file-input'),
@@ -245,10 +246,26 @@ export class VerdiktChatApp {
 
     createSystemPromptMessage() {
     const instructions = this.state?.instructions || '';
+    const deepReflectionMode = this.state?.deepReflectionMode || false;
+    
+    const deepReflectionInstructions = deepReflectionMode ? `
+**РЕЖИМ ГЛУБОКОГО РАЗМЫШЛЕНИЯ АКТИВИРОВАН**
+Пользователь включил режим глубокого размышления. Ты должен:
+• Провести максимально глубокий многоуровневый анализ ситуации
+• Рассмотреть проблему с разных углов зрения (психологический, эмоциональный, практический, долгосрочный)
+• Выявить скрытые паттерны, причины и следствия
+• Проанализировать не только явные, но и неявные аспекты ситуации
+• Учесть контекст, подтекст и возможные интерпретации
+• Предложить несколько альтернативных подходов с анализом плюсов и минусов каждого
+• Дать более развернутый и детальный ответ, чем обычно
+• Использовать цепочки рассуждений: "Если... то... потому что..."
+• Не спеши с выводами — сначала глубоко проанализируй все аспекты
+` : '';
     
     return {
         role: "system",
         content: `Ты — Verdikt GPT, дружелюбный эксперт по отношениям, знакомствам и психологии манипуляций. Твой стиль: общайся на "ты", будь своим в доску, но сохраняй экспертизу. Используй юмор и шутки, когда это уместно, чтобы разрядить обстановку, но не переходи в цинизм. Твоя задача — помогать разбираться в сложных ситуациях с теплотой, без осуждения, но с опорой на научную базу.
+${deepReflectionInstructions}
 **ГЛУБИННЫЙ АНАЛИЗ (ОБЯЗАТЕЛЬНО К ИСПОЛЬЗОВАНИЮ)**
 • Прежде чем ответить, мысленно разложи ситуацию: какие психологические механизмы здесь задействованы (баланс значимости, привязанность, манипуляции)?
 • Если контекста мало — задай 1–2 уточняющих вопроса, чтобы понять реальную картину.
@@ -2732,10 +2749,12 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             this.elements.presentationMode.addEventListener('click', () => this.togglePresentationMode());
         }
         
-        if (this.elements.toggleChatHistory) {
-            this.elements.toggleChatHistory.addEventListener('click', () => {
-                this.showChatHistoryModal();
+        if (this.elements.deepReflectionBtn) {
+            this.elements.deepReflectionBtn.addEventListener('click', () => {
+                this.toggleDeepReflectionMode();
             });
+            // Инициализация состояния кнопки
+            this.updateDeepReflectionButtonState();
         }
 
         if (this.elements.dndToggle) {
@@ -3701,6 +3720,33 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             document.body.classList.remove('presentation-mode');
             document.querySelector('.presentation-nav').style.display = 'none';
             this.showNotification('Режим презентации выключен', 'info');
+        }
+    }
+
+    toggleDeepReflectionMode() {
+        this.state.deepReflectionMode = !this.state.deepReflectionMode;
+        this.updateDeepReflectionButtonState();
+        
+        // Обновляем системный промпт при изменении режима
+        if (this.state.conversationHistory && this.state.conversationHistory.length > 0) {
+            const systemPrompt = this.createSystemPromptMessage();
+            this.state.conversationHistory[0] = systemPrompt;
+        }
+        
+        this.showNotification(
+            this.state.deepReflectionMode 
+                ? 'Режим Глубокого Размышления включён 🧠' 
+                : 'Режим Глубокого Размышления выключен',
+            'info'
+        );
+    }
+
+    updateDeepReflectionButtonState() {
+        if (this.elements.deepReflectionBtn) {
+            this.elements.deepReflectionBtn.classList.toggle('active', this.state.deepReflectionMode);
+            this.elements.deepReflectionBtn.title = this.state.deepReflectionMode 
+                ? 'Глубокое Размышление включено (нажмите, чтобы выключить)' 
+                : 'Глубокое Размышление (вкл/выкл)';
         }
     }
 

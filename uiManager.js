@@ -111,10 +111,15 @@ export class UIManager {
         if (heroBlock) heroBlock.style.display = 'none';
         this.app.syncInputPosition && this.app.syncInputPosition();
 
-        // Отдельное сообщение «Думаю...» в стиле Grok — пока идёт запрос к API
+        // Проверяем, включен ли режим глубокого размышления
+        const isDeepReflection = this.app.state?.deepReflectionMode || false;
+        const typingText = isDeepReflection ? 'Глубоко размышляю...' : 'Думаю...';
+        const typingClass = isDeepReflection ? 'typing-message-grok deep-reflection-thinking' : 'typing-message-grok';
+
+        // Отдельное сообщение «Думаю...» или «Глубоко размышляю...» в стиле Grok — пока идёт запрос к API
         if (!document.getElementById('typing-msg')) {
             const tpl = document.createElement('div');
-            tpl.className = 'message ai-message typing typing-message-grok';
+            tpl.className = `message ai-message typing ${typingClass}`;
             tpl.id = 'typing-msg';
             tpl.style.opacity = '0';
             tpl.style.transform = 'translateY(12px)';
@@ -127,7 +132,7 @@ export class UIManager {
                         <div class="typing-dots typing-dots-grok">
                             <span></span><span></span><span></span>
                         </div>
-                        <span class="typing-text">Думаю...</span>
+                        <span class="typing-text ${isDeepReflection ? 'deep-reflection-thinking' : ''}">${typingText}</span>
                     </div>
                 </div>
             `;
