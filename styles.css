@@ -341,6 +341,30 @@ body {
     body.sidebar-collapsed .container {
         margin-left: 0;
     }
+    
+    /* Центрирование логотипа и поля ввода когда сайдбар скрыт */
+    .sidebar:not(.active) ~ .container .app-header {
+        justify-content: center;
+    }
+    
+    .sidebar:not(.active) ~ .container .app-header .header-left {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    
+    .sidebar:not(.active) ~ .container .app-header .header-right {
+        position: absolute;
+        right: 20px;
+        margin-left: 0;
+    }
+    
+    .sidebar:not(.active) ~ .container .chat-container .input-container-extended {
+        left: 50%;
+        transform: translateX(-50%);
+        margin-left: 0;
+        margin-right: 0;
+    }
 }
 
 /* Центрирование контента с учётом свёрнутого сайдбара */
@@ -356,12 +380,16 @@ body.sidebar-collapsed .container {
     padding: 15px 0;
     border-bottom: none;
     animation: slideDown 1s ease;
+    position: relative;
+    transition: justify-content 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .header-left {
     display: flex;
     align-items: center;
     gap: 15px;
+    transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                position 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .logo {
@@ -565,7 +593,8 @@ body.sidebar-collapsed .container {
     margin-left: 0;
     transition: top 0.5s cubic-bezier(0.4, 0, 0.2, 1),
                 bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-                transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+                transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+                left 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .chat-container.input-centered .input-container-extended {
@@ -2324,9 +2353,11 @@ body.sidebar-collapsed .container {
     justify-content: center;
     font-weight: 700;
     font-size: 14px;
-    background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
+    background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
     color: white;
-    box-shadow: 0 2px 8px rgba(147, 51, 234, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4),
+                inset 0 1px 2px rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .message-avatar.user-avatar {
@@ -2837,16 +2868,30 @@ body.sidebar-collapsed .container {
     color: rgba(255, 255, 255, 0.7);
     font-size: 0.9rem;
     font-weight: 500;
-    animation: thinkingText 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    will-change: opacity;
+    animation: thinkingTextFade 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite,
+               thinkingTextSlide 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    will-change: opacity, transform;
+    display: inline-block;
 }
 
-@keyframes thinkingText {
+@keyframes thinkingTextFade {
     0%, 100% {
-        opacity: 0.6;
+        opacity: 0.5;
     }
     50% {
         opacity: 1;
+    }
+}
+
+@keyframes thinkingTextSlide {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    25% {
+        transform: translateY(-2px);
+    }
+    75% {
+        transform: translateY(2px);
     }
 }
 
@@ -2925,8 +2970,10 @@ body.sidebar-collapsed .container {
     color: rgba(255, 255, 255, 0.7);
     font-size: 0.9rem;
     font-weight: 500;
-    animation: thinkingText 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    will-change: opacity;
+    animation: thinkingTextFade 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite,
+               thinkingTextSlide 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    will-change: opacity, transform;
+    display: inline-block;
 }
 
 .searching-dots {
@@ -3314,18 +3361,23 @@ body.sidebar-collapsed .container {
 
 .typing-text.deep-reflection-thinking {
     color: rgba(255, 255, 255, 0.95);
-    animation: deep-reflection-text-pulse 2s ease-in-out infinite;
+    animation: deep-reflection-text-pulse 1.6s ease-in-out infinite,
+               thinkingTextSlide 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    will-change: opacity, transform, text-shadow;
+    display: inline-block;
 }
 
 @keyframes deep-reflection-text-pulse {
     0%, 100% {
         opacity: 0.7;
         color: rgba(255, 255, 255, 0.9);
+        text-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
     }
     50% {
         opacity: 1;
         color: #fff;
-        text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+        text-shadow: 0 0 12px rgba(255, 255, 255, 0.6),
+                     0 0 20px rgba(255, 255, 255, 0.3);
     }
 }
 

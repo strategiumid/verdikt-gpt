@@ -3540,14 +3540,14 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     
     let accumulated = '';
     let charIndex = 0;
-    const baseDelayMs = 8; // Ускорено: ~5-15ms на символ для более быстрого эффекта
+    const baseDelayMs = 3; // Ускорено: ~2-8ms на символ для очень быстрого эффекта
     
     // Улучшенный streaming: учитываем пробелы и знаки препинания
     const getCharDelay = (char) => {
-        if (/\s/.test(char)) return 2; // Быстрее для пробелов
-        if (/[.,!?;:]/.test(char)) return 12; // Медленнее для знаков препинания
-        if (/[а-яА-ЯёЁ]/.test(char)) return baseDelayMs + Math.floor(Math.random() * 4); // Русские буквы
-        return baseDelayMs + Math.floor(Math.random() * 5); // Остальные символы
+        if (/\s/.test(char)) return 1; // Быстрее для пробелов
+        if (/[.,!?;:]/.test(char)) return 6; // Медленнее для знаков препинания
+        if (/[а-яА-ЯёЁ]/.test(char)) return baseDelayMs + Math.floor(Math.random() * 3); // Русские буквы
+        return baseDelayMs + Math.floor(Math.random() * 3); // Остальные символы
     };
 
     const streamNext = () => {
@@ -3611,7 +3611,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     };
 
     // Начинаем streaming через небольшую задержку после появления сообщения
-    setTimeout(streamNext, 100);
+    setTimeout(streamNext, 50);
 }
 
     formatMessage(text) {

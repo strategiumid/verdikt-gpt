@@ -40,7 +40,7 @@
     cursor: pointer;
     align-items: center;
     justify-content: center;
-    transition: all 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .sidebar-toggle:hover {
@@ -84,6 +84,54 @@
         transform: translateX(0);
         box-shadow: 16px 0 48px rgba(0, 0, 0, 0.4);
     }
+    
+    /* Центрирование логотипа и поля ввода когда сайдбар скрыт */
+    body:not(:has(.sidebar.active)) .app-header {
+        justify-content: center;
+    }
+    
+    body:not(:has(.sidebar.active)) .app-header .header-left {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    
+    body:not(:has(.sidebar.active)) .app-header .header-right {
+        position: absolute;
+        right: 20px;
+        margin-left: 0;
+    }
+    
+    body:not(:has(.sidebar.active)) .chat-container .input-container-extended {
+        left: 50%;
+        transform: translateX(-50%);
+        margin-left: 0;
+        margin-right: 0;
+    }
+    
+    /* Альтернативный вариант для браузеров без поддержки :has() */
+    .sidebar:not(.active) ~ .container .app-header {
+        justify-content: center;
+    }
+    
+    .sidebar:not(.active) ~ .container .app-header .header-left {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    
+    .sidebar:not(.active) ~ .container .app-header .header-right {
+        position: absolute;
+        right: 20px;
+        margin-left: 0;
+    }
+    
+    .sidebar:not(.active) ~ .container .chat-container .input-container-extended {
+        left: 50%;
+        transform: translateX(-50%);
+        margin-left: 0;
+        margin-right: 0;
+    }
 }
 
 /* iPhone: сайдбар на весь экран, отступы под notch и home indicator */
@@ -119,8 +167,10 @@
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
-        transition: opacity 0.35s cubic-bezier(0.32, 0.72, 0, 1),
-                    visibility 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+        transition: opacity 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                    visibility 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                    backdrop-filter 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        will-change: opacity;
     }
 
     .sidebar-overlay.active {
@@ -135,6 +185,10 @@
         top: 0;
         left: env(safe-area-inset-left, 0px); /* Учёт notch на MacBook Pro */
         width: clamp(72px, 22vw, 320px);
+        transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                    box-shadow 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                    opacity 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        will-change: transform, opacity;
         max-width: 320px;
         height: 100vh;
         height: 100dvh;
@@ -147,13 +201,19 @@
         display: flex;
         flex-direction: column;
         transform: translateX(-100%);
-        transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.4s cubic-bezier(0.32, 0.72, 0, 1), width 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+        transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                    box-shadow 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                    width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                    opacity 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         box-shadow: none;
+        will-change: transform, opacity;
     }
 
     .sidebar.active {
         transform: translateX(0);
         box-shadow: 16px 0 48px rgba(0, 0, 0, 0.4);
+        transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                    box-shadow 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
 
     /* Поисковая строка */
