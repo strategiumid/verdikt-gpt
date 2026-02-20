@@ -3234,6 +3234,32 @@
             <!-- Основная область чата -->
             <div class="chat-area">
                 
+                <!-- Боковая панель с вопросами (как на grok.com) -->
+                <div class="questions-sidebar" id="questions-sidebar">
+                    <div class="questions-sidebar-header">
+                        <span class="questions-sidebar-title">Вопросы</span>
+                        <button class="questions-sidebar-close" id="questions-sidebar-close" title="Скрыть" aria-label="Скрыть панель">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="questions-sidebar-content" id="questions-sidebar-content">
+                        <div class="questions-list" id="questions-list">
+                            <!-- Список вопросов будет добавлен динамически -->
+                        </div>
+                    </div>
+                    <div class="questions-sidebar-scroll-indicators">
+                        <button class="questions-scroll-btn questions-scroll-up" id="questions-scroll-up" aria-label="Прокрутить вверх">
+                            <i class="fas fa-chevron-up"></i>
+                        </button>
+                        <div class="questions-scroll-dots" id="questions-scroll-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                        <button class="questions-scroll-btn questions-scroll-down" id="questions-scroll-down" aria-label="Прокрутить вниз">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                </div>
+                
                 <!-- Контейнер чата -->
                 <div class="chat-container input-centered">
                     

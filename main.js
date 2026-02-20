@@ -170,6 +170,12 @@ export class VerdiktChatApp {
             attachPreview: document.getElementById('attach-preview'),
             attachPreviewImg: document.getElementById('attach-preview-img'),
             attachPreviewRemove: document.getElementById('attach-preview-remove'),
+            questionsSidebar: document.getElementById('questions-sidebar'),
+            questionsSidebarClose: document.getElementById('questions-sidebar-close'),
+            questionsList: document.getElementById('questions-list'),
+            questionsSidebarContent: document.getElementById('questions-sidebar-content'),
+            questionsScrollUp: document.getElementById('questions-scroll-up'),
+            questionsScrollDown: document.getElementById('questions-scroll-down'),
             
             importModal: document.getElementById('import-modal'),
             importFileInput: document.getElementById('import-file-input'),
@@ -472,6 +478,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         this.setupProfileSettings();
         
         await this.loadChats();
+        this.updateQuestionsSidebar();
         
         if (this.state.user) {
             await this.loadUserSettings();
@@ -1196,6 +1203,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         this.scrollToBottom();
         this.updateUI();
         this.updateSettingsStats();
+        this.updateQuestionsSidebar();
     }
 
     async deleteChat(chatId) {
@@ -2868,6 +2876,32 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             this.elements.attachPreviewRemove.addEventListener('click', () => this.clearAttachedImage());
         }
         
+        if (this.elements.questionsSidebarClose) {
+            this.elements.questionsSidebarClose.addEventListener('click', () => {
+                if (this.elements.questionsSidebar) {
+                    this.elements.questionsSidebar.style.display = 'none';
+                }
+            });
+        }
+        
+        if (this.elements.questionsScrollUp) {
+            this.elements.questionsScrollUp.addEventListener('click', () => {
+                const content = this.elements.questionsSidebarContent;
+                if (content) {
+                    content.scrollBy({ top: -100, behavior: 'smooth' });
+                }
+            });
+        }
+        
+        if (this.elements.questionsScrollDown) {
+            this.elements.questionsScrollDown.addEventListener('click', () => {
+                const content = this.elements.questionsSidebarContent;
+                if (content) {
+                    content.scrollBy({ top: 100, behavior: 'smooth' });
+                }
+            });
+        }
+        
         if (this.elements.chatMessages) {
             let overlapCheckScheduled = false;
             const scheduleOverlapCheck = () => {
@@ -3125,6 +3159,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         this.state.stats.userMessages++;
         
         this.updateTopicStats(displayText);
+        this.updateQuestionsSidebar();
         
         const currentHour = new Date().getHours();
         this.state.stats.activityByHour[currentHour]++;
@@ -3178,6 +3213,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             this.state.conversationHistory.push({ role: "assistant", content: aiResponse });
             this.state.stats.totalMessages++;
             this.state.stats.aiMessages++;
+            this.updateQuestionsSidebar();
             
            if (this.state.conversationHistory.length > 50) {
     this.state.conversationHistory = [
@@ -3370,10 +3406,10 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     const time = this.getCurrentTime();
 
     const messageElement = document.createElement('div');
-    messageElement.className = 'message ai-message ai-message-typing';
+    messageElement.className = 'message ai-message ai-message-typing grok-message-appear';
     messageElement.id = messageId;
-    messageElement.style.opacity = '1';
-    messageElement.style.transform = 'translateY(0)';
+    messageElement.style.opacity = '0';
+    messageElement.style.transform = 'translateY(8px)';
 
     messageElement.innerHTML = `
         <div class="message-actions">
@@ -3390,11 +3426,20 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         <div class="message-sender">
             <i class="fas fa-heart"></i> Эксперт по отношениям
         </div>
-        <div class="message-content"><span class="typing-cursor"></span></div>
+        <div class="message-content"><span class="typing-cursor typing-cursor-grok"></span></div>
         <div class="message-time">${time}</div>
     `;
 
     this.elements.chatMessages.appendChild(messageElement);
+    
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            messageElement.style.opacity = '1';
+            messageElement.style.transform = 'translateY(0)';
+            messageElement.style.transition = 'opacity 0.25s ease-out, transform 0.25s ease-out';
+        });
+    });
+    
     this.scrollToBottom();
 
     const heroBlock = document.getElementById('hero-block');
@@ -3427,7 +3472,8 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         messageElement.classList.remove('ai-message-typing');
         return;
     }
-    const baseDelayMs = 28;
+    
+    const baseDelayMs = 22;
     let accumulated = '';
     let tokenIndex = 0;
 
@@ -3435,15 +3481,22 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         if (tokenIndex >= tokens.length) {
             contentEl.innerHTML = this.formatMessage(fullText);
             messageElement.classList.remove('ai-message-typing');
+            messageElement.classList.add('grok-message-complete');
+            
             const timeEl = messageElement.querySelector('.message-time');
             if (timeEl && !messageElement.querySelector('.message-feedback')) {
                 const feedbackDiv = document.createElement('div');
                 feedbackDiv.className = 'message-feedback';
+                feedbackDiv.style.opacity = '0';
                 feedbackDiv.innerHTML = `
                     <button class="feedback-btn feedback-good" onclick="window.verdiktApp.rateMessage('${messageId}', 1)">👍 Полезно</button>
                     <button class="feedback-btn feedback-bad" onclick="window.verdiktApp.rateMessage('${messageId}', -1)">👎 Не полезно</button>
                 `;
                 messageElement.insertBefore(feedbackDiv, timeEl);
+                setTimeout(() => {
+                    feedbackDiv.style.transition = 'opacity 0.2s ease';
+                    feedbackDiv.style.opacity = '1';
+                }, 100);
             }
             setTimeout(() => hljs.highlightAll(), 50);
             scrollToBottomIfNeeded();
@@ -3453,12 +3506,21 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         tokenIndex++;
         contentEl.innerHTML = this.formatMessage(accumulated) + cursorHtml;
         scrollToBottomIfNeeded();
+        
         const isSpaceOrNewline = /^[\s\n]+$/.test(tokens[tokenIndex - 1]);
-        const delay = isSpaceOrNewline ? Math.max(6, baseDelayMs - 12) : baseDelayMs + Math.floor(Math.random() * 14);
+        const isPunctuation = /^[.,!?;:]+$/.test(tokens[tokenIndex - 1]);
+        let delay;
+        if (isSpaceOrNewline) {
+            delay = 8;
+        } else if (isPunctuation) {
+            delay = baseDelayMs + 8;
+        } else {
+            delay = baseDelayMs + Math.floor(Math.random() * 10);
+        }
         setTimeout(typeNext, delay);
     };
 
-    setTimeout(typeNext, 50);
+    setTimeout(typeNext, 80);
 }
 
     formatMessage(text) {
@@ -4326,6 +4388,99 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             }
         }
         inputEl.classList.toggle('input-overlaps-message', overlaps);
+    }
+
+    updateQuestionsSidebar() {
+        const sidebar = this.elements.questionsSidebar;
+        const list = this.elements.questionsList;
+        if (!sidebar || !list) return;
+
+        const userMessages = this.state.conversationHistory.filter(msg => msg.role === 'user');
+        if (userMessages.length === 0) {
+            sidebar.style.display = 'none';
+            return;
+        }
+
+        sidebar.style.display = 'flex';
+        list.innerHTML = '';
+
+        userMessages.forEach((msg, idx) => {
+            let content = '';
+            if (typeof msg.content === 'string') {
+                content = msg.content;
+            } else if (Array.isArray(msg.content)) {
+                const textPart = msg.content.find(p => p.type === 'text');
+                content = textPart ? textPart.text : '';
+            }
+            
+            if (!content || content.trim().length === 0) return;
+
+            const cleanContent = content.trim().replace(/\[ФОРМАТИРОВАНИЕ.*?\]/g, '').trim();
+            if (!cleanContent) return;
+
+            const questionText = cleanContent.substring(0, 55);
+            const questionItem = document.createElement('div');
+            questionItem.className = 'question-item';
+            questionItem.dataset.messageIndex = idx;
+            questionItem.innerHTML = `
+                <span class="question-text">${this.escapeHtml(questionText)}${cleanContent.length > 55 ? '...' : ''}</span>
+            `;
+
+            questionItem.addEventListener('click', () => {
+                this.scrollToQuestion(idx);
+            });
+
+            list.appendChild(questionItem);
+        });
+
+        this.updateQuestionsScrollIndicators();
+    }
+
+    scrollToQuestion(questionIndex) {
+        const userMessages = this.state.conversationHistory.filter(msg => msg.role === 'user');
+        if (questionIndex < 0 || questionIndex >= userMessages.length) return;
+
+        const messageElements = Array.from(this.elements.chatMessages.querySelectorAll('.user-message'));
+        if (questionIndex < messageElements.length) {
+            const targetMessage = messageElements[questionIndex];
+            targetMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            const highlightStyle = {
+                outline: '2px solid rgba(255, 255, 255, 0.4)',
+                outlineOffset: '4px',
+                transition: 'outline 0.2s ease'
+            };
+            Object.assign(targetMessage.style, highlightStyle);
+            
+            setTimeout(() => {
+                targetMessage.style.outline = '';
+                targetMessage.style.outlineOffset = '';
+            }, 2000);
+        }
+    }
+
+    updateQuestionsScrollIndicators() {
+        const content = this.elements.questionsSidebarContent;
+        const upBtn = this.elements.questionsScrollUp;
+        const downBtn = this.elements.questionsScrollDown;
+        if (!content || !upBtn || !downBtn) return;
+
+        const updateButtons = () => {
+            const { scrollTop, scrollHeight, clientHeight } = content;
+            upBtn.style.opacity = scrollTop > 10 ? '1' : '0.3';
+            upBtn.style.pointerEvents = scrollTop > 10 ? 'auto' : 'none';
+            downBtn.style.opacity = scrollTop < scrollHeight - clientHeight - 10 ? '1' : '0.3';
+            downBtn.style.pointerEvents = scrollTop < scrollHeight - clientHeight - 10 ? 'auto' : 'none';
+        };
+
+        content.addEventListener('scroll', updateButtons);
+        updateButtons();
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     // Метод showTypingIndicator теперь в uiManager - используем его через this.uiManager.showTypingIndicator()

@@ -352,10 +352,11 @@ body.sidebar-collapsed .container {
 .chat-area {
     flex: 1;
     display: flex;
-    flex-direction: column;
-    gap: 15px;
-    min-height: 0; /* Важно */
-    height: 100%; /* Добавляем */
+    flex-direction: row;
+    gap: 0;
+    min-height: 0;
+    height: 100%;
+    position: relative;
 }
 
 
@@ -369,8 +370,168 @@ body.sidebar-collapsed .container {
     overflow: hidden;
     animation: slideInRight 0.5s ease;
     position: relative;
-    height: 100%; /* Фиксируем высоту */
+    height: 100%;
     min-height: 0;
+}
+
+/* Боковая панель с вопросами (как на grok.com) */
+.questions-sidebar {
+    display: none;
+    flex-direction: column;
+    width: 280px;
+    min-width: 280px;
+    max-width: 280px;
+    background: rgba(28, 28, 30, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    height: 100%;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.questions-sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.questions-sidebar-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    letter-spacing: 0.01em;
+}
+
+.questions-sidebar-close {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.questions-sidebar-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.questions-sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 8px 0;
+}
+
+.questions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 12px;
+}
+
+.question-item {
+    padding: 12px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: transparent;
+    border: none;
+    text-align: left;
+    width: 100%;
+}
+
+.question-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.question-item:active {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.question-text {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.75);
+    display: block;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.question-item:hover .question-text {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.questions-sidebar-scroll-indicators {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.questions-scroll-btn {
+    width: 32px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 12px;
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+.questions-scroll-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.questions-scroll-dots {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    align-items: center;
+}
+
+.questions-scroll-dots span {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Скрываем скроллбар панели */
+.questions-sidebar-content::-webkit-scrollbar {
+    width: 4px;
+}
+
+.questions-sidebar-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.questions-sidebar-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}
+
+.questions-sidebar-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
 }
 
 /* Поле ввода по центру при пустом чате, плавно уходит вниз при начале чата */
@@ -1853,6 +2014,42 @@ body.sidebar-collapsed .container {
     animation: slideInLeft 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Анимация появления сообщения ИИ как на grok.com */
+.ai-message-typing.grok-message-appear {
+    animation: grok-message-fade-in 0.25s ease-out forwards;
+}
+
+.ai-message-typing {
+    transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+}
+
+.grok-message-complete {
+    animation: grok-message-complete 0.2s ease-out;
+}
+
+@keyframes grok-message-fade-in {
+    0% {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes grok-message-complete {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.002);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
 .message.error-message {
     animation: shakeMessage 0.4s ease;
 }
@@ -1903,6 +2100,11 @@ body.sidebar-collapsed .container {
     max-height: none;
     height: auto;
     white-space: normal;
+    transition: opacity 0.15s ease;
+}
+
+.ai-message-typing .message-content {
+    will-change: contents;
 }
 
 .message-feedback {
@@ -1938,20 +2140,28 @@ body.sidebar-collapsed .container {
     animation: typing-cursor-blink 0.9s step-end infinite;
 }
 
-/* Курсор как на grok.com: тонкая вертикальная черта, чёткое мигание */
+/* Курсор как на grok.com: тонкая вертикальная черта, плавное мигание */
 .typing-cursor-grok {
     display: inline-block;
     width: 2px;
     height: 1.05em;
     background: currentColor;
-    margin-left: 1px;
+    margin-left: 2px;
     vertical-align: text-bottom;
-    animation: typing-cursor-grok-blink 1.05s step-end infinite;
+    animation: typing-cursor-grok-blink 1s ease-in-out infinite;
+    opacity: 1;
 }
 
 @keyframes typing-cursor-grok-blink {
-    0%, 50% { opacity: 1; }
-    51%, 100% { opacity: 0; }
+    0%, 45% { 
+        opacity: 1; 
+    }
+    50%, 95% { 
+        opacity: 0.3; 
+    }
+    100% { 
+        opacity: 1; 
+    }
 }
 
 @keyframes typing-cursor-blink {
@@ -2135,53 +2345,37 @@ body.sidebar-collapsed .container {
     min-height: 24px;
 }
 
-/* Анимированный квадратик с заполнением (черно-белый) */
+/* Квадратик как на grok.com: заполнение снизу вверх */
 .typing-square-loader {
-    width: 20px;
-    height: 20px;
-    border: 2px solid rgba(255, 255, 255, 0.5);
-    background: rgba(0, 0, 0, 0.4);
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid rgba(255, 255, 255, 0.7);
+    background: transparent;
     position: relative;
     overflow: hidden;
-    animation: typing-square-pulse 1s ease-in-out infinite;
     flex-shrink: 0;
 }
 
 .typing-square-loader::before {
     content: '';
     position: absolute;
-    top: 0;
+    bottom: 0;
     left: 0;
     width: 100%;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.9);
-    animation: typing-square-fill 1s ease-in-out infinite;
-    transform-origin: top left;
+    height: 0%;
+    background: rgba(255, 255, 255, 0.95);
+    animation: grok-square-fill 1s ease-in-out infinite;
 }
 
-@keyframes typing-square-pulse {
-    0%, 100% {
-        border-color: rgba(255, 255, 255, 0.4);
-        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.1);
-    }
-    50% {
-        border-color: rgba(255, 255, 255, 0.8);
-        box-shadow: 0 0 6px 1px rgba(255, 255, 255, 0.2);
-    }
-}
-
-@keyframes typing-square-fill {
+@keyframes grok-square-fill {
     0% {
-        transform: scale(0);
-        opacity: 0.9;
+        height: 0%;
     }
     50% {
-        transform: scale(1);
-        opacity: 1;
+        height: 100%;
     }
     100% {
-        transform: scale(0);
-        opacity: 0.9;
+        height: 0%;
     }
 }
 
