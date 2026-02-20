@@ -4328,14 +4328,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         inputEl.classList.toggle('input-overlaps-message', overlaps);
     }
 
-    showTypingIndicator() {
-    if (this.state.doNotDisturb) return;
-    const indicator = this.elements.typingIndicator;
-    if (indicator) {
-        indicator.classList.add('visible');
-        this.scrollToBottom();
-    }
-}
+    // Метод showTypingIndicator теперь в uiManager - используем его через this.uiManager.showTypingIndicator()
 
 hideTypingIndicator() {
     const indicator = this.elements.typingIndicator;

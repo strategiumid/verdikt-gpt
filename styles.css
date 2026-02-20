@@ -2132,17 +2132,19 @@ body.sidebar-collapsed .container {
     padding: 4px 0;
     display: flex;
     align-items: center;
+    min-height: 24px;
 }
 
 /* Анимированный квадратик с заполнением (черно-белый) */
 .typing-square-loader {
-    width: 18px;
-    height: 18px;
-    border: 2px solid rgba(255, 255, 255, 0.4);
-    background: rgba(0, 0, 0, 0.3);
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    background: rgba(0, 0, 0, 0.4);
     position: relative;
     overflow: hidden;
     animation: typing-square-pulse 1s ease-in-out infinite;
+    flex-shrink: 0;
 }
 
 .typing-square-loader::before {
