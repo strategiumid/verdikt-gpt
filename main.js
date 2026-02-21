@@ -4,7 +4,7 @@ import { UIManager } from './uiManager.js';
 import { EncryptionService } from './encryptionService.js';
 import { AuthService } from './authService.js';
 
-// Основной класс 
+
 export class VerdiktChatApp {
       // Статические словари для анализа тональности
     static NEGATIVE_WORDS = [
