@@ -2284,6 +2284,23 @@ body.sidebar-collapsed .app-header .header-right {
     }
 }
 
+.ai-smooth-reveal {
+    animation: aiSmoothReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+@keyframes aiSmoothReveal {
+    from {
+        opacity: 0;
+        filter: blur(4px);
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        filter: blur(0);
+        transform: translateY(0);
+    }
+}
+
 .ai-reveal-stripes {
     position: absolute;
     left: 0;

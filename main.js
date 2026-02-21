@@ -3510,13 +3510,12 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     const time = this.getCurrentTime();
 
     const messageElement = document.createElement('div');
-    messageElement.className = 'message ai-message ai-message-typing streaming';
+    messageElement.className = 'message ai-message';
     messageElement.id = messageId;
     messageElement.style.opacity = '0';
     messageElement.style.transform = 'translateY(16px)';
     messageElement.style.willChange = 'transform, opacity';
 
-    // Без аватара и имени ИИ — только ответ
     const shareBtnHtml = `
         <button class="message-share-btn" onclick="window.verdiktApp.toggleShareMenu('${messageId}')" title="Поделиться">
             <i class="fas fa-share"></i>
@@ -3537,7 +3536,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         </div>
         <div class="message-content-wrapper ai-reveal-from-lines">
             <div class="ai-reveal-stripes" aria-hidden="true"></div>
-            <div class="message-content streaming-content"></div>
+            <div class="message-content ai-smooth-reveal"></div>
             <div class="message-time">${time}</div>
         </div>
         ${shareBtnHtml}
@@ -3545,7 +3544,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
 
     this.elements.chatMessages.appendChild(messageElement);
     
-    // Анимация появления сообщения
     requestAnimationFrame(() => {
         messageElement.style.opacity = '1';
         messageElement.style.transform = 'translateY(0)';
@@ -3560,94 +3558,41 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
 
     const contentEl = messageElement.querySelector('.message-content');
     
-    // Streaming эффект: посимвольное появление с fade-in
-    const chars = fullText.split('');
-    if (chars.length === 0) {
-        contentEl.innerHTML = this.formatMessage(fullText);
-        messageElement.classList.remove('ai-message-typing', 'streaming');
-        messageElement.style.willChange = 'auto';
-        return;
+    const formatted = this.formatMessage(fullText);
+    contentEl.innerHTML = formatted;
+
+    if (typeof hljs !== 'undefined') {
+        setTimeout(() => {
+            contentEl.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
+        }, 50);
     }
-    
-    let accumulated = '';
-    let charIndex = 0;
-    const baseDelayMs = 0; // Максимально быстрое печатание
-    
-    const getCharDelay = (char) => {
-        if (/\s/.test(char)) return 0;
-        if (/[.,!?;:]/.test(char)) return 2;
-        return baseDelayMs + Math.floor(Math.random() * 2); // 0–2 ms на символ
-    };
 
-    const streamNext = () => {
-        if (charIndex >= chars.length) {
-            // Завершение streaming - финальный рендеринг с markdown
-            const formatted = this.formatMessage(fullText);
-            contentEl.innerHTML = formatted;
-            
-            // Подсветка кода после завершения streaming
-            if (typeof hljs !== 'undefined') {
-                setTimeout(() => {
-                    contentEl.querySelectorAll('pre code').forEach((block) => {
-                        hljs.highlightElement(block);
-                    });
-                }, 50);
-            }
-            
-            messageElement.classList.remove('ai-message-typing', 'streaming');
-            messageElement.style.willChange = 'auto';
-            
-            const contentWrapper = messageElement.querySelector('.message-content-wrapper');
-            if (contentWrapper && !messageElement.querySelector('.message-feedback')) {
-                const feedbackDiv = document.createElement('div');
-                feedbackDiv.className = 'message-feedback';
-                feedbackDiv.innerHTML = `
-                    <button class="feedback-btn feedback-good" onclick="window.verdiktApp.rateMessage('${messageId}', 1)">👍 Полезно</button>
-                    <button class="feedback-btn feedback-bad" onclick="window.verdiktApp.rateMessage('${messageId}', -1)">👎 Не полезно</button>
-                `;
-                const timeEl = contentWrapper.querySelector('.message-time');
-                if (timeEl) {
-                    contentWrapper.insertBefore(feedbackDiv, timeEl);
-                } else {
-                    contentWrapper.appendChild(feedbackDiv);
-                }
-            }
-            // Финальная плавная прокрутка после завершения стриминга
-            if (this.uiManager && this.uiManager.isUserNearBottom(200)) {
-                this.uiManager.smoothScrollToBottom(true);
-            }
-            setTimeout(() => {
-                this.updateInputOverlapState && this.updateInputOverlapState();
-            }, 300);
-            return;
-        }
-        
-        accumulated += chars[charIndex];
-        charIndex++;
-        
-        // Форматируем накопленный текст с markdown (для streaming)
-        // Используем простой форматинг во время streaming для производительности
-        const formatted = accumulated
-            .replace(/\n/g, '<br>')
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/`{3}([\s\S]*?)`{3}/g, '<pre><code>$1</code></pre>')
-            .replace(/`([^`]+)`/g, '<code>$1</code>');
-        contentEl.innerHTML = formatted;
-        
-        // Адекватный автоскролл во время ответа ИИ: часто и только если пользователь у низа
-        if (this.uiManager && this.uiManager.isUserNearBottom(120)) {
-            if (charIndex % 3 === 0 || chars[charIndex - 1] === '\n') {
-                this.uiManager.scrollToBottomInstant();
-            }
-        }
-        
-        // Динамическая задержка в зависимости от символа
-        const delay = getCharDelay(chars[charIndex - 1]);
-        setTimeout(streamNext, delay);
-    };
+    messageElement.style.willChange = 'auto';
 
-    setTimeout(streamNext, 20);
+    const contentWrapper = messageElement.querySelector('.message-content-wrapper');
+    if (contentWrapper && !messageElement.querySelector('.message-feedback')) {
+        const feedbackDiv = document.createElement('div');
+        feedbackDiv.className = 'message-feedback';
+        feedbackDiv.innerHTML = `
+            <button class="feedback-btn feedback-good" onclick="window.verdiktApp.rateMessage('${messageId}', 1)">👍 Полезно</button>
+            <button class="feedback-btn feedback-bad" onclick="window.verdiktApp.rateMessage('${messageId}', -1)">👎 Не полезно</button>
+        `;
+        const timeEl = contentWrapper.querySelector('.message-time');
+        if (timeEl) {
+            contentWrapper.insertBefore(feedbackDiv, timeEl);
+        } else {
+            contentWrapper.appendChild(feedbackDiv);
+        }
+    }
+
+    if (this.uiManager && this.uiManager.isUserNearBottom(200)) {
+        this.uiManager.smoothScrollToBottom(true);
+    }
+    setTimeout(() => {
+        this.updateInputOverlapState && this.updateInputOverlapState();
+    }, 300);
 }
 
     formatMessage(text) {
