@@ -142,6 +142,7 @@ export class VerdiktChatApp {
             notificationText: document.getElementById('notification-text'),
             questionsNavigation: document.getElementById('questions-navigation'),
             questionsNavList: document.getElementById('questions-nav-list'),
+            questionsNavNextBtn: document.getElementById('questions-nav-next-btn'),
             apiStatus: document.getElementById('api-status'),
             apiStatusDot: document.getElementById('api-status-dot'),
             apiStatusText: document.getElementById('api-status-text'),
@@ -4753,11 +4754,6 @@ stopStarSuction() {
         
         this.elements.questionsNavList.innerHTML = '';
         
-        // Calculate positions for navigation dots
-        const chatMessages = this.elements.chatMessages;
-        const totalHeight = chatMessages.scrollHeight;
-        const visibleHeight = chatMessages.clientHeight;
-        
         userMessages.forEach((messageEl, index) => {
             const messageContent = messageEl.querySelector('.message-content');
             if (!messageContent) return;
@@ -4766,22 +4762,11 @@ stopStarSuction() {
             const preview = text.length > 80 ? text.substring(0, 80) + '...' : text;
             const questionNumber = index + 1;
             
-            // Calculate relative position
-            const messageRect = messageEl.getBoundingClientRect();
-            const containerRect = chatMessages.getBoundingClientRect();
-            const relativeTop = messageEl.offsetTop;
-            const positionPercent = (relativeTop / totalHeight) * 100;
-            
             const navItem = document.createElement('button');
             navItem.className = 'questions-nav-item';
             navItem.setAttribute('data-message-id', messageEl.id);
             navItem.setAttribute('data-number', questionNumber);
             navItem.setAttribute('aria-label', `Вопрос ${questionNumber}: ${preview}`);
-            navItem.setAttribute('title', `Вопрос ${questionNumber}: ${preview}`);
-            navItem.style.position = 'absolute';
-            navItem.style.top = `${Math.max(2, Math.min(98, positionPercent))}%`;
-            navItem.style.left = '50%';
-            navItem.style.transform = 'translate(-50%, -50%)';
             
             // Add tooltip
             const tooltip = document.createElement('div');
@@ -4828,6 +4813,18 @@ stopStarSuction() {
         setTimeout(() => {
             messageEl.style.boxShadow = '';
         }, 2000);
+    }
+
+    scrollToNextQuestion() {
+        const navItems = Array.from(this.elements.questionsNavList.querySelectorAll('.questions-nav-item'));
+        if (navItems.length === 0) return;
+
+        const activeIndex = navItems.findIndex(item => item.classList.contains('active'));
+        const nextIndex = activeIndex === -1 || activeIndex >= navItems.length - 1 ? 0 : activeIndex + 1;
+        const nextItem = navItems[nextIndex];
+        if (nextItem) {
+            this.scrollToQuestion(nextItem.getAttribute('data-message-id'));
+        }
     }
 
     updateActiveQuestion() {
@@ -7486,6 +7483,14 @@ stopStarSuction() {
     setupQuestionsNavigation() {
         if (!this.elements.questionsNavigation) return;
         
+        // "Next answer" button
+        if (this.elements.questionsNavNextBtn) {
+            this.elements.questionsNavNextBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.scrollToNextQuestion();
+            });
+        }
+
         // Update active question on scroll with throttling
         let scrollTimeout;
         if (this.elements.chatMessages) {
