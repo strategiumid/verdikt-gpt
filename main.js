@@ -147,6 +147,7 @@ export class VerdiktChatApp {
             questionsNavigation: document.getElementById('questions-navigation'),
             questionsNavList: document.getElementById('questions-nav-list'),
             questionsNavNextBtn: document.getElementById('questions-nav-next-btn'),
+            questionsNavToggle: document.getElementById('questions-nav-toggle'),
             apiStatus: document.getElementById('api-status'),
             apiStatusDot: document.getElementById('api-status-dot'),
             apiStatusText: document.getElementById('api-status-text'),
@@ -4812,7 +4813,7 @@ stopStarSuction() {
             if (!messageContent) return;
             
             const text = messageContent.textContent.trim();
-            const preview = text.length > 80 ? text.substring(0, 80) + '...' : text;
+            const preview = text.length > 60 ? text.substring(0, 60) + '…' : text;
             const questionNumber = index + 1;
             
             const navItem = document.createElement('button');
@@ -4821,11 +4822,17 @@ stopStarSuction() {
             navItem.setAttribute('data-number', questionNumber);
             navItem.setAttribute('aria-label', `Вопрос ${questionNumber}: ${preview}`);
             
-            // Add tooltip
-            const tooltip = document.createElement('div');
-            tooltip.className = 'questions-nav-item-tooltip';
-            tooltip.textContent = `${questionNumber}. ${preview}`;
-            navItem.appendChild(tooltip);
+            // Badge with number
+            const badge = document.createElement('span');
+            badge.className = 'questions-nav-badge';
+            badge.textContent = questionNumber;
+            navItem.appendChild(badge);
+
+            // Preview text
+            const textSpan = document.createElement('span');
+            textSpan.className = 'questions-nav-item-text';
+            textSpan.textContent = preview;
+            navItem.appendChild(textSpan);
             
             navItem.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -7535,6 +7542,14 @@ stopStarSuction() {
 
     setupQuestionsNavigation() {
         if (!this.elements.questionsNavigation) return;
+
+        // Collapse / expand toggle
+        if (this.elements.questionsNavToggle) {
+            this.elements.questionsNavToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.elements.questionsNavigation.classList.toggle('nav-collapsed');
+            });
+        }
         
         // "Next answer" button
         if (this.elements.questionsNavNextBtn) {

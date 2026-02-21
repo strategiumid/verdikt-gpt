@@ -3253,15 +3253,25 @@
                         <!-- Сообщения будут добавляться сюда динамически -->
                     </div>
                     
-                    <!-- Навигация по вопросам -->
+                    <!-- Навигация по вопросам (DeepSeek-style) -->
                     <div class="questions-navigation hidden" id="questions-navigation">
-                        <div class="questions-nav-list" id="questions-nav-list">
-                            <!-- Индикаторы вопросов будут добавляться динамически -->
+                        <div class="questions-nav-header">
+                            <span class="questions-nav-title">Вопросы</span>
+                            <button class="questions-nav-toggle" id="questions-nav-toggle" title="Свернуть">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
                         </div>
-                        <button class="questions-nav-next-btn" id="questions-nav-next-btn" aria-label="Следующий ответ">
-                            <span>Следующий ответ</span>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                        </button>
+                        <div class="questions-nav-body">
+                            <div class="questions-nav-list" id="questions-nav-list">
+                                <!-- Вопросы добавляются динамически -->
+                            </div>
+                        </div>
+                        <div class="questions-nav-footer">
+                            <button class="questions-nav-next-btn" id="questions-nav-next-btn" aria-label="Следующий ответ">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                <span>Следующий ответ</span>
+                            </button>
+                        </div>
                     </div>
                     
                     <!-- Индикатор набора текста -->
