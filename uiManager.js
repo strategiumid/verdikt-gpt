@@ -229,7 +229,6 @@ export class UIManager {
             `;
 
             this.elements.chatMessages.appendChild(tpl);
-            // Анимация появления индикатора печати в стиле Grok
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     tpl.style.opacity = '1';
@@ -237,7 +236,7 @@ export class UIManager {
                     tpl.style.transition = 'opacity 350ms cubic-bezier(0.16, 1, 0.3, 1), transform 350ms cubic-bezier(0.16, 1, 0.3, 1)';
                 });
             });
-            this.smoothScrollToBottom();
+            this.scrollToBottomIfNear();
         }
     }
 
@@ -274,7 +273,6 @@ export class UIManager {
             </div>
         `;
         this.elements.chatMessages.appendChild(tpl);
-        // Анимация появления индикатора поиска в стиле Grok
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 tpl.style.opacity = '1';
@@ -282,7 +280,7 @@ export class UIManager {
                 tpl.style.transition = 'opacity 350ms cubic-bezier(0.16, 1, 0.3, 1), transform 350ms cubic-bezier(0.16, 1, 0.3, 1)';
             });
         });
-        this.smoothScrollToBottom();
+        this.scrollToBottomIfNear();
     }
 
     hideSearchingIndicator() {

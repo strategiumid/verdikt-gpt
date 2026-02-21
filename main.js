@@ -3287,15 +3287,15 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 }, 1000);
             }
         } finally {
-            // Разблокируем интерфейс после завершения ответа
             this.state.isResponding = false;
             this.elements.messageInput.disabled = false;
-            // Показываем кнопку отправки снова
             this.showSendButton();
             this.updateSendButtonState();
         }
         
-        this.scrollToBottom();
+        if (this.uiManager && this.uiManager.isUserNearBottom(150)) {
+            this.scrollToBottom();
+        }
     }
     
     showSendButtonSpinner() {
@@ -3550,7 +3550,9 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         messageElement.style.transition = 'opacity 350ms cubic-bezier(0.16, 1, 0.3, 1), transform 350ms cubic-bezier(0.16, 1, 0.3, 1)';
     });
 
-    this.smoothScrollToBottom();
+    if (this.uiManager && this.uiManager.isUserNearBottom(150)) {
+        this.smoothScrollToBottom();
+    }
 
     const heroBlock = document.getElementById('hero-block');
     if (heroBlock) heroBlock.style.display = 'none';
