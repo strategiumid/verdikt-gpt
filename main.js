@@ -147,7 +147,6 @@ export class VerdiktChatApp {
             questionsNavigation: document.getElementById('questions-navigation'),
             questionsNavList: document.getElementById('questions-nav-list'),
             questionsNavNextBtn: document.getElementById('questions-nav-next-btn'),
-            questionsNavToggle: document.getElementById('questions-nav-toggle'),
             apiStatus: document.getElementById('api-status'),
             apiStatusDot: document.getElementById('api-status-dot'),
             apiStatusText: document.getElementById('api-status-text'),
@@ -7543,14 +7542,6 @@ stopStarSuction() {
     setupQuestionsNavigation() {
         if (!this.elements.questionsNavigation) return;
 
-        // Collapse / expand toggle
-        if (this.elements.questionsNavToggle) {
-            this.elements.questionsNavToggle.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.elements.questionsNavigation.classList.toggle('nav-collapsed');
-            });
-        }
-        
         // "Next answer" button
         if (this.elements.questionsNavNextBtn) {
             this.elements.questionsNavNextBtn.addEventListener('click', (e) => {
