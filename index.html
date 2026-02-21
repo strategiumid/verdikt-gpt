@@ -1878,10 +1878,6 @@
                             <i class="fas fa-palette"></i>
                             <span>Оформление</span>
                         </div>
-                        <div class="profile-nav-item" data-section="ai-mode">
-                            <i class="fas fa-robot"></i>
-                            <span>Режим AI</span>
-                        </div>
                         <div class="profile-nav-item" data-section="achievements">
                             <i class="fas fa-trophy"></i>
                             <span>Достижения</span>
@@ -1997,65 +1993,6 @@
                             <button class="ios-button secondary" id="api-settings-button" style="width: 100%; margin-top: 15px;">
                                 <i class="fas fa-key"></i> Настройки API
                             </button>
-                            <div class="profile-divider"></div>
-                        </div>
-                    </div>
-
-                    <!-- Секция Режим AI -->
-                    <div class="profile-settings-section" id="ai-mode-section" style="display: none;">
-                        <div class="profile-section-item">
-                            <div class="profile-section-label">Режим консультации</div>
-                            <div class="ai-modes-settings">
-                                <div class="mode-item-settings active" data-mode="balanced">
-                                    <div class="mode-icon-settings">
-                                        <i class="fas fa-balance-scale"></i>
-                                    </div>
-                                    <div class="mode-info-settings">
-                                        <h5>Сбалансированный</h5>
-                                        <p>Объективный анализ</p>
-                                    </div>
-                                </div>
-                                
-                                <div class="mode-item-settings" data-mode="creative">
-                                    <div class="mode-icon-settings">
-                                        <i class="fas fa-heart"></i>
-                                    </div>
-                                    <div class="mode-info-settings">
-                                        <h5>Эмоциональный</h5>
-                                        <p>Учет чувств и эмоций</p>
-                                    </div>
-                                </div>
-                                
-                                <div class="mode-item-settings" data-mode="precise">
-                                    <div class="mode-icon-settings">
-                                        <i class="fas fa-brain"></i>
-                                    </div>
-                                    <div class="mode-info-settings">
-                                        <h5>Аналитический</h5>
-                                        <p>Детальный разбор ситуации</p>
-                                    </div>
-                                </div>
-                                
-                                <div class="mode-item-settings" data-mode="protective">
-                                    <div class="mode-icon-settings">
-                                        <i class="fas fa-shield-alt"></i>
-                                    </div>
-                                    <div class="mode-info-settings">
-                                        <h5>Защитный</h5>
-                                        <p>Распознавание манипуляций</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="profile-divider"></div>
-                        </div>
-
-                        <div class="profile-section-item">
-                            <div class="profile-section-label">Настройки AI</div>
-                            <div class="control-group" style="margin-top: 15px; display: flex; align-items: center; gap: 12px;">
-                                <label class="control-label" style="min-width: 100px;">Температура:</label>
-                                <input type="range" id="temperature-slider" min="0.1" max="1" step="0.1" value="0.7" style="flex: 1;">
-                                <span id="temperature-value" style="min-width: 40px; text-align: center; color: rgba(255, 255, 255, 0.8);">0.7</span>
-                            </div>
                             <div class="profile-divider"></div>
                         </div>
                     </div>
@@ -3348,10 +3285,6 @@
                             <button class="input-icon-button" id="attach-button" title="Прикрепить скриншот или изображение" type="button">
                                 <i class="fas fa-paperclip"></i>
                             </button>
-                            <button class="input-icon-button" id="deep-reflection-btn" title="Глубокое Размышление">
-                                <i class="fas fa-brain"></i>
-                                <span class="deep-reflection-indicator"></span>
-                            </button>
                         </div>
                         
                         <div class="input-wrapper input-wrapper-with-t9">
@@ -3359,63 +3292,10 @@
                         </div>
                         
                         <div class="input-actions-right">
-                            <!-- AI Mode Selector -->
-                            <div class="ai-mode-selector-wrapper">
-                                <button class="input-icon-button ai-mode-selector-btn grok-mode-btn" id="ai-mode-selector" title="Режимы ИИ (свернуть/развернуть)" type="button" aria-expanded="false" aria-controls="ai-mode-dropdown">
-                                    <i class="fas fa-rocket ai-mode-icon-closed" aria-hidden="true"></i>
-                                    <span class="ai-mode-label">Авто</span>
-                                    <i class="fas fa-chevron-down ai-mode-chevron" aria-hidden="true"></i>
-                                    <i class="fas fa-chevron-up ai-mode-icon-open" aria-hidden="true" style="display: none;"></i>
-                                </button>
-                                
-                                <!-- Dropdown меню режимов -->
-                                <div class="ai-mode-dropdown" id="ai-mode-dropdown">
-                                    <div class="mode-dropdown-item" data-mode="balanced">
-                                        <div class="mode-item-icon">
-                                            <i class="fas fa-balance-scale"></i>
-                                        </div>
-                                        <div class="mode-item-content">
-                                            <div class="mode-item-name">Сбалансированный</div>
-                                            <div class="mode-item-desc">Объективный анализ</div>
-                                        </div>
-                                        <i class="fas fa-check mode-item-check" style="display: none;"></i>
-                                    </div>
-                                    
-                                    <div class="mode-dropdown-item" data-mode="creative">
-                                        <div class="mode-item-icon">
-                                            <i class="fas fa-heart"></i>
-                                        </div>
-                                        <div class="mode-item-content">
-                                            <div class="mode-item-name">Эмоциональный</div>
-                                            <div class="mode-item-desc">Учет чувств и эмоций</div>
-                                        </div>
-                                        <i class="fas fa-check mode-item-check" style="display: none;"></i>
-                                    </div>
-                                    
-                                    <div class="mode-dropdown-item" data-mode="precise">
-                                        <div class="mode-item-icon">
-                                            <i class="fas fa-brain"></i>
-                                        </div>
-                                        <div class="mode-item-content">
-                                            <div class="mode-item-name">Аналитический</div>
-                                            <div class="mode-item-desc">Детальный разбор ситуации</div>
-                                        </div>
-                                        <i class="fas fa-check mode-item-check" style="display: none;"></i>
-                                    </div>
-                                    
-                                    <div class="mode-dropdown-item" data-mode="protective">
-                                        <div class="mode-item-icon">
-                                            <i class="fas fa-shield-alt"></i>
-                                        </div>
-                                        <div class="mode-item-content">
-                                            <div class="mode-item-name">Защитный</div>
-                                            <div class="mode-item-desc">Распознавание манипуляций</div>
-                                        </div>
-                                        <i class="fas fa-check mode-item-check" style="display: none;"></i>
-                                    </div>
-                                </div>
-                            </div>
-                            
+                            <button class="input-icon-button" id="deep-reflection-btn" title="Глубокое размышление (вкл/выкл)" type="button">
+                                <i class="fas fa-brain"></i>
+                                <span class="deep-reflection-indicator"></span>
+                            </button>
                             <button class="input-icon-button" id="search-mode-btn" type="button" title="Поиск в интернете (вкл/выкл)">
                                 <i class="fas fa-globe"></i>
                             </button>
