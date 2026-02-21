@@ -134,6 +134,10 @@ export class VerdiktChatApp {
             messageInput: document.getElementById('message-input'),
             sendButton: document.getElementById('send-button'),
             searchModeBtn: document.getElementById('search-mode-btn'),
+            boostMenuBtn: document.getElementById('boost-menu-btn'),
+            boostMenuPopup: document.getElementById('boost-menu-popup'),
+            boostDeepReflectionBtn: document.getElementById('boost-deep-reflection'),
+            boostSearchModeBtn: document.getElementById('boost-search-mode'),
             voiceInput: document.getElementById('voice-input'),
             newChat: document.getElementById('new-chat'),
             // settingsButton удалена - настройки теперь в профиле
@@ -2767,6 +2771,42 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             this.updateDeepReflectionButtonState();
         }
 
+        // Boost menu (rocket button)
+        if (this.elements.boostMenuBtn) {
+            this.elements.boostMenuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.elements.boostMenuPopup?.classList.toggle('open');
+            });
+        }
+
+        if (this.elements.boostDeepReflectionBtn) {
+            this.elements.boostDeepReflectionBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleDeepReflectionMode();
+                this.updateBoostMenuState();
+            });
+        }
+
+        if (this.elements.boostSearchModeBtn) {
+            this.elements.boostSearchModeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.state.searchModeEnabled = !this.state.searchModeEnabled;
+                this.showNotification(
+                    this.state.searchModeEnabled ? 'Поиск в интернете включён' : 'Поиск в интернете выключен',
+                    'info'
+                );
+                this.updateBoostMenuState();
+            });
+        }
+
+        document.addEventListener('click', () => {
+            this.elements.boostMenuPopup?.classList.remove('open');
+        });
+
+        if (this.elements.boostMenuPopup) {
+            this.elements.boostMenuPopup.addEventListener('click', (e) => e.stopPropagation());
+        }
+
         if (this.elements.dndToggle) {
             this.elements.dndToggle.addEventListener('click', () => {
                 this.state.doNotDisturb = !this.state.doNotDisturb;
@@ -4028,6 +4068,19 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             this.elements.deepReflectionBtn.title = this.state.deepReflectionMode 
                 ? 'Глубокое Размышление включено (нажмите, чтобы выключить)' 
                 : 'Глубокое Размышление (вкл/выкл)';
+        }
+        this.updateBoostMenuState();
+    }
+
+    updateBoostMenuState() {
+        const deep = this.state.deepReflectionMode;
+        const search = this.state.searchModeEnabled;
+
+        this.elements.boostDeepReflectionBtn?.classList.toggle('active', deep);
+        this.elements.boostSearchModeBtn?.classList.toggle('active', search);
+
+        if (this.elements.boostMenuBtn) {
+            this.elements.boostMenuBtn.classList.toggle('has-active', deep || search);
         }
     }
 

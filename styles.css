@@ -2577,7 +2577,7 @@ body.sidebar-collapsed .app-header .header-right {
 /* Навигация по вопросам - вертикальный скроллбар справа */
 .questions-navigation {
     position: absolute;
-    bottom: 80px;
+    top: 30%;
     right: 16px;
     z-index: 100;
     display: flex;
@@ -2660,7 +2660,7 @@ body.sidebar-collapsed .app-header .header-right {
     transition-delay: 0.1s;
 }
 
-/* Кнопка "Следующий ответ" */
+/* Кнопка "Следующий ответ" — скрыта, появляется при наведении на навигацию */
 .questions-nav-next-btn {
     display: flex;
     align-items: center;
@@ -2675,10 +2675,20 @@ body.sidebar-collapsed .app-header .header-right {
     cursor: pointer;
     white-space: nowrap;
     backdrop-filter: blur(12px);
-    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease,
+                box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
     letter-spacing: 0.2px;
     font-family: inherit;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(4px);
+}
+
+.questions-navigation:not(.hidden):hover .questions-nav-next-btn {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0);
 }
 
 .questions-nav-next-btn:hover {
@@ -2722,7 +2732,7 @@ body.sidebar-collapsed .app-header .header-right {
 @media (max-width: 768px) {
     .questions-navigation {
         right: 10px;
-        bottom: 72px;
+        top: 28%;
         gap: 8px;
     }
 
@@ -2754,7 +2764,7 @@ body.sidebar-collapsed .app-header .header-right {
 @media (max-width: 480px) {
     .questions-navigation {
         right: 8px;
-        bottom: 68px;
+        top: 26%;
     }
 
     .questions-nav-item {
@@ -3370,6 +3380,106 @@ body.sidebar-collapsed .app-header .header-right {
         opacity: 0.8;
         box-shadow: 0 0 0 4px rgba(255, 255, 255, 0);
     }
+}
+
+/* ── Boost-menu: кнопка-ракета + выпадающее меню ── */
+.boost-menu-wrapper {
+    position: relative;
+}
+
+.boost-menu-popup {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%) translateY(6px);
+    background: rgba(16, 16, 16, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 210px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255,255,255,0.05);
+    z-index: 200;
+    white-space: nowrap;
+}
+
+.boost-menu-popup.open {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateX(-50%) translateY(0);
+}
+
+.boost-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 13px;
+    border-radius: 10px;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s ease, color 0.15s ease;
+    text-align: left;
+    width: 100%;
+}
+
+.boost-menu-item i {
+    font-size: 14px;
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.boost-menu-item:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: rgba(255, 255, 255, 0.88);
+}
+
+.boost-menu-item.active {
+    background: rgba(255, 255, 255, 0.11);
+    color: white;
+}
+
+.boost-menu-item.active i {
+    color: white;
+}
+
+/* Индикатор активного режима на ракете */
+#boost-menu-btn {
+    position: relative;
+}
+
+#boost-menu-btn.has-active {
+    color: rgba(255, 255, 255, 0.92);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#boost-menu-btn .boost-active-dot {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: white;
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#boost-menu-btn.has-active .boost-active-dot {
+    opacity: 1;
+    transform: scale(1);
 }
 
 /* Анимация глубокого размышления в индикаторе печати */
