@@ -4776,6 +4776,8 @@ stopStarSuction() {
             navItem.className = 'questions-nav-item';
             navItem.setAttribute('data-message-id', messageEl.id);
             navItem.setAttribute('data-number', questionNumber);
+            navItem.setAttribute('aria-label', `Вопрос ${questionNumber}: ${preview}`);
+            navItem.setAttribute('title', `Вопрос ${questionNumber}: ${preview}`);
             navItem.style.position = 'absolute';
             navItem.style.top = `${Math.max(2, Math.min(98, positionPercent))}%`;
             navItem.style.left = '50%';
