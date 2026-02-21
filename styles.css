@@ -2453,8 +2453,7 @@ body.sidebar-collapsed .app-header .header-right {
 }
 
 .message-avatar.user-avatar {
-    background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
-    box-shadow: 0 2px 8px rgba(75, 85, 99, 0.2);
+    display: none !important;
 }
 
 .message-avatar i {
@@ -2600,32 +2599,54 @@ body.sidebar-collapsed .app-header .header-right {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 5px;
+    gap: 6px;
     padding: 0;
 }
 
 .questions-nav-item {
-    width: 20px;
-    height: 2px;
-    border-radius: 2px;
-    background: rgba(255, 255, 255, 0.28);
-    border: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1.5px solid rgba(255, 255, 255, 0.28);
+    color: rgba(255, 255, 255, 0.5);
     cursor: pointer;
-    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
     padding: 0;
     position: relative;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.questions-nav-item::before {
+    content: '›';
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+    margin-top: -1px;
 }
 
 .questions-nav-item:hover {
-    width: 28px;
-    background: rgba(255, 255, 255, 0.65);
+    width: 22px;
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.9);
+    transform: scale(1.1);
 }
 
 .questions-nav-item.active {
-    width: 30px;
-    height: 2px;
-    background: rgba(255, 255, 255, 0.92);
+    width: 22px;
+    height: 22px;
+    background: rgba(255, 255, 255, 0.95);
+    border-color: white;
+    color: #000;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.35), 0 2px 8px rgba(0,0,0,0.4);
+}
+
+.questions-nav-item.active::before {
+    color: #000;
 }
 
 /* Tooltip с текстом вопроса */
@@ -2737,15 +2758,12 @@ body.sidebar-collapsed .app-header .header-right {
     }
 
     .questions-nav-item {
-        width: 16px;
+        width: 20px;
+        height: 20px;
     }
 
-    .questions-nav-item:hover {
-        width: 22px;
-    }
-
-    .questions-nav-item.active {
-        width: 24px;
+    .questions-nav-item::before {
+        font-size: 16px;
     }
 
     .questions-nav-next-btn {
@@ -2768,15 +2786,12 @@ body.sidebar-collapsed .app-header .header-right {
     }
 
     .questions-nav-item {
-        width: 14px;
+        width: 18px;
+        height: 18px;
     }
 
-    .questions-nav-item:hover {
-        width: 20px;
-    }
-
-    .questions-nav-item.active {
-        width: 22px;
+    .questions-nav-item::before {
+        font-size: 14px;
     }
 
     .questions-nav-next-btn {
@@ -8481,4 +8496,546 @@ textarea::placeholder {
 input:focus::placeholder,
 textarea:focus::placeholder {
     opacity: 0.4;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ПОЛНЫЙ МОБИЛЬНЫЙ РЕДИЗАЙН
+   Переопределяет все предыдущие мобильные стили
+   ═══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+
+    /* ── Базовый layout: экран = вся высота ── */
+    html {
+        height: 100%;
+        height: 100dvh;
+        overflow: hidden;
+    }
+
+    body {
+        height: 100%;
+        height: 100dvh;
+        overflow: hidden;
+        overscroll-behavior: none;
+    }
+
+    /* ── Сайдбар: скрытый, выезжает слева ── */
+    .sidebar {
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        height: 100% !important;
+        height: 100dvh !important;
+        width: min(300px, 85vw) !important;
+        z-index: 1000;
+        transform: translateX(-100%) !important;
+        border-radius: 0 !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.08);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding-top: max(16px, env(safe-area-inset-top));
+        padding-bottom: max(16px, env(safe-area-inset-bottom));
+    }
+
+    .sidebar.active {
+        transform: translateX(0) !important;
+        box-shadow: 20px 0 60px rgba(0, 0, 0, 0.7);
+    }
+
+    .sidebar-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.55);
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
+        z-index: 999;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .sidebar-overlay.active {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: all;
+    }
+
+    /* ── Главный контейнер ── */
+    .container {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100dvh !important;
+        overflow: hidden !important;
+        gap: 0 !important;
+    }
+
+    /* ── Шапка: одна строка, не переносится ── */
+    .app-header {
+        flex-shrink: 0 !important;
+        flex-wrap: nowrap !important;
+        padding: max(12px, env(safe-area-inset-top)) 14px 12px 60px !important;
+        gap: 8px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        min-height: unset;
+        position: relative;
+        z-index: 50;
+    }
+
+    .header-left {
+        flex: 0 0 auto;
+        gap: 10px;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+
+    .header-right {
+        flex-wrap: nowrap !important;
+        gap: 5px;
+        flex: 1;
+        justify-content: flex-end;
+        align-items: center;
+        overflow: hidden;
+        min-width: 0;
+    }
+
+    .logo-icon {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 16px !important;
+        flex-shrink: 0;
+        border-radius: 10px;
+    }
+
+    /* Кнопки в шапке: компактные, не переносятся */
+    .header-right .ios-button {
+        min-width: 40px;
+        min-height: 40px;
+        padding: 8px 10px !important;
+        font-size: 13px;
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+
+    .header-right .ios-button.secondary {
+        padding: 8px !important;
+        min-width: 40px;
+    }
+
+    /* Скрываем текстовые метки в авторизации */
+    .header-right .user-auth-label {
+        display: none !important;
+    }
+
+    .status-indicator {
+        padding: 5px 9px;
+        font-size: 0.7rem;
+        white-space: nowrap;
+    }
+
+    /* ── Основной контент ── */
+    .main-content {
+        flex: 1 !important;
+        min-height: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+    }
+
+    .chat-area {
+        flex: 1 !important;
+        min-height: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+    }
+
+    /* ── Chat container ── */
+    .chat-container {
+        flex: 1 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        min-height: 0 !important;
+        border-radius: 0 !important;
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* ── Список сообщений ── */
+    .chat-messages {
+        flex: 1 !important;
+        overflow-y: auto !important;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+        padding: 14px 12px 0 !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        scroll-behavior: smooth;
+    }
+
+    .chat-container:not(.input-centered) .chat-messages {
+        padding-bottom: 88px !important;
+    }
+
+    /* ── Сообщения ── */
+    .message {
+        max-width: 86% !important;
+        padding: 12px 16px !important;
+        transform: none !important;
+    }
+
+    .message:hover {
+        transform: none !important;
+        box-shadow: none !important;
+    }
+
+    .user-message {
+        max-width: 80% !important;
+    }
+
+    .message-content {
+        font-size: 0.9375rem !important;
+        line-height: 1.55;
+    }
+
+    /* Кнопки действий над сообщением: всегда видны на мобиле */
+    .message-actions {
+        opacity: 1 !important;
+    }
+
+    /* ── Поле ввода: всегда прикреплено снизу ── */
+    .chat-container .input-container-extended {
+        position: absolute !important;
+        bottom: max(12px, env(safe-area-inset-bottom)) !important;
+        left: 12px !important;
+        right: 12px !important;
+        width: auto !important;
+        max-width: none !important;
+        transform: none !important;
+        top: auto !important;
+    }
+
+    /* Когда чат пуст: поле ввода всё равно внизу */
+    .chat-container.input-centered .input-container-extended {
+        top: auto !important;
+        bottom: max(12px, env(safe-area-inset-bottom)) !important;
+        transform: none !important;
+    }
+
+    .input-container-extended {
+        padding: 7px 10px 7px 12px !important;
+        gap: 6px !important;
+        border-radius: 22px !important;
+    }
+
+    .input-container-extended.grok-style-input .input-icon-button {
+        width: 38px !important;
+        height: 38px !important;
+        font-size: 15px !important;
+    }
+
+    #message-input {
+        font-size: 16px !important; /* предотвращает автозум в iOS */
+        min-height: 36px !important;
+        padding: 8px 6px 8px 2px !important;
+        line-height: 1.4;
+    }
+
+    /* ── Boost-меню (ракета): выезжает вверх ── */
+    .boost-menu-popup {
+        bottom: calc(100% + 10px) !important;
+        left: 0 !important;
+        right: auto;
+        transform: translateX(0) translateY(6px) !important;
+    }
+
+    .boost-menu-popup.open {
+        transform: translateX(0) translateY(0) !important;
+    }
+
+    /* ── Hero-блок (пустой чат) ── */
+    .hero-block {
+        flex: 1 !important;
+        padding: 16px 12px !important;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .animated-sphere {
+        width: 300px !important;
+        height: 300px !important;
+    }
+
+    .animated-sphere::before {
+        width: 220px !important;
+        height: 220px !important;
+    }
+
+    .sphere-core {
+        width: 100px !important;
+        height: 100px !important;
+    }
+
+    .sphere-core::before {
+        width: 120px !important;
+        height: 120px !important;
+    }
+
+    .sphere-ring-1 { width: 130px !important; height: 130px !important; }
+    .sphere-ring-2 { width: 155px !important; height: 155px !important; }
+    .sphere-ring-3 { width: 180px !important; height: 180px !important; }
+    .sphere-glow   { width: 130px !important; height: 130px !important; }
+
+    .hero-chip {
+        font-size: 0.78rem !important;
+        padding: 7px 12px !important;
+        margin: -70px !important;
+    }
+
+    .hero-chip span { display: none; }
+    .hero-chip i    { font-size: 14px !important; }
+
+    /* ── Навигация по вопросам: скрываем ── */
+    .questions-navigation {
+        display: none !important;
+    }
+
+    /* ── Footer: скрываем на мобиле ── */
+    footer {
+        display: none !important;
+    }
+
+    /* ── Модальные окна: bottom-sheet ── */
+    .modal {
+        align-items: flex-end !important;
+        padding: 0 !important;
+    }
+
+    .modal-content {
+        width: 100% !important;
+        max-width: 100% !important;
+        border-radius: 20px 20px 0 0 !important;
+        padding: 20px 16px max(20px, env(safe-area-inset-bottom)) 16px !important;
+        margin: 0 !important;
+        max-height: 92dvh !important;
+    }
+
+    /* Кнопка закрытия модала */
+    .modal-close {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    /* ── Уведомления: полная ширина ── */
+    .notification {
+        top: max(12px, env(safe-area-inset-top)) !important;
+        left: 12px !important;
+        right: 12px !important;
+        max-width: none !important;
+        font-size: 0.85rem;
+    }
+
+    /* ── Настройки: одна колонка ── */
+    .ai-modes-settings       { grid-template-columns: 1fr !important; }
+    .achievements-settings   { grid-template-columns: repeat(2, 1fr) !important; }
+    .stats-settings-grid     { grid-template-columns: repeat(2, 1fr) !important; }
+    .command-item-settings   { flex: 1 0 calc(50% - 8px) !important; }
+    .settings-section        { padding: 14px !important; }
+
+    .settings-tab {
+        min-width: 76px;
+        padding: 8px 10px;
+        font-size: 0.78rem;
+    }
+
+    /* ── Dropdown меню разработчиков ── */
+    .developers-dropdown-menu {
+        position: fixed !important;
+        top: 60px !important;
+        right: 10px !important;
+        left: 10px !important;
+        width: auto !important;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    /* ── Cookie-уведомление ── */
+    .cookie-notification {
+        left: max(10px, env(safe-area-inset-left)) !important;
+        right: max(10px, env(safe-area-inset-right)) !important;
+        bottom: max(10px, env(safe-area-inset-bottom)) !important;
+        padding: 12px !important;
+    }
+
+    .cookie-content { flex-direction: column; gap: 12px; }
+    .cookie-buttons { width: 100%; }
+    .cookie-buttons button { flex: 1; }
+
+    /* ── Auth-поле: без автозума ── */
+    .auth-field input { font-size: 16px !important; }
+}
+
+/* ── Компактные телефоны (≤ 480px) ── */
+@media (max-width: 480px) {
+
+    .app-header {
+        padding: max(10px, env(safe-area-inset-top)) 12px 10px 58px !important;
+    }
+
+    .logo-icon {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 14px !important;
+    }
+
+    /* Кнопки хедера: только иконки */
+    .header-right .ios-button span {
+        display: none !important;
+    }
+
+    .header-right .ios-button {
+        padding: 8px !important;
+        min-width: 38px !important;
+        min-height: 38px !important;
+    }
+
+    .status-indicator {
+        display: none !important;
+    }
+
+    #new-chat {
+        font-size: 13px;
+        padding: 8px 10px !important;
+    }
+
+    .chat-messages {
+        padding: 12px 10px 0 !important;
+    }
+
+    .chat-container:not(.input-centered) .chat-messages {
+        padding-bottom: 82px !important;
+    }
+
+    .message {
+        max-width: 90% !important;
+        padding: 11px 14px !important;
+    }
+
+    .user-message {
+        max-width: 84% !important;
+    }
+
+    .message-content {
+        font-size: 0.9rem !important;
+    }
+
+    .chat-container .input-container-extended {
+        left: 10px !important;
+        right: 10px !important;
+        bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    }
+
+    .input-container-extended {
+        padding: 6px 8px 6px 10px !important;
+        border-radius: 20px !important;
+    }
+
+    .input-container-extended.grok-style-input .input-icon-button {
+        width: 34px !important;
+        height: 34px !important;
+        font-size: 14px !important;
+    }
+
+    .hero-block {
+        padding: 12px 10px !important;
+    }
+
+    .animated-sphere {
+        width: 260px !important;
+        height: 260px !important;
+    }
+
+    .animated-sphere::before {
+        width: 190px !important;
+        height: 190px !important;
+    }
+
+    .sphere-core      { width: 85px !important;  height: 85px !important; }
+    .sphere-core::before { width: 105px !important; height: 105px !important; }
+    .sphere-ring-1    { width: 110px !important; height: 110px !important; }
+    .sphere-ring-2    { width: 132px !important; height: 132px !important; }
+    .sphere-ring-3    { width: 154px !important; height: 154px !important; }
+    .sphere-glow      { width: 110px !important; height: 110px !important; }
+
+    .hero-chip {
+        font-size: 0.7rem !important;
+        padding: 6px 10px !important;
+        margin: -60px !important;
+    }
+
+    .achievements-settings { grid-template-columns: 1fr !important; }
+    .stats-settings-grid   { grid-template-columns: 1fr !important; }
+    .command-item-settings { flex: 1 0 100% !important; }
+}
+
+/* ── Совсем маленькие (≤ 380px) ── */
+@media (max-width: 380px) {
+
+    .header-left { gap: 6px !important; }
+
+    .logo-icon {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 12px !important;
+    }
+
+    .chat-container .input-container-extended {
+        left: 6px !important;
+        right: 6px !important;
+    }
+
+    .input-container-extended {
+        padding: 5px 6px 5px 8px !important;
+        border-radius: 18px !important;
+    }
+
+    .input-container-extended.grok-style-input .input-icon-button {
+        width: 30px !important;
+        height: 30px !important;
+        font-size: 13px !important;
+    }
+
+    #message-input {
+        min-height: 30px !important;
+        padding: 5px 4px 5px 2px !important;
+    }
+
+    .animated-sphere {
+        width: 220px !important;
+        height: 220px !important;
+    }
+
+    .animated-sphere::before {
+        width: 160px !important;
+        height: 160px !important;
+    }
+
+    .sphere-core      { width: 70px !important;  height: 70px !important; }
+    .sphere-core::before { width: 88px !important; height: 88px !important; }
+    .sphere-ring-1    { width: 94px !important;  height: 94px !important; }
+    .sphere-ring-2    { width: 112px !important; height: 112px !important; }
+    .sphere-ring-3    { width: 130px !important; height: 130px !important; }
+    .sphere-glow      { width: 94px !important;  height: 94px !important; }
+
+    .hero-chip {
+        margin: -52px !important;
+        padding: 5px 8px !important;
+    }
+
+    .hero-chip i { font-size: 11px !important; }
 }
