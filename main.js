@@ -2049,19 +2049,19 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     }
 
     updateSubscriptionModalState() {
-        const modal = document.getElementById('subscription-modal');
-        if (!modal) return;
-        const current = this.state.user ? (this.state.user.subscription || 'free').toLowerCase() : null;
-        modal.querySelectorAll('.subscription-card').forEach(card => {
-            const plan = (card.getAttribute('data-plan') || '').toLowerCase();
-            const btn = card.querySelector('.subscription-plan-btn');
-            if (!btn) return;
-            const isCurrent = current !== null && plan === current;
-            btn.textContent = isCurrent ? 'Текущий план' : 'Выбрать';
-            btn.classList.toggle('secondary', isCurrent);
-            btn.disabled = isCurrent;
-        });
-    }
+    const modal = document.getElementById('subscription-modal');
+    if (!modal) return;
+    const current = this.state.user ? (this.state.user.subscription || 'free').toLowerCase() : null;
+    modal.querySelectorAll('.subscription-card').forEach(card => {
+        const plan = (card.getAttribute('data-plan') || '').toLowerCase();
+        const btn = card.querySelector('.subscription-plan-btn');
+        if (!btn) return;
+        const isCurrent = current !== null && plan === current;
+        btn.textContent = isCurrent ? 'Текущий план' : 'Выбрать';
+        btn.classList.toggle('secondary', isCurrent);
+        btn.disabled = isCurrent;
+    });
+}
 
     setupDashboard() {
         this.elements.dashboardTabs = document.querySelectorAll('.dashboard-tab');
@@ -7415,52 +7415,52 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     }
 
     showSubscriptionModal() {
-        this.showModal('subscription-modal');
-        this.updateSubscriptionModalState();
-    }
+    this.showModal('subscription-modal');
+    this.updateSubscriptionModalState();
+}
 
     setupSubscriptionModal() {
-        const modal = document.getElementById('subscription-modal');
-        if (!modal) return;
-        modal.querySelectorAll('.subscription-plan-btn').forEach(btn => {
-            if (btn._subscriptionBound) return;
-            btn._subscriptionBound = true;
-            btn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                const plan = (btn.getAttribute('data-plan') || 'free').toLowerCase();
-                const current = (this.state.user?.subscription || 'free').toLowerCase();
-                if (plan === current) return;
-                if (!this.state.user) {
-                    this.showNotification('Войдите в аккаунт, чтобы сменить план', 'warning');
+    const modal = document.getElementById('subscription-modal');
+    if (!modal) return;
+    modal.querySelectorAll('.subscription-plan-btn').forEach(btn => {
+        if (btn._subscriptionBound) return;
+        btn._subscriptionBound = true;
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const plan = (btn.getAttribute('data-plan') || 'free').toLowerCase();
+            const current = (this.state.user?.subscription || 'free').toLowerCase();
+            if (plan === current) return;
+            if (!this.state.user) {
+                this.showNotification('Войдите в аккаунт, чтобы сменить план', 'warning');
+                return;
+            }
+            const baseUrl = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
+            try {
+                const response = await fetch(`${baseUrl}/api/users/me/subscription`, {
+                    method: 'PATCH',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ subscription: plan })
+                });
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    this.showNotification(err.message || 'Не удалось сменить план', 'error');
                     return;
                 }
-                const baseUrl = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
-                try {
-                    const response = await fetch(`${baseUrl}/api/users/me/subscription`, {
-                        method: 'PATCH',
-                        credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ subscription: plan })
-                    });
-                    if (!response.ok) {
-                        const err = await response.json().catch(() => ({}));
-                        this.showNotification(err.message || 'Не удалось сменить план', 'error');
-                        return;
-                    }
-                    const user = await response.json();
-                    this.state.user = user;
-                    this.authService.saveUserToStorage();
-                    this.updateSubscriptionModalState();
-                    this.updateSidebarInfo();
-                    const labels = { free: 'FREE', lite: 'Lite', pro: 'Pro', ultimate: 'Ultimate' };
-                    this.showNotification(`План изменён на ${labels[plan] || plan}`, 'success');
-                    this.hideModal('subscription-modal');
-                } catch (e) {
-                    this.showNotification('Ошибка запроса', 'error');
-                }
-            });
+                const user = await response.json();
+                this.state.user = user;
+                this.authService.saveUserToStorage();
+                this.updateSubscriptionModalState();
+                this.updateSidebarInfo();
+                const labels = { free: 'FREE', lite: 'Lite', pro: 'Pro', ultimate: 'Ultimate' };
+                this.showNotification(`План изменён на ${labels[plan] || plan}`, 'success');
+                this.hideModal('subscription-modal');
+            } catch (e) {
+                this.showNotification('Ошибка запроса', 'error');
+            }
         });
-    }
+    });
+}
     
     toggleShareMenu(messageId) {
         const messageElement = document.getElementById(messageId);
