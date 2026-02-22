@@ -455,126 +455,130 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     }
 
     async init() {
+    this.setupCookieNotification();
+    this.loadApiKey();
+    this.setupEventListeners();
+    this.setupT9Suggestions();
+    this.loadFromLocalStorage();
+    this.loadUserFromStorage();
+    await this.restoreSession();
+    this.setupAdminMode();
+    this.setupSpeechRecognition();
+    this.setupBackgroundAnimations();
+    
+    await this.loadInstructions();
+    
+    // Инициализация системы частиц
+    setTimeout(() => {
+        this.initParticleSystem();
+    }, 100);
+    
+    this.updateUI();
+    // Проверка API при загрузке не выполняется — подключение к API только при входе в аккаунт
+    this.setupKeyboardShortcuts();
+    this.setupServiceWorker();
+    this.setupSettingsTabs();
+    this.setupAuthUI();
+    
+    this.setupSidebar();
+    this.setupDashboard();
+    this.setupHeroChips();
+    this.setupProfileSettings();
+    this.setupQuestionsNavigation();
+    
+    await this.loadChats();
+    
+    if (this.state.user) {
+        await this.loadUserSettings();
+        await this.loadUsage();
+    } else {
+        const savedTheme = localStorage.getItem('verdikt_theme');
+        if (savedTheme) this.setTheme(savedTheme);
+    }
 
-        this.setupCookieNotification();
-        this.loadApiKey();
-        this.setupEventListeners();
-        this.setupT9Suggestions();
-        this.loadFromLocalStorage();
-        this.loadUserFromStorage();
-        await this.restoreSession();
-        this.setupAdminMode();
-        this.setupSpeechRecognition();
-        this.setupBackgroundAnimations();
-        
-        await this.loadInstructions();
-        setTimeout(() => {
-            this.initParticleSystem();
-        }, 100);
-         initParticleSystem() {
-        // Определяем возможности устройства
-        const profile = this.getPerformanceProfile();
-        const isLowEnd = profile.isLowEnd;
-        
-        // Создаем систему частиц
-        this.particleSystem = new ParticleSystem('particle-canvas', {
-            particleCount: isLowEnd ? 40 : 150,
-            minSize: isLowEnd ? 0.8 : 0.5,
-            maxSize: isLowEnd ? 1.5 : 2.5,
-            performanceMode: isLowEnd,
-            interactive: !isLowEnd, // Отключаем интерактивность на слабых устройствах
-            colors: ['#ffffff', '#f0f0f0', '#e8e8e8']
-        });
-        
-        // Слушаем изменения приватного режима
-        this.setupPrivacyModeListener();
-        
-        // Добавляем эффект падающих звезд по двойному тапу
-        this.setupShootingStars();
-    }
+    const currentHour = new Date().getHours();
+    this.state.stats.activityByHour[currentHour]++;
     
-    setupPrivacyModeListener() {
-        const privacyToggle = document.getElementById('privacy-mode-toggle');
-        if (privacyToggle && this.particleSystem) {
-            // Используем MutationObserver для отслеживания изменения класса
-            const observer = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                    if (mutation.attributeName === 'class') {
-                        const isPrivacyMode = document.body.classList.contains('privacy-mode');
-                        this.particleSystem.setPerformanceMode(isPrivacyMode);
-                    }
-                });
-            });
-            observer.observe(document.body, { attributes: true });
-        }
-    }
+    setTimeout(async () => {
+        await this.setupEncryption();
+    }, 1000);
     
-    setupShootingStars() {
-        if (!this.particleSystem) return;
-        
-        let lastTap = 0;
-        document.addEventListener('touchend', (e) => {
-            const currentTime = new Date().getTime();
-            const tapLength = currentTime - lastTap;
-            if (tapLength < 500 && tapLength > 0) {
-                // Двойной тап - создаем падающую звезду
-                if (e.changedTouches && e.changedTouches[0]) {
-                    this.particleSystem.createShootingStar(
-                        e.changedTouches[0].clientX,
-                        e.changedTouches[0].clientY
-                    );
+    this.startAutoSave();
+
+    // НОВЫЙ ВЫЗОВ
+    this.setupSubscriptionModal();
+    
+    console.log('✅ Verdikt GPT инициализирован');
+    console.log('📚 Инструкции загружены:', this.state.instructionsLoaded);
+    this.loadFeedback();
+    if (!this.state.user) this.updateAnalyticsFromFeedback();
+}
+
+// Эти методы должны быть на том же уровне, что и init(), а не внутри него
+initParticleSystem() {
+    // Определяем возможности устройства
+    const profile = this.getPerformanceProfile();
+    const isLowEnd = profile.isLowEnd;
+    
+    // Создаем систему частиц
+    this.particleSystem = new ParticleSystem('particle-canvas', {
+        particleCount: isLowEnd ? 40 : 150,
+        minSize: isLowEnd ? 0.8 : 0.5,
+        maxSize: isLowEnd ? 1.5 : 2.5,
+        performanceMode: isLowEnd,
+        interactive: !isLowEnd, // Отключаем интерактивность на слабых устройствах
+        colors: ['#ffffff', '#f0f0f0', '#e8e8e8']
+    });
+    
+    // Слушаем изменения приватного режима
+    this.setupPrivacyModeListener();
+    
+    // Добавляем эффект падающих звезд по двойному тапу
+    this.setupShootingStars();
+}
+
+setupPrivacyModeListener() {
+    const privacyToggle = document.getElementById('privacy-mode-toggle');
+    if (privacyToggle && this.particleSystem) {
+        // Используем MutationObserver для отслеживания изменения класса
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.attributeName === 'class') {
+                    const isPrivacyMode = document.body.classList.contains('privacy-mode');
+                    this.particleSystem.setPerformanceMode(isPrivacyMode);
                 }
-            }
-            lastTap = currentTime;
+            });
         });
-        
-        // Для десктопа - по двойному клику
-        document.addEventListener('dblclick', (e) => {
-            if (this.particleSystem) {
-                this.particleSystem.createShootingStar(e.clientX, e.clientY);
-            }
-        });
+        observer.observe(document.body, { attributes: true });
     }
-        this.updateUI();
-        // Проверка API при загрузке не выполняется — подключение к API только при входе в аккаунт
-        this.setupKeyboardShortcuts();
-        this.setupServiceWorker();
-        this.setupSettingsTabs();
-        this.setupAuthUI();
-        
-        this.setupSidebar();
-        this.setupDashboard();
-        this.setupHeroChips();
-        this.setupProfileSettings();
-        this.setupQuestionsNavigation();
-        
-        await this.loadChats();
-        
-        if (this.state.user) {
-            await this.loadUserSettings();
-            await this.loadUsage();
-        } else {
-            const savedTheme = localStorage.getItem('verdikt_theme');
-            if (savedTheme) this.setTheme(savedTheme);
+}
+
+setupShootingStars() {
+    if (!this.particleSystem) return;
+    
+    let lastTap = 0;
+    document.addEventListener('touchend', (e) => {
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTap;
+        if (tapLength < 500 && tapLength > 0) {
+            // Двойной тап - создаем падающую звезду
+            if (e.changedTouches && e.changedTouches[0]) {
+                this.particleSystem.createShootingStar(
+                    e.changedTouches[0].clientX,
+                    e.changedTouches[0].clientY
+                );
+            }
         }
-
-        const currentHour = new Date().getHours();
-        this.state.stats.activityByHour[currentHour]++;
-        
-        setTimeout(async () => {
-            await this.setupEncryption();
-        }, 1000);
-        
-        this.startAutoSave();
-
-        // НОВЫЙ ВЫЗОВ
-        this.setupSubscriptionModal();
-        
-        console.log('✅ Verdikt GPT инициализирован');
-        console.log('📚 Инструкции загружены:', this.state.instructionsLoaded);
-        this.loadFeedback();
-        if (!this.state.user) this.updateAnalyticsFromFeedback();
-    }
+        lastTap = currentTime;
+    });
+    
+    // Для десктопа - по двойному клику
+    document.addEventListener('dblclick', (e) => {
+        if (this.particleSystem) {
+            this.particleSystem.createShootingStar(e.clientX, e.clientY);
+        }
+    });
+}
 
     loadApiKey() {
         const savedApiKey = localStorage.getItem('verdikt_api_key');
