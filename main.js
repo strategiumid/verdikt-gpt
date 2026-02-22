@@ -23,6 +23,7 @@ export class VerdiktChatApp {
         '!!!!', '???', 'Срочно', 'немедленно', 'помогите', 'спасите', 'крик души',
         'почему', 'зачем', 'когда же', 'сколько можно'
     ];
+    
     constructor() {
         this.particleSystem = null;
         this.API_CONFIG = {
@@ -44,7 +45,6 @@ export class VerdiktChatApp {
         };
 
         this.state = {
-
             conversationHistory: [],
             currentMode: 'balanced',
             aiModes: {
@@ -142,7 +142,6 @@ export class VerdiktChatApp {
             boostSearchModeBtn: document.getElementById('boost-search-mode'),
             voiceInput: document.getElementById('voice-input'),
             newChat: document.getElementById('new-chat'),
-            // settingsButton удалена - настройки теперь в профиле
             presentationMode: document.getElementById('presentation-mode'),
             notification: document.getElementById('notification'),
             notificationText: document.getElementById('notification-text'),
@@ -166,12 +165,9 @@ export class VerdiktChatApp {
             nextSlide: document.getElementById('next-slide'),
             exitPresentation: document.getElementById('exit-presentation'),
             
-            // settingsClose больше не нужен - настройки теперь в профиле
             exportClose: document.getElementById('export-close'),
             exportCancel: document.getElementById('export-cancel'),
             statsClose: document.getElementById('stats-close'),
-            // saveSettings больше не нужен - настройки сохраняются автоматически
-            // temperatureSlider и temperatureValue теперь в настройках профиля
             
             deepReflectionBtn: document.getElementById('deep-reflection-btn'),
             attachButton: document.getElementById('attach-button'),
@@ -210,7 +206,6 @@ export class VerdiktChatApp {
             navSettings: document.getElementById('nav-settings'),
             navSecurity: document.getElementById('nav-security'),
             navNotifications: document.getElementById('nav-notifications'),
-            // НОВЫЙ ПУНКТ
             navSubscription: document.getElementById('nav-subscription'),
             questionsBadge: document.getElementById('questions-badge'),
             likesBadge: document.getElementById('likes-badge'),
@@ -235,8 +230,6 @@ export class VerdiktChatApp {
             profileSettingsForm: document.getElementById('profile-settings-form'),
             
             reloadInstructions: document.getElementById('reload-instructions'),
-
-            // НОВЫЙ ЭЛЕМЕНТ ДЛЯ ЗАКРЫТИЯ ПОДПИСОК
             subscriptionClose: document.getElementById('subscription-close')
         };
 
@@ -255,15 +248,13 @@ export class VerdiktChatApp {
         this.availableModels = [
             { id: 'x-ai/grok-4-fast', name: 'Verdikt GPT', free: true }
         ];
-        
-        // Старые вкладки настроек больше не используются
     }
 
     createSystemPromptMessage() {
-    const instructions = this.state?.instructions || '';
-    const deepReflectionMode = this.state?.deepReflectionMode || false;
-    
-    const deepReflectionInstructions = deepReflectionMode ? `
+        const instructions = this.state?.instructions || '';
+        const deepReflectionMode = this.state?.deepReflectionMode || false;
+        
+        const deepReflectionInstructions = deepReflectionMode ? `
 **РЕЖИМ ГЛУБОКОГО РАЗМЫШЛЕНИЯ АКТИВИРОВАН**
 Пользователь включил режим глубокого размышления. Ты должен:
 • Провести максимально глубокий многоуровневый анализ ситуации
@@ -276,10 +267,10 @@ export class VerdiktChatApp {
 • Использовать цепочки рассуждений: "Если... то... потому что..."
 • Не спеши с выводами — сначала глубоко проанализируй все аспекты
 ` : '';
-    
-    return {
-        role: "system",
-        content: `Ты — Verdikt GPT, дружелюбный эксперт по отношениям, знакомствам и психологии манипуляций. Твой стиль: общайся на "ты", будь своим в доску, но сохраняй экспертизу. Используй юмор и шутки, когда это уместно, чтобы разрядить обстановку, но не переходи в цинизм. Твоя задача — помогать разбираться в сложных ситуациях с теплотой, без осуждения, но с опорой на научную базу.
+        
+        return {
+            role: "system",
+            content: `Ты — Verdikt GPT, дружелюбный эксперт по отношениям, знакомствам и психологии манипуляций. Твой стиль: общайся на "ты", будь своим в доску, но сохраняй экспертизу. Используй юмор и шутки, когда это уместно, чтобы разрядить обстановку, но не переходи в цинизм. Твоя задача — помогать разбираться в сложных ситуациях с теплотой, без осуждения, но с опорой на научную базу.
 ${deepReflectionInstructions}
 **ГЛУБИННЫЙ АНАЛИЗ (ОБЯЗАТЕЛЬНО К ИСПОЛЬЗОВАНИЮ)**
 • Прежде чем ответить, мысленно разложи ситуацию: какие психологические механизмы здесь задействованы (баланс значимости, привязанность, манипуляции)?
@@ -330,8 +321,8 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
 • Если через 2–4 недели тишины с её стороны не будет — можно один раз спокойно спросить, как у неё дела, без требований и сцен.
 
 **Короче:** сейчас самый сильный ход — не писать. Хочешь, разберём, как справляться с желанием написать в моменте?`
-    };
-}
+        };
+    }
 
     async loadInstructions() {
         try {
@@ -374,7 +365,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     analyzeUserType(message) {
         const messageLower = message.toLowerCase();
 
-        // 1. Анализ на преследователя (как и было)
         const pursuitIndicators = [
             'бегал', 'унижал', 'прощал измены', 'умолял', 'выпрашивал',
             'писал первым', 'звонил', 'добивался', 'уговоры', 'доказательства',
@@ -382,31 +372,25 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         ];
         let isPursuer = pursuitIndicators.some(indicator => messageLower.includes(indicator));
 
-        // 2. Анализ тональности (sentiment analysis)
         let sentimentScore = 0;
-        // Считаем негативные слова
         VerdiktChatApp.NEGATIVE_WORDS.forEach(word => {
             if (messageLower.includes(word)) {
                 sentimentScore -= 1;
             }
         });
-        // Считаем позитивные слова
         VerdiktChatApp.POSITIVE_WORDS.forEach(word => {
             if (messageLower.includes(word)) {
                 sentimentScore += 1;
             }
         });
 
-        // 3. Анализ энергии (количество знаков ! и ?)
         const exclamationCount = (message.match(/!/g) || []).length;
         const questionCount = (message.match(/\?/g) || []).length;
         const isHighEnergy = (exclamationCount + questionCount) > 2 || VerdiktChatApp.HIGH_ENERGY_WORDS.some(word => messageLower.includes(word));
 
-        // 4. Анализ длины сообщения
         const wordCount = message.split(/\s+/).length;
-        const isLongMessage = wordCount > 30; // Сообщения длиннее 30 слов считаем подробными
+        const isLongMessage = wordCount > 30;
 
-        // 5. Определяем тип эмоционального состояния
         let emotionalState = 'neutral';
         if (sentimentScore < -1) {
             emotionalState = 'negative';
@@ -415,12 +399,10 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         }
 
         let exhaustionState = '';
-        // Проверка на эмоциональное выгорание (много негатива + длинное сообщение)
         if (sentimentScore < -1 && isLongMessage && messageLower.includes('устал')) {
             exhaustionState = 'exhausted';
         }
 
-        // Формируем расширенный контекст для AI
         let contextParts = [];
         if (isPursuer) {
             contextParts.push('Пользователь описывает себя как бывшего преследователя.');
@@ -447,7 +429,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             emotionalState: emotionalState,
             isHighEnergy: isHighEnergy,
             exhaustionState: exhaustionState,
-            context: contextString, // Этот текст мы добавим к сообщению
+            context: contextString,
             advice: isPursuer ?
                 'Ты был в роли преследователя. Сейчас тебе нужно полностью стереть старую матрицу и начать с чистого листа, но уже в новой роли. Игнор для тебя — единственный способ.' :
                 'Твоя позиция не выглядит как классическое преследование, но стратегия игнора всё равно работает на укрепление твоих позиций.'
@@ -455,130 +437,118 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     }
 
     async init() {
-    this.setupCookieNotification();
-    this.loadApiKey();
-    this.setupEventListeners();
-    this.setupT9Suggestions();
-    this.loadFromLocalStorage();
-    this.loadUserFromStorage();
-    await this.restoreSession();
-    this.setupAdminMode();
-    this.setupSpeechRecognition();
-    this.setupBackgroundAnimations();
-    
-    await this.loadInstructions();
-    
-    // Инициализация системы частиц
-    setTimeout(() => {
-        this.initParticleSystem();
-    }, 100);
-    
-    this.updateUI();
-    // Проверка API при загрузке не выполняется — подключение к API только при входе в аккаунт
-    this.setupKeyboardShortcuts();
-    this.setupServiceWorker();
-    this.setupSettingsTabs();
-    this.setupAuthUI();
-    
-    this.setupSidebar();
-    this.setupDashboard();
-    this.setupHeroChips();
-    this.setupProfileSettings();
-    this.setupQuestionsNavigation();
-    
-    await this.loadChats();
-    
-    if (this.state.user) {
-        await this.loadUserSettings();
-        await this.loadUsage();
-    } else {
-        const savedTheme = localStorage.getItem('verdikt_theme');
-        if (savedTheme) this.setTheme(savedTheme);
+        this.setupCookieNotification();
+        this.loadApiKey();
+        this.setupEventListeners();
+        this.setupT9Suggestions();
+        this.loadFromLocalStorage();
+        this.loadUserFromStorage();
+        await this.restoreSession();
+        this.setupAdminMode();
+        this.setupSpeechRecognition();
+        this.setupBackgroundAnimations();
+        
+        await this.loadInstructions();
+        
+        setTimeout(() => {
+            this.initParticleSystem();
+        }, 100);
+        
+        this.updateUI();
+        this.setupKeyboardShortcuts();
+        this.setupServiceWorker();
+        this.setupSettingsTabs();
+        this.setupAuthUI();
+        
+        this.setupSidebar();
+        this.setupDashboard();
+        this.setupHeroChips();
+        this.setupProfileSettings();
+        this.setupQuestionsNavigation();
+        
+        await this.loadChats();
+        
+        if (this.state.user) {
+            await this.loadUserSettings();
+            await this.loadUsage();
+        } else {
+            const savedTheme = localStorage.getItem('verdikt_theme');
+            if (savedTheme) this.setTheme(savedTheme);
+        }
+
+        const currentHour = new Date().getHours();
+        this.state.stats.activityByHour[currentHour]++;
+        
+        setTimeout(async () => {
+            await this.setupEncryption();
+        }, 1000);
+        
+        this.startAutoSave();
+
+        this.setupSubscriptionModal();
+        
+        console.log('✅ Verdikt GPT инициализирован');
+        console.log('📚 Инструкции загружены:', this.state.instructionsLoaded);
+        this.loadFeedback();
+        if (!this.state.user) this.updateAnalyticsFromFeedback();
     }
 
-    const currentHour = new Date().getHours();
-    this.state.stats.activityByHour[currentHour]++;
-    
-    setTimeout(async () => {
-        await this.setupEncryption();
-    }, 1000);
-    
-    this.startAutoSave();
-
-    // НОВЫЙ ВЫЗОВ
-    this.setupSubscriptionModal();
-    
-    console.log('✅ Verdikt GPT инициализирован');
-    console.log('📚 Инструкции загружены:', this.state.instructionsLoaded);
-    this.loadFeedback();
-    if (!this.state.user) this.updateAnalyticsFromFeedback();
-}
-
-// Эти методы должны быть на том же уровне, что и init(), а не внутри него
-initParticleSystem() {
-    // Определяем возможности устройства
-    const profile = this.getPerformanceProfile();
-    const isLowEnd = profile.isLowEnd;
-    
-    // Создаем систему частиц
-    this.particleSystem = new ParticleSystem('particle-canvas', {
-        particleCount: isLowEnd ? 40 : 150,
-        minSize: isLowEnd ? 0.8 : 0.5,
-        maxSize: isLowEnd ? 1.5 : 2.5,
-        performanceMode: isLowEnd,
-        interactive: !isLowEnd, // Отключаем интерактивность на слабых устройствах
-        colors: ['#ffffff', '#f0f0f0', '#e8e8e8']
-    });
-    
-    // Слушаем изменения приватного режима
-    this.setupPrivacyModeListener();
-    
-    // Добавляем эффект падающих звезд по двойному тапу
-    this.setupShootingStars();
-}
-
-setupPrivacyModeListener() {
-    const privacyToggle = document.getElementById('privacy-mode-toggle');
-    if (privacyToggle && this.particleSystem) {
-        // Используем MutationObserver для отслеживания изменения класса
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.attributeName === 'class') {
-                    const isPrivacyMode = document.body.classList.contains('privacy-mode');
-                    this.particleSystem.setPerformanceMode(isPrivacyMode);
-                }
-            });
+    initParticleSystem() {
+        const profile = this.getPerformanceProfile();
+        const isLowEnd = profile.isLowEnd;
+        
+        this.particleSystem = new ParticleSystem('particle-canvas', {
+            particleCount: isLowEnd ? 40 : 150,
+            minSize: isLowEnd ? 0.8 : 0.5,
+            maxSize: isLowEnd ? 1.5 : 2.5,
+            performanceMode: isLowEnd,
+            interactive: !isLowEnd,
+            colors: ['#ffffff', '#f0f0f0', '#e8e8e8']
         });
-        observer.observe(document.body, { attributes: true });
+        
+        this.setupPrivacyModeListener();
+        this.setupShootingStars();
     }
-}
 
-setupShootingStars() {
-    if (!this.particleSystem) return;
-    
-    let lastTap = 0;
-    document.addEventListener('touchend', (e) => {
-        const currentTime = new Date().getTime();
-        const tapLength = currentTime - lastTap;
-        if (tapLength < 500 && tapLength > 0) {
-            // Двойной тап - создаем падающую звезду
-            if (e.changedTouches && e.changedTouches[0]) {
-                this.particleSystem.createShootingStar(
-                    e.changedTouches[0].clientX,
-                    e.changedTouches[0].clientY
-                );
+    setupPrivacyModeListener() {
+        const privacyToggle = document.getElementById('privacy-mode-toggle');
+        if (privacyToggle && this.particleSystem) {
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.attributeName === 'class') {
+                        const isPrivacyMode = document.body.classList.contains('privacy-mode');
+                        this.particleSystem.setPerformanceMode(isPrivacyMode);
+                    }
+                });
+            });
+            observer.observe(document.body, { attributes: true });
+        }
+    }
+
+    setupShootingStars() {
+        if (!this.particleSystem) return;
+        
+        let lastTap = 0;
+        document.addEventListener('touchend', (e) => {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            if (tapLength < 500 && tapLength > 0) {
+                if (e.changedTouches && e.changedTouches[0]) {
+                    this.particleSystem.createShootingStar(
+                        e.changedTouches[0].clientX,
+                        e.changedTouches[0].clientY
+                    );
+                }
             }
-        }
-        lastTap = currentTime;
-    });
-    
-    // Для десктопа - по двойному клику
-    document.addEventListener('dblclick', (e) => {
-        if (this.particleSystem) {
-            this.particleSystem.createShootingStar(e.clientX, e.clientY);
-        }
-    });
-}
+            lastTap = currentTime;
+        });
+        
+        document.addEventListener('dblclick', (e) => {
+            if (this.particleSystem) {
+                this.particleSystem.createShootingStar(e.clientX, e.clientY);
+            }
+        });
+    }
 
     loadApiKey() {
         const savedApiKey = localStorage.getItem('verdikt_api_key');
@@ -606,7 +576,6 @@ setupShootingStars() {
         return this.apiClient.getAIResponse(messages);
     }
 
-    /** Поиск в интернете (DuckDuckGo). Возвращает текст результатов для контекста ИИ. */
     async searchWeb(query) {
         const q = (query || '').trim().slice(0, 200);
         if (!q) return '';
@@ -648,11 +617,7 @@ setupShootingStars() {
         return this.apiClient.checkApiStatus();
     }
 
-    setupApiSettingsListeners() {
-        // Кнопка API настроек теперь в настройках профиля (в HTML)
-        // Обработчик события для неё уже настроен в setupProfileSettings()
-        // Эта функция оставлена для совместимости, но больше ничего не делает
-    }
+    setupApiSettingsListeners() {}
 
     showApiSettingsModal() {
         const modalHTML = `
@@ -666,50 +631,45 @@ setupShootingStars() {
                     <i class="fas fa-key"></i> Настройки API
                 </h2>
                 
-               
-                               
-                        
+                <div style="
+                    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
+                    border-left: 3px solid #10b981;
+                    padding: 15px;
+                    border-radius: var(--radius-md);
+                    margin: 20px 0;
+                ">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
                         <div style="
-                            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
-                            border-left: 3px solid #10b981;
-                            padding: 15px;
-                            border-radius: var(--radius-md);
-                            margin: 20px 0;
+                            width: 40px;
+                            height: 40px;
+                            background: linear-gradient(135deg, #10b981, #059669);
+                            border-radius: 10px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            color: white;
+                            font-size: 18px;
                         ">
-                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
-                                <div style="
-                                    width: 40px;
-                                    height: 40px;
-                                    background: linear-gradient(135deg, #10b981, #059669);
-                                    border-radius: 10px;
-                                    display: flex;
-                                    align-items: center;
-                                    justify-content: center;
-                                    color: white;
-                                    font-size: 18px;
-                                ">
-                                    <i class="fas fa-robot"></i>
-                                </div>
-                                <div>
-                                    <h4 style="margin: 0; font-size: 1.1rem;">Активная модель</h4>
-                                    <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">Verdikt GPT</p>
-                                </div>
-                            </div>
-                            <p style="font-size: 0.9rem; margin: 0; color: var(--text-secondary);">
-                                <i class="fas fa-check-circle" style="color: #10b981;"></i> 
-                                Бесплатная модель с хорошей производительностью.
-                            </p>
+                            <i class="fas fa-robot"></i>
                         </div>
-                        
-                        <div id="api-test-result" style="
-                            display: none;
-                            padding: 12px;
-                            border-radius: var(--radius-sm);
-                            margin-bottom: 15px;
-                            font-size: 0.9rem;
-                        "></div>
+                        <div>
+                            <h4 style="margin: 0; font-size: 1.1rem;">Активная модель</h4>
+                            <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">Verdikt GPT</p>
+                        </div>
                     </div>
+                    <p style="font-size: 0.9rem; margin: 0; color: var(--text-secondary);">
+                        <i class="fas fa-check-circle" style="color: #10b981;"></i> 
+                        Бесплатная модель с хорошей производительностью.
+                    </p>
                 </div>
+                
+                <div id="api-test-result" style="
+                    display: none;
+                    padding: 12px;
+                    border-radius: var(--radius-sm);
+                    margin-bottom: 15px;
+                    font-size: 0.9rem;
+                "></div>
                 
                 <div class="modal-buttons" style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <button class="ios-button secondary" id="test-api-key" style="flex: 1;">
@@ -812,11 +772,7 @@ setupShootingStars() {
         });
     }
 
-    // ==================== НАСТРОЙКА ВКЛАДОК НАСТРОЕК ====================
-
     setupSettingsTabs() {
-        // Старые вкладки настроек больше не используются - навигация теперь в профиле
-        // Обновляем статистику и достижения при инициализации
         this.updateSettingsStats();
         this.updateSettingsAchievements();
     }
@@ -893,8 +849,6 @@ setupShootingStars() {
             }
         });
     }
-
-    // ==================== FEEDBACK STORAGE & ANALYTICS (frontend-only) ====================
 
     loadFeedback() {
         if (this.state.user) {
@@ -997,7 +951,6 @@ setupShootingStars() {
         }
     }
 
-    /** Применить данные аналитики с бэкенда к UI (счётчики, сводка по темам, рейтинг, график). */
     applyBackendAnalyticsToUI(data) {
         if (!data) return;
         const elTotal = document.getElementById('analytics-total');
@@ -1020,7 +973,6 @@ setupShootingStars() {
         if (data.last14Days) this.createAnalyticsChartFromBackend(data.last14Days);
     }
 
-    /** Загрузить аналитику оценок с бэкенда. Админ — по всем пользователям, иначе — по текущему. */
     async loadFeedbackAnalyticsFromBackend() {
         if (!this.state.user) return null;
         try {
@@ -1037,7 +989,6 @@ setupShootingStars() {
         }
     }
 
-    /** Аналитика из локальных оценок ответов ИИ (гости или fallback). */
     updateAnalyticsFromFeedback() {
         try {
             const entries = this.feedbackEntries || [];
@@ -1073,8 +1024,6 @@ setupShootingStars() {
             console.error('Failed to update analytics:', e);
         }
     }
-
-    // ==================== СИСТЕМА УПРАВЛЕНИЯ ЧАТАМИ ====================
 
     async loadChats() {
         try {
@@ -1349,8 +1298,6 @@ setupShootingStars() {
         
         return `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear()}`;
     }
-
-    // ==================== ШИФРОВАНИЕ И БЕЗОПАСНОСТЬ ====================
 
     async setupEncryption() {
         if (!this.crypto.isSupported()) {
@@ -1802,8 +1749,6 @@ setupShootingStars() {
         }
     }
 
-    // ==================== ФУНКЦИИ БОКОВОГО МЕНЮ ====================
-
     setupSidebar() {
         if (this.elements.sidebarToggle) {
             this.elements.sidebarToggle.addEventListener('click', () => {
@@ -1905,7 +1850,6 @@ setupShootingStars() {
             });
         }
 
-        // НОВЫЙ ОБРАБОТЧИК ДЛЯ ПОДПИСОК
         if (this.elements.navSubscription) {
             this.elements.navSubscription.addEventListener('click', () => {
                 this.showSubscriptionModal();
@@ -2074,7 +2018,6 @@ setupShootingStars() {
         this.updateHeaderUsage();
     }
 
-    /** Обновляет индикатор статуса API в шапке: зелёный/красный кружок + подпись */
     updateHeaderApiStatus(dotState, label) {
         const dot = this.elements.apiStatusDot;
         const text = this.elements.apiStatusText;
@@ -2091,7 +2034,6 @@ setupShootingStars() {
         else if (dotState === 'error' || dotState === 'not-configured') container.classList.add('api-error');
     }
 
-    /** Обновляет блок «осталось запросов» в шапке */
     updateHeaderUsage() {
         const el = this.elements.apiUsageHeader;
         if (!el) return;
@@ -2120,8 +2062,6 @@ setupShootingStars() {
             btn.disabled = isCurrent;
         });
     }
-
-    // ==================== ДАШБОРД ====================
 
     setupDashboard() {
         this.elements.dashboardTabs = document.querySelectorAll('.dashboard-tab');
@@ -2230,8 +2170,6 @@ setupShootingStars() {
         }).catch(() => {});
     }
 
-    // ==================== НАСТРОЙКИ ПРОФИЛЯ ====================
-
     setupProfileSettings() {
         if (this.elements.profileSettingsClose) {
             this.elements.profileSettingsClose.addEventListener('click', () => {
@@ -2239,24 +2177,19 @@ setupShootingStars() {
             });
         }
         
-        // Навигация по секциям настроек профиля
         const navItems = document.querySelectorAll('.profile-nav-item');
         navItems.forEach(item => {
             item.addEventListener('click', () => {
                 const section = item.dataset.section;
                 
-                // Убираем активный класс со всех элементов навигации
                 navItems.forEach(nav => nav.classList.remove('active'));
-                // Добавляем активный класс к выбранному элементу
                 item.classList.add('active');
                 
-                // Скрываем все секции
                 document.querySelectorAll('.profile-settings-section').forEach(sec => {
                     sec.classList.remove('active');
                     sec.style.display = 'none';
                 });
                 
-                // Показываем выбранную секцию
                 const targetSection = document.getElementById(`${section}-section`);
                 if (targetSection) {
                     targetSection.classList.add('active');
@@ -2265,7 +2198,6 @@ setupShootingStars() {
             });
         });
         
-        // Редактирование описания профиля
         const profileBioEditBtn = document.getElementById('profile-bio-edit-btn');
         const profileBioDisplay = document.getElementById('profile-bio-display');
         const profileBioSection = document.getElementById('profile-bio-section');
@@ -2287,7 +2219,6 @@ setupShootingStars() {
             });
         }
         
-        // Сохранение описания профиля
         const profileBioSave = document.getElementById('profile-bio-save');
         const profileBioCancel = document.getElementById('profile-bio-cancel');
         const profileBioInput = document.getElementById('profile-bio-input');
@@ -2326,7 +2257,6 @@ setupShootingStars() {
         }
         
         
-        // Загрузка аватарки
         const avatarInput = document.getElementById('profile-avatar-input');
         if (avatarInput) {
             avatarInput.addEventListener('change', (e) => {
@@ -2350,20 +2280,17 @@ setupShootingStars() {
             });
         }
         
-        // Выбор темы (только фронтенд, без отправки на бэкенд)
         const themeOptions = document.querySelectorAll('.theme-option-profile');
         themeOptions.forEach(option => {
             option.addEventListener('click', () => {
                 const theme = option.dataset.theme;
                 themeOptions.forEach(opt => opt.classList.remove('active'));
                 option.classList.add('active');
-                // Используем setTheme с флагом skipBackend, чтобы не отправлять на бэкенд
                 this.setTheme(theme, { skipBackend: true });
                 this.showNotification(`Тема изменена на ${theme === 'dark' ? 'темную' : 'светлую'}`, 'success');
             });
         });
         
-        // Выбор подписки
         const subscriptionCards = document.querySelectorAll('.subscription-card-profile');
         const subscriptionButtons = document.querySelectorAll('.subscription-select-btn');
         
@@ -2375,19 +2302,16 @@ setupShootingStars() {
                 const card = document.querySelector(`.subscription-card-profile[data-subscription="${subscription}"]`);
                 if (card) {
                     card.classList.add('active');
-                    // Сохраняем подписку только локально (фронтенд)
                     localStorage.setItem('verdikt_user_subscription', subscription);
                     this.showNotification(`Подписка изменена на ${subscription.toUpperCase()}`, 'success');
                 }
             });
         });
         
-        // Промо код
         const profilePromoInput = document.getElementById('profile-promo-input');
         const profilePromoApply = document.getElementById('profile-promo-apply');
         const profilePromoStatus = document.getElementById('profile-promo-status');
         
-        // Загружаем сохраненный промо код
         if (profilePromoInput) {
             const savedPromo = localStorage.getItem('verdikt_promo_code') || '';
             profilePromoInput.value = savedPromo;
@@ -2396,14 +2320,12 @@ setupShootingStars() {
             }
         }
         
-        // Применение промо кода
         if (profilePromoApply) {
             profilePromoApply.addEventListener('click', () => {
                 this.applyPromoCode();
             });
         }
         
-        // Применение по Enter
         if (profilePromoInput) {
             profilePromoInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
@@ -2413,7 +2335,6 @@ setupShootingStars() {
             });
         }
         
-        // Режимы AI в настройках профиля
         const modeItems = document.querySelectorAll('.mode-item-settings');
         modeItems.forEach(item => {
             item.addEventListener('click', () => {
@@ -2426,7 +2347,6 @@ setupShootingStars() {
             });
         });
         
-        // Температура AI
         const temperatureSlider = document.getElementById('temperature-slider');
         const temperatureValue = document.getElementById('temperature-value');
         if (temperatureSlider && temperatureValue) {
@@ -2441,7 +2361,6 @@ setupShootingStars() {
             });
         }
         
-        // Кнопка настроек API
         const apiSettingsButton = document.getElementById('api-settings-button');
         if (apiSettingsButton) {
             apiSettingsButton.addEventListener('click', () => {
@@ -2449,7 +2368,6 @@ setupShootingStars() {
             });
         }
         
-        // Кнопка управления шифрованием
         const encryptionManager = document.getElementById('encryption-manager');
         if (encryptionManager) {
             encryptionManager.addEventListener('click', () => {
@@ -2457,13 +2375,10 @@ setupShootingStars() {
             });
         }
         
-        // Обновление статистики при открытии секции статистики
         const statsSection = document.getElementById('stats-section');
         if (statsSection) {
-            // Обновляем статистику сразу при открытии настроек профиля
             this.updateSettingsStats();
             
-            // Также обновляем при переключении на секцию статистики
             const observer = new MutationObserver(() => {
                 if (statsSection.style.display !== 'none' && statsSection.classList.contains('active')) {
                     this.updateSettingsStats();
@@ -2472,7 +2387,6 @@ setupShootingStars() {
             observer.observe(statsSection, { attributes: true, attributeFilter: ['style', 'class'] });
         }
         
-        // Обновление достижений при открытии секции достижений
         const achievementsSection = document.getElementById('achievements-section');
         if (achievementsSection) {
             this.updateSettingsAchievements();
@@ -2484,9 +2398,6 @@ setupShootingStars() {
             });
             observer.observe(achievementsSection, { attributes: true, attributeFilter: ['style', 'class'] });
         }
-        
-        // Форма профиля больше не используется - все настройки сохраняются локально
-        // Функция saveProfileSettings оставлена для совместимости, но не вызывается
     }
     
     applyPromoCode() {
@@ -2502,19 +2413,15 @@ setupShootingStars() {
             return;
         }
         
-        // Валидация промо кода (только фронтенд)
         if (promoCode.length < 3) {
             this.updatePromoStatus('error', 'Промо код должен содержать минимум 3 символа');
             return;
         }
         
-        // Сохраняем промо код локально
         localStorage.setItem('verdikt_promo_code', promoCode);
         
-        // Обновляем статус
         this.updatePromoStatus('success', `Промо код "${promoCode}" успешно применен!`);
         
-        // Очищаем поле ввода после успешного применения
         setTimeout(() => {
             profilePromoInput.value = promoCode;
         }, 100);
@@ -2541,7 +2448,6 @@ setupShootingStars() {
         const bioDisplayText = document.getElementById('profile-bio-display-text');
         if (bioDisplayText) {
             if (bio && bio.trim()) {
-                // Экранируем HTML для безопасности
                 const escapedBio = bio
                     .replace(/&/g, '&amp;')
                     .replace(/</g, '&lt;')
@@ -2561,7 +2467,6 @@ setupShootingStars() {
             return;
         }
         
-        // Обновляем отображение профиля в новом формате
         const displayName = document.getElementById('profile-display-name');
         const displayEmail = document.getElementById('profile-display-email');
         const profileAvatar = document.querySelector('.profile-avatar');
@@ -2574,7 +2479,6 @@ setupShootingStars() {
         }
         const avatarDisplay = document.getElementById('profile-avatar-display');
         if (avatarDisplay) {
-            // Загружаем сохраненную аватарку или генерируем инициалы
             const savedAvatar = localStorage.getItem('verdikt_user_avatar');
             if (savedAvatar) {
                 avatarDisplay.style.backgroundImage = `url(${savedAvatar})`;
@@ -2583,7 +2487,6 @@ setupShootingStars() {
                     this.state.user.avatar = savedAvatar;
                 }
             } else if (this.state.user && this.state.user.name) {
-                // Генерируем инициалы из имени
                 const initials = this.state.user.name
                     .split(' ')
                     .map(word => word[0])
@@ -2595,7 +2498,6 @@ setupShootingStars() {
             }
         }
         
-        // Загружаем и отображаем описание профиля
         const savedBio = localStorage.getItem('verdikt_user_bio') || '';
         if (this.state.user) {
             this.state.user.bio = savedBio;
@@ -2607,7 +2509,6 @@ setupShootingStars() {
             profileBioInput.value = savedBio;
         }
         
-        // Загружаем промо код
         const profilePromoInput = document.getElementById('profile-promo-input');
         const savedPromo = localStorage.getItem('verdikt_promo_code') || '';
         if (profilePromoInput) {
@@ -2623,7 +2524,6 @@ setupShootingStars() {
             }
         }
         
-        // Устанавливаем активную тему
         const currentTheme = localStorage.getItem('verdikt_theme') || 'dark';
         const themeOptions = document.querySelectorAll('.theme-option-profile');
         themeOptions.forEach(option => {
@@ -2632,14 +2532,12 @@ setupShootingStars() {
             }
         });
         
-        // Устанавливаем активную подписку
         const currentSubscription = localStorage.getItem('verdikt_user_subscription') || 'free';
         const subscriptionCard = document.querySelector(`.subscription-card-profile[data-subscription="${currentSubscription}"]`);
         if (subscriptionCard) {
             subscriptionCard.classList.add('active');
         }
         
-        // Устанавливаем активный режим AI
         const currentAIMode = localStorage.getItem('verdikt_ai_mode') || this.state.currentMode || 'balanced';
         const modeItems = document.querySelectorAll('.mode-item-settings');
         modeItems.forEach(item => {
@@ -2648,7 +2546,6 @@ setupShootingStars() {
             }
         });
         
-        // Загружаем температуру из localStorage
         const savedTemperature = localStorage.getItem('verdikt_temperature');
         if (savedTemperature) {
             this.API_CONFIG.temperature = parseFloat(savedTemperature);
@@ -2658,7 +2555,6 @@ setupShootingStars() {
             if (tempValue) tempValue.textContent = this.API_CONFIG.temperature;
         }
         
-        // Старые поля формы (если они еще используются)
         const profileNameInput = document.getElementById('profile-name');
         const profileEmailInput = document.getElementById('profile-email');
         if (profileNameInput) profileNameInput.value = this.state.user.name || '';
@@ -2763,15 +2659,12 @@ setupShootingStars() {
         }
     }
 
-    // ==================== ОСНОВНЫЕ ФУНКЦИИ ЧАТА ====================
-
     setupEventListeners() {
-        // Приватный режим
-const privacyToggle = document.getElementById('privacy-mode-toggle');
-if (privacyToggle) {
-    privacyToggle.addEventListener('click', () => this.togglePrivacyMode());
-}
-        // Send button (if exists)
+        const privacyToggle = document.getElementById('privacy-mode-toggle');
+        if (privacyToggle) {
+            privacyToggle.addEventListener('click', () => this.togglePrivacyMode());
+        }
+        
         if (this.elements.sendButton) {
             this.elements.sendButton.addEventListener('click', () => {
                 if (!this.state.isResponding) {
@@ -2780,6 +2673,7 @@ if (privacyToggle) {
             });
             this.updateSendButtonState();
         }
+        
         if (this.elements.searchModeBtn) {
             this.elements.searchModeBtn.addEventListener('click', () => {
                 this.state.searchModeEnabled = !this.state.searchModeEnabled;
@@ -2789,7 +2683,6 @@ if (privacyToggle) {
             });
         }
         
-        // Enter key to send message
         if (!this.elements.messageInput) {
             console.error('messageInput element not found');
             return;
@@ -2798,12 +2691,10 @@ if (privacyToggle) {
         this.elements.messageInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                // Блокируем отправку, если ИИ отвечает
                 if (!this.state.isResponding) {
                     this.sendMessage();
                 }
             } else if (e.key === 'Enter' && e.shiftKey) {
-                // Allow Shift+Enter for new line
                 return;
             }
         });
@@ -2812,13 +2703,8 @@ if (privacyToggle) {
             this.elements.voiceInput.addEventListener('click', () => this.toggleVoiceRecording());
         }
         
-        // Обработчики для режимов AI теперь настраиваются в setupProfileSettings()
-        // Этот код выполняется при инициализации, когда элементы могут еще не существовать
-        
-        // Grok-style AI Mode Selector
         this.setupGrokModeSelector();
         
-        // Обработчики для примеров вопросов (если они существуют)
         const exampleButtons = document.querySelectorAll('.example-button');
         if (exampleButtons.length > 0) {
             exampleButtons.forEach(btn => {
@@ -2836,7 +2722,7 @@ if (privacyToggle) {
         if (this.elements.newChat) {
             this.elements.newChat.addEventListener('click', () => this.createNewChat());
         }
-        // Кнопка настроек удалена - настройки теперь в профиле
+        
         if (this.elements.presentationMode) {
             this.elements.presentationMode.addEventListener('click', () => this.togglePresentationMode());
         }
@@ -2845,11 +2731,9 @@ if (privacyToggle) {
             this.elements.deepReflectionBtn.addEventListener('click', () => {
                 this.toggleDeepReflectionMode();
             });
-            // Инициализация состояния кнопки
             this.updateDeepReflectionButtonState();
         }
 
-        // Boost menu (rocket button)
         if (this.elements.boostMenuBtn) {
             this.elements.boostMenuBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -3005,8 +2889,6 @@ if (privacyToggle) {
             scheduleOverlapCheck();
         }
         
-        // Обработчик для слайдера температуры теперь в setupProfileSettings()
-        // Эти элементы больше не находятся в this.elements, так как они в настройках профиля
         const temperatureSlider = document.getElementById('temperature-slider');
         const temperatureValue = document.getElementById('temperature-value');
         if (temperatureSlider && temperatureValue) {
@@ -3017,7 +2899,6 @@ if (privacyToggle) {
             });
         }
         
-        // Обработчики для выбора темы (если элементы существуют)
         const themeOptions = document.querySelectorAll('.theme-option');
         if (themeOptions.length > 0) {
             themeOptions.forEach(theme => {
@@ -3031,7 +2912,6 @@ if (privacyToggle) {
             });
         }
         
-        // Обработчики для опций экспорта (если модальное окно существует)
         const exportOptions = document.querySelectorAll('#export-modal .export-option');
         if (exportOptions.length > 0) {
             exportOptions.forEach(option => {
@@ -3042,8 +2922,6 @@ if (privacyToggle) {
             });
         }
         
-        // Обработчики для старого модального окна настроек больше не нужны
-        // Все настройки теперь в профиле
         if (this.elements.exportClose) {
             this.elements.exportClose.addEventListener('click', () => this.hideModal('export-modal'));
         }
@@ -3065,18 +2943,15 @@ if (privacyToggle) {
         }
         
         if (this.elements.messageInput) {        
-        if (this.elements.messageInput) {
             this.elements.messageInput.addEventListener('input', () => {
                 this.elements.messageInput.style.height = 'auto';
                 this.elements.messageInput.style.height = Math.min(this.elements.messageInput.scrollHeight, 200) + 'px';
                 
-                // Показываем кнопку отправки при вводе текста
                 const hasText = this.elements.messageInput.value.trim().length > 0;
                 if (hasText && !this.state.isResponding) {
                     this.showSendButton();
                 }
             });
-        }
         }
         
         window.addEventListener('online', () => this.updateOnlineStatus(true));
@@ -3113,11 +2988,9 @@ if (privacyToggle) {
             });
         }
 
-        // Обработчик клика на сферу для показа/скрытия кнопок выбора
         const animatedSphere = document.querySelector('.animated-sphere');
         if (animatedSphere) {
             animatedSphere.addEventListener('click', (e) => {
-                // Не активируем, если клик был по кнопке
                 if (e.target.closest('.hero-chip')) {
                     return;
                 }
@@ -3128,14 +3001,13 @@ if (privacyToggle) {
         const chips = document.querySelectorAll('.hero-chip');
         chips.forEach(chip => {
             chip.addEventListener('click', (e) => {
-                e.stopPropagation(); // Предотвращаем закрытие при клике на кнопку
+                e.stopPropagation();
                 const question = chip.dataset.question;
                 if (question) {
                     this.elements.messageInput.value = question;
                     this.elements.messageInput.focus();
                     this.elements.messageInput.style.height = 'auto';
                     this.elements.messageInput.style.height = Math.min(this.elements.messageInput.scrollHeight, 200) + 'px';
-                    // Закрываем кнопки после выбора
                     if (animatedSphere) {
                         animatedSphere.classList.remove('active');
                     }
@@ -3143,7 +3015,6 @@ if (privacyToggle) {
             });
         });
 
-        // НОВЫЙ ОБРАБОТЧИК ДЛЯ ЗАКРЫТИЯ ПОДПИСОК
         if (this.elements.subscriptionClose) {
             this.elements.subscriptionClose.addEventListener('click', () => {
                 this.hideModal('subscription-modal');
@@ -3181,7 +3052,6 @@ if (privacyToggle) {
     }
 
     async sendMessage() {
-        // Блокируем отправку, если ИИ уже отвечает
         if (this.state.isResponding) {
             return;
         }
@@ -3206,11 +3076,6 @@ if (privacyToggle) {
                 return;
             }
         }
-        
-        //if (!this.isTopicRelevant(message)) {
-            this.showNotification('Я специализируюсь только на отношениях, знакомствах и манипуляциях.', 'warning');
-            //return;
-        //}
 
         if (!this.API_CONFIG.apiKey) {
             this.showNotification('Пожалуйста, настройте API ключ в настройках', 'error');
@@ -3240,8 +3105,6 @@ if (privacyToggle) {
             }
         }
         
-        // Анимация превращения стрелки в spinner при отправке
-        // Кнопка уже видна, просто меняем иконку на spinner
         this.showSendButtonSpinner();
         
         const displayText = message || 'Скриншот / изображение';
@@ -3311,12 +3174,12 @@ if (privacyToggle) {
             this.state.stats.totalMessages++;
             this.state.stats.aiMessages++;
             
-           if (this.state.conversationHistory.length > 50) {
-    this.state.conversationHistory = [
-        this.state.conversationHistory[0],
-        ...this.state.conversationHistory.slice(-48)
-    ];
-}
+            if (this.state.conversationHistory.length > 50) {
+                this.state.conversationHistory = [
+                    this.state.conversationHistory[0],
+                    ...this.state.conversationHistory.slice(-48)
+                ];
+            }
             
             this.showNotification(`Ответ получен за ${responseTime.toFixed(1)}с ✅`, 'success');
 
@@ -3384,14 +3247,12 @@ if (privacyToggle) {
         const icon = sendButton.querySelector('i');
         if (!icon) return;
         
-        // Убеждаемся, что кнопка видна перед анимацией
         if (sendButton.style.opacity === '0' || sendButton.style.display === 'none') {
             sendButton.style.display = '';
             sendButton.style.opacity = '1';
             sendButton.style.transform = 'scale(1)';
         }
         
-        // Анимация превращения стрелки в spinner
         icon.style.transition = 'opacity 200ms ease-out, transform 200ms ease-out';
         icon.style.opacity = '0';
         icon.style.transform = 'scale(0.8) rotate(90deg)';
@@ -3404,7 +3265,6 @@ if (privacyToggle) {
             sendButton.style.opacity = '0.7';
             sendButton.style.cursor = 'not-allowed';
             
-            // После показа spinner, через небольшую задержку исчезаем кнопку
             setTimeout(() => {
                 sendButton.style.transition = 'opacity 300ms ease-out, transform 300ms ease-out';
                 sendButton.style.opacity = '0';
@@ -3437,7 +3297,6 @@ if (privacyToggle) {
         if (!icon) return;
         
         if (this.state.isResponding) {
-            // Показываем spinner (уже установлен в showSendButtonSpinner)
             if (!icon.classList.contains('fa-spinner')) {
                 icon.className = 'fas fa-spinner fa-spin';
             }
@@ -3446,8 +3305,6 @@ if (privacyToggle) {
             sendButton.style.opacity = '0.7';
             sendButton.style.cursor = 'not-allowed';
         } else {
-            // Возвращаем иконку отправки с анимацией
-            // Кнопка уже показана через showSendButton(), просто меняем иконку
             icon.style.transition = 'opacity 200ms ease-out, transform 200ms ease-out';
             icon.style.opacity = '0';
             icon.style.transform = 'scale(0.8) rotate(-90deg)';
@@ -3552,7 +3409,6 @@ if (privacyToggle) {
         
         this.elements.chatMessages.appendChild(messageElement);
         
-        // Анимация появления в стиле Grok: fade-in + slide-up
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 messageElement.style.opacity = '1';
@@ -3561,7 +3417,6 @@ if (privacyToggle) {
             });
         });
         
-        // Убираем will-change после анимации для производительности
         setTimeout(() => {
             messageElement.style.willChange = 'auto';
         }, 400);
@@ -3578,111 +3433,108 @@ if (privacyToggle) {
         }
         this.syncInputPosition();
         
-        // Update questions navigation after adding message
         setTimeout(() => {
             this.updateQuestionsNavigation();
         }, 100);
     }
 
     addAiMessageWithTypingEffect(fullText) {
-    const messageId = 'msg-' + Date.now();
-    const time = this.getCurrentTime();
+        const messageId = 'msg-' + Date.now();
+        const time = this.getCurrentTime();
 
-    const messageElement = document.createElement('div');
-    messageElement.className = 'message ai-message';
-    messageElement.id = messageId;
-    messageElement.style.opacity = '0';
-    messageElement.style.transform = 'translateY(16px)';
-    messageElement.style.willChange = 'transform, opacity';
+        const messageElement = document.createElement('div');
+        messageElement.className = 'message ai-message';
+        messageElement.id = messageId;
+        messageElement.style.opacity = '0';
+        messageElement.style.transform = 'translateY(16px)';
+        messageElement.style.willChange = 'transform, opacity';
 
-    const shareBtnHtml = `
-        <button class="message-share-btn" onclick="window.verdiktApp.toggleShareMenu('${messageId}')" title="Поделиться">
-            <i class="fas fa-share"></i>
-        </button>
-    `;
-    
-    messageElement.innerHTML = `
-        <div class="message-actions">
-            <button class="message-action" onclick="window.verdiktApp.copyMessage('${messageId}')">
-                <i class="fas fa-copy"></i>
+        const shareBtnHtml = `
+            <button class="message-share-btn" onclick="window.verdiktApp.toggleShareMenu('${messageId}')" title="Поделиться">
+                <i class="fas fa-share"></i>
             </button>
-            <button class="message-action" onclick="window.verdiktApp.speakMessage('${messageId}')">
-                <i class="fas fa-volume-up"></i>
-            </button>
-            <button class="message-action" onclick="window.verdiktApp.regenerateMessage('${messageId}')">
-                <i class="fas fa-redo"></i>
-            </button>
-        </div>
-        <div class="message-content-wrapper ai-reveal-from-lines">
-            <div class="ai-reveal-stripes" aria-hidden="true"></div>
-            <div class="message-content ai-smooth-reveal"></div>
-            <div class="message-time">${time}</div>
-        </div>
-        ${shareBtnHtml}
-    `;
-
-    this.elements.chatMessages.appendChild(messageElement);
-    
-    requestAnimationFrame(() => {
-        messageElement.style.opacity = '1';
-        messageElement.style.transform = 'translateY(0)';
-        messageElement.style.transition = 'opacity 350ms cubic-bezier(0.16, 1, 0.3, 1), transform 350ms cubic-bezier(0.16, 1, 0.3, 1)';
-    });
-
-    if (this.uiManager && this.uiManager.isUserNearBottom(150)) {
-        this.smoothScrollToBottom();
-    }
-
-    const heroBlock = document.getElementById('hero-block');
-    if (heroBlock) heroBlock.style.display = 'none';
-    this.syncInputPosition();
-
-    const contentEl = messageElement.querySelector('.message-content');
-    
-    const formatted = this.formatMessage(fullText);
-    contentEl.innerHTML = formatted;
-
-    if (typeof hljs !== 'undefined') {
-        setTimeout(() => {
-            contentEl.querySelectorAll('pre code').forEach((block) => {
-                hljs.highlightElement(block);
-            });
-        }, 50);
-    }
-
-    messageElement.style.willChange = 'auto';
-
-    const contentWrapper = messageElement.querySelector('.message-content-wrapper');
-    if (contentWrapper && !messageElement.querySelector('.message-feedback')) {
-        const feedbackDiv = document.createElement('div');
-        feedbackDiv.className = 'message-feedback';
-        feedbackDiv.innerHTML = `
-            <button class="feedback-btn feedback-good" onclick="window.verdiktApp.rateMessage('${messageId}', 1)">👍 Полезно</button>
-            <button class="feedback-btn feedback-bad" onclick="window.verdiktApp.rateMessage('${messageId}', -1)">👎 Не полезно</button>
         `;
-        const timeEl = contentWrapper.querySelector('.message-time');
-        if (timeEl) {
-            contentWrapper.insertBefore(feedbackDiv, timeEl);
-        } else {
-            contentWrapper.appendChild(feedbackDiv);
-        }
-    }
+        
+        messageElement.innerHTML = `
+            <div class="message-actions">
+                <button class="message-action" onclick="window.verdiktApp.copyMessage('${messageId}')">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <button class="message-action" onclick="window.verdiktApp.speakMessage('${messageId}')">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+                <button class="message-action" onclick="window.verdiktApp.regenerateMessage('${messageId}')">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+            <div class="message-content-wrapper ai-reveal-from-lines">
+                <div class="ai-reveal-stripes" aria-hidden="true"></div>
+                <div class="message-content ai-smooth-reveal"></div>
+                <div class="message-time">${time}</div>
+            </div>
+            ${shareBtnHtml}
+        `;
 
-    if (this.uiManager && this.uiManager.isUserNearBottom(200)) {
-        this.uiManager.smoothScrollToBottom(true);
+        this.elements.chatMessages.appendChild(messageElement);
+        
+        requestAnimationFrame(() => {
+            messageElement.style.opacity = '1';
+            messageElement.style.transform = 'translateY(0)';
+            messageElement.style.transition = 'opacity 350ms cubic-bezier(0.16, 1, 0.3, 1), transform 350ms cubic-bezier(0.16, 1, 0.3, 1)';
+        });
+
+        if (this.uiManager && this.uiManager.isUserNearBottom(150)) {
+            this.smoothScrollToBottom();
+        }
+
+        const heroBlock = document.getElementById('hero-block');
+        if (heroBlock) heroBlock.style.display = 'none';
+        this.syncInputPosition();
+
+        const contentEl = messageElement.querySelector('.message-content');
+        
+        const formatted = this.formatMessage(fullText);
+        contentEl.innerHTML = formatted;
+
+        if (typeof hljs !== 'undefined') {
+            setTimeout(() => {
+                contentEl.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                });
+            }, 50);
+        }
+
+        messageElement.style.willChange = 'auto';
+
+        const contentWrapper = messageElement.querySelector('.message-content-wrapper');
+        if (contentWrapper && !messageElement.querySelector('.message-feedback')) {
+            const feedbackDiv = document.createElement('div');
+            feedbackDiv.className = 'message-feedback';
+            feedbackDiv.innerHTML = `
+                <button class="feedback-btn feedback-good" onclick="window.verdiktApp.rateMessage('${messageId}', 1)">👍 Полезно</button>
+                <button class="feedback-btn feedback-bad" onclick="window.verdiktApp.rateMessage('${messageId}', -1)">👎 Не полезно</button>
+            `;
+            const timeEl = contentWrapper.querySelector('.message-time');
+            if (timeEl) {
+                contentWrapper.insertBefore(feedbackDiv, timeEl);
+            } else {
+                contentWrapper.appendChild(feedbackDiv);
+            }
+        }
+
+        if (this.uiManager && this.uiManager.isUserNearBottom(200)) {
+            this.uiManager.smoothScrollToBottom(true);
+        }
+        setTimeout(() => {
+            this.updateInputOverlapState && this.updateInputOverlapState();
+        }, 300);
     }
-    setTimeout(() => {
-        this.updateInputOverlapState && this.updateInputOverlapState();
-    }, 300);
-}
 
     formatMessage(text) {
         if (!text) return '';
         
-        // Используем marked.js для полноценного markdown-рендеринга
         if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
             try {
-                // Настройка marked для лучшего рендеринга
                 marked.setOptions({
                     breaks: true,
                     gfm: true,
@@ -3701,10 +3553,8 @@ if (privacyToggle) {
                     }
                 });
                 
-                // Парсим markdown
                 const html = marked.parse(text);
                 
-                // Санитизируем HTML для безопасности
                 const clean = DOMPurify.sanitize(html, {
                     ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 's', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 
                                    'ul', 'ol', 'li', 'code', 'pre', 'blockquote', 'a', 'hr', 'table', 
@@ -3715,11 +3565,9 @@ if (privacyToggle) {
                 return clean;
             } catch (err) {
                 console.warn('Markdown parsing error, falling back to simple formatting:', err);
-                // Fallback на простой форматинг
             }
         }
         
-        // Простой fallback форматирование
         return text
             .replace(/\n/g, '<br>')
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -3799,7 +3647,6 @@ if (privacyToggle) {
             activeMode.classList.add('active');
         }
         
-        // Update Grok mode selector UI
         this.updateGrokModeSelector(modeId);
         
         this.showNotification(`Режим изменен на: ${this.state.aiModes[modeId].name}`, 'info');
@@ -3832,21 +3679,18 @@ if (privacyToggle) {
             }
         };
         
-        // Кнопка: сворачивает и разворачивает список режимов
         modeSelector.addEventListener('click', (e) => {
             e.stopPropagation();
             const isOpen = modeDropdown.classList.contains('show');
             setDropdownOpen(!isOpen);
         });
         
-        // Клик вне области — сворачиваем список
         document.addEventListener('click', (e) => {
             if (wrapper && !wrapper.contains(e.target)) {
                 setDropdownOpen(false);
             }
         });
         
-        // Выбор режима — применяем и сворачиваем список
         modeDropdown.querySelectorAll('.mode-dropdown-item').forEach(item => {
             item.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -3867,7 +3711,6 @@ if (privacyToggle) {
         
         if (!modeSelector || !modeDropdown) return;
         
-        // Update dropdown items
         modeDropdown.querySelectorAll('.mode-dropdown-item').forEach(item => {
             item.classList.remove('active');
             const checkIcon = item.querySelector('.mode-item-check');
@@ -3885,7 +3728,6 @@ if (privacyToggle) {
         });
     }
 
-    /** Подсказки в стиле Т9 при вводе */
     static T9_PHRASES = [
         'Как распознать манипуляцию в отношениях?',
         'Как правильно вести себя на первом свидании?',
@@ -4073,7 +3915,6 @@ if (privacyToggle) {
         this.state.deepReflectionMode = !this.state.deepReflectionMode;
         this.updateDeepReflectionButtonState();
         
-        // Обновляем системный промпт при изменении режима
         if (this.state.conversationHistory && this.state.conversationHistory.length > 0) {
             const systemPrompt = this.createSystemPromptMessage();
             this.state.conversationHistory[0] = systemPrompt;
@@ -4086,20 +3927,21 @@ if (privacyToggle) {
             'info'
         );
     }
-    togglePrivacyMode() {
-    this.state.privacyMode = !this.state.privacyMode;
-    const btn = document.getElementById('privacy-mode-toggle');
     
-    if (this.state.privacyMode) {
-        btn.classList.add('privacy-active');
-        document.body.classList.add('privacy-mode');
-        this.showNotification('Приватный режим включён – тяжёлые анимации отключены', 'info');
-    } else {
-        btn.classList.remove('privacy-active');
-        document.body.classList.remove('privacy-mode');
-        this.showNotification('Приватный режим выключен – анимации восстановлены', 'info');
+    togglePrivacyMode() {
+        this.state.privacyMode = !this.state.privacyMode;
+        const btn = document.getElementById('privacy-mode-toggle');
+        
+        if (this.state.privacyMode) {
+            btn.classList.add('privacy-active');
+            document.body.classList.add('privacy-mode');
+            this.showNotification('Приватный режим включён – тяжёлые анимации отключены', 'info');
+        } else {
+            btn.classList.remove('privacy-active');
+            document.body.classList.remove('privacy-mode');
+            this.showNotification('Приватный режим выключен – анимации восстановлены', 'info');
+        }
     }
-}
 
     updateDeepReflectionButtonState() {
         if (this.elements.deepReflectionBtn) {
@@ -4124,7 +3966,6 @@ if (privacyToggle) {
     }
 
     setTheme(theme, options = {}) {
-        
         const { fromServer = false, skipBackend = false } = options;
         this.state.currentTheme = theme;
         document.body.setAttribute('data-theme', theme);
@@ -4134,7 +3975,8 @@ if (privacyToggle) {
         if (activeTheme) {
             activeTheme.classList.add('active');
         }
-         if (this.particleSystem) {
+        
+        if (this.particleSystem) {
             if (theme === 'light') {
                 this.particleSystem.options.colors = ['#333333', '#444444', '#555555'];
             } else {
@@ -4142,23 +3984,10 @@ if (privacyToggle) {
             }
             this.particleSystem.createParticles();
         }
+        
         localStorage.setItem('verdikt_theme', theme);
         this.saveChats();
-         getPerformanceProfile() {
-        const cores = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
-            ? navigator.hardwareConcurrency
-            : 2;
         
-        // Определяем мобильное устройство
-        const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent || '');
-        
-        // Определяем слабое устройство (мало ядер или мобильное)
-        const isLowEnd = cores <= 4 || isMobile;
-        
-        return { cores, reducedMotion: false, isLowEnd };
-    }
-}
-        // Отправляем на бэкенд только если пользователь авторизован, не из сервера и не пропущен флаг skipBackend
         if (this.state.user && !fromServer && !skipBackend) {
             const url = `${this.AUTH_CONFIG.baseUrl}/api/users/me/settings`;
             fetch(url, {
@@ -4169,10 +3998,21 @@ if (privacyToggle) {
             }).catch(() => {});
         }
         
-        // Показываем уведомление только если не из сервера и не пропущен флаг skipBackend
         if (!fromServer && !skipBackend) {
             this.showNotification(`Тема изменена: ${theme}`, 'info');
         }
+    }
+
+    getPerformanceProfile() {
+        const cores = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
+            ? navigator.hardwareConcurrency
+            : 2;
+        
+        const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent || '');
+        
+        const isLowEnd = cores <= 4 || isMobile;
+        
+        return { cores, reducedMotion: false, isLowEnd };
     }
 
     async loadUserSettings() {
@@ -4191,8 +4031,6 @@ if (privacyToggle) {
             if (savedTheme) this.setTheme(savedTheme, { fromServer: true });
         }
     }
-
-    // ==================== СИСТЕМА УВЕДОМЛЕНИЙ ====================
 
     showNotification(text, type = 'info') {
         if (this.state.doNotDisturb) {
@@ -4251,8 +4089,6 @@ if (privacyToggle) {
         }
     }
 
-    // ==================== ЛОКАЛЬНОЕ ХРАНИЛИЩЕ ====================
-
     loadFromLocalStorage() {
         const encryptionSetup = localStorage.getItem('verdikt_encryption_setup');
         
@@ -4280,8 +4116,6 @@ if (privacyToggle) {
     async saveToLocalStorage() {
         await this.saveChats();
     }
-
-    // ==================== АДМИН-РЕЖИМ ====================
 
     setupAdminMode() {
         const btn = this.elements.adminModeToggle;
@@ -4348,8 +4182,6 @@ if (privacyToggle) {
             });
         });
     }
-
-    // ==================== АВТОРИЗАЦИЯ ====================
 
     loadUserFromStorage() {
         try {
@@ -4611,7 +4443,6 @@ if (privacyToggle) {
     }
 
     scrollToBottom() {
-        // Используем плавную прокрутку через uiManager
         if (this.uiManager && this.uiManager.smoothScrollToBottom) {
             this.uiManager.smoothScrollToBottom();
         } else {
@@ -4650,197 +4481,178 @@ if (privacyToggle) {
     }
 
     showTypingIndicator() {
-    if (this.state.doNotDisturb) return;
-    const indicator = this.elements.typingIndicator;
-    if (indicator) {
-        indicator.classList.add('visible');
-        this.scrollToBottom();
+        if (this.state.doNotDisturb) return;
+        const indicator = this.elements.typingIndicator;
+        if (indicator) {
+            indicator.classList.add('visible');
+            this.scrollToBottom();
+        }
     }
-}
 
-hideTypingIndicator() {
-    const indicator = this.elements.typingIndicator;
-    if (indicator) {
-        indicator.classList.remove('visible');
+    hideTypingIndicator() {
+        const indicator = this.elements.typingIndicator;
+        if (indicator) {
+            indicator.classList.remove('visible');
+        }
     }
-}
 
-showApiLoadingEffect() {
-    const overlay = document.getElementById('api-loading-overlay');
-    if (overlay) {
-        overlay.classList.add('active');
+    showApiLoadingEffect() {
+        const overlay = document.getElementById('api-loading-overlay');
+        if (overlay) {
+            overlay.classList.add('active');
+        }
     }
-}
 
-hideApiLoadingEffect() {
-    const overlay = document.getElementById('api-loading-overlay');
-    if (overlay) {
-        overlay.classList.remove('active');
+    hideApiLoadingEffect() {
+        const overlay = document.getElementById('api-loading-overlay');
+        if (overlay) {
+            overlay.classList.remove('active');
+        }
     }
-}
 
-syncInputPosition() {
-    const heroBlock = document.getElementById('hero-block');
-    const chatContainer = document.querySelector('.chat-container');
-    if (heroBlock && chatContainer) {
-        const isCentered = heroBlock.style.display !== 'none';
-        chatContainer.classList.toggle('input-centered', isCentered);
+    syncInputPosition() {
+        const heroBlock = document.getElementById('hero-block');
+        const chatContainer = document.querySelector('.chat-container');
+        if (heroBlock && chatContainer) {
+            const isCentered = heroBlock.style.display !== 'none';
+            chatContainer.classList.toggle('input-centered', isCentered);
+        }
     }
-}
 
-updateSphereApiState(state) {
-    // Пробуем найти сферу несколько раз с задержкой, если она еще не загрузилась
-    let sphere = document.querySelector('.animated-sphere');
-    
-    if (!sphere) {
-        // Если сфера не найдена, пробуем еще раз через небольшую задержку
-        setTimeout(() => {
-            sphere = document.querySelector('.animated-sphere');
-            if (sphere) {
-                this.applySphereApiState(sphere, state);
-            }
-        }, 100);
-        return;
-    }
-    
-    this.applySphereApiState(sphere, state);
-}
-
-applySphereApiState(sphere, state) {
-    if (!sphere) return;
-    
-    // Удаляем все предыдущие классы состояний
-    sphere.classList.remove('api-connecting', 'api-connected', 'api-error', 'api-not-configured');
-    
-    // Добавляем новый класс состояния
-    switch(state) {
-        case 'connecting':
-            sphere.classList.add('api-connecting');
-            this.startStarSuction(sphere);
-            break;
-        case 'connected':
-            sphere.classList.add('api-connected');
-            this.startStarSuction(sphere);
-            // Сфера должна светиться зеленым постоянно при подключении
-            // Не убираем класс api-connected
-            break;
-        case 'error':
-            sphere.classList.add('api-error');
-            this.startStarSuction(sphere);
-            break;
-        case 'not-configured':
-            sphere.classList.add('api-not-configured');
-            this.stopStarSuction();
-            break;
-        default:
-            this.stopStarSuction();
-            break;
-    }
-}
-
-startStarSuction(sphere) {
-    // Останавливаем предыдущий интервал, если он существует
-    if (this.starSuctionInterval) {
-        clearInterval(this.starSuctionInterval);
-    }
-    
-    const starContainer = sphere.querySelector('.sphere-star-suction');
-    if (!starContainer) return;
-    
-    // Очищаем предыдущие звезды
-    starContainer.innerHTML = '';
-    
-    // Функция создания звезды со спиральным движением
-    const createStar = () => {
-        const star = document.createElement('div');
-        star.className = 'star-suction-particle';
+    updateSphereApiState(state) {
+        let sphere = document.querySelector('.animated-sphere');
         
-        // Генерируем случайную позицию на краю контейнера (вокруг сферы)
-        const startAngle = Math.random() * Math.PI * 2;
-        const startDistance = 225 + Math.random() * 100; // Расстояние от центра (225-325px) для сферы 500px
-        const startX = Math.cos(startAngle) * startDistance;
-        const startY = Math.sin(startAngle) * startDistance;
-        
-        // Устанавливаем начальную позицию
-        star.style.left = '50%';
-        star.style.top = '50%';
-        star.style.transform = `translate(${startX}px, ${startY}px)`;
-        
-        // Количество оборотов спирали (2-4 оборота)
-        const rotations = 2 + Math.random() * 2;
-        const duration = 2 + Math.random() * 0.5; // Длительность анимации 2-2.5 секунды
-        
-        // Создаем keyframes для спирального движения
-        const animationName = `starSuction_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const styleSheet = document.createElement('style');
-        
-        // Генерируем ключевые кадры для спирального движения
-        const keyframes = [];
-        const steps = 20;
-        for (let i = 0; i <= steps; i++) {
-            const progress = i / steps;
-            const currentAngle = startAngle + (rotations * Math.PI * 2 * progress);
-            const currentDistance = startDistance * (1 - progress); // Уменьшаем расстояние к центру
-            const currentX = Math.cos(currentAngle) * currentDistance;
-            const currentY = Math.sin(currentAngle) * currentDistance;
-            const scale = 1 - progress * 0.9; // Уменьшаем размер
-            const opacity = progress < 0.1 ? progress * 10 : (progress > 0.9 ? (1 - progress) * 10 : 1);
-            
-            keyframes.push(`
-                ${progress * 100}% {
-                    opacity: ${opacity};
-                    transform: translate(${currentX}px, ${currentY}px) scale(${scale});
+        if (!sphere) {
+            setTimeout(() => {
+                sphere = document.querySelector('.animated-sphere');
+                if (sphere) {
+                    this.applySphereApiState(sphere, state);
                 }
-            `);
+            }, 100);
+            return;
         }
         
-        styleSheet.textContent = `
-            @keyframes ${animationName} {
-                ${keyframes.join('\n')}
-            }
-            .star-suction-particle.${animationName} {
-                animation: ${animationName} ${duration}s ease-in forwards;
-            }
-        `;
-        document.head.appendChild(styleSheet);
-        star.classList.add(animationName);
-        
-        starContainer.appendChild(star);
-        
-        // Удаляем звезду и стили после анимации
-        setTimeout(() => {
-            star.remove();
-            styleSheet.remove();
-        }, duration * 1000 + 100);
-    };
-    
-    // Создаем звезды периодически
-    this.starSuctionInterval = setInterval(() => {
-        createStar();
-    }, 250); // Новая звезда каждые 250мс для более плавного эффекта
-}
+        this.applySphereApiState(sphere, state);
+    }
 
-stopStarSuction() {
-    if (this.starSuctionInterval) {
-        clearInterval(this.starSuctionInterval);
-        this.starSuctionInterval = null;
+    applySphereApiState(sphere, state) {
+        if (!sphere) return;
+        
+        sphere.classList.remove('api-connecting', 'api-connected', 'api-error', 'api-not-configured');
+        
+        switch(state) {
+            case 'connecting':
+                sphere.classList.add('api-connecting');
+                this.startStarSuction(sphere);
+                break;
+            case 'connected':
+                sphere.classList.add('api-connected');
+                this.startStarSuction(sphere);
+                break;
+            case 'error':
+                sphere.classList.add('api-error');
+                this.startStarSuction(sphere);
+                break;
+            case 'not-configured':
+                sphere.classList.add('api-not-configured');
+                this.stopStarSuction();
+                break;
+            default:
+                this.stopStarSuction();
+                break;
+        }
     }
-    
-    // Очищаем контейнер звезд
-    const starContainer = document.querySelector('.sphere-star-suction');
-    if (starContainer) {
+
+    startStarSuction(sphere) {
+        if (this.starSuctionInterval) {
+            clearInterval(this.starSuctionInterval);
+        }
+        
+        const starContainer = sphere.querySelector('.sphere-star-suction');
+        if (!starContainer) return;
+        
         starContainer.innerHTML = '';
+        
+        const createStar = () => {
+            const star = document.createElement('div');
+            star.className = 'star-suction-particle';
+            
+            const startAngle = Math.random() * Math.PI * 2;
+            const startDistance = 225 + Math.random() * 100;
+            const startX = Math.cos(startAngle) * startDistance;
+            const startY = Math.sin(startAngle) * startDistance;
+            
+            star.style.left = '50%';
+            star.style.top = '50%';
+            star.style.transform = `translate(${startX}px, ${startY}px)`;
+            
+            const rotations = 2 + Math.random() * 2;
+            const duration = 2 + Math.random() * 0.5;
+            
+            const animationName = `starSuction_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const styleSheet = document.createElement('style');
+            
+            const keyframes = [];
+            const steps = 20;
+            for (let i = 0; i <= steps; i++) {
+                const progress = i / steps;
+                const currentAngle = startAngle + (rotations * Math.PI * 2 * progress);
+                const currentDistance = startDistance * (1 - progress);
+                const currentX = Math.cos(currentAngle) * currentDistance;
+                const currentY = Math.sin(currentAngle) * currentDistance;
+                const scale = 1 - progress * 0.9;
+                const opacity = progress < 0.1 ? progress * 10 : (progress > 0.9 ? (1 - progress) * 10 : 1);
+                
+                keyframes.push(`
+                    ${progress * 100}% {
+                        opacity: ${opacity};
+                        transform: translate(${currentX}px, ${currentY}px) scale(${scale});
+                    }
+                `);
+            }
+            
+            styleSheet.textContent = `
+                @keyframes ${animationName} {
+                    ${keyframes.join('\n')}
+                }
+                .star-suction-particle.${animationName} {
+                    animation: ${animationName} ${duration}s ease-in forwards;
+                }
+            `;
+            document.head.appendChild(styleSheet);
+            star.classList.add(animationName);
+            
+            starContainer.appendChild(star);
+            
+            setTimeout(() => {
+                star.remove();
+                styleSheet.remove();
+            }, duration * 1000 + 100);
+        };
+        
+        this.starSuctionInterval = setInterval(() => {
+            createStar();
+        }, 250);
     }
-}
+
+    stopStarSuction() {
+        if (this.starSuctionInterval) {
+            clearInterval(this.starSuctionInterval);
+            this.starSuctionInterval = null;
+        }
+        
+        const starContainer = document.querySelector('.sphere-star-suction');
+        if (starContainer) {
+            starContainer.innerHTML = '';
+        }
+    }
 
     updateUI() {
         this.updateSettingsStats();
         this.updateSidebarInfo();
-        // Update Grok mode selector if it exists
         if (this.state.currentMode) {
             this.updateGrokModeSelector(this.state.currentMode);
         }
-        // Update questions navigation
         this.updateQuestionsNavigation();
     }
 
@@ -4856,7 +4668,6 @@ stopStarSuction() {
         
         this.elements.questionsNavigation.classList.remove('hidden');
         
-        // Показываем подсказку при первом появлении навигации (если еще не показывали)
         if (!sessionStorage.getItem('questions-nav-hint-shown')) {
             this.elements.questionsNavigation.classList.add('show-hint');
             setTimeout(() => {
@@ -4881,13 +4692,11 @@ stopStarSuction() {
             navItem.setAttribute('data-number', questionNumber);
             navItem.setAttribute('aria-label', `Вопрос ${questionNumber}: ${preview}`);
             
-            // Badge with number
             const badge = document.createElement('span');
             badge.className = 'questions-nav-badge';
             badge.textContent = questionNumber;
             navItem.appendChild(badge);
 
-            // Preview text
             const textSpan = document.createElement('span');
             textSpan.className = 'questions-nav-item-text';
             textSpan.textContent = preview;
@@ -4901,7 +4710,6 @@ stopStarSuction() {
             this.elements.questionsNavList.appendChild(navItem);
         });
         
-        // Update active question based on scroll position
         this.updateActiveQuestion();
     }
 
@@ -4909,24 +4717,20 @@ stopStarSuction() {
         const messageEl = document.getElementById(messageId);
         if (!messageEl) return;
         
-        // Remove active class from all items
         this.elements.questionsNavList.querySelectorAll('.questions-nav-item').forEach(item => {
             item.classList.remove('active');
         });
         
-        // Add active class to clicked item
         const navItem = this.elements.questionsNavList.querySelector(`[data-message-id="${messageId}"]`);
         if (navItem) {
             navItem.classList.add('active');
         }
         
-        // Scroll to message
         messageEl.scrollIntoView({ 
             behavior: 'smooth', 
             block: 'center' 
         });
         
-        // Highlight message briefly with white glow
         messageEl.style.transition = 'box-shadow 0.3s ease';
         messageEl.style.boxShadow = '0 0 20px rgba(255, 255, 255, 0.3), 0 0 40px rgba(255, 255, 255, 0.15)';
         setTimeout(() => {
@@ -4954,7 +4758,6 @@ stopStarSuction() {
         const scrollHeight = chatMessages.scrollHeight;
         const clientHeight = chatMessages.clientHeight;
         
-        // Find the message currently in view
         const userMessages = Array.from(this.elements.chatMessages.querySelectorAll('.user-message'));
         let activeMessageId = null;
         
@@ -4969,7 +4772,6 @@ stopStarSuction() {
             }
         }
         
-        // Update active state
         this.elements.questionsNavList.querySelectorAll('.questions-nav-item').forEach(item => {
             item.classList.remove('active');
             if (item.getAttribute('data-message-id') === activeMessageId) {
@@ -5086,8 +4888,6 @@ stopStarSuction() {
         }
     }
 
-    // ==================== МОДАЛЬНЫЕ ОКНА ====================
-
     showModal(modalId) {
         document.getElementById(modalId).classList.add('active');
         document.body.style.overflow = 'hidden';
@@ -5099,8 +4899,6 @@ stopStarSuction() {
     }
 
     showSettingsModal() {
-        // Функция больше не используется - настройки теперь в профиле
-        // Открываем настройки профиля вместо старого модального окна
         this.showProfileSettingsModal();
     }
 
@@ -5319,8 +5117,6 @@ stopStarSuction() {
         });
     }
 
-    // ==================== ПРОЧИЕ ФУНКЦИИ ====================
-
     setupSpeechRecognition() {
         if (this.SpeechRecognition) {
             this.recognition = new this.SpeechRecognition();
@@ -5404,15 +5200,6 @@ stopStarSuction() {
                 particlesContainer.appendChild(particle);
             }
         }
-    }
-
-    getPerformanceProfile() {
-        const cores = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
-            ? navigator.hardwareConcurrency
-            : 2;
-        // По запросу: не ограничиваем анимации даже на "слабых" устройствах
-        // и не учитываем prefers-reduced-motion для отключения анимаций.
-        return { cores, reducedMotion: false, isLowEnd: false };
     }
 
     setupServiceWorker() {
@@ -5642,8 +5429,6 @@ stopStarSuction() {
     }
 
     saveSettings() {
-        // Настройки теперь сохраняются автоматически при изменении
-        // Эта функция оставлена для совместимости
         const temperatureSlider = document.getElementById('temperature-slider');
         if (temperatureSlider) {
             const temperature = parseFloat(temperatureSlider.value);
@@ -5830,8 +5615,6 @@ stopStarSuction() {
             setTimeout(() => particle.remove(), 1500);
         }
     }
-
-    // ==================== ИМПОРТ/ЭКСПОРТ ====================
 
     setupImportListeners() {
         this.elements.importDropzone.addEventListener('click', () => {
@@ -6653,7 +6436,6 @@ stopStarSuction() {
         `).join('');
     }
 
-    /** Аналитика оценок: при авторизации — с бэкенда, иначе — локально. */
     async renderAnalytics() {
         const data = await this.loadFeedbackAnalyticsFromBackend();
         if (this.state.user && data) {
@@ -6674,7 +6456,6 @@ stopStarSuction() {
         this.createAnalyticsChart();
     }
 
-    /** Активность: при авторизации — из бэкенда (recent), иначе — из локальных оценок. */
     renderActivity() {
         const activityList = document.getElementById('activity-list');
         if (!activityList) return;
@@ -7193,7 +6974,6 @@ stopStarSuction() {
         navigator.vibrate(30);
     }
 
-    /** График по данным с бэкенда (last14Days: [{ label, useful, notUseful }]). */
     createAnalyticsChartFromBackend(last14Days) {
         const ctx = document.getElementById('analytics-chart')?.getContext('2d');
         if (!ctx) return;
@@ -7222,7 +7002,6 @@ stopStarSuction() {
         });
     }
 
-    /** График по локальным оценкам ответов ИИ (гости или fallback). */
     createAnalyticsChart() {
         const ctx = document.getElementById('analytics-chart')?.getContext('2d');
         if (!ctx) return;
@@ -7593,16 +7372,13 @@ stopStarSuction() {
         });
     }
 
-    
     setupHeroChips() {
-        // Этот метод вызывается в init(), но не определен
         console.log('Hero chips initialized');
     }
 
     setupQuestionsNavigation() {
         if (!this.elements.questionsNavigation) return;
 
-        // "Next answer" button
         if (this.elements.questionsNavNextBtn) {
             this.elements.questionsNavNextBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -7610,7 +7386,6 @@ stopStarSuction() {
             });
         }
 
-        // Update active question on scroll with throttling
         let scrollTimeout;
         if (this.elements.chatMessages) {
             this.elements.chatMessages.addEventListener('scroll', () => {
@@ -7621,7 +7396,6 @@ stopStarSuction() {
             });
         }
         
-        // Update navigation when messages are added/removed
         const observer = new MutationObserver(() => {
             setTimeout(() => {
                 this.updateQuestionsNavigation();
@@ -7635,7 +7409,6 @@ stopStarSuction() {
             });
         }
         
-        // Initial update
         setTimeout(() => {
             this.updateQuestionsNavigation();
         }, 500);
@@ -7687,16 +7460,8 @@ stopStarSuction() {
                 }
             });
         });
-
-        this._updateSubscriptionButtons = updateSubscriptionButtons;
-    }
-
-    showSubscriptionModal() {
-        this.showModal('subscription-modal');
-        if (this._updateSubscriptionButtons) this._updateSubscriptionButtons();
     }
     
-    // === Share функциональность ===
     toggleShareMenu(messageId) {
         const messageElement = document.getElementById(messageId);
         if (!messageElement) return;
@@ -7735,7 +7500,6 @@ stopStarSuction() {
         
         messageElement.appendChild(shareMenu);
         
-        // Закрытие при клике вне меню
         setTimeout(() => {
             const closeHandler = (e) => {
                 if (!messageElement.contains(e.target)) {
@@ -7760,7 +7524,6 @@ stopStarSuction() {
             window.open(urls[platform], '_blank', 'width=600,height=400');
         }
         
-        // Закрываем меню
         const menus = document.querySelectorAll('.share-menu');
         menus.forEach(menu => menu.remove());
     }
