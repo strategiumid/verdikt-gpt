@@ -3,7 +3,7 @@ import { ChatStore } from './chatStore.js';
 import { UIManager } from './uiManager.js';
 import { EncryptionService } from './encryptionService.js';
 import { AuthService } from './authService.js';
-
+import { ParticleSystem } from './particles.js';
 
 export class VerdiktChatApp {
     static NEGATIVE_WORDS = [
@@ -24,6 +24,7 @@ export class VerdiktChatApp {
         'почему', 'зачем', 'когда же', 'сколько можно'
     ];
     constructor() {
+        this.particleSystem = null;
         this.API_CONFIG = {
             url: 'https://routerai.ru/api/v1/chat/completions',
             model: 'x-ai/grok-4-fast', 
@@ -454,6 +455,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     }
 
     async init() {
+
         this.setupCookieNotification();
         this.loadApiKey();
         this.setupEventListeners();
@@ -466,7 +468,73 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         this.setupBackgroundAnimations();
         
         await this.loadInstructions();
+        setTimeout(() => {
+            this.initParticleSystem();
+        }, 100);
+         initParticleSystem() {
+        // Определяем возможности устройства
+        const profile = this.getPerformanceProfile();
+        const isLowEnd = profile.isLowEnd;
         
+        // Создаем систему частиц
+        this.particleSystem = new ParticleSystem('particle-canvas', {
+            particleCount: isLowEnd ? 40 : 150,
+            minSize: isLowEnd ? 0.8 : 0.5,
+            maxSize: isLowEnd ? 1.5 : 2.5,
+            performanceMode: isLowEnd,
+            interactive: !isLowEnd, // Отключаем интерактивность на слабых устройствах
+            colors: ['#ffffff', '#f0f0f0', '#e8e8e8']
+        });
+        
+        // Слушаем изменения приватного режима
+        this.setupPrivacyModeListener();
+        
+        // Добавляем эффект падающих звезд по двойному тапу
+        this.setupShootingStars();
+    }
+    
+    setupPrivacyModeListener() {
+        const privacyToggle = document.getElementById('privacy-mode-toggle');
+        if (privacyToggle && this.particleSystem) {
+            // Используем MutationObserver для отслеживания изменения класса
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.attributeName === 'class') {
+                        const isPrivacyMode = document.body.classList.contains('privacy-mode');
+                        this.particleSystem.setPerformanceMode(isPrivacyMode);
+                    }
+                });
+            });
+            observer.observe(document.body, { attributes: true });
+        }
+    }
+    
+    setupShootingStars() {
+        if (!this.particleSystem) return;
+        
+        let lastTap = 0;
+        document.addEventListener('touchend', (e) => {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            if (tapLength < 500 && tapLength > 0) {
+                // Двойной тап - создаем падающую звезду
+                if (e.changedTouches && e.changedTouches[0]) {
+                    this.particleSystem.createShootingStar(
+                        e.changedTouches[0].clientX,
+                        e.changedTouches[0].clientY
+                    );
+                }
+            }
+            lastTap = currentTime;
+        });
+        
+        // Для десктопа - по двойному клику
+        document.addEventListener('dblclick', (e) => {
+            if (this.particleSystem) {
+                this.particleSystem.createShootingStar(e.clientX, e.clientY);
+            }
+        });
+    }
         this.updateUI();
         // Проверка API при загрузке не выполняется — подключение к API только при входе в аккаунт
         this.setupKeyboardShortcuts();
@@ -4052,6 +4120,7 @@ if (privacyToggle) {
     }
 
     setTheme(theme, options = {}) {
+        
         const { fromServer = false, skipBackend = false } = options;
         this.state.currentTheme = theme;
         document.body.setAttribute('data-theme', theme);
@@ -4061,10 +4130,30 @@ if (privacyToggle) {
         if (activeTheme) {
             activeTheme.classList.add('active');
         }
-        
+         if (this.particleSystem) {
+            if (theme === 'light') {
+                this.particleSystem.options.colors = ['#333333', '#444444', '#555555'];
+            } else {
+                this.particleSystem.options.colors = ['#ffffff', '#f0f0f0', '#e0e0e0'];
+            }
+            this.particleSystem.createParticles();
+        }
         localStorage.setItem('verdikt_theme', theme);
         this.saveChats();
+         getPerformanceProfile() {
+        const cores = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
+            ? navigator.hardwareConcurrency
+            : 2;
         
+        // Определяем мобильное устройство
+        const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent || '');
+        
+        // Определяем слабое устройство (мало ядер или мобильное)
+        const isLowEnd = cores <= 4 || isMobile;
+        
+        return { cores, reducedMotion: false, isLowEnd };
+    }
+}
         // Отправляем на бэкенд только если пользователь авторизован, не из сервера и не пропущен флаг skipBackend
         if (this.state.user && !fromServer && !skipBackend) {
             const url = `${this.AUTH_CONFIG.baseUrl}/api/users/me/settings`;

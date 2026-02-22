@@ -9130,40 +9130,40 @@ textarea:focus::placeholder {
 #privacy-mode-toggle.privacy-active i {
     color: white;
 }
-/* Приватный режим – отключение тяжёлых анимаций */
-body.privacy-mode .star {
-    animation: none !important;
-    opacity: 0.3 !important;
-    transition: none !important;
+
+
+/* Canvas для частиц */
+.particle-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Не блокируем клики */
+    z-index: -1;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+    will-change: transform;
 }
 
-body.privacy-mode .particle {
-    display: none !important;
+/* Приватный режим - упрощаем */
+body.privacy-mode .particle-canvas {
+    opacity: 0.2;
 }
 
-body.privacy-mode .animated-sphere::before,
-body.privacy-mode .sphere-core::after,
-body.privacy-mode .sphere-core::before,
-body.privacy-mode .sphere-wave,
-body.privacy-mode .sphere-glow {
-    animation: none !important;
-    opacity: 0.5 !important;
-}
-
-body.privacy-mode .hero-chip:hover {
-    transform: none !important;
-    transition: none !important;
-}
-
-body.privacy-mode .nav-item:hover,
-body.privacy-mode .ios-button:hover,
-body.privacy-mode .message-action:hover {
-    transform: none !important;
-    transition: none !important;
-    box-shadow: none !important;
-}
-
-/* При необходимости можно отключить любые другие анимации, например градиентные фоны */
-body.privacy-mode .hero-logo-icon {
-    animation: none !important;
+/* Удаляем старые стили для звезд */
+.stars-container,
+.star,
+.star:nth-child(odd),
+.star:nth-child(even),
+.star:nth-child(3n),
+.star:nth-child(4n),
+.star:nth-child(5n),
+.star:nth-child(7n),
+@keyframes starTwinkle,
+@keyframes starTwinkleBright,
+@keyframes starDrift,
+@keyframes starPulse,
+@keyframes starFlash {
+    display: none;
 }
