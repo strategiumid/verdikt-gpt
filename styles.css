@@ -2285,7 +2285,7 @@ body.sidebar-collapsed .app-header .header-right {
 }
 
 .ai-smooth-reveal {
-    animation: aiSmoothReveal 1.5s cubic-bezier(0.16, 1, 0.3, 1) backwards; 
+    animation: aiSmoothReveal 5s cubic-bezier(0.16, 1, 0.3, 1) backwards; 
 }ы
 
 @keyframes aiSmoothReveal {
