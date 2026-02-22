@@ -43,6 +43,7 @@ export class VerdiktChatApp {
         };
 
         this.state = {
+
             conversationHistory: [],
             currentMode: 'balanced',
             aiModes: {
@@ -85,6 +86,7 @@ export class VerdiktChatApp {
             },
             isAdmin: false,
             doNotDisturb: false,
+            privacyMode: false,
             balanceShown: false,
             adminQuestionFilter: 'all',
             adminUserFilter: 'all',
@@ -2692,6 +2694,11 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     // ==================== ОСНОВНЫЕ ФУНКЦИИ ЧАТА ====================
 
     setupEventListeners() {
+        // Приватный режим
+const privacyToggle = document.getElementById('privacy-mode-toggle');
+if (privacyToggle) {
+    privacyToggle.addEventListener('click', () => this.togglePrivacyMode());
+}
         // Send button (if exists)
         if (this.elements.sendButton) {
             this.elements.sendButton.addEventListener('click', () => {
@@ -4007,6 +4014,20 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             'info'
         );
     }
+    togglePrivacyMode() {
+    this.state.privacyMode = !this.state.privacyMode;
+    const btn = document.getElementById('privacy-mode-toggle');
+    
+    if (this.state.privacyMode) {
+        btn.classList.add('privacy-active');
+        document.body.classList.add('privacy-mode');
+        this.showNotification('Приватный режим включён – тяжёлые анимации отключены', 'info');
+    } else {
+        btn.classList.remove('privacy-active');
+        document.body.classList.remove('privacy-mode');
+        this.showNotification('Приватный режим выключен – анимации восстановлены', 'info');
+    }
+}
 
     updateDeepReflectionButtonState() {
         if (this.elements.deepReflectionBtn) {

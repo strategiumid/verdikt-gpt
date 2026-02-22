@@ -2285,8 +2285,8 @@ body.sidebar-collapsed .app-header .header-right {
 }
 
 .ai-smooth-reveal {
-    animation: aiSmoothReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) backwards;
-}
+    animation: aiSmoothReveal 1s cubic-bezier(0.16, 1, 0.3, 1) backwards; /* было 0.45s */
+}ы
 
 @keyframes aiSmoothReveal {
     from {
@@ -9119,4 +9119,51 @@ textarea:focus::placeholder {
     }
 
     .hero-chip i { font-size: 11px !important; }
+}
+/* Приватный режим – кнопка */
+#privacy-mode-toggle.privacy-active {
+    background: #9333ea !important;  /* фиолетовый */
+    border-color: #a855f7 !important;
+    color: white !important;
+}
+
+#privacy-mode-toggle.privacy-active i {
+    color: white;
+}
+/* Приватный режим – отключение тяжёлых анимаций */
+body.privacy-mode .star {
+    animation: none !important;
+    opacity: 0.3 !important;
+    transition: none !important;
+}
+
+body.privacy-mode .particle {
+    display: none !important;
+}
+
+body.privacy-mode .animated-sphere::before,
+body.privacy-mode .sphere-core::after,
+body.privacy-mode .sphere-core::before,
+body.privacy-mode .sphere-wave,
+body.privacy-mode .sphere-glow {
+    animation: none !important;
+    opacity: 0.5 !important;
+}
+
+body.privacy-mode .hero-chip:hover {
+    transform: none !important;
+    transition: none !important;
+}
+
+body.privacy-mode .nav-item:hover,
+body.privacy-mode .ios-button:hover,
+body.privacy-mode .message-action:hover {
+    transform: none !important;
+    transition: none !important;
+    box-shadow: none !important;
+}
+
+/* При необходимости можно отключить любые другие анимации, например градиентные фоны */
+body.privacy-mode .hero-logo-icon {
+    animation: none !important;
 }
