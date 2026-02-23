@@ -326,27 +326,27 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
 
     async loadInstructions() {
         try {
-            console.log('Загрузка инструкций из instructions.txt...');
+            if (window.VERDIKT_DEBUG) console.log('Загрузка инструкций из instructions.txt...');
             const response = await fetch('instructions.txt?t=' + Date.now());
             if (response.ok) {
                 const instructions = await response.text();
                 this.state.instructions = instructions;
                 this.state.instructionsLoaded = true;
                 this.updateSystemPromptWithInstructions(instructions);
-                console.log('✅ Инструкции успешно загружены, длина:', instructions.length);
-                
+                if (window.VERDIKT_DEBUG) console.log('✅ Инструкции успешно загружены, длина:', instructions.length);
+
                 if (this.state.messageCount > 1) {
                     this.showNotification('Инструкции AI обновлены 📚', 'success');
                 }
-                
+
                 return true;
             } else {
-                console.warn('❌ Не удалось загрузить инструкции, статус:', response.status);
+                if (window.VERDIKT_DEBUG) console.warn('❌ Не удалось загрузить инструкции, статус:', response.status);
                 this.state.instructionsLoaded = false;
                 return false;
             }
         } catch (error) {
-            console.error('❌ Ошибка загрузки инструкций:', error);
+            if (window.VERDIKT_DEBUG) console.error('❌ Ошибка загрузки инструкций:', error);
             this.state.instructionsLoaded = false;
             return false;
         }
@@ -486,9 +486,11 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         this.startAutoSave();
 
         this.setupSubscriptionModal();
-        
-        console.log('✅ Verdikt GPT инициализирован');
-        console.log('📚 Инструкции загружены:', this.state.instructionsLoaded);
+
+        if (window.VERDIKT_DEBUG) {
+            console.log('✅ Verdikt GPT инициализирован');
+            console.log('📚 Инструкции загружены:', this.state.instructionsLoaded);
+        }
         this.loadFeedback();
         if (!this.state.user) this.updateAnalyticsFromFeedback();
     }
@@ -3214,8 +3216,8 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         } catch (error) {
             this.uiManager.hideSearchingIndicator();
             this.uiManager.hideTypingIndicator();
-            console.error('API Error:', error);
-            
+            if (window.VERDIKT_DEBUG) console.error('API Error:', error);
+
             let errorMessage = error.message || "Ошибка при получении ответа";
             
             this.addMessage(`Ошибка: ${errorMessage}`, 'ai');
