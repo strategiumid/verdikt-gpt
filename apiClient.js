@@ -35,12 +35,14 @@ export class APIClient {
     }
 
     try {
-        console.log('Отправка запроса к API...', {
-            url: this.apiConfig.url,
-            model: this.apiConfig.model,
-            messagesCount: messages.length,
-            maxTokens: maxTokens || this.apiConfig.maxTokens // Логируем используемый лимит
-        });
+        if (window.VERDIKT_DEBUG) {
+            console.log('Отправка запроса к API...', {
+                url: this.apiConfig.url,
+                model: this.apiConfig.model,
+                messagesCount: messages.length,
+                maxTokens: maxTokens || this.apiConfig.maxTokens
+            });
+        }
 
         // Добавляем инструкцию по форматированию в последнее сообщение
         const enhancedMessages = [...messages];
@@ -76,14 +78,14 @@ export class APIClient {
             })
         });
 
-        console.log('Статус ответа:', response.status);
+        if (window.VERDIKT_DEBUG) console.log('Статус ответа:', response.status);
 
         if (!response.ok) {
             let errorMessage = "Ошибка API: ";
             
             try {
                 const errorData = await response.json();
-                console.error('API Error:', errorData);
+                if (window.VERDIKT_DEBUG) console.error('API Error:', errorData);
                 if (errorData.error?.message) {
                     errorMessage += errorData.error.message;
                 } else {
@@ -105,8 +107,8 @@ export class APIClient {
         }
 
         const data = await response.json();
-        console.log('Ответ API получен:', data);
-        
+        if (window.VERDIKT_DEBUG) console.log('Ответ API получен:', data);
+
         let aiResponse = '';
         
         // Проверяем различные форматы ответа
@@ -121,7 +123,7 @@ export class APIClient {
         } else if (data.message?.content) {
             aiResponse = data.message.content.trim();
         } else {
-            console.error('Неизвестный формат ответа:', data);
+            if (window.VERDIKT_DEBUG) console.error('Неизвестный формат ответа:', data);
             throw new Error('Неверный формат ответа от API');
         }
         
@@ -140,8 +142,8 @@ export class APIClient {
         return aiResponse;
         
     } catch (error) {
-        console.error('Error in getAIResponse:', error);
-        
+        if (window.VERDIKT_DEBUG) console.error('Error in getAIResponse:', error);
+
         if (error.message.includes('API ключ') || error.message.includes('401')) {
             throw new Error('Пожалуйста, настройте API ключ в настройках приложения.');
         }
@@ -181,9 +183,11 @@ export class APIClient {
         }
         
         try {
-            console.log('Проверка API с ключом:', this.apiConfig.apiKey.substring(0, 10) + '...');
-            console.log('URL:', this.apiConfig.url);
-            
+            if (window.VERDIKT_DEBUG) {
+                console.log('Проверка API с ключом:', this.apiConfig.apiKey.substring(0, 10) + '...');
+                console.log('URL:', this.apiConfig.url);
+            }
+
             // Отправляем тестовый запрос
             const response = await fetch(this.apiConfig.url, {
                 method: 'POST',
@@ -199,11 +203,11 @@ export class APIClient {
                 })
             });
 
-            console.log('Статус ответа:', response.status);
+            if (window.VERDIKT_DEBUG) console.log('Статус ответа:', response.status);
 
             if (response.ok) {
                 const data = await response.json();
-                console.log('Ответ API при проверке:', data);
+                if (window.VERDIKT_DEBUG) console.log('Ответ API при проверке:', data);
                 
                 // Проверяем, что ответ содержит ожидаемые поля
                 const hasValidResponse = data.choices && 
@@ -230,10 +234,10 @@ export class APIClient {
                 try {
                     const errorData = await response.json();
                     errorText = JSON.stringify(errorData);
-                    console.error('Ошибка API:', errorData);
+                    if (window.VERDIKT_DEBUG) console.error('Ошибка API:', errorData);
                 } catch (e) {
                     errorText = await response.text();
-                    console.error('Ошибка API (текст):', errorText);
+                    if (window.VERDIKT_DEBUG) console.error('Ошибка API (текст):', errorText);
                 }
                 
                 if (this.app.updateHeaderApiStatus) {
@@ -258,8 +262,8 @@ export class APIClient {
                 this.app.showNotification(userMessage, 'error');
             }
         } catch (error) {
-            console.error('API check error:', error);
-            
+            if (window.VERDIKT_DEBUG) console.error('API check error:', error);
+
             if (this.app.updateHeaderApiStatus) {
                 this.app.updateHeaderApiStatus('error', 'Ошибка соединения');
             }
@@ -314,11 +318,11 @@ export class APIClient {
                                 isResolved: q.resolved ?? false
                             }));
                         }
-                    } else if (response.status !== 404) {
+                    } else if (response.status !== 404 && window.VERDIKT_DEBUG) {
                         console.warn('Не удалось загрузить вопросы с бэкенда', response.status);
                     }
                 } catch (e) {
-                    console.error('Error fetching questions from backend:', e);
+                    if (window.VERDIKT_DEBUG) console.error('Error fetching questions from backend:', e);
                 }
             }
 
@@ -349,7 +353,7 @@ export class APIClient {
             this.app.updateSidebarStats();
             
         } catch (error) {
-            console.error('Error loading dashboard data:', error);
+            if (window.VERDIKT_DEBUG) console.error('Error loading dashboard data:', error);
         }
     }
 
@@ -406,7 +410,7 @@ export class APIClient {
             this.app.updateSidebarStats();
             this.app.showNotification('Вопрос отправлен', 'success');
         } catch (error) {
-            console.error('submitDashboardQuestion error:', error);
+            if (window.VERDIKT_DEBUG) console.error('submitDashboardQuestion error:', error);
             this.app.showNotification(error.message || 'Не удалось отправить вопрос', 'error');
         }
     }
@@ -499,11 +503,11 @@ export class APIClient {
                         createdAt: c.createdAt || c.created_at || null
                     }));
                 }
-            } else if (res.status !== 404) {
+            } else if (res.status !== 404 && window.VERDIKT_DEBUG) {
                 console.warn('Не удалось загрузить комментарии', res.status);
             }
         } catch (e) {
-            console.error('Error loading question comments:', e);
+            if (window.VERDIKT_DEBUG) console.error('Error loading question comments:', e);
         }
 
         this.state.questionComments[questionId] = comments;
