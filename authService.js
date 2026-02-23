@@ -14,7 +14,7 @@ export class AuthService {
     async restoreSession() {
         try {
             const url = `${this.authConfig.baseUrl}${this.authConfig.endpoints.me}`;
-            const response = await fetch(url, { credentials: 'include' });
+            const response = await fetch(url, { credentials: 'include', headers: this.app.getReplayHeaders ? this.app.getReplayHeaders() : {} });
             if (response.ok) {
                 const user = await response.json();
                 this.setUser(user);
@@ -53,7 +53,7 @@ export class AuthService {
     async logout() {
         try {
             const url = `${this.authConfig.baseUrl}${this.authConfig.endpoints.logout}`;
-            await fetch(url, { method: 'POST', credentials: 'include' });
+            await fetch(url, { method: 'POST', credentials: 'include', headers: this.app.getReplayHeaders ? this.app.getReplayHeaders() : {} });
         } catch (e) {
             // игнорируем
         }
@@ -62,7 +62,7 @@ export class AuthService {
     }
 
     getAuthHeaders() {
-        return {};
+        return this.app.getReplayHeaders ? this.app.getReplayHeaders() : {};
     }
 
     async registerUser({ name, email, password }) {
@@ -70,7 +70,7 @@ export class AuthService {
         const response = await fetch(url, {
             method: 'POST',
             credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
             body: JSON.stringify({ name, email, password })
         });
 
@@ -89,7 +89,7 @@ export class AuthService {
         const response = await fetch(url, {
             method: 'POST',
             credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
             body: JSON.stringify({ email, password })
         });
 
