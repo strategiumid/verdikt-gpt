@@ -52,6 +52,7 @@ public class UserService {
             user.setRole("ADMIN");
         }
         user = userRepository.save(user);
+        request.clearPassword();
         return UserResponse.from(user);
     }
 
@@ -69,6 +70,7 @@ public class UserService {
         if (user.isBanned()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Аккаунт заблокирован");
         }
+        request.clearPassword();
         String token = jwtService.generateToken(user);
         return new LoginResponse(token, UserResponse.from(user));
     }
