@@ -64,11 +64,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             var claims = jwtService.parseToken(token);
             Long userId = claims.get("userId", Long.class);
             if (userId == null) {
+                token = null;
                 filterChain.doFilter(request, response);
                 return;
             }
             User user = userRepository.findById(userId).orElse(null);
             if (user == null || user.isBanned()) {
+                token = null;
                 filterChain.doFilter(request, response);
                 return;
             }
@@ -81,6 +83,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(auth);
         } catch (Exception e) {
             // Токен невалиден — не устанавливаем пользователя
+        } finally {
+            token = null;
         }
         filterChain.doFilter(request, response);
     }
