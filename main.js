@@ -912,7 +912,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 const baseUrl = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
                 fetch(`${baseUrl}/api/users/me/feedback`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', ...this.getReplayHeaders() },
                     credentials: 'include',
                     body: JSON.stringify({
                         rating: Number(rating),
@@ -980,7 +980,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             const url = this.state.isAdmin
                 ? `${baseUrl}/api/admin/feedback/analytics?limit=20`
                 : `${baseUrl}/api/users/me/feedback/analytics?limit=20`;
-            const res = await fetch(url, { method: 'GET', credentials: 'include' });
+            const res = await fetch(url, { method: 'GET', credentials: 'include', headers: this.getReplayHeaders() });
             if (!res.ok) return null;
             return await res.json();
         } catch (e) {
@@ -1993,7 +1993,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         if (!this.state.user) return;
         try {
             const baseUrl = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
-            const res = await fetch(`${baseUrl}/api/users/me/usage`, { method: 'GET', credentials: 'include' });
+            const res = await fetch(`${baseUrl}/api/users/me/usage`, { method: 'GET', credentials: 'include', headers: this.getReplayHeaders() });
             if (res.ok) {
                 const data = await res.json();
                 this.state.usage = { used: data.used, limit: data.limit };
@@ -3092,7 +3092,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         if (this.state.user) {
             try {
                 const baseUrl = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
-                const res = await fetch(`${baseUrl}/api/users/me/usage`, { method: 'GET', credentials: 'include' });
+                const res = await fetch(`${baseUrl}/api/users/me/usage`, { method: 'GET', credentials: 'include', headers: this.getReplayHeaders() });
                 if (res.ok) {
                     const data = await res.json();
                     if (data.used >= data.limit) {
@@ -3186,7 +3186,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             if (this.state.user) {
                 try {
                     const baseUrl = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
-                    const incRes = await fetch(`${baseUrl}/api/users/me/usage/increment`, { method: 'POST', credentials: 'include' });
+                    const incRes = await fetch(`${baseUrl}/api/users/me/usage/increment`, { method: 'POST', credentials: 'include', headers: this.getReplayHeaders() });
                     if (incRes.ok) {
                         const data = await incRes.json();
                         this.state.usage = { used: data.used, limit: data.limit };
@@ -3993,7 +3993,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             fetch(url, {
                 method: 'PATCH',
                 credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...this.getReplayHeaders() },
                 body: JSON.stringify({ theme })
             }).catch(() => {});
         }
@@ -4019,7 +4019,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         if (!this.state.user) return;
         try {
             const url = `${this.AUTH_CONFIG.baseUrl}/api/users/me/settings`;
-            const response = await fetch(url, { credentials: 'include' });
+            const response = await fetch(url, { credentials: 'include', headers: this.getReplayHeaders() });
             if (response.ok) {
                 const data = await response.json();
                 if (data.theme) {
@@ -4140,7 +4140,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 if (!id) return;
                 const baseUrl = (window.VERDIKT_BACKEND_URL || window.location.origin).replace(/\/$/, '');
                 try {
-                    const response = await fetch(`${baseUrl}/api/admin/questions/${id}`, { method: 'DELETE', credentials: 'include' });
+                    const response = await fetch(`${baseUrl}/api/admin/questions/${id}`, { method: 'DELETE', credentials: 'include', headers: this.getReplayHeaders() });
                     if (!response.ok) {
                         this.showNotification(response.status === 403 ? 'Нет прав' : 'Не удалось удалить вопрос', 'error');
                         return;
@@ -4166,7 +4166,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 }
                 const baseUrl = (window.VERDIKT_BACKEND_URL || window.location.origin).replace(/\/$/, '');
                 try {
-                    const response = await fetch(`${baseUrl}/api/admin/users/${authorId}/ban`, { method: 'PATCH', credentials: 'include' });
+                    const response = await fetch(`${baseUrl}/api/admin/users/${authorId}/ban`, { method: 'PATCH', credentials: 'include', headers: this.getReplayHeaders() });
                     if (!response.ok) {
                         const msg = await response.text().catch(() => '');
                         this.showNotification(msg || (response.status === 403 ? 'Нет прав' : 'Ошибка'), 'error');
@@ -4201,7 +4201,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     async restoreSession() {
         try {
             const url = `${this.AUTH_CONFIG.baseUrl}${this.AUTH_CONFIG.endpoints.me}`;
-            const response = await fetch(url, { credentials: 'include' });
+            const response = await fetch(url, { credentials: 'include', headers: this.getReplayHeaders() });
             if (response.ok) {
                 const user = await response.json();
                 this.state.user = user;
@@ -4247,7 +4247,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     async logout() {
         try {
             const url = `${this.AUTH_CONFIG.baseUrl}${this.AUTH_CONFIG.endpoints.logout}`;
-            await fetch(url, { method: 'POST', credentials: 'include' });
+            await fetch(url, { method: 'POST', credentials: 'include', headers: this.getReplayHeaders() });
         } catch (e) {
         }
         this.state.user = null;
@@ -4260,8 +4260,22 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         this.showNotification('Вы вышли из аккаунта', 'info');
     }
 
+    getReplayHeaders() {
+        return {
+            'X-Nonce': typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : this._generateUUID(),
+            'X-Timestamp': String(Date.now())
+        };
+    }
+
+    _generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+            const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+
     getAuthHeaders() {
-        return {};
+        return this.getReplayHeaders();
     }
 
     async registerUser({ name, email, password }) {
@@ -4269,7 +4283,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         const response = await fetch(url, {
             method: 'POST',
             credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...this.getReplayHeaders() },
             body: JSON.stringify({ name, email, password })
         });
 
@@ -4288,7 +4302,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         const response = await fetch(url, {
             method: 'POST',
             credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...this.getReplayHeaders() },
             body: JSON.stringify({ email, password })
         });
 
@@ -6165,7 +6179,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         this.state.adminUsersPageNumber = page;
         this.renderAdminUsers();
         try {
-            const response = await fetch(`${baseUrl}/api/admin/users?page=${page}&size=20`, { credentials: 'include' });
+            const response = await fetch(`${baseUrl}/api/admin/users?page=${page}&size=20`, { credentials: 'include', headers: this.getReplayHeaders() });
             if (!response.ok) {
                 this.state.adminUsersPage = null;
                 this.showNotification(response.status === 403 ? 'Нет прав администратора' : 'Не удалось загрузить список пользователей', 'error');
@@ -6692,7 +6706,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 const endpoint = isBanned ? `${baseUrl}/api/admin/users/${id}/unban` : `${baseUrl}/api/admin/users/${id}/ban`;
                 const method = 'PATCH';
                 try {
-                    const response = await fetch(endpoint, { method, credentials: 'include' });
+                    const response = await fetch(endpoint, { method, credentials: 'include', headers: this.getReplayHeaders() });
                     if (!response.ok) {
                         const msg = await response.text().catch(() => '');
                         this.showNotification(msg || (response.status === 403 ? 'Нет прав' : 'Ошибка'), 'error');
@@ -6716,7 +6730,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                     const response = await fetch(`${baseUrl}/api/admin/users/${id}/role`, {
                         method: 'PATCH',
                         credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', ...this.getReplayHeaders() },
                         body: JSON.stringify({ role: newRole })
                     });
                     if (!response.ok) {
@@ -6750,7 +6764,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                     const response = await fetch(`${baseUrl}/api/admin/users/${id}/subscription`, {
                         method: 'PATCH',
                         credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', ...this.getReplayHeaders() },
                         body: JSON.stringify({ subscription: value })
                     });
                     if (!response.ok) {
@@ -6857,7 +6871,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 if (!id) return;
                 const baseUrl = (window.VERDIKT_BACKEND_URL || window.location.origin).replace(/\/$/, '');
                 try {
-                    const response = await fetch(`${baseUrl}/api/admin/questions/${id}`, { method: 'DELETE', credentials: 'include' });
+                    const response = await fetch(`${baseUrl}/api/admin/questions/${id}`, { method: 'DELETE', credentials: 'include', headers: this.getReplayHeaders() });
                     if (!response.ok) {
                         this.showNotification(response.status === 403 ? 'Нет прав' : 'Не удалось удалить вопрос', 'error');
                         return;
@@ -6883,7 +6897,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 }
                 const baseUrl = (window.VERDIKT_BACKEND_URL || window.location.origin).replace(/\/$/, '');
                 try {
-                    const response = await fetch(`${baseUrl}/api/admin/users/${authorId}/ban`, { method: 'PATCH', credentials: 'include' });
+                    const response = await fetch(`${baseUrl}/api/admin/users/${authorId}/ban`, { method: 'PATCH', credentials: 'include', headers: this.getReplayHeaders() });
                     if (!response.ok) {
                         const msg = await response.text().catch(() => '');
                         this.showNotification(msg || (response.status === 403 ? 'Нет прав' : 'Ошибка'), 'error');
@@ -6911,7 +6925,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                     const response = await fetch(`${baseUrl}/api/admin/questions/${id}/resolve`, {
                         method: 'PATCH',
                         credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', ...this.getReplayHeaders() },
                         body: JSON.stringify({ resolved })
                     });
                     if (!response.ok) {
@@ -7439,7 +7453,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 const response = await fetch(`${baseUrl}/api/users/me/subscription`, {
                     method: 'PATCH',
                     credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', ...this.getReplayHeaders() },
                     body: JSON.stringify({ subscription: plan })
                 });
                 if (!response.ok) {
