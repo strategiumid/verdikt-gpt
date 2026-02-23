@@ -38,6 +38,11 @@ public class RegisterRequest {
         this.password = password;
     }
 
+    /** Очистка пароля из памяти сразу после использования. */
+    public void clearPassword() {
+        this.password = null;
+    }
+
     public String getName() {
         return name;
     }

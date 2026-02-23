@@ -32,4 +32,9 @@ public class LoginRequest {
     public void setPassword(String password) {
         this.password = password;
     }
+
+    /** Очистка пароля из памяти сразу после использования. */
+    public void clearPassword() {
+        this.password = null;
+    }
 }
