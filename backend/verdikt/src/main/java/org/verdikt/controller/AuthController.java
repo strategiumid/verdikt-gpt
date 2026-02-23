@@ -66,6 +66,7 @@ public class AuthController {
         User user = userRepository.findByEmail(userResp.getEmail()).orElseThrow();
         String token = jwtService.generateToken(user);
         String cookieHeader = buildCookie(token, httpRequest.isSecure());
+        token = null;
         return ResponseEntity.status(HttpStatus.CREATED)
                 .header("Set-Cookie", cookieHeader)
                 .body(userResp);
@@ -82,7 +83,9 @@ public class AuthController {
             HttpServletRequest httpRequest
     ) {
         LoginResponse response = userService.login(request);
-        String cookieHeader = buildCookie(response.getToken(), httpRequest.isSecure());
+        String token = response.getToken();
+        String cookieHeader = buildCookie(token, httpRequest.isSecure());
+        token = null;
         return ResponseEntity.ok()
                 .header("Set-Cookie", cookieHeader)
                 .body(new LoginResponse(null, response.getUser()));
