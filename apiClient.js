@@ -348,7 +348,13 @@ export class APIClient {
                     activity: this.app.generateActivityData()
                 }
             };
-            
+
+            if (questions.length > 0) {
+                await Promise.all(
+                    questions.slice(0, 25).map(q => this.loadQuestionComments(q.id))
+                );
+            }
+
             this.app.renderDashboardData();
             this.app.updateSidebarStats();
             

@@ -2074,12 +2074,13 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 const dislikeBtn = e.target.closest('[data-action="dislike"]');
                 const commentBtn = e.target.closest('[data-action="comment"]');
                 const commentsBlock = e.target.closest('.comments-count');
-                const sourceEl = likeBtn || dislikeBtn || commentBtn || commentsBlock;
+                const showAllCommentsBtn = e.target.closest('.question-comments-show-all');
+                const sourceEl = likeBtn || dislikeBtn || commentBtn || commentsBlock || showAllCommentsBtn;
                 const cardEl = e.target.closest('.question-card[data-question-id]');
                 const questionId = sourceEl?.getAttribute('data-question-id') || cardEl?.getAttribute('data-question-id');
                 if (!questionId) return;
                 if (!this.state.user) {
-                    if (commentBtn || commentsBlock) this.showNotification('Войдите в аккаунт, чтобы ответить', 'warning');
+                    if (commentBtn || commentsBlock || showAllCommentsBtn) this.showNotification('Войдите в аккаунт, чтобы ответить', 'warning');
                     return;
                 }
                 if (likeBtn) {
@@ -2090,7 +2091,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                     await this.setQuestionReaction(questionId, 'dislike');
                     return;
                 }
-                if (commentBtn || commentsBlock) this.showQuestionCommentModal(questionId);
+                if (commentBtn || commentsBlock || showAllCommentsBtn) this.showQuestionCommentModal(questionId);
             });
         }
 
@@ -2110,6 +2111,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
 
                 await this.loadQuestionComments(questionId, true);
                 this.renderQuestionComments(questionId);
+                this.renderQuestions();
             });
             commentSubmitBtn._bound = true;
         }
@@ -6335,7 +6337,47 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 </div>
             `;
         } else {
-            listHtml = this.dashboard.questions.map(question => `
+            const PREVIEW_COMMENTS_COUNT = 3;
+            listHtml = this.dashboard.questions.map(question => {
+                const comments = (this.state.questionComments && this.state.questionComments[question.id]) || [];
+                const previewComments = comments.slice(0, PREVIEW_COMMENTS_COUNT);
+                const hasMore = question.comments > 0;
+                const commentsPreviewHtml = previewComments.length > 0
+                    ? `
+                    <div class="question-comments-preview">
+                        <div class="question-comments-preview-list">
+                            ${previewComments.map(c => `
+                                <div class="comment-item comment-item-preview">
+                                    <div class="comment-header">
+                                        <div class="comment-avatar comment-avatar-sm">${(c.authorName || 'П')[0].toUpperCase()}</div>
+                                        <div class="comment-meta-preview">
+                                            <span class="comment-author-preview">${c.authorName || 'Пользователь'}</span>
+                                            <span class="comment-date-preview">${c.createdAt ? this.formatDate(c.createdAt) : ''}</span>
+                                        </div>
+                                    </div>
+                                    <div class="comment-content comment-content-preview">${(c.content || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        ${hasMore ? `
+                        <button type="button" class="question-comments-show-all" data-question-id="${question.id}">
+                            <i class="fas fa-comments"></i> ${question.comments === 0 ? 'Комментарии' : `Все комментарии (${question.comments})`}
+                        </button>
+                        ` : `
+                        <button type="button" class="question-comments-show-all" data-question-id="${question.id}">
+                            <i class="fas fa-comment"></i> Ответить
+                        </button>
+                        `}
+                    </div>
+                    `
+                    : `
+                    <div class="question-comments-preview">
+                        <button type="button" class="question-comments-show-all" data-question-id="${question.id}">
+                            <i class="fas fa-comments"></i> ${question.comments > 0 ? `Все комментарии (${question.comments})` : 'Оставить комментарий'}
+                        </button>
+                    </div>
+                    `;
+                return `
                 <div class="question-card" data-question-id="${question.id}">
                     <div class="question-header">
                         <div class="question-avatar">${question.user.avatar}</div>
@@ -6369,8 +6411,10 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                             <i class="fas fa-comments"></i> ${question.comments}
                         </div>
                     </div>
+                    ${commentsPreviewHtml}
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         questionsList.innerHTML = formHtml + listHtml;

@@ -5953,6 +5953,85 @@ footer {
     background: rgba(59, 130, 246, 0.15);
 }
 
+/* Превью комментариев на карточке вопроса */
+.question-comments-preview {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.question-comments-preview-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.question-card .comment-item-preview {
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.question-card .comment-item-preview .comment-header {
+    margin-bottom: 6px;
+}
+
+.comment-avatar-sm {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+    border-radius: 6px;
+}
+
+.comment-meta-preview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.comment-author-preview {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.comment-date-preview {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.comment-content-preview {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.75);
+    line-height: 1.5;
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.question-comments-show-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.question-comments-show-all:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
 /* Форма профиля */
 .profile-form {
     display: flex;
