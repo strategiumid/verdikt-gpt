@@ -6745,44 +6745,233 @@ footer {
     75% { transform: translateX(8px); }
 }
 
+/* Модалка настройки шифрования — в стиле настроек профиля */
+.encryption-settings-container {
+    max-width: 520px !important;
+    width: 90%;
+    padding: 0 !important;
+    background: #18181B !important;
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.encryption-settings-container .modal-close {
+    color: rgba(255, 255, 255, 0.7);
+    top: 20px;
+    right: 20px;
+}
+
+.encryption-settings-container .modal-close:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.encryption-settings-content {
+    padding: 24px 32px 32px;
+    background: #18181B;
+}
+
+.encryption-settings-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.encryption-settings-title i {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.encryption-settings-desc {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.5;
+    margin: 0 0 20px;
+}
+
+.encryption-settings-content .profile-section-item {
+    padding: 16px 0;
+}
+
 .encryption-options {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    margin-bottom: 16px;
+    margin-top: 12px;
 }
 
 .encryption-option {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
     cursor: pointer;
-    transition: var(--transition);
-    border: 2px solid transparent;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .encryption-option:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transform: translateX(4px);
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
 }
 
 .encryption-option.active {
-    background: rgba(var(--primary-rgb), 0.1);
-    border-color: var(--primary);
+    background: #202022;
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 0 0 1px rgba(var(--primary-rgb), 0.2);
 }
 
 .option-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    background: var(--gradient);
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.8);
+    flex-shrink: 0;
+}
+
+.encryption-option.active .option-icon {
+    background: rgba(var(--primary-rgb), 0.15);
+    color: var(--primary);
+}
+
+.encryption-option-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.encryption-option-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.encryption-option-desc {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.encryption-password-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.encryption-input {
+    width: 100%;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: #fff;
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.encryption-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+}
+
+.encryption-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.password-strength.encryption-strength {
+    margin: 0;
+}
+
+.password-strength-bar {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.password-strength-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+    background: #ef4444;
+}
+
+.password-strength-label {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 6px;
+}
+
+.encryption-info-box {
+    margin-top: 20px;
+    padding: 14px 16px;
+    background: rgba(236, 72, 153, 0.08);
+    border-radius: 12px;
+    border-left: 3px solid var(--primary);
+}
+
+.encryption-info-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.encryption-info-title i {
+    color: var(--primary);
+}
+
+.encryption-info-list {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.6;
+}
+
+.encryption-info-list li {
+    margin-bottom: 4px;
+}
+
+.encryption-settings-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 8px;
+    padding-top: 8px;
+}
+
+.password-strength-container {
+    margin: 12px 0;
+}
+
+.strength-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
 }
 
 .password-strength-container {

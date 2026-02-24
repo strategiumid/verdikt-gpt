@@ -1326,96 +1326,76 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     async showEncryptionSetupWizard() {
         const modalHTML = `
         <div class="modal" id="encryption-setup-modal">
-            <div class="modal-content" style="max-width: 500px;">
-                <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-lock"></i> Настройка шифрования
-                </h2>
-                
-                <div class="modal-section">
-                    <p style="margin-bottom: 20px; color: var(--text-secondary);">
-                        Для максимальной конфиденциальности включите шифрование данных. 
+            <div class="modal-content encryption-settings-container">
+                <button class="modal-close" id="encryption-setup-close" type="button" aria-label="Закрыть">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="encryption-settings-content">
+                    <h2 class="encryption-settings-title">
+                        <i class="fas fa-lock"></i> Настройка шифрования
+                    </h2>
+                    <p class="encryption-settings-desc">
+                        Для максимальной конфиденциальности включите шифрование данных.
                         Все ваши чаты и данные будут защищены паролем.
                     </p>
-                    
-                    <div class="encryption-options">
-                        <div class="encryption-option active" data-option="enable">
-                            <div class="option-icon">
-                                <i class="fas fa-shield-alt"></i>
+                    <div class="profile-divider"></div>
+                    <div class="profile-section-item">
+                        <div class="profile-section-label">Режим</div>
+                        <div class="encryption-options">
+                            <div class="encryption-option active" data-option="enable">
+                                <div class="option-icon">
+                                    <i class="fas fa-shield-alt"></i>
+                                </div>
+                                <div class="encryption-option-text">
+                                    <span class="encryption-option-title">Включить шифрование</span>
+                                    <span class="encryption-option-desc">Рекомендуется. Ваши данные будут защищены.</span>
+                                </div>
                             </div>
-                            <div>
-                                <h4>Включить шифрование</h4>
-                                <p style="font-size: 0.9rem; color: var(--text-tertiary);">
-                                    Рекомендуется. Ваши данные будут защищены.
-                                </p>
-                            </div>
-                        </div>
-                        
-                        <div class="encryption-option" data-option="skip">
-                            <div class="option-icon">
-                                <i class="fas fa-unlock"></i>
-                            </div>
-                            <div>
-                                <h4>Пропустить</h4>
-                                <p style="font-size: 0.9rem; color: var(--text-tertiary);">
-                                    Данные будут храниться без шифрования
-                                </p>
+                            <div class="encryption-option" data-option="skip">
+                                <div class="option-icon">
+                                    <i class="fas fa-unlock"></i>
+                                </div>
+                                <div class="encryption-option-text">
+                                    <span class="encryption-option-title">Пропустить</span>
+                                    <span class="encryption-option-desc">Данные будут храниться без шифрования</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <div id="password-section" style="margin-top: 25px; display: block;">
-                        <h4 style="margin-bottom: 15px;">Установите пароль</h4>
-                        
-                        <div style="margin-bottom: 15px;">
-                            <input type="password" id="encryption-password" 
-                                   placeholder="Введите пароль" 
-                                   style="width: 100%; padding: 12px; border-radius: 8px; 
-                                          background: var(--bg-card); border: 1px solid var(--border-color);
-                                          color: var(--text-primary); margin-bottom: 10px;">
-                            <div class="password-strength" style="height: 4px; background: var(--border-color); 
-                                                                  border-radius: 2px; margin-bottom: 5px;">
-                                <div id="strength-bar" style="height: 100%; width: 0%; background: #ef4444; 
-                                                             border-radius: 2px; transition: width 0.3s;"></div>
+                    <div class="profile-divider"></div>
+                    <div class="profile-section-item" id="password-section">
+                        <label for="encryption-password" class="profile-section-label">Установите пароль</label>
+                        <div class="encryption-password-fields">
+                            <input type="password" id="encryption-password" class="encryption-input"
+                                   placeholder="Введите пароль" autocomplete="new-password">
+                            <div class="password-strength encryption-strength">
+                                <div class="password-strength-bar">
+                                    <div id="strength-bar" class="password-strength-fill"></div>
+                                </div>
+                                <div id="strength-text" class="password-strength-label">Сложность пароля: слабый</div>
                             </div>
-                            <div id="strength-text" style="font-size: 0.85rem; color: var(--text-tertiary);">
-                                Сложность пароля: слабый
-                            </div>
+                            <input type="password" id="confirm-password" class="encryption-input"
+                                   placeholder="Подтвердите пароль" autocomplete="new-password">
+                            <button id="generate-password" class="ios-button tertiary" type="button">
+                                <i class="fas fa-key"></i> Сгенерировать надежный пароль
+                            </button>
                         </div>
-                        
-                        <div style="margin-bottom: 20px;">
-                            <input type="password" id="confirm-password" 
-                                   placeholder="Подтвердите пароль" 
-                                   style="width: 100%; padding: 12px; border-radius: 8px; 
-                                          background: var(--bg-card); border: 1px solid var(--border-color);
-                                          color: var(--text-primary);">
-                        </div>
-                        
-                        <button id="generate-password" class="ios-button tertiary small" 
-                                style="margin-bottom: 15px;">
-                            <i class="fas fa-key"></i> Сгенерировать надежный пароль
-                        </button>
-                        
-                        <div style="background: rgba(236, 72, 153, 0.1); padding: 12px; border-radius: 8px; 
-                                     margin-bottom: 20px; border-left: 3px solid var(--primary);">
-                            <p style="font-size: 0.9rem; margin-bottom: 5px;">
+                        <div class="encryption-info-box">
+                            <div class="encryption-info-title">
                                 <i class="fas fa-info-circle"></i> Важная информация:
-                            </p>
-                            <p style="font-size: 0.85rem; color: var(--text-secondary);">
-                                • Пароль не хранится на серверах<br>
-                                • Если вы забудете пароль, данные восстановить невозможно<br>
-                                • Запишите пароль в безопасном месте
-                            </p>
+                            </div>
+                            <ul class="encryption-info-list">
+                                <li>Пароль не хранится на серверах.</li>
+                                <li>Если вы забудете пароль, данные восстановить невозможно</li>
+                                <li>Запишите пароль в безопасном месте</li>
+                            </ul>
                         </div>
                     </div>
-                </div>
-                
-                <div class="modal-buttons" style="display: flex; gap: 10px;">
-                    <button class="ios-button secondary" id="cancel-encryption">
-                        Отмена
-                    </button>
-                    <button class="ios-button" id="confirm-encryption" disabled>
-                        Продолжить
-                    </button>
+                    <div class="profile-divider"></div>
+                    <div class="encryption-settings-actions">
+                        <button class="ios-button secondary" id="cancel-encryption" type="button">Отмена</button>
+                        <button class="ios-button" id="confirm-encryption" type="button" disabled>Продолжить</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1489,10 +1469,13 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             modal.remove();
         });
         
-        document.getElementById('cancel-encryption').addEventListener('click', () => {
+        const closeModal = () => {
             modal.remove();
             localStorage.setItem('verdikt_encryption_setup', 'skipped');
-        });
+        };
+        document.getElementById('cancel-encryption').addEventListener('click', closeModal);
+        const closeBtn = document.getElementById('encryption-setup-close');
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
     }
 
     validatePasswordInputs() {
