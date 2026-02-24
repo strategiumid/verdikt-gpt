@@ -5121,8 +5121,8 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             `;
             
             if (chat.id === this.chatManager.currentChatId) {
-                chatItem.style.background = 'rgba(236, 72, 153, 0.1)';
-                chatItem.style.borderLeftColor = 'var(--primary)';
+                chatItem.style.background = 'rgba(255, 255, 255, 0.08)';
+                chatItem.style.borderLeftColor = 'rgba(255, 255, 255, 0.35)';
             }
             
             const messageCount = chat.messages ? chat.messages.length : 0;
@@ -5142,7 +5142,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 </div>
                 <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-tertiary);">
                     <span>${dateStr} ${timeStr}</span>
-                    <span style="background: var(--primary); color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem;">
+                    <span style="background: rgba(255, 255, 255, 0.12); color: var(--text-secondary); padding: 2px 8px; border-radius: 10px; font-size: 0.7rem;">
                         ${messageCount} сообщ.
                     </span>
                 </div>
@@ -5414,8 +5414,8 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 datasets: [{
                     label: 'Активность по часам',
                     data: this.state.stats.activityByHour,
-                    borderColor: '#ec4899',
-                    backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                    borderColor: 'rgba(255, 255, 255, 0.5)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
                     tension: 0.4,
                     fill: true
                 }]
@@ -5552,14 +5552,14 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         <meta charset="UTF-8">
         <title>Консультация по отношениям - Verdikt GPT</title>
         <style>
-            body { font-family: Arial, sans-serif; padding: 20px; background: #fdf2f8; }
+            body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
             .message { margin: 10px 0; padding: 10px; border-radius: 5px; }
-            .user { background: #ec4899; color: white; }
-            .ai { background: #fce7f3; }
+            .user { background: #2A2A2A; color: #fff; }
+            .ai { background: #e0e0e0; }
         </style>
     </head>
     <body>
-        <h1 style="color: #ec4899;">Консультация по отношениям - Verdikt GPT</h1>
+        <h1 style="color: #1a1a1a;">Консультация по отношениям - Verdikt GPT</h1>
         <p>Экспортировано: ${new Date().toLocaleString()}</p>
         <div>${chatContent.replace(/\n/g, '<br>')}</div>
     </body>
@@ -7264,10 +7264,10 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 datasets: [{
                     label: 'Баланс отношений',
                     data: values,
-                    backgroundColor: 'rgba(236, 72, 153, 0.18)',
-                    borderColor: '#ec4899',
+                    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                    borderColor: 'rgba(255, 255, 255, 0.5)',
                     borderWidth: 2,
-                    pointBackgroundColor: '#ec4899',
+                    pointBackgroundColor: 'rgba(255, 255, 255, 0.6)',
                     pointRadius: 3,
                     pointHoverRadius: 5,
                 }],

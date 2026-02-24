@@ -30,8 +30,8 @@
     --primary-rgb: 255, 255, 255;
     --secondary-rgb: 224, 224, 224;
     --sidebar-width: clamp(72px, 22vw, 320px);
-    --accent-purple: #9333ea;
-    --accent-pink: #ec4899;
+    --accent-purple: rgba(255, 255, 255, 0.35);
+    --accent-pink: rgba(255, 255, 255, 0.5);
 }
 
 * {
@@ -514,15 +514,16 @@ body.sidebar-collapsed .app-header .header-right {
 }
 
 .ios-button.tertiary {
-    background: transparent;
-    color: var(--ios-blue);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
     box-shadow: none;
     padding: 8px 14px;
 }
 
 .ios-button.tertiary:hover {
-    background: rgba(var(--primary-rgb, 236, 72, 153), 0.1);
-    box-shadow: 0 0 15px rgba(var(--primary-rgb, 236, 72, 153), 0.3);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.08);
 }
 
 .ios-button.small {
@@ -2149,8 +2150,8 @@ body.sidebar-collapsed .app-header .header-right {
 
 .message-share-btn:hover {
     background: rgba(255, 255, 255, 0.1);
-    color: var(--accent-purple);
-    border-color: var(--accent-purple);
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.25);
 }
 
 /* Share menu */
@@ -2411,7 +2412,7 @@ body.sidebar-collapsed .app-header .header-right {
 }
 
 .message-content :deep(blockquote) {
-    border-left: 3px solid var(--accent-purple);
+    border-left: 3px solid rgba(255, 255, 255, 0.3);
     padding-left: 16px;
     margin: 12px 0;
     color: var(--text-secondary);
@@ -2419,7 +2420,7 @@ body.sidebar-collapsed .app-header .header-right {
 }
 
 .message-content :deep(a) {
-    color: var(--accent-purple);
+    color: var(--text-primary);
     text-decoration: none;
 }
 
@@ -2504,7 +2505,7 @@ body.sidebar-collapsed .app-header .header-right {
     display: inline-block;
     width: 2px;
     height: 1.1em;
-    background: var(--primary, #a855f7);
+    background: var(--text-primary);
     margin-left: 1px;
     vertical-align: text-bottom;
     animation: typing-cursor-blink 0.9s step-end infinite;
@@ -5671,13 +5672,13 @@ footer {
 }
 
 .skill-node.unlocked {
-    background: rgba(236, 72, 153, 0.18);
-    border-color: rgba(236, 72, 153, 0.6);
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.35);
     color: var(--text-primary);
 }
 
 .skill-node.unlocked::before {
-    background: #ec4899;
+    background: rgba(255, 255, 255, 0.5);
 }
 
 .achievement-item-settings {
@@ -5690,9 +5691,9 @@ footer {
 }
 
 .achievement-item-settings.unlocked {
-    background: rgba(var(--primary-rgb), 0.1);
-    border-color: var(--primary);
-    box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.2);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.06);
 }
 
 .achievement-icon-settings {
@@ -9443,13 +9444,13 @@ textarea:focus::placeholder {
 }
 /* Приватный режим – кнопка */
 #privacy-mode-toggle.privacy-active {
-    background: #9333ea !important;  /* фиолетовый */
-    border-color: #a855f7 !important;
-    color: white !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    color: var(--text-primary) !important;
 }
 
 #privacy-mode-toggle.privacy-active i {
-    color: white;
+    color: var(--text-primary);
 }
 
 
