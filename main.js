@@ -95,6 +95,7 @@ export class VerdiktChatApp {
             adminRoles: {},
             adminSubscriptions: {},
             questionComments: {},
+            questionsSort: 'date-desc',
             user: null,
             usage: null,
             authToken: null,
@@ -6338,7 +6339,23 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             `;
         } else {
             const PREVIEW_COMMENTS_COUNT = 3;
-            listHtml = this.dashboard.questions.map(question => {
+            const sortKey = this.state.questionsSort || 'date-desc';
+            const questions = [...this.dashboard.questions];
+            const toDate = (q) => (q.date instanceof Date ? q.date : new Date(q.date));
+            questions.sort((a, b) => {
+                switch (sortKey) {
+                    case 'date-asc':
+                        return toDate(a) - toDate(b);
+                    case 'likes-desc':
+                        return (b.likes || 0) - (a.likes || 0);
+                    case 'comments-desc':
+                        return (b.comments || 0) - (a.comments || 0);
+                    case 'date-desc':
+                    default:
+                        return toDate(b) - toDate(a);
+                }
+            });
+            listHtml = questions.map(question => {
                 const comments = (this.state.questionComments && this.state.questionComments[question.id]) || [];
                 const previewComments = comments.slice(0, PREVIEW_COMMENTS_COUNT);
                 const hasMore = question.comments > 0;
@@ -6433,6 +6450,16 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
 
         this.attachAdminQuestionHandlers();
         this.updateBadges();
+
+        const sortSelect = document.getElementById('questions-sort');
+        if (sortSelect && !sortSelect._sortBound) {
+            sortSelect.value = this.state.questionsSort || 'date-desc';
+            sortSelect.addEventListener('change', () => {
+                this.state.questionsSort = sortSelect.value;
+                this.renderQuestions();
+            });
+            sortSelect._sortBound = true;
+        }
     }
 
     renderStories() {

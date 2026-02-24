@@ -1638,7 +1638,18 @@
 
             <div class="dashboard-tab-content active" id="questions-tab">
                 <div style="margin-bottom: 20px;">
-                    <h3 style="margin-bottom: 15px;">Последние вопросы от пользователей</h3>
+                    <div class="questions-tab-header">
+                        <h3 style="margin-bottom: 15px;">Последние вопросы от пользователей</h3>
+                        <div class="questions-sort-wrap">
+                            <label for="questions-sort" class="questions-sort-label">Сортировка:</label>
+                            <select id="questions-sort" class="questions-sort-select">
+                                <option value="date-desc">Сначала новые</option>
+                                <option value="date-asc">Сначала старые</option>
+                                <option value="likes-desc">По лайкам</option>
+                                <option value="comments-desc">По комментариям</option>
+                            </select>
+                        </div>
+                    </div>
                     <div id="questions-list">
                         <div class="question-card" style="text-align: center; padding: 40px;">
                             <i class="fas fa-question-circle" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>

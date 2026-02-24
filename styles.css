@@ -5840,6 +5840,49 @@ footer {
     display: block;
 }
 
+.questions-tab-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.questions-tab-header h3 {
+    margin: 0;
+}
+
+.questions-sort-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.questions-sort-label {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.6);
+    white-space: nowrap;
+}
+
+.questions-sort-select {
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    color: #fff;
+    font-size: 0.9rem;
+    cursor: pointer;
+    min-width: 160px;
+}
+
+.questions-sort-select:hover,
+.questions-sort-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: rgba(255, 255, 255, 0.08);
+}
+
 /* Карточки вопросов */
 .questions-grid {
     display: grid;
