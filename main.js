@@ -4965,54 +4965,26 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     showHistoryModal() {
         const modalHTML = `
         <div class="modal" id="chat-history-modal">
-            <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-content grok-history-modal">
                 <button class="modal-close" id="chat-history-modal-close">
                     <i class="fas fa-times"></i>
                 </button>
-                
-                <h2 style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-history"></i> История чатов
-                </h2>
-
-                <div class="modal-section" style="margin-bottom: 12px;">
-                    <input 
-                        type="text" 
-                        id="chat-history-search" 
-                        placeholder="Поиск по названию и содержимому..." 
-                        style="
-                            width: 100%;
-                            padding: 10px 12px;
-                            border-radius: var(--radius-md);
-                            border: 1px solid var(--border-color);
-                            background: var(--bg-card);
-                            color: var(--text-primary);
-                            font-size: 0.9rem;
-                            margin-bottom: 4px;
-                        "
-                    />
-                    <div style="font-size: 0.75rem; color: var(--text-tertiary);">
-                        Поиск учитывает имя чата и первые сообщения в нём
+                <div class="grok-history-header">
+                    <h2 class="grok-history-title"><i class="fas fa-history"></i> История чатов</h2>
+                    <div class="grok-history-search-wrap">
+                        <i class="fas fa-search grok-history-search-icon"></i>
+                        <input type="text" id="chat-history-search" class="grok-history-search" placeholder="Поиск..." />
                     </div>
                 </div>
-                
-                <div class="modal-section">
-                    <div id="chat-history-list" style="max-height: 300px; overflow-y: auto;">
-                        <div class="chat-history-empty" style="text-align: center; padding: 30px; color: var(--text-tertiary);">
-                            Нет сохраненных чатов
-                        </div>
+                <div class="grok-history-list-wrap">
+                    <div id="chat-history-list" class="grok-history-list">
+                        <div class="chat-history-empty">Нет сохраненных чатов</div>
                     </div>
                 </div>
-                
-                <div class="modal-buttons" style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button class="ios-button tertiary" id="import-chat-btn" style="flex: 1;">
-                        <i class="fas fa-upload"></i> Импорт
-                    </button>
-                    <button class="ios-button tertiary" id="export-all-chats-btn" style="flex: 1;">
-                        <i class="fas fa-download"></i> Экспорт всех
-                    </button>
-                    <button class="ios-button secondary" id="clear-all-chats-btn" style="flex: 1;">
-                        <i class="fas fa-trash"></i> Очистить
-                    </button>
+                <div class="grok-history-actions">
+                    <button class="grok-history-btn" id="import-chat-btn"><i class="fas fa-upload"></i> Импорт</button>
+                    <button class="grok-history-btn" id="export-all-chats-btn"><i class="fas fa-download"></i> Экспорт</button>
+                    <button class="grok-history-btn grok-history-btn-danger" id="clear-all-chats-btn"><i class="fas fa-trash"></i> Очистить</button>
                 </div>
             </div>
         </div>
@@ -5054,25 +5026,66 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         }
     }
 
+    getHistorySectionKey(timestamp) {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const startYesterday = new Date(startToday);
+        startYesterday.setDate(startYesterday.getDate() - 1);
+        const startWeek = new Date(startToday);
+        startWeek.setDate(startWeek.getDate() - 7);
+        if (date >= startToday) return 'today';
+        if (date >= startYesterday) return 'yesterday';
+        if (date >= startWeek) return 'last7';
+        return 'older';
+    }
+
+    getHistorySectionTitle(key) {
+        const titles = { today: 'Сегодня', yesterday: 'Вчера', last7: 'Последние 7 дней', older: 'Ранее' };
+        return titles[key] || key;
+    }
+
+    getHistoryItemDateLabel(timestamp) {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+        if (diffDays === 0) {
+            return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        }
+        if (diffDays === 1) return 'Вчера';
+        if (diffDays < 7) return `${diffDays} дн. назад`;
+        return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+    }
+
+    getHistoryItemPreview(chat, maxLen = 72) {
+        const messages = chat.messages || [];
+        for (let i = 0; i < messages.length; i++) {
+            const m = messages[i];
+            if (m.role === 'system') continue;
+            let text = (m.content || '').trim();
+            if (typeof text !== 'string') continue;
+            text = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+            if (!text) continue;
+            if (text.length > maxLen) text = text.slice(0, maxLen) + '…';
+            return text;
+        }
+        return '';
+    }
+
     updateHistoryModalContent(searchQuery = '') {
         const historyList = document.getElementById('chat-history-list');
         if (!historyList) return;
-        
+
         historyList.innerHTML = '';
-        
         const chats = this.chatManager.chats || [];
 
         if (chats.length === 0) {
-            historyList.innerHTML = `
-                <div class="chat-history-empty" style="text-align: center; padding: 30px; color: var(--text-tertiary);">
-                    Нет сохраненных чатов
-                </div>
-            `;
+            historyList.innerHTML = '<div class="chat-history-empty">Нет сохраненных чатов</div>';
             return;
         }
-        
-        let sortedChats = [...chats].sort((a, b) => b.timestamp - a.timestamp);
 
+        let sortedChats = [...chats].sort((a, b) => b.timestamp - a.timestamp);
         const q = (searchQuery || '').toLowerCase();
         if (q) {
             sortedChats = sortedChats.filter(chat => {
@@ -5086,71 +5099,72 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         }
 
         if (!sortedChats.length) {
-            historyList.innerHTML = `
-                <div class="chat-history-empty" style="text-align: center; padding: 30px; color: var(--text-tertiary);">
-                    Ничего не найдено. Попробуйте изменить запрос.
-                </div>
-            `;
+            historyList.innerHTML = '<div class="chat-history-empty">Ничего не найдено. Измените запрос.</div>';
             return;
         }
-        
+
+        const groups = { today: [], yesterday: [], last7: [], older: [] };
         sortedChats.forEach(chat => {
-            const chatItem = document.createElement('div');
-            chatItem.className = 'chat-history-item';
-            chatItem.style.cssText = `
-                padding: 12px 15px;
-                border-radius: var(--radius-md);
-                margin-bottom: 8px;
-                cursor: pointer;
-                transition: var(--transition);
-                display: flex;
-                flex-direction: column;
-                gap: 5px;
-                background: rgba(255, 255, 255, 0.05);
-                border-left: 3px solid transparent;
-                position: relative;
-            `;
-            
-            if (chat.id === this.chatManager.currentChatId) {
-                chatItem.style.background = 'rgba(255, 255, 255, 0.08)';
-                chatItem.style.borderLeftColor = 'rgba(255, 255, 255, 0.35)';
-            }
-            
-            const messageCount = chat.messages ? chat.messages.length : 0;
-            const date = new Date(chat.timestamp);
-            const timeStr = date.toLocaleTimeString('ru-RU', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
-            const dateStr = date.toLocaleDateString('ru-RU', {
-                day: '2-digit',
-                month: '2-digit'
-            });
-            
-            chatItem.innerHTML = `
-                <div style="font-weight: 500; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 20px;">
-                    ${chat.title || 'Без названия'}
-                </div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-tertiary);">
-                    <span>${dateStr} ${timeStr}</span>
-                    <span style="background: rgba(255, 255, 255, 0.12); color: var(--text-secondary); padding: 2px 8px; border-radius: 10px; font-size: 0.7rem;">
-                        ${messageCount} сообщ.
+            const key = this.getHistorySectionKey(chat.timestamp);
+            if (groups[key]) groups[key].push(chat);
+        });
+
+        const sectionOrder = ['today', 'yesterday', 'last7', 'older'];
+        const currentId = this.chatManager.currentChatId;
+
+        sectionOrder.forEach(sectionKey => {
+            const sectionChats = groups[sectionKey];
+            if (!sectionChats.length) return;
+
+            const section = document.createElement('div');
+            section.className = 'grok-history-section';
+            section.innerHTML = `<div class="grok-history-section-title">${this.getHistorySectionTitle(sectionKey)}</div>`;
+            const ul = document.createElement('div');
+            ul.className = 'grok-history-items';
+
+            sectionChats.forEach(chat => {
+                const isActive = chat.id === currentId;
+                const item = document.createElement('div');
+                item.className = 'grok-history-item' + (isActive ? ' active' : '');
+                item.setAttribute('role', 'button');
+                item.setAttribute('tabindex', '0');
+                const dateLabel = this.getHistoryItemDateLabel(chat.timestamp);
+                const previewText = this.getHistoryItemPreview(chat);
+                item.innerHTML = `
+                    <div class="grok-history-item-body">
+                        <span class="grok-history-item-title"></span>
+                        ${previewText ? `<span class="grok-history-item-preview"></span>` : ''}
+                    </div>
+                    <span class="grok-history-item-meta">
+                        <span class="grok-history-item-date">${dateLabel}</span>
+                        <button type="button" class="grok-history-item-delete" title="Удалить" aria-label="Удалить"><i class="fas fa-trash-alt"></i></button>
                     </span>
-                </div>
-            `;
-            
-            chatItem.addEventListener('click', () => {
-                this.loadChat(chat.id);
-                this.hideModal('chat-history-modal');
+                `;
+                item.querySelector('.grok-history-item-title').textContent = chat.title || 'Без названия';
+                if (previewText) item.querySelector('.grok-history-item-preview').textContent = previewText;
+                const deleteBtn = item.querySelector('.grok-history-item-delete');
+
+                item.addEventListener('click', (e) => {
+                    if (e.target.closest('.grok-history-item-delete')) return;
+                    this.loadChat(chat.id);
+                    this.hideModal('chat-history-modal');
+                });
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.deleteChat(chat.id);
+                    this.updateHistoryModalContent(searchQuery);
+                });
+                item.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    this.deleteChat(chat.id);
+                    this.updateHistoryModalContent(searchQuery);
+                });
+
+                ul.appendChild(item);
             });
-            
-            chatItem.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                this.deleteChat(chat.id);
-                this.updateHistoryModalContent();
-            });
-            
-            historyList.appendChild(chatItem);
+
+            section.appendChild(ul);
+            historyList.appendChild(section);
         });
     }
 

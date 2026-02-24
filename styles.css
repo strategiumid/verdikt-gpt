@@ -8627,7 +8627,236 @@ html {
         0 0 30px rgba(255, 255, 255, 0.1);
 }
 
-/* Плавная анимация для истории чатов */
+/* История чатов в стиле Grok (grok.com) */
+.grok-history-modal {
+    max-width: 420px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 24px;
+}
+
+.grok-history-header {
+    flex-shrink: 0;
+    margin-bottom: 16px;
+}
+
+.grok-history-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 14px 0;
+}
+
+.grok-history-title i {
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+.grok-history-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.grok-history-search-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--text-tertiary);
+    font-size: 0.85rem;
+    pointer-events: none;
+}
+
+.grok-history-search {
+    width: 100%;
+    padding: 10px 12px 10px 36px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.grok-history-search::placeholder {
+    color: var(--text-tertiary);
+}
+
+.grok-history-search:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.grok-history-list-wrap {
+    flex: 1;
+    min-height: 200px;
+    max-height: 380px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.grok-history-list {
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+}
+
+.grok-history-section {
+    margin-bottom: 20px;
+}
+
+.grok-history-section:last-child {
+    margin-bottom: 0;
+}
+
+.grok-history-section-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-tertiary);
+    margin-bottom: 8px;
+    padding: 0 4px;
+}
+
+.grok-history-items {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.grok-history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    color: var(--text-secondary);
+}
+
+.grok-history-item-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.grok-history-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+}
+
+.grok-history-item:hover .grok-history-item-delete {
+    opacity: 1;
+}
+
+.grok-history-item.active {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text-primary);
+}
+
+.grok-history-item-title {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.grok-history-item-preview {
+    font-size: 0.78rem;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+
+.grok-history-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.grok-history-item-date {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+}
+
+.grok-history-item.active .grok-history-item-date {
+    color: var(--text-secondary);
+}
+
+.grok-history-item-delete {
+    padding: 4px 6px;
+    border: none;
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    border-radius: 6px;
+    opacity: 0;
+    transition: opacity 0.2s, background 0.2s, color 0.2s;
+}
+
+.grok-history-item-delete:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.grok-history-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.grok-history-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.grok-history-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.grok-history-btn-danger:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #f87171;
+}
+
+.chat-history-empty {
+    text-align: center;
+    padding: 32px 20px;
+    color: var(--text-tertiary);
+    font-size: 0.9rem;
+}
+
+/* Плавная анимация для истории чатов (legacy) */
 .chat-history-item {
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     animation: grokFadeIn 0.4s ease backwards;
