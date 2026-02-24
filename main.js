@@ -58,6 +58,7 @@ export class VerdiktChatApp {
             isApiConnected: false,
             isRecording: false,
             isSpeaking: false,
+            speakingMessageId: null,
             isModelLoading: false,
             isResponding: false,
             instructions: '',
@@ -3010,16 +3011,50 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         }
     }
 
+    /** Сжимает изображение для уменьшения использования памяти (max 1024px, JPEG quality 0.82). */
+    compressImageDataUrl(dataUrl, maxSize = 1024, quality = 0.82) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                let w = img.width;
+                let h = img.height;
+                if (w > maxSize || h > maxSize) {
+                    if (w > h) {
+                        h = Math.round((h * maxSize) / w);
+                        w = maxSize;
+                    } else {
+                        w = Math.round((w * maxSize) / h);
+                        h = maxSize;
+                    }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return resolve(dataUrl);
+                ctx.drawImage(img, 0, 0, w, h);
+                try {
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                } catch (e) {
+                    resolve(dataUrl);
+                }
+            };
+            img.onerror = () => resolve(dataUrl);
+            img.src = dataUrl;
+        });
+    }
+
     setAttachedImage(file) {
         const reader = new FileReader();
-        reader.onload = () => {
+        reader.onload = async () => {
             const dataUrl = reader.result;
             if (!dataUrl || typeof dataUrl !== 'string') return;
-            this.state.attachedImage = { dataUrl, name: file.name };
+            const compressed = await this.compressImageDataUrl(dataUrl);
+            this.state.attachedImage = { dataUrl: compressed, name: file.name };
             const wrapper = document.getElementById('attach-preview-wrapper');
             const img = this.elements.attachPreviewImg;
             if (wrapper && img) {
-                img.src = dataUrl;
+                img.src = compressed;
                 img.alt = file.name || 'Скриншот';
                 wrapper.style.display = 'block';
             }
@@ -4848,6 +4883,8 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     speakMessage(messageId) {
         if (this.state.isSpeaking) {
             this.speechSynthesis.cancel();
+            this.state.speakingMessageId = null;
+            document.querySelector('.message.message-speaking')?.classList.remove('message-speaking');
             this.state.isSpeaking = false;
             this.showNotification('Озвучивание остановлено', 'info');
             return;
@@ -4865,15 +4902,22 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         
         utterance.onstart = () => {
             this.state.isSpeaking = true;
+            this.state.speakingMessageId = messageId;
+            messageElement.classList.add('message-speaking');
+            messageElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             this.showNotification('Озвучивание началось... 🔊', 'info');
         };
         
         utterance.onend = () => {
             this.state.isSpeaking = false;
+            this.state.speakingMessageId = null;
+            messageElement.classList.remove('message-speaking');
         };
         
         utterance.onerror = () => {
             this.state.isSpeaking = false;
+            this.state.speakingMessageId = null;
+            messageElement.classList.remove('message-speaking');
             this.showNotification('Ошибка озвучивания', 'error');
         };
         

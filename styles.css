@@ -4286,6 +4286,16 @@ body.sidebar-collapsed .app-header .header-right {
     }
 }
 
+/* Сообщение, которое сейчас озвучивается */
+.message.message-speaking .message-content-wrapper {
+    box-shadow: 0 0 0 2px var(--ios-blue, #007AFF);
+    animation: messageSpeakingPulse 1.5s ease-in-out infinite;
+}
+@keyframes messageSpeakingPulse {
+    0%, 100% { box-shadow: 0 0 0 2px var(--ios-blue, #007AFF); }
+    50% { box-shadow: 0 0 0 2px var(--ios-blue, #007AFF), 0 0 12px rgba(0, 122, 255, 0.4); }
+}
+
 /* Feature Buttons */
 .grok-feature-buttons {
     display: flex;
@@ -9285,8 +9295,8 @@ textarea:focus::placeholder {
         font-size: 14px !important;
     }
 
-    /* Кнопки хедера: только иконки */
-    .header-right .ios-button span {
+    /* Кнопки хедера: только иконки, но подпись «Приватный» оставляем видимой */
+    .header-right .ios-button span:not(.privacy-label) {
         display: none !important;
     }
 
