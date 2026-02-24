@@ -8856,6 +8856,58 @@ html {
     font-size: 0.9rem;
 }
 
+/* Всплывающее превью чата при наведении (как в Grok) */
+.grok-history-hover-preview {
+    position: fixed;
+    z-index: 10050;
+    left: 0;
+    top: 0;
+    max-width: 320px;
+    padding: 12px 14px;
+    background: #1a1a1a;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.06);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+    transform: translateX(-4px);
+}
+
+.grok-history-hover-preview.visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(0);
+}
+
+.grok-history-hover-preview-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-color);
+    line-height: 1.35;
+    word-break: break-word;
+}
+
+.grok-history-hover-preview-content {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+}
+
+.grok-history-hover-preview-line {
+    margin-bottom: 4px;
+    word-break: break-word;
+}
+
+.grok-history-hover-preview-line:last-child {
+    margin-bottom: 0;
+}
+
 /* Плавная анимация для истории чатов (legacy) */
 .chat-history-item {
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);

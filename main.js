@@ -4931,7 +4931,9 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
     }
 
     hideModal(modalId) {
-        document.getElementById(modalId).classList.remove('active');
+        if (modalId === 'chat-history-modal') this.hideHistoryHoverPreview();
+        const el = document.getElementById(modalId);
+        if (el) el.classList.remove('active');
         document.body.style.overflow = '';
     }
 
@@ -5073,6 +5075,62 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         return '';
     }
 
+    getHistoryHoverPreviewLines(chat, maxLines = 4, maxLenPerLine = 120) {
+        const lines = [];
+        const messages = chat.messages || [];
+        for (let i = 0; i < messages.length && lines.length < maxLines; i++) {
+            const m = messages[i];
+            if (m.role === 'system') continue;
+            let text = (m.content || '').trim();
+            if (typeof text !== 'string') continue;
+            text = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+            if (!text) continue;
+            if (text.length > maxLenPerLine) text = text.slice(0, maxLenPerLine) + '…';
+            lines.push(text);
+        }
+        return lines;
+    }
+
+    showHistoryHoverPreview(itemEl, chat) {
+        let popover = document.getElementById('grok-history-hover-preview');
+        if (!popover) {
+            popover = document.createElement('div');
+            popover.id = 'grok-history-hover-preview';
+            popover.className = 'grok-history-hover-preview';
+            popover.addEventListener('mouseenter', () => {
+                if (this._historyPreviewHideTimer) clearTimeout(this._historyPreviewHideTimer);
+                this._historyPreviewHideTimer = null;
+            });
+            popover.addEventListener('mouseleave', () => {
+                this.hideHistoryHoverPreview();
+            });
+            document.body.appendChild(popover);
+        }
+        const title = chat.title || 'Без названия';
+        const lines = this.getHistoryHoverPreviewLines(chat);
+        popover.innerHTML = `
+            <div class="grok-history-hover-preview-title">${title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+            <div class="grok-history-hover-preview-content">${lines.length ? lines.map(l => `<div class="grok-history-hover-preview-line">${l.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`).join('') : '<div class="grok-history-hover-preview-line" style="color: var(--text-tertiary);">Нет сообщений</div>'}</div>
+        `;
+        const rect = itemEl.getBoundingClientRect();
+        const popRect = popover.getBoundingClientRect();
+        const gap = 8;
+        let left = rect.right + gap;
+        let top = rect.top;
+        if (left + popRect.width > window.innerWidth - 12) left = rect.left - popRect.width - gap;
+        if (left < 12) left = 12;
+        if (top + popRect.height > window.innerHeight - 12) top = window.innerHeight - popRect.height - 12;
+        if (top < 12) top = 12;
+        popover.style.left = left + 'px';
+        popover.style.top = top + 'px';
+        popover.classList.add('visible');
+    }
+
+    hideHistoryHoverPreview() {
+        const popover = document.getElementById('grok-history-hover-preview');
+        if (popover) popover.classList.remove('visible');
+    }
+
     updateHistoryModalContent(searchQuery = '') {
         const historyList = document.getElementById('chat-history-list');
         if (!historyList) return;
@@ -5158,6 +5216,18 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                     e.preventDefault();
                     this.deleteChat(chat.id);
                     this.updateHistoryModalContent(searchQuery);
+                });
+
+                let showTimer = null;
+                item.addEventListener('mouseenter', () => {
+                    if (this._historyPreviewHideTimer) clearTimeout(this._historyPreviewHideTimer);
+                    this._historyPreviewHideTimer = null;
+                    showTimer = setTimeout(() => this.showHistoryHoverPreview(item, chat), 380);
+                });
+                item.addEventListener('mouseleave', () => {
+                    if (showTimer) clearTimeout(showTimer);
+                    showTimer = null;
+                    this._historyPreviewHideTimer = setTimeout(() => this.hideHistoryHoverPreview(), 180);
                 });
 
                 ul.appendChild(item);
