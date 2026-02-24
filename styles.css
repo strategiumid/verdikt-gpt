@@ -9444,13 +9444,13 @@ textarea:focus::placeholder {
 }
 /* Приватный режим – кнопка */
 #privacy-mode-toggle.privacy-active {
-    background: rgba(255, 255, 255, 0.15) !important;
-    border-color: rgba(255, 255, 255, 0.3) !important;
-    color: var(--text-primary) !important;
+    background: #9333ea !important;
+    border-color: #a855f7 !important;
+    color: white !important;
 }
 
 #privacy-mode-toggle.privacy-active i {
-    color: var(--text-primary);
+    color: white;
 }
 
 
