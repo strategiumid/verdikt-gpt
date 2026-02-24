@@ -201,7 +201,6 @@ export class VerdiktChatApp {
             userAvatar: document.getElementById('user-avatar'),
             navProfile: document.getElementById('nav-profile'),
             navDashboard: document.getElementById('nav-dashboard'),
-            navStories: document.getElementById('nav-stories'),
             navQuestions: document.getElementById('nav-questions'),
             navLikes: document.getElementById('nav-likes'),
             navComments: document.getElementById('nav-comments'),
@@ -1825,14 +1824,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             this.elements.navComments.addEventListener('click', () => {
                 this.showDashboardModal();
                 this.switchDashboardTab('activity');
-                this.hideSidebar();
-            });
-        }
-
-        if (this.elements.navStories) {
-            this.elements.navStories.addEventListener('click', () => {
-                this.showDashboardModal();
-                this.switchDashboardTab('stories');
                 this.hideSidebar();
             });
         }
