@@ -89,14 +89,35 @@ body {
     --ggs: 1.05;
 }
 
-/* ─── Современные иконки: анимации и стиль ─── */
+/* ─── Современные иконки: анимации для ВСЕХ иконок ─── */
 .fas, .far, .fab {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
                 color 0.25s ease,
-                filter 0.25s ease;
+                filter 0.25s ease,
+                opacity 0.25s ease;
+}
+
+/* Базовый hover для иконок внутри кликабельных элементов */
+button:hover i.fas,
+button:hover i.far,
+button:hover i.fab,
+a:hover i.fas,
+a:hover i.far,
+a:hover i.fab,
+[role="button"]:hover i.fas,
+.nav-item:hover i,
+.settings-tab:hover i,
+.dashboard-tab:hover i,
+.profile-nav-item:hover i,
+.theme-option:hover i,
+.mode-item-settings:hover i.fas,
+.mode-item-settings:hover i.far,
+.action-btn:hover i,
+.ios-button:hover i:not(.fa-spinner) {
+    transform: scale(1.15);
 }
 
 /* Иконки в навигации сайдбара */
@@ -110,20 +131,160 @@ body {
 .nav-item:hover i,
 .nav-item.active i {
     opacity: 1;
-    transform: scale(1.12);
+    transform: scale(1.15);
 }
 
 .nav-item.active i {
     filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.25));
 }
 
-/* Шестерёнка в навигации — плавный поворот при наведении */
-.nav-item#nav-settings i.fa-cog {
+/* Шестерёнка — поворот при наведении */
+.nav-item i.fa-cog,
+.settings-tab i.fa-cog,
+.profile-nav-item i.fa-cog {
     transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.nav-item#nav-settings:hover i.fa-cog {
-    transform: scale(1.12) rotate(90deg);
+.nav-item:hover i.fa-cog,
+.settings-tab:hover i.fa-cog,
+.profile-nav-item:hover i.fa-cog {
+    transform: scale(1.15) rotate(90deg);
+}
+
+/* Колокольчик — лёгкое качание */
+.nav-item:hover i.fa-bell,
+.settings-tab:hover i.fa-bell {
+    animation: iconBellRing 0.5s ease-in-out;
+}
+
+@keyframes iconBellRing {
+    0%, 100% { transform: scale(1.15) rotate(0deg); }
+    25% { transform: scale(1.15) rotate(-12deg); }
+    75% { transform: scale(1.15) rotate(12deg); }
+}
+
+/* Сердце — пульс */
+.nav-item:hover i.fa-heart,
+.mode-item-settings:hover i.fa-heart,
+.hero-chip:hover i.fa-heart {
+    animation: iconHeartPulse 0.6s ease-in-out;
+}
+
+@keyframes iconHeartPulse {
+    0%, 100% { transform: scale(1.15); }
+    50% { transform: scale(1.3); }
+}
+
+/* Щит — лёгкий наклон */
+.nav-item:hover i.fa-shield-alt,
+.mode-item-settings:hover i.fa-shield-alt {
+    transform: scale(1.15) rotate(-5deg);
+}
+
+/* График / чарт — подъём */
+.nav-item:hover i.fa-chart-line,
+.nav-item:hover i.fa-chart-bar,
+.dashboard-tab:hover i.fa-chart-line,
+.dashboard-tab:hover i.fa-chart-bar {
+    transform: scale(1.15) translateY(-2px);
+}
+
+/* Пользователь / профиль — лёгкое увеличение */
+.nav-item:hover i.fa-user,
+.nav-item:hover i.fa-user-circle,
+.dashboard-tab:hover i.fa-user {
+    transform: scale(1.2);
+}
+
+/* Корона — лёгкий наклон */
+.nav-item:hover i.fa-crown {
+    transform: scale(1.15) rotate(-8deg);
+}
+
+/* Часы / история */
+.nav-item:hover i.fa-history {
+    transform: scale(1.15) rotate(15deg);
+}
+
+/* Поиск — лупа */
+.sidebar-search-inner i.fa-search,
+.nav-item i.fa-search,
+button i.fa-search {
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sidebar-search-inner:focus-within i.fa-search,
+button:hover i.fa-search {
+    transform: scale(1.15);
+}
+
+/* Ключ, замок, палитра, трофей, клавиатура — общий hover */
+.settings-tab:hover i.fa-key,
+.settings-tab:hover i.fa-lock,
+.settings-tab:hover i.fa-palette,
+.settings-tab:hover i.fa-trophy,
+.settings-tab:hover i.fa-keyboard,
+.settings-tab:hover i.fa-robot,
+.settings-tab:hover i.fa-chart-bar {
+    transform: scale(1.15);
+}
+
+/* Луна / солнце в выборе темы */
+.theme-option:hover i.fa-moon {
+    transform: scale(1.2) rotate(-15deg);
+}
+
+.theme-option:hover i.fa-sun {
+    transform: scale(1.2) rotate(15deg);
+}
+
+/* Иконки в дашборде: вопросы, пользователи, админ */
+.dashboard-tab i.fa-question-circle,
+.dashboard-tab i.fa-users-cog,
+.dashboard-tab i.fa-user-shield,
+.dashboard-tab i.fa-bolt {
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dashboard-tab:hover i.fa-question-circle {
+    transform: scale(1.15) rotate(-8deg);
+}
+
+.dashboard-tab:hover i.fa-bolt {
+    transform: scale(1.15) translateY(-2px);
+}
+
+/* Весы, мозг в режимах AI */
+.mode-item-settings:hover i.fa-balance-scale {
+    transform: scale(1.12) rotate(-5deg);
+}
+
+.mode-item-settings:hover i.fa-brain,
+.mode-item-settings:hover i.fa-search {
+    transform: scale(1.12);
+}
+
+/* Кнопки действий: отправить, камера, список и т.д. */
+.action-btn i,
+.ios-button i:not(.fa-spinner) {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ios-button:hover i:not(.fa-spinner) {
+    transform: scale(1.1);
+}
+
+.action-btn:hover i {
+    transform: scale(1.15);
+}
+
+/* Иконка камеры в профиле */
+.profile-avatar-overlay i.fa-camera {
+    transition: transform 0.3s ease;
+}
+
+.profile-avatar-wrapper:hover .profile-avatar-overlay i.fa-camera {
+    transform: scale(1.2);
 }
 
 /* Иконка поиска в сайдбаре — лёгкое свечение при фокусе поля */
@@ -132,23 +293,29 @@ body {
     opacity: 1;
 }
 
-/* Кнопка закрытия модалок */
+/* Кнопка закрытия модалок — крестик поворачивается */
 .modal-close {
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
                 background 0.2s ease;
 }
 
 .modal-close:hover {
-    transform: rotate(90deg) scale(1.08);
+    transform: scale(1.08);
 }
 
-.modal-close i {
-    transition: transform 0.3s ease;
+.modal-close i,
+.modal-close i.fa-times {
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Вкладки настроек — иконки при наведении */
+.modal-close:hover i,
+.modal-close:hover i.fa-times {
+    transform: rotate(90deg) scale(1.1);
+}
+
+/* Вкладки настроек — все иконки анимируются */
 .settings-tab i {
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .settings-tab:hover i,
@@ -206,21 +373,19 @@ body {
     transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.theme-option:hover i {
-    transform: scale(1.2) rotate(-15deg);
-}
-
 .theme-option.active i {
     transform: scale(1.15);
 }
 
-/* Режимы AI в настройках — иконки в карточках */
-.mode-icon-settings {
+/* Режимы AI в настройках — иконки в карточках анимируются */
+.mode-icon-settings,
+.mode-icon-settings i {
     transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.mode-item-settings:hover .mode-icon-settings {
-    transform: scale(1.1) rotate(-5deg);
+.mode-item-settings:hover .mode-icon-settings,
+.mode-item-settings:hover .mode-icon-settings i {
+    transform: scale(1.12) rotate(-5deg);
 }
 
 .mode-item-settings.active .mode-icon-settings {
@@ -228,13 +393,15 @@ body {
     box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
 }
 
-/* Свёртывание сайдбара — стрелка */
-.sidebar-collapse-btn i {
+/* Свёртывание сайдбара — стрелка уезжает влево */
+.sidebar-collapse-btn i,
+.sidebar-collapse-btn i.fa-chevron-left {
     transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.sidebar-collapse-btn:hover i {
-    transform: translateX(-3px) scale(1.1);
+.sidebar-collapse-btn:hover i,
+.sidebar-collapse-btn:hover i.fa-chevron-left {
+    transform: translateX(-4px) scale(1.15);
 }
 
 /* Звезда рейтинга — лёгкое мерцание */
@@ -277,21 +444,23 @@ body {
     transform: scale(1.1);
 }
 
-/* Заголовки модалок (иконка рядом с текстом) */
+/* Заголовки модалок и секций — иконки при наведении на заголовок */
 .modal-content h2 i,
-.modal-content h4 i {
-    transition: transform 0.3s ease;
+.modal-content h4 i,
+.settings-section h4 i {
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .modal-content h2:hover i,
-.modal-content h4:hover i {
-    transform: scale(1.08);
+.modal-content h4:hover i,
+.settings-section h4:hover i {
+    transform: scale(1.12);
 }
 
 /* Светлая тема: иконки в навигации остаются читаемыми */
 [data-theme="light"] .nav-item.active i,
 [data-theme="deepseek"] .nav-item.active i {
-    filter: drop-shadow(0 0 6px rgba(45, 140, 255, 0.35));
+    filter: drop-shadow(0 0 6px rgba(37, 99, 235, 0.3));
 }
 
 /* Фоновые элементы с анимациями */
@@ -6456,18 +6625,18 @@ footer {
 
 .theme-deepseek,
 .theme-light {
-    background: linear-gradient(135deg, #ffffff, #f8f9fa);
-    border-color: rgba(45, 140, 255, 0.2);
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    border-color: rgba(37, 99, 235, 0.2);
 }
 
 .theme-light i,
 .theme-deepseek i {
-    color: #2d8cff;
+    color: #2563eb;
 }
 
 .theme-light span,
 .theme-deepseek span {
-    color: #1a1a1a;
+    color: #0f172a;
 }
 
 /* Экспорт */
