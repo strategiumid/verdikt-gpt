@@ -3981,14 +3981,17 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
 
     setTheme(theme, options = {}) {
         const { fromServer = false, skipBackend = false } = options;
+        if (theme === 'deepseek') theme = 'light';
         this.state.currentTheme = theme;
         document.body.setAttribute('data-theme', theme);
         
         document.querySelectorAll('.theme-option').forEach(opt => opt.classList.remove('active'));
         const activeTheme = document.querySelector(`.theme-option[data-theme="${theme}"]`);
-        if (activeTheme) {
-            activeTheme.classList.add('active');
-        }
+        if (activeTheme) activeTheme.classList.add('active');
+        
+        document.querySelectorAll('.theme-option-profile').forEach(opt => opt.classList.remove('active'));
+        const activeProfileTheme = document.querySelector(`.theme-option-profile[data-theme="${theme}"]`);
+        if (activeProfileTheme) activeProfileTheme.classList.add('active');
         
         if (this.particleSystem) {
             if (theme === 'light') {
