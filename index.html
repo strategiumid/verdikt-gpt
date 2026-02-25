@@ -10,7 +10,6 @@
     <meta name="format-detection" content="telephone=no">
     <title>Verdikt GPT</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/css.gg@2.0.0/icons-compressed/icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css">
     <link rel="stylesheet" href="styles.css">
@@ -1496,7 +1495,7 @@
     <div class="sidebar" id="sidebar">
         <div class="sidebar-search">
             <div class="sidebar-search-inner">
-                <i class="gg-search"></i>
+                <i class="fas fa-search"></i>
                 <input type="text" placeholder="Поиск" id="sidebar-search-input">
                 <span class="sidebar-search-kbd">Ctrl+K</span>
             </div>
@@ -1505,7 +1504,7 @@
         <div class="sidebar-header">
             <div class="user-avatar" id="user-avatar">
                 <span class="avatar-initials" style="display: none;">?</span>
-                <i class="gg-profile"></i>
+                <i class="fas fa-user"></i>
             </div>
             <div class="user-info">
                 <h3 id="sidebar-username">Гость</h3>
@@ -1524,20 +1523,20 @@
             <div class="nav-section">
                 <h4>Основное</h4>
                 <div class="nav-item active" id="nav-profile">
-                    <i class="gg-profile"></i>
+                    <i class="fas fa-user"></i>
                     <span>Профиль</span>
                 </div>
                 <div class="nav-item" id="nav-dashboard">
-                    <i class="gg-chart"></i>
+                    <i class="fas fa-chart-line"></i>
                     <span>Дашборд</span>
                 </div>
                 <div class="nav-item" id="sidebar-chat-history-btn" title="Истории чатов">
-                    <i class="gg-time"></i>
+                    <i class="fas fa-history"></i>
                     <span>Истории чатов</span>
                 </div>
                 <!-- НОВЫЙ ПУНКТ: План подписок -->
                 <div class="nav-item" id="nav-subscription">
-                    <i class="gg-software-download"></i>
+                    <i class="fas fa-crown"></i>
                     <span>План подписок</span>
                 </div>
             </div>
@@ -1564,15 +1563,15 @@
             <div class="nav-section">
                 <h4>Настройки</h4>
                 <div class="nav-item" id="nav-settings">
-                    <i class="gg-options"></i>
+                    <i class="fas fa-cog"></i>
                     <span>Настройки профиля</span>
                 </div>
                 <div class="nav-item" id="nav-security">
-                    <i class="gg-shield"></i>
+                    <i class="fas fa-shield-alt"></i>
                     <span>Безопасность</span>
                 </div>
                 <div class="nav-item" id="nav-notifications">
-                    <i class="gg-bell"></i>
+                    <i class="fas fa-bell"></i>
                     <span>Уведомления</span>
                 </div>
             </div>
@@ -1580,29 +1579,29 @@
 
         <div class="sidebar-footer-collapse">
             <button class="sidebar-collapse-btn" id="sidebar-collapse" title="Свернуть сайдбар">
-                <i class="gg-chevron-left" id="sidebar-collapse-icon"></i>
+                <i class="fas fa-chevron-left" id="sidebar-collapse-icon"></i>
             </button>
         </div>
     </div>
 
     <button class="sidebar-toggle" id="sidebar-toggle">
-        <i class="gg-menu"></i>
+        <i class="fas fa-bars"></i>
     </button>
 
     <!-- Модальное окно дашборда -->
     <div class="modal" id="dashboard-modal">
         <div class="modal-content dashboard-modal">
             <button class="modal-close" id="dashboard-close">
-                <i class="gg-close"></i>
+                <i class="fas fa-times"></i>
             </button>
             
             <div class="dashboard-header">
                 <h2 style="display: flex; align-items: center; gap: 10px;">
-                    <i class="gg-chart"></i> Дашборд
+                    <i class="fas fa-chart-line"></i> Дашборд
                 </h2>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span style="font-size: 0.9rem; color: var(--text-secondary);">
-                        <i class="gg-profile"></i> <span id="dashboard-username">Гость</span>
+                        <i class="fas fa-user"></i> <span id="dashboard-username">Гость</span>
                     </span>
                     <span style="font-size: 0.9rem; color: #fbbf24;">
                         <i class="fas fa-star"></i> <span id="dashboard-rating">0.0</span>
@@ -1612,20 +1611,20 @@
 
             <div class="dashboard-tabs">
                 <button class="dashboard-tab active" data-tab="questions">
-                    <i class="gg-search"></i> Вопросы
+                    <i class="fas fa-search"></i> Вопросы
                 </button>
                 <button class="dashboard-tab admin-only" data-tab="analytics" style="display: none;">
-                    <i class="gg-chart"></i> Аналитика
+                    <i class="fas fa-chart-line"></i> Аналитика
                 </button>
                 <button class="dashboard-tab admin-only" data-tab="activity" style="display: none;">
-                    <i class="gg-loadbar"></i> Активность
+                    <i class="fas fa-bolt"></i> Активность
                 </button>
                 <button class="dashboard-tab" data-tab="users">
-                    <i class="gg-profile"></i> Пользователи
+                    <i class="fas fa-user"></i> Пользователи
                 </button>
                 <!-- Вкладка админ-панели отображается только в админ-режиме (через CSS/JS) -->
                 <button class="dashboard-tab admin-only" data-tab="admin" style="display: none;">
-                    <i class="gg-shield"></i> Админ
+                    <i class="fas fa-shield-alt"></i> Админ
                 </button>
             </div>
 
@@ -1821,7 +1820,7 @@
     <div class="modal" id="question-comments-modal">
         <div class="modal-content" style="max-width: 600px;">
             <button class="modal-close" onclick="window.verdiktApp.hideModal('question-comments-modal')">
-                <i class="gg-close"></i>
+                <i class="fas fa-times"></i>
             </button>
 
             <h2 style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
@@ -1853,7 +1852,7 @@
     <div class="modal" id="profile-settings-modal">
         <div class="modal-content profile-settings-container">
             <button class="modal-close" id="profile-settings-close">
-                <i class="gg-close"></i>
+                <i class="fas fa-times"></i>
             </button>
             
             <div class="profile-settings-layout">
@@ -1982,7 +1981,7 @@
                         <div class="profile-section-item">
                             <div class="profile-section-label">Настройки API</div>
                             <button class="ios-button secondary" id="api-settings-button" style="width: 100%; margin-top: 15px;">
-                                <i class="gg-key"></i> Настройки API
+                                <i class="fas fa-key"></i> Настройки API
                             </button>
                             <div class="profile-divider"></div>
                         </div>
@@ -2240,7 +2239,7 @@
                         <div class="profile-section-item">
                             <div class="profile-section-label">Безопасность</div>
                             <button class="ios-button tertiary" id="encryption-manager" style="width: 100%; margin-top: 15px;">
-                                <i class="gg-lock"></i> Управление шифрованием
+                                <i class="fas fa-lock"></i> Управление шифрованием
                             </button>
                             <div class="profile-divider"></div>
                         </div>
@@ -2351,46 +2350,46 @@
     <div class="modal" id="settings-modal">
         <div class="modal-content">
             <button class="modal-close" id="settings-close">
-                <i class="gg-close"></i>
+                <i class="fas fa-times"></i>
             </button>
             
             <h2 style="margin-bottom: 25px; display: flex; align-items: center; gap: 10px;">
-                <i class="gg-options"></i> Настройки
+                <i class="fas fa-cog"></i> Настройки
             </h2>
 
             <!-- Вкладки настроек -->
             <div class="settings-tabs">
                 <button class="settings-tab active" data-tab="themes">
-                    <i class="gg-color-picker"></i> Тема
+                    <i class="fas fa-palette"></i> Тема
                 </button>
                 <button class="settings-tab" data-tab="ai">
-                    <i class="gg-smartphone"></i> Режим AI
+                    <i class="fas fa-robot"></i> Режим AI
                 </button>
                 <button class="settings-tab" data-tab="achievements">
-                    <i class="gg-trophy"></i> Достижения
+                    <i class="fas fa-trophy"></i> Достижения
                 </button>
                 <button class="settings-tab" data-tab="stats">
-                    <i class="gg-chart"></i> Статистика
+                    <i class="fas fa-chart-line"></i> Статистика
                 </button>
                 <button class="settings-tab" data-tab="shortcuts">
-                    <i class="gg-keyboard"></i> Горячие клавиши
+                    <i class="fas fa-keyboard"></i> Горячие клавиши
                 </button>
                 <button class="settings-tab" data-tab="security">
-                    <i class="gg-shield"></i> Безопасность
+                    <i class="fas fa-shield-alt"></i> Безопасность
                 </button>
             </div>
 
             <!-- Содержимое вкладок -->
             <div class="settings-tab-content active" id="themes-tab">
                 <div class="settings-section">
-                    <h4><i class="gg-color-picker"></i> Тема оформления</h4>
+                    <h4><i class="fas fa-palette"></i> Тема оформления</h4>
                     <div class="theme-selector">
     <div class="theme-option theme-dark active" data-theme="dark">
-        <i class="gg-moon"></i>
+        <i class="fas fa-moon"></i>
         <span>Тёмная</span>
     </div>
     <div class="theme-option theme-deepseek" data-theme="deepseek">
-        <i class="gg-sun"></i>
+        <i class="fas fa-sun"></i>
         <span>Светлая</span>
     </div>
 </div>
@@ -2399,7 +2398,7 @@
 
             <div class="settings-tab-content" id="ai-tab">
                 <div class="settings-section">
-                    <h4><i class="gg-options"></i> Режим консультации</h4>
+                    <h4><i class="fas fa-cog"></i> Режим консультации</h4>
                     <div class="ai-modes-settings">
                         <div class="mode-item-settings active" data-mode="balanced">
                             <div class="mode-icon-settings">
@@ -2413,7 +2412,7 @@
                         
                         <div class="mode-item-settings" data-mode="creative">
                             <div class="mode-icon-settings">
-                                <i class="gg-heart"></i>
+                                <i class="fas fa-heart"></i>
                             </div>
                             <div class="mode-info-settings">
                                 <h5>Эмоциональный</h5>
@@ -2423,7 +2422,7 @@
                         
                         <div class="mode-item-settings" data-mode="precise">
                             <div class="mode-icon-settings">
-                                <i class="gg-search"></i>
+                                <i class="fas fa-search"></i>
                             </div>
                             <div class="mode-info-settings">
                                 <h5>Аналитический</h5>
@@ -2433,7 +2432,7 @@
                         
                         <div class="mode-item-settings" data-mode="protective">
                             <div class="mode-icon-settings">
-                                <i class="gg-shield"></i>
+                                <i class="fas fa-shield-alt"></i>
                             </div>
                             <div class="mode-info-settings">
                                 <h5>Защитный</h5>
@@ -2444,7 +2443,7 @@
                 </div>
 
                 <div class="settings-section">
-                    <h4><i class="gg-smartphone"></i> Настройки AI</h4>
+                    <h4><i class="fas fa-robot"></i> Настройки AI</h4>
                     <div class="control-group" style="margin-top: 15px;">
                         <label class="control-label">Температура:</label>
                         <input type="range" id="temperature-slider" min="0.1" max="1" step="0.1" value="0.7" style="flex: 1;">
@@ -2455,7 +2454,7 @@
 
             <div class="settings-tab-content" id="achievements-tab">
                 <div class="settings-section">
-                    <h4><i class="gg-trophy"></i> Достижения</h4>
+                    <h4><i class="fas fa-trophy"></i> Достижения</h4>
                     <div class="achievements-settings">
                         <div class="achievement-item-settings unlocked">
                             <div class="achievement-icon-settings">🎯</div>
@@ -2570,7 +2569,7 @@
 
             <div class="settings-tab-content" id="stats-tab">
                 <div class="settings-section">
-                    <h4><i class="gg-chart"></i> Статистика</h4>
+                    <h4><i class="fas fa-chart-line"></i> Статистика</h4>
                     <div class="stats-settings-grid">
                         <div class="stat-card-settings">
                             <div class="stat-value-settings" id="stats-total-messages">0</div>
@@ -2595,7 +2594,7 @@
                 </div>
 
                 <div class="settings-section">
-                    <h4><i class="gg-time"></i> Активность</h4>
+                    <h4><i class="fas fa-history"></i> Активность</h4>
                     <div style="margin-top: 15px; color: var(--text-secondary); font-size: 0.9rem;">
                         <p>Среднее время ответа: <span id="stats-avg-response">0с</span></p>
                         <p>Консультаций: <span id="stats-consultations">0</span></p>
@@ -2607,7 +2606,7 @@
 
             <div class="settings-tab-content" id="shortcuts-tab">
                 <div class="settings-section">
-                    <h4><i class="gg-keyboard"></i> Горячие клавиши</h4>
+                    <h4><i class="fas fa-keyboard"></i> Горячие клавиши</h4>
                     <div class="shortcuts-list">
                         <div class="shortcut-item">
                             <div class="shortcut-keys">
@@ -2695,7 +2694,7 @@
                 <div class="settings-section">
                     <h4><i class="fas fa-user-shield"></i> Безопасность</h4>
                     <button class="ios-button tertiary" id="encryption-manager" style="width: 100%; margin-top: 15px;">
-                        <i class="gg-lock"></i> Управление шифрованием
+                        <i class="fas fa-lock"></i> Управление шифрованием
                     </button>
                 </div>
             </div>
@@ -2710,7 +2709,7 @@
     <div class="modal" id="export-modal">
         <div class="modal-content">
             <button class="modal-close" id="export-close">
-                <i class="gg-close"></i>
+                <i class="fas fa-times"></i>
             </button>
             
             <h2 style="margin-bottom: 25px; display: flex; align-items: center; gap: 10px;">
@@ -2765,7 +2764,7 @@
     <div class="modal" id="stats-modal">
         <div class="modal-content">
             <button class="modal-close" id="stats-close">
-                <i class="gg-close"></i>
+                <i class="fas fa-times"></i>
             </button>
             
             <h2 style="margin-bottom: 25px; display: flex; align-items: center; gap: 10px;">
@@ -2810,7 +2809,7 @@
     <div class="modal" id="balance-modal">
         <div class="modal-content" style="max-width: 600px;">
             <button class="modal-close" id="balance-close">
-                <i class="gg-close"></i>
+                <i class="fas fa-times"></i>
             </button>
             
             <h2 style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
@@ -2841,7 +2840,7 @@
     <div class="modal" id="export-chat-modal">
         <div class="modal-content" style="max-width: 500px;">
             <button class="modal-close" id="export-chat-modal-close">
-                <i class="gg-close"></i>
+                <i class="fas fa-times"></i>
             </button>
             
             <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
@@ -2901,7 +2900,7 @@
     <div class="modal" id="import-modal">
         <div class="modal-content" style="max-width: 500px;">
             <button class="modal-close" id="import-modal-close">
-                <i class="gg-close"></i>
+                <i class="fas fa-times"></i>
             </button>
             
             <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
@@ -2957,7 +2956,7 @@
     <div class="modal" id="subscription-modal">
         <div class="modal-content" style="max-width: 900px;">
             <button class="modal-close" id="subscription-close">
-                <i class="gg-close"></i>
+                <i class="fas fa-times"></i>
             </button>
 
             <h2 style="margin-bottom: 25px; display: flex; align-items: center; gap: 10px;">
@@ -3307,7 +3306,7 @@
     <div class="modal" id="auth-modal">
         <div class="modal-content auth-modal">
             <button class="modal-close" id="auth-close">
-                <i class="gg-close"></i>
+                <i class="fas fa-times"></i>
             </button>
 
             <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
