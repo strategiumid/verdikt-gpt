@@ -24,6 +24,17 @@ public class RateLimitService {
     @Value("${app.rate-limit.register.window-seconds:3600}")
     private int registerWindowSeconds;
 
+    /** Лимит смены подписки: не более N раз в окне (защита от брутфорса/злоупотребления). */
+    @Value("${app.rate-limit.subscription.max-attempts:10}")
+    private int subscriptionMaxAttempts;
+
+    @Value("${app.rate-limit.subscription.window-seconds:600}")
+    private int subscriptionWindowSeconds;
+
+    /** Лимит вызовов increment в минуту на пользователя (доп. к месячному лимиту). */
+    @Value("${app.rate-limit.usage-increment.max-per-minute:60}")
+    private int usageIncrementMaxPerMinute;
+
     private final ConcurrentHashMap<String, Window> store = new ConcurrentHashMap<>();
 
     public record Result(boolean allowed, int retryAfterSeconds) {}
@@ -46,6 +57,16 @@ public class RateLimitService {
     /** Проверка лимита для регистрации. */
     public Result tryRegister(String clientIp) {
         return tryConsume("register:" + clientIp, registerMaxAttempts, registerWindowSeconds);
+    }
+
+    /** Проверка лимита смены подписки (по userId). При превышении — 429. */
+    public Result trySubscriptionChange(long userId) {
+        return tryConsume("subscription:user:" + userId, subscriptionMaxAttempts, subscriptionWindowSeconds);
+    }
+
+    /** Проверка лимита вызовов increment AI usage в минуту (по userId). */
+    public Result tryUsageIncrement(long userId) {
+        return tryConsume("usage_inc:user:" + userId, usageIncrementMaxPerMinute, 60);
     }
 
     private Result tryConsume(String key, int maxAttempts, int windowSeconds) {
