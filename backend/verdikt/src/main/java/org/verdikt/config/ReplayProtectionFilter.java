@@ -17,6 +17,8 @@ import java.util.Map;
 /**
  * Защита от replay: проверка X-Nonce и X-Timestamp для запросов к /api/**.
  * Требует уникальный nonce и метку времени в допустимом окне.
+ * Применяется в т.ч. к чувствительным операциям: обновление подписки (PATCH /api/users/me/subscription,
+ * PATCH /api/admin/users/{id}/subscription) и использование AI (POST /api/users/me/usage/increment).
  */
 @Component
 public class ReplayProtectionFilter extends OncePerRequestFilter {
