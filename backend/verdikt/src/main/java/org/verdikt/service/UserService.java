@@ -25,11 +25,13 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final RateLimitService rateLimitService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService, RateLimitService rateLimitService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.rateLimitService = rateLimitService;
     }
 
     /**
@@ -136,9 +138,15 @@ public class UserService {
 
     /**
      * Смена плана подписки пользователя (для себя — /api/users/me/subscription).
+     * Ограничение частоты вызовов (защита от брутфорса): RateLimitService.trySubscriptionChange.
      */
     @Transactional
     public UserResponse updateSubscription(Long userId, SetSubscriptionRequest request) {
+        RateLimitService.Result limit = rateLimitService.trySubscriptionChange(userId);
+        if (!limit.allowed()) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                    "Слишком частые смены плана. Попробуйте через " + Math.max(1, (limit.retryAfterSeconds() + 59) / 60) + " мин.");
+        }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь не найден"));
         user.setSubscription(request.getSubscription());
@@ -183,6 +191,11 @@ public class UserService {
 
     @Transactional
     public UsageResponse incrementAiRequests(Long userId) {
+        RateLimitService.Result rateLimitResult = rateLimitService.tryUsageIncrement(userId);
+        if (!rateLimitResult.allowed()) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                    "Слишком много запросов в минуту. Подождите " + Math.max(1, rateLimitResult.retryAfterSeconds()) + " сек.");
+        }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь не найден"));
         ensureUsagePeriod(user);
