@@ -27,17 +27,18 @@ export class APIClient {
         return this.app.getAuthHeaders();
     }
 
-    // ===== routerai.ru API =====
+    // ===== routerai.ru API или прокси бэкенда (ключ на сервере) =====
 
     async getAIResponse(messages, maxTokens = null) {
-    if (!this.apiConfig.apiKey) {
-        throw new Error('API ключ не настроен. Пожалуйста, добавьте ключ в настройках.');
-    }
+        const useBackendProxy = this.authConfig.baseUrl && this.state.user;
+        if (!useBackendProxy && !this.apiConfig.apiKey) {
+            throw new Error('API ключ не настроен или войдите в аккаунт для использования общего ключа.');
+        }
 
     try {
         if (window.VERDIKT_DEBUG) {
             console.log('Отправка запроса к API...', {
-                url: this.apiConfig.url,
+                url: useBackendProxy ? (this.authConfig.baseUrl + '/api/chat/completions') : this.apiConfig.url,
                 model: this.apiConfig.model,
                 messagesCount: messages.length,
                 maxTokens: maxTokens || this.apiConfig.maxTokens
@@ -62,7 +63,23 @@ export class APIClient {
                 }
             }
         }
-         const response = await fetch(this.apiConfig.url, {
+         let response;
+        if (useBackendProxy) {
+            const baseUrl = (this.authConfig.baseUrl || window.location.origin).replace(/\/$/, '');
+            response = await fetch(`${baseUrl}/api/chat/completions`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
+                body: JSON.stringify({
+                    model: this.apiConfig.model,
+                    messages: enhancedMessages,
+                    max_tokens: maxTokens || this.apiConfig.maxTokens,
+                    temperature: this.apiConfig.temperature,
+                    stream: false
+                })
+            });
+        } else {
+        response = await fetch(this.apiConfig.url, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${this.apiConfig.apiKey}`,
@@ -71,12 +88,12 @@ export class APIClient {
             body: JSON.stringify({
                 model: this.apiConfig.model,
                 messages: enhancedMessages,
-                // ИСПОЛЬЗУЕМ ПЕРЕДАННЫЙ maxTokens ИЛИ ЗНАЧЕНИЕ ПО УМОЛЧАНИЮ
                 max_tokens: maxTokens || this.apiConfig.maxTokens,
                 temperature: this.apiConfig.temperature,
                 stream: false
             })
         });
+        }
 
         if (window.VERDIKT_DEBUG) console.log('Статус ответа:', response.status);
 
@@ -88,6 +105,8 @@ export class APIClient {
                 if (window.VERDIKT_DEBUG) console.error('API Error:', errorData);
                 if (errorData.error?.message) {
                     errorMessage += errorData.error.message;
+                } else if (errorData.message) {
+                    errorMessage += errorData.message;
                 } else {
                     errorMessage += `HTTP ${response.status}`;
                 }
@@ -130,15 +149,9 @@ export class APIClient {
         // Пост-обработка ответа: удаляем решетки, если вдруг появились
      aiResponse = aiResponse.replace(/#{1,6}\s*/g, '**'); // Заменяем заголовки с # на жирный текст
         
-        // Проверяем, не оборван ли ответ (не заканчивается на знак препинания или многоточие)
-          /*   const lastChar = aiResponse[aiResponse.length - 1];
-        const endsProperly = /[.!?…]/.test(lastChar) || lastChar === '"' || lastChar === "'" || lastChar === ')' || lastChar === ']' || lastChar === '}';
-        
-        if (!endsProperly && aiResponse.length > 50) {
-            // Если ответ явно оборван, добавляем многоточие и сообщение
-            aiResponse += '...\n\n*Извините, ответ был обрезан из-за ограничения по длине. Пожалуйста, задайте уточняющий вопрос, и я продолжу.*';
+        if (useBackendProxy) {
+            return { content: aiResponse, usedBackendProxy: true };
         }
-        */
         return aiResponse;
         
     } catch (error) {
@@ -154,6 +167,16 @@ export class APIClient {
 
     async checkApiStatus() {
         if (!this.apiConfig.apiKey) {
+            if (this.authConfig.baseUrl && this.state.user) {
+                if (this.app.updateHeaderApiStatus) {
+                    this.app.updateHeaderApiStatus('connected', 'Чат (ключ на сервере)');
+                }
+                this.state.isApiConnected = true;
+                if (this.app.updateSphereApiState) {
+                    this.app.updateSphereApiState('connected');
+                }
+                return;
+            }
             if (this.app.updateHeaderApiStatus) {
                 this.app.updateHeaderApiStatus('not-configured', 'API ключ не настроен');
             }
