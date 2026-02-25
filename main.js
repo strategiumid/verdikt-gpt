@@ -31,7 +31,7 @@ export class VerdiktChatApp {
             model: 'x-ai/grok-4-fast', 
             maxTokens: 2400,
             temperature: 0.5,
-            apiKey: "sk-ayshgI6SUUplUxB0ocKzEQ1IK73mbdql"
+            apiKey: ''
         };
 
         this.AUTH_CONFIG = {
@@ -558,7 +558,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         if (savedApiKey) {
             this.API_CONFIG.apiKey = savedApiKey;
         } else {
-            this.API_CONFIG.apiKey = "sk-ayshgI6SUUplUxB0ocKzEQ1IK73mbdql";
+            this.API_CONFIG.apiKey = '';
         }
         
         this.API_CONFIG.model = "x-ai/grok-4-fast";
@@ -3091,8 +3091,8 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             }
         }
 
-        if (!this.API_CONFIG.apiKey) {
-            this.showNotification('Пожалуйста, настройте API ключ в настройках', 'error');
+        if (!this.API_CONFIG.apiKey && !(this.AUTH_CONFIG.baseUrl && this.state.user)) {
+            this.showNotification('Настройте API ключ в настройках или войдите в аккаунт для использования чата', 'error');
             this.showApiSettingsModal();
             return;
         }
@@ -3176,7 +3176,9 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             }
             this.uiManager.showTypingIndicator();
             const startTime = Date.now();
-            const aiResponse = await this.getAIResponse(messagesForApi);
+            const result = await this.getAIResponse(messagesForApi);
+            const aiResponse = typeof result === 'string' ? result : result.content;
+            const usedBackendProxy = typeof result === 'object' && result.usedBackendProxy;
             const responseTime = (Date.now() - startTime) / 1000;
             
             this.state.responseTimes.push(responseTime);
@@ -3197,7 +3199,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             
             this.showNotification(`Ответ получен за ${responseTime.toFixed(1)}с ✅`, 'success');
 
-            if (this.state.user) {
+            if (this.state.user && !usedBackendProxy) {
                 try {
                     const baseUrl = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
                     const incRes = await fetch(`${baseUrl}/api/users/me/usage/increment`, { method: 'POST', credentials: 'include', headers: this.getReplayHeaders() });
