@@ -2617,7 +2617,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             const response = await fetch(url, {
                 method: 'PATCH',
                 credentials: 'include',
-                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
+                headers: { 'Content-Type': 'application/json', ...this.getReplayHeaders(), ...this.getAuthHeaders() },
                 body: JSON.stringify(profileData)
             });
             
