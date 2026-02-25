@@ -64,6 +64,31 @@ body {
     -webkit-overflow-scrolling: touch;
 }
 
+/* css.gg иконки (Figma Community) — выравнивание и размер */
+[class^="gg-"] {
+    display: inline-block;
+    vertical-align: middle;
+    --ggs: 1.1;
+    flex-shrink: 0;
+    color: inherit;
+}
+[class^="gg-"].gg-sm { --ggs: 0.85; }
+[class^="gg-"].gg-lg { --ggs: 1.4; }
+[class^="gg-"].gg-xl { --ggs: 1.8; }
+
+/* Модернизация: отступы иконок в навигации и вкладках */
+.nav-item,
+.settings-tab {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.nav-item [class^="gg-"],
+.settings-tab [class^="gg-"],
+.modal-close [class^="gg-"] {
+    --ggs: 1.05;
+}
+
 /* Фоновые элементы с анимациями */
 .background-elements {
     position: fixed;

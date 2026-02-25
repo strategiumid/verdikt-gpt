@@ -633,7 +633,9 @@
 [data-theme="deepseek"] .logo-icon i,
 [data-theme="deepseek"] .hero-icon i,
 [data-theme="deepseek"] .ai-avatar i,
-[data-theme="deepseek"] .message .message-sender i.fa-heart {
+[data-theme="deepseek"] .message .message-sender i.fa-heart,
+[data-theme="deepseek"] .message .message-sender i.gg-heart,
+[data-theme="deepseek"] .sidebar-toggle [class^="gg-"] {
     color: white !important;
     text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
 }
