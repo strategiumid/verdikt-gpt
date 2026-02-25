@@ -76,6 +76,7 @@ public class UserController {
 
     /**
      * PATCH /api/users/me/subscription — смена плана подписки текущего пользователя (без оплаты).
+     * Защита от replay: ReplayProtectionFilter требует заголовки X-Nonce и X-Timestamp.
      */
     @PatchMapping("/me/subscription")
     public ResponseEntity<UserResponse> updateMySubscription(
@@ -101,6 +102,7 @@ public class UserController {
 
     /**
      * POST /api/users/me/usage/increment — увеличить счётчик запросов на 1 (после отправки сообщения в чат). При превышении лимита — 429.
+     * Защита от replay: ReplayProtectionFilter требует заголовки X-Nonce и X-Timestamp.
      */
     @PostMapping("/me/usage/increment")
     public ResponseEntity<UsageResponse> incrementUsage(@AuthenticationPrincipal User user) {

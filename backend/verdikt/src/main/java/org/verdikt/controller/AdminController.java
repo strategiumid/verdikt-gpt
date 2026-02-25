@@ -78,6 +78,9 @@ public class AdminController {
         return ResponseEntity.ok(adminService.setUserRole(id, request));
     }
 
+    /**
+     * Изменение подписки пользователя админом. Защита от replay: ReplayProtectionFilter (X-Nonce, X-Timestamp).
+     */
     @PatchMapping("/users/{id}/subscription")
     public ResponseEntity<UserResponse> setUserSubscription(
             @AuthenticationPrincipal User user,
