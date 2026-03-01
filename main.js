@@ -1149,6 +1149,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         this.showNotification('Новый чат создан 💬', 'success');
         this.updateUI();
         this.updateSettingsStats();
+        this.updateSidebarChatsList();
     }
 
     async loadChat(chatId) {
@@ -1229,6 +1230,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         this.scrollToBottom();
         this.updateUI();
         this.updateSettingsStats();
+        this.updateSidebarChatsList();
     }
 
     async deleteChat(chatId) {
@@ -1259,6 +1261,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 this.state.stats.totalChats = this.chatManager.chats.length;
                 this.updateSettingsStats();
                 this.showNotification('Чат удален 🗑️', 'info');
+                this.updateSidebarChatsList();
             }
         }
     }
@@ -1275,6 +1278,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             this.state.stats.totalChats = 1;
             this.updateSettingsStats();
             this.showNotification('Все чаты удалены 🗑️', 'info');
+            this.updateSidebarChatsList();
         }
     }
 
@@ -1748,6 +1752,11 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             });
         }
 
+        const sidebarSearchInput = document.getElementById('sidebar-search-input');
+        if (sidebarSearchInput) {
+            sidebarSearchInput.addEventListener('input', () => this.updateSidebarChatsList());
+        }
+
         const sidebarChatHistoryBtn = document.getElementById('sidebar-chat-history-btn');
         if (sidebarChatHistoryBtn) {
             sidebarChatHistoryBtn.addEventListener('click', () => {
@@ -1894,12 +1903,57 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         this.elements.sidebar?.classList.add('active');
         this.elements.sidebarOverlay?.classList.add('active');
         document.body.style.overflow = 'hidden';
+        this.updateSidebarChatsList();
     }
 
     hideSidebar() {
         this.elements.sidebar?.classList.remove('active');
         this.elements.sidebarOverlay?.classList.remove('active');
         document.body.style.overflow = '';
+    }
+
+    updateSidebarChatsList() {
+        const listEl = document.getElementById('sidebar-chats-list');
+        const searchInput = document.getElementById('sidebar-search-input');
+        if (!listEl) return;
+
+        const chats = this.chatManager.chats || [];
+        const query = (searchInput?.value || '').trim().toLowerCase();
+        let sorted = [...chats].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        if (query) {
+            sorted = sorted.filter(chat => {
+                const title = (chat.title || '').toLowerCase();
+                const inMessages = (chat.messages || [])
+                    .slice(0, 5)
+                    .some(m => (m.content || '').toLowerCase().includes(query));
+                return title.includes(query) || inMessages;
+            });
+        }
+
+        listEl.innerHTML = '';
+        if (sorted.length === 0) {
+            listEl.innerHTML = '<div class="sidebar-chats-empty">' +
+                (query ? 'Ничего не найдено' : 'Пока нет чатов') +
+                '</div>';
+            return;
+        }
+
+        const currentId = this.chatManager.currentChatId;
+        sorted.forEach(chat => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'sidebar-chat-item' + (chat.id === currentId ? ' active' : '');
+            btn.setAttribute('title', chat.title || 'Без названия');
+            const span = document.createElement('span');
+            span.textContent = chat.title || 'Без названия';
+            btn.appendChild(span);
+            btn.addEventListener('click', () => {
+                this.loadChat(chat.id);
+                if (window.matchMedia('(max-width: 768px)').matches) this.hideSidebar();
+                this.updateSidebarChatsList();
+            });
+            listEl.appendChild(btn);
+        });
     }
 
     updateSidebarInfo() {
