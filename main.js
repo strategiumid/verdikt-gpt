@@ -6476,7 +6476,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         let formHtml = '';
         if (this.state.user) {
             formHtml = `
-                <div class="question-card" style="margin-bottom: 15px;">
+                <div class="question-card dashboard-card" style="margin-bottom: 15px;">
                     <div class="question-header">
                         <div class="question-avatar">👤</div>
                         <div class="question-meta">
@@ -6486,6 +6486,11 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                     </div>
                     <div class="question-content">
                         <textarea id="new-question-content" class="comment-input" placeholder="Опишите ваш вопрос или ситуацию..." rows="3"></textarea>
+                    </div>
+                    <div class="question-emoji-pack" id="dashboard-emoji-pack">
+                        ${['😊','🤔','😔','😡','🧠','❤️'].map(e => `
+                            <button type="button" class="emoji-chip" data-emoji="${e}">${e}</button>
+                        `).join('')}
                     </div>
                     <div class="question-actions">
                         <div class="action-buttons">
@@ -6509,10 +6514,12 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         let listHtml = '';
         if (!this.dashboard.questions || this.dashboard.questions.length === 0) {
             listHtml = `
-                <div class="question-card" style="text-align: center; padding: 40px;">
-                    <i class="fas fa-question-circle" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
-                    <h4>Пока нет вопросов</h4>
-                    <p style="color: var(--text-tertiary);">Когда пользователи зададут вам вопросы, они появятся здесь</p>
+                <div class="question-card dashboard-empty">
+                    <div class="dashboard-empty-icon">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <h4 class="dashboard-empty-title">Пока нет вопросов</h4>
+                    <p class="dashboard-muted">Когда пользователи зададут вам вопросы, они появятся здесь</p>
                 </div>
             `;
         } else {
@@ -6573,7 +6580,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                     </div>
                     `;
                 return `
-                <div class="question-card" data-question-id="${question.id}">
+                <div class="question-card dashboard-card" data-question-id="${question.id}">
                     <div class="question-header">
                         <div class="question-avatar">${question.user.avatar}</div>
                         <div class="question-meta">
@@ -6624,6 +6631,24 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                     textarea.value = '';
                 }
             });
+        }
+
+        const emojiPack = document.getElementById('dashboard-emoji-pack');
+        const textarea = document.getElementById('new-question-content');
+        if (emojiPack && textarea && !emojiPack._bound) {
+            emojiPack.addEventListener('click', (e) => {
+                const btn = e.target.closest('.emoji-chip');
+                if (!btn) return;
+                const emoji = btn.dataset.emoji || btn.textContent;
+                const start = textarea.selectionStart ?? textarea.value.length;
+                const end = textarea.selectionEnd ?? textarea.value.length;
+                const value = textarea.value;
+                textarea.value = value.slice(0, start) + emoji + value.slice(end);
+                textarea.focus();
+                const caret = start + emoji.length;
+                textarea.setSelectionRange(caret, caret);
+            });
+            emojiPack._bound = true;
         }
 
         this.attachAdminQuestionHandlers();
