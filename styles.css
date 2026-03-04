@@ -6250,6 +6250,292 @@ footer {
     display: block;
 }
 
+/* ─────────────────────────────────────────────────────────────
+   Dashboard (BW glass redesign)
+   Note: scoped with #dashboard-modal to override inline styles.
+   ───────────────────────────────────────────────────────────── */
+#dashboard-modal .dashboard-modal {
+    max-width: min(980px, calc(100vw - 32px));
+    max-height: min(86dvh, 860px);
+    padding: 22px;
+    padding-top: 56px; /* space for close button */
+    background: rgba(12, 12, 12, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(18px) saturate(120%);
+    -webkit-backdrop-filter: blur(18px) saturate(120%);
+}
+
+#dashboard-modal .modal-close {
+    top: 14px;
+    right: 14px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: rgba(255, 255, 255, 0.82);
+}
+
+#dashboard-modal .modal-close:hover {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.14);
+    color: rgba(255, 255, 255, 0.92);
+}
+
+#dashboard-modal .dashboard-topbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+#dashboard-modal .dashboard-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+#dashboard-modal .dashboard-title-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: rgba(255, 255, 255, 0.92);
+    flex-shrink: 0;
+}
+
+#dashboard-modal .dashboard-title-text h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 780;
+    letter-spacing: -0.02em;
+    color: rgba(255, 255, 255, 0.94);
+}
+
+#dashboard-modal .dashboard-subtitle {
+    margin-top: 2px;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+#dashboard-modal .dashboard-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+#dashboard-modal .dashboard-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.9rem;
+    line-height: 1;
+}
+
+#dashboard-modal .dashboard-chip i {
+    opacity: 0.8;
+}
+
+#dashboard-modal .dashboard-chip--rating {
+    color: rgba(255, 255, 255, 0.88);
+}
+
+#dashboard-modal .dashboard-tabs {
+    background: rgba(0, 0, 0, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 16px;
+    padding: 8px;
+    gap: 8px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+
+#dashboard-modal .dashboard-tab {
+    flex: 0 0 auto;
+    min-width: unset;
+    padding: 10px 12px;
+    border-radius: 999px;
+    color: rgba(255, 255, 255, 0.65);
+    border: 1px solid transparent;
+    background: transparent;
+    transform: none;
+}
+
+#dashboard-modal .dashboard-tab:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.90);
+    transform: none;
+}
+
+#dashboard-modal .dashboard-tab.active {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.95);
+    box-shadow: none;
+}
+
+#dashboard-modal .dashboard-section {
+    margin-top: 18px;
+}
+
+#dashboard-modal .dashboard-section-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+#dashboard-modal .dashboard-section-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+#dashboard-modal .dashboard-muted {
+    color: rgba(255, 255, 255, 0.56);
+    font-size: 0.9rem;
+}
+
+#dashboard-modal .dashboard-summary {
+    margin-top: 12px;
+}
+
+#dashboard-modal .dashboard-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+#dashboard-modal .dashboard-chart-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+#dashboard-modal #analytics-chart {
+    width: 100% !important;
+    height: 200px !important;
+    display: block;
+}
+
+#dashboard-modal .dashboard-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-top: 12px;
+}
+
+#dashboard-modal .dashboard-control {
+    flex: 1;
+    min-width: 220px;
+}
+
+#dashboard-modal .dashboard-input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.22);
+    color: rgba(255, 255, 255, 0.92);
+    outline: none;
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+#dashboard-modal .dashboard-input::placeholder {
+    color: rgba(255, 255, 255, 0.42);
+}
+
+#dashboard-modal .dashboard-input:focus {
+    border-color: rgba(255, 255, 255, 0.22);
+    background: rgba(0, 0, 0, 0.28);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.06);
+}
+
+#dashboard-modal .question-card {
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: none;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+#dashboard-modal .question-card:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.14);
+    transform: translateY(-2px);
+}
+
+#dashboard-modal .action-btn.liked,
+#dashboard-modal .action-btn.disliked {
+    color: rgba(255, 255, 255, 0.92);
+    border-color: rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+#dashboard-modal .question-avatar {
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: none;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+#dashboard-modal .dashboard-empty {
+    text-align: center;
+    padding: 36px 18px;
+}
+
+#dashboard-modal .dashboard-empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 14px;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+#dashboard-modal .dashboard-empty-title {
+    margin: 0 0 6px 0;
+    font-size: 1.05rem;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+@media (max-width: 768px) {
+    #dashboard-modal .dashboard-modal {
+        padding: 18px;
+        padding-top: 56px;
+        max-width: calc(100vw - 16px);
+    }
+    #dashboard-modal .dashboard-topbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    #dashboard-modal .dashboard-meta {
+        justify-content: flex-start;
+    }
+    #dashboard-modal .dashboard-stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 .questions-tab-header {
     display: flex;
     flex-wrap: wrap;
