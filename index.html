@@ -233,6 +233,86 @@
         color: rgba(255, 255, 255, 0.3);
     }
 
+    /* Быстрый доступ к чатам в сайдбаре (снизу) */
+    .sidebar-chats-section {
+        flex-shrink: 0;
+        padding: 12px 16px 12px;
+        margin-top: auto;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+    }
+    .sidebar-chats-title {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: rgba(255, 255, 255, 0.35);
+        margin: 0 0 8px 0;
+        font-weight: 600;
+    }
+    .sidebar-chats-list {
+        overflow-y: auto;
+        overflow-x: hidden;
+        max-height: min(280px, 35vh);
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding-right: 4px;
+    }
+    .sidebar-chats-list::-webkit-scrollbar {
+        width: 6px;
+    }
+    .sidebar-chats-list::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 3px;
+    }
+    .sidebar-chats-list::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 3px;
+    }
+    .sidebar-chat-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: background 0.2s ease, color 0.2s ease;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        border: none;
+        width: 100%;
+        text-align: left;
+        background: transparent;
+        font-family: inherit;
+    }
+    .sidebar-chat-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+    }
+    .sidebar-chat-item.active {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+    }
+    .sidebar-chat-item span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .sidebar-chats-empty {
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.4);
+        padding: 12px 0;
+        text-align: center;
+    }
+    .sidebar.collapsed .sidebar-chats-section {
+        display: none;
+    }
+
     /* Кнопка «История чатов» в стиле Grok */
     .sidebar-history-btn {
         display: flex;
@@ -1496,7 +1576,7 @@
         <div class="sidebar-search">
             <div class="sidebar-search-inner">
                 <i class="fas fa-search"></i>
-                <input type="text" placeholder="Поиск" id="sidebar-search-input">
+                <input type="text" placeholder="Поиск чатов" id="sidebar-search-input">
                 <span class="sidebar-search-kbd">Ctrl+K</span>
             </div>
         </div>
@@ -1577,6 +1657,13 @@
             </div>
         </div>
 
+        <div class="sidebar-chats-section">
+            <h4 class="sidebar-chats-title">Ваши чаты</h4>
+            <div class="sidebar-chats-list" id="sidebar-chats-list">
+                <!-- Список чатов заполняется при открытии сайдбара -->
+            </div>
+        </div>
+
         <div class="sidebar-footer-collapse">
             <button class="sidebar-collapse-btn" id="sidebar-collapse" title="Свернуть сайдбар">
                 <i class="fas fa-chevron-left" id="sidebar-collapse-icon"></i>
@@ -1594,20 +1681,27 @@
             <button class="modal-close" id="dashboard-close">
                 <i class="fas fa-times"></i>
             </button>
-            
-            <div class="dashboard-header">
-                <h2 style="display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-chart-line"></i> Дашборд
-                </h2>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="font-size: 0.9rem; color: var(--text-secondary);">
-                        <i class="fas fa-user"></i> <span id="dashboard-username">Гость</span>
-                    </span>
-                    <span style="font-size: 0.9rem; color: #fbbf24;">
-                        <i class="fas fa-star"></i> <span id="dashboard-rating">0.0</span>
-                    </span>
+
+            <header class="dashboard-topbar">
+                <div class="dashboard-title">
+                    <div class="dashboard-title-icon" aria-hidden="true">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="dashboard-title-text">
+                        <h2>Дашборд</h2>
+                    </div>
                 </div>
-            </div>
+                <div class="dashboard-meta">
+                    <div class="dashboard-chip">
+                        <i class="fas fa-user" aria-hidden="true"></i>
+                        <span id="dashboard-username">Гость</span>
+                    </div>
+                    <div class="dashboard-chip dashboard-chip--rating">
+                        <i class="fas fa-star" aria-hidden="true"></i>
+                        <span id="dashboard-rating">0.0</span>
+                    </div>
+                </div>
+            </header>
 
             <div class="dashboard-tabs">
                 <button class="dashboard-tab active" data-tab="questions">
@@ -1629,9 +1723,9 @@
             </div>
 
             <div class="dashboard-tab-content active" id="questions-tab">
-                <div style="margin-bottom: 20px;">
-                    <div class="questions-tab-header">
-                        <h3 style="margin-bottom: 15px;">Последние вопросы от пользователей</h3>
+                <div class="dashboard-section">
+                    <div class="questions-tab-header dashboard-section-header">
+                        <h3 class="dashboard-section-title">Последние вопросы от пользователей</h3>
                         <div class="questions-sort-wrap">
                             <label for="questions-sort" class="questions-sort-label">Сортировка:</label>
                             <select id="questions-sort" class="questions-sort-select">
@@ -1643,20 +1737,24 @@
                         </div>
                     </div>
                     <div id="questions-list">
-                        <div class="question-card" style="text-align: center; padding: 40px;">
-                            <i class="fas fa-question-circle" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
-                            <h4>Пока нет вопросов</h4>
-                            <p style="color: var(--text-tertiary);">Когда пользователи зададут вам вопросы, они появятся здесь</p>
+                        <div class="question-card dashboard-empty">
+                            <div class="dashboard-empty-icon" aria-hidden="true">
+                                <i class="fas fa-question-circle"></i>
+                            </div>
+                            <h4 class="dashboard-empty-title">Пока нет вопросов</h4>
+                            <p class="dashboard-muted">Когда пользователи зададут вам вопросы, они появятся здесь</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="dashboard-tab-content admin-only" id="analytics-tab" style="display: none;">
-                <div style="margin-bottom: 20px;">
-                    <h3 style="margin-bottom: 15px;">Оценки ответов ИИ (по всем пользователям)</h3>
-                    <p style="color: var(--text-tertiary); font-size: 0.85rem; margin-bottom: 15px;">Сводка по оценкам от всех пользователей.</p>
-                    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px;">
+                <div class="dashboard-section">
+                    <div class="dashboard-section-header">
+                        <h3 class="dashboard-section-title">Оценки ответов ИИ (по всем пользователям)</h3>
+                        <div class="dashboard-muted">Сводка по оценкам от всех пользователей</div>
+                    </div>
+                    <div class="stats-grid dashboard-stats-grid">
                         <div class="stat-card-settings">
                             <div class="stat-value-settings" id="analytics-total">0</div>
                             <div class="stat-label-settings">Всего оценок</div>
@@ -1670,21 +1768,25 @@
                             <div class="stat-label-settings">👎 Не полезно</div>
                         </div>
                     </div>
-                    <div style="background: rgba(255, 255, 255, 0.05); border-radius: var(--radius-md); padding: 20px;">
-                        <canvas id="analytics-chart" style="width: 100%; height: 200px;"></canvas>
+                    <div class="dashboard-chart-card">
+                        <canvas id="analytics-chart"></canvas>
                     </div>
-                    <div id="analytics-summary" style="margin-top:12px; color: var(--text-secondary); font-size:0.9rem"></div>
+                    <div id="analytics-summary" class="dashboard-muted dashboard-summary"></div>
                 </div>
             </div>
 
             <div class="dashboard-tab-content admin-only" id="activity-tab" style="display: none;">
-                <div style="margin-bottom: 20px;">
-                    <h3 style="margin-bottom: 15px;">Недавняя активность (все пользователи)</h3>
+                <div class="dashboard-section">
+                    <div class="dashboard-section-header">
+                        <h3 class="dashboard-section-title">Недавняя активность (все пользователи)</h3>
+                    </div>
                     <div id="activity-list">
-                        <div class="question-card" style="text-align: center; padding: 40px;">
-                            <i class="fas fa-bolt" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
-                            <h4>Пока нет активности</h4>
-                            <p style="color: var(--text-tertiary);">Ваша активность появится здесь</p>
+                        <div class="question-card dashboard-empty">
+                            <div class="dashboard-empty-icon" aria-hidden="true">
+                                <i class="fas fa-bolt"></i>
+                            </div>
+                            <h4 class="dashboard-empty-title">Пока нет активности</h4>
+                            <p class="dashboard-muted">Ваша активность появится здесь</p>
                         </div>
                     </div>
                 </div>
@@ -1692,12 +1794,14 @@
 
             <!-- Вкладка пользователей -->
             <div class="dashboard-tab-content" id="users-tab">
-                <div style="margin-bottom: 20px;">
-                    <h3 style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-users-cog"></i> Пользователи
-                    </h3>
+                <div class="dashboard-section">
+                    <div class="dashboard-section-header">
+                        <h3 class="dashboard-section-title">
+                            <i class="fas fa-users-cog"></i> Пользователи
+                        </h3>
+                    </div>
 
-                    <div class="question-card" style="margin-bottom: 15px;">
+                    <div class="question-card dashboard-card">
                         <div class="question-header">
                             <div class="question-avatar">👥</div>
                             <div class="question-meta">
@@ -1705,17 +1809,12 @@
                                 <div class="date">Баны, разморозка и права</div>
                             </div>
                         </div>
-                        <div class="question-content" style="margin-bottom: 10px;">
+                        <div class="question-content dashboard-muted">
                             Здесь отображаются пользователи, собранные из их вопросов и активностей. Все действия пока выполняются локально, без бэкенда.
                         </div>
-                        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px;">
-                            <div style="flex: 1; min-width: 200px;">
-                                <input
-                                    type="text"
-                                    id="admin-user-search-input"
-                                    placeholder="Поиск по имени или email..."
-                                    style="width: 100%; padding: 8px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-size: 0.9rem;"
-                                >
+                        <div class="dashboard-controls">
+                            <div class="dashboard-control">
+                                <input type="text" id="admin-user-search-input" class="dashboard-input" placeholder="Поиск по имени или email...">
                             </div>
                         </div>
                         <div class="question-actions">
@@ -1734,10 +1833,12 @@
                     </div>
 
                     <div class="questions-grid" id="admin-users-list">
-                        <div class="question-card" style="text-align: center; padding: 40px;">
-                            <i class="fas fa-users" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
-                            <h4>Нет данных</h4>
-                            <p style="color: var(--text-tertiary);">Пользователи появятся здесь после появления вопросов в системе</p>
+                        <div class="question-card dashboard-empty">
+                            <div class="dashboard-empty-icon" aria-hidden="true">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h4 class="dashboard-empty-title">Нет данных</h4>
+                            <p class="dashboard-muted">Пользователи появятся здесь после появления вопросов в системе</p>
                         </div>
                     </div>
                 </div>
@@ -1745,12 +1846,14 @@
 
             <!-- Админ-панель (вкладка) -->
             <div class="dashboard-tab-content" id="admin-tab">
-                <div style="margin-bottom: 20px;">
-                    <h3 style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-user-shield"></i> Админ-панель
-                    </h3>
+                <div class="dashboard-section">
+                    <div class="dashboard-section-header">
+                        <h3 class="dashboard-section-title">
+                            <i class="fas fa-user-shield"></i> Админ-панель
+                        </h3>
+                    </div>
 
-                    <div class="question-card" style="margin-bottom: 20px;">
+                    <div class="question-card dashboard-card">
                         <div class="question-header">
                             <div class="question-avatar">⚙️</div>
                             <div class="question-meta">
@@ -1758,7 +1861,7 @@
                                 <div class="date">Управление платформой</div>
                             </div>
                         </div>
-                        <div class="question-content" style="margin-bottom: 10px;">
+                        <div class="question-content dashboard-muted">
                             Здесь вы можете управлять пользователями и вопросами прямо внутри Verdikt GPT.
                         </div>
                         <div class="question-actions">
@@ -1774,7 +1877,7 @@
                     </div>
 
                     <!-- Фильтры по вопросам -->
-                    <div class="question-card" style="margin-bottom: 15px;">
+                    <div class="question-card dashboard-card">
                         <div class="question-header">
                             <div class="question-avatar">🔍</div>
                             <div class="question-meta">
@@ -1805,10 +1908,12 @@
 
                     <!-- Админ-список вопросов -->
                     <div class="questions-grid" id="admin-questions-list">
-                        <div class="question-card" style="text-align: center; padding: 40px;">
-                            <i class="fas fa-tasks" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
-                            <h4>Нет данных</h4>
-                            <p style="color: var(--text-tertiary);">Вопросы пользователей появятся здесь после загрузки дашборда</p>
+                        <div class="question-card dashboard-empty">
+                            <div class="dashboard-empty-icon" aria-hidden="true">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <h4 class="dashboard-empty-title">Нет данных</h4>
+                            <p class="dashboard-muted">Вопросы пользователей появятся здесь после загрузки дашборда</p>
                         </div>
                     </div>
                 </div>

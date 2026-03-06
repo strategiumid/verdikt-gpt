@@ -1149,6 +1149,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         this.showNotification('Новый чат создан 💬', 'success');
         this.updateUI();
         this.updateSettingsStats();
+        this.updateSidebarChatsList();
     }
 
     async loadChat(chatId) {
@@ -1229,6 +1230,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         this.scrollToBottom();
         this.updateUI();
         this.updateSettingsStats();
+        this.updateSidebarChatsList();
     }
 
     async deleteChat(chatId) {
@@ -1259,6 +1261,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                 this.state.stats.totalChats = this.chatManager.chats.length;
                 this.updateSettingsStats();
                 this.showNotification('Чат удален 🗑️', 'info');
+                this.updateSidebarChatsList();
             }
         }
     }
@@ -1275,6 +1278,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             this.state.stats.totalChats = 1;
             this.updateSettingsStats();
             this.showNotification('Все чаты удалены 🗑️', 'info');
+            this.updateSidebarChatsList();
         }
     }
 
@@ -1748,6 +1752,11 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
             });
         }
 
+        const sidebarSearchInput = document.getElementById('sidebar-search-input');
+        if (sidebarSearchInput) {
+            sidebarSearchInput.addEventListener('input', () => this.updateSidebarChatsList());
+        }
+
         const sidebarChatHistoryBtn = document.getElementById('sidebar-chat-history-btn');
         if (sidebarChatHistoryBtn) {
             sidebarChatHistoryBtn.addEventListener('click', () => {
@@ -1894,12 +1903,57 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         this.elements.sidebar?.classList.add('active');
         this.elements.sidebarOverlay?.classList.add('active');
         document.body.style.overflow = 'hidden';
+        this.updateSidebarChatsList();
     }
 
     hideSidebar() {
         this.elements.sidebar?.classList.remove('active');
         this.elements.sidebarOverlay?.classList.remove('active');
         document.body.style.overflow = '';
+    }
+
+    updateSidebarChatsList() {
+        const listEl = document.getElementById('sidebar-chats-list');
+        const searchInput = document.getElementById('sidebar-search-input');
+        if (!listEl) return;
+
+        const chats = this.chatManager.chats || [];
+        const query = (searchInput?.value || '').trim().toLowerCase();
+        let sorted = [...chats].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        if (query) {
+            sorted = sorted.filter(chat => {
+                const title = (chat.title || '').toLowerCase();
+                const inMessages = (chat.messages || [])
+                    .slice(0, 5)
+                    .some(m => (m.content || '').toLowerCase().includes(query));
+                return title.includes(query) || inMessages;
+            });
+        }
+
+        listEl.innerHTML = '';
+        if (sorted.length === 0) {
+            listEl.innerHTML = '<div class="sidebar-chats-empty">' +
+                (query ? 'Ничего не найдено' : 'Пока нет чатов') +
+                '</div>';
+            return;
+        }
+
+        const currentId = this.chatManager.currentChatId;
+        sorted.forEach(chat => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'sidebar-chat-item' + (chat.id === currentId ? ' active' : '');
+            btn.setAttribute('title', chat.title || 'Без названия');
+            const span = document.createElement('span');
+            span.textContent = chat.title || 'Без названия';
+            btn.appendChild(span);
+            btn.addEventListener('click', () => {
+                this.loadChat(chat.id);
+                if (window.matchMedia('(max-width: 768px)').matches) this.hideSidebar();
+                this.updateSidebarChatsList();
+            });
+            listEl.appendChild(btn);
+        });
     }
 
     updateSidebarInfo() {
@@ -6422,7 +6476,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         let formHtml = '';
         if (this.state.user) {
             formHtml = `
-                <div class="question-card" style="margin-bottom: 15px;">
+                <div class="question-card dashboard-card" style="margin-bottom: 15px;">
                     <div class="question-header">
                         <div class="question-avatar">👤</div>
                         <div class="question-meta">
@@ -6432,6 +6486,11 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                     </div>
                     <div class="question-content">
                         <textarea id="new-question-content" class="comment-input" placeholder="Опишите ваш вопрос или ситуацию..." rows="3"></textarea>
+                    </div>
+                    <div class="question-emoji-pack" id="dashboard-emoji-pack">
+                        ${['😊','🤔','😔','😡','🧠','❤️'].map(e => `
+                            <button type="button" class="emoji-chip" data-emoji="${e}">${e}</button>
+                        `).join('')}
                     </div>
                     <div class="question-actions">
                         <div class="action-buttons">
@@ -6455,10 +6514,12 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         let listHtml = '';
         if (!this.dashboard.questions || this.dashboard.questions.length === 0) {
             listHtml = `
-                <div class="question-card" style="text-align: center; padding: 40px;">
-                    <i class="fas fa-question-circle" style="font-size: 3rem; color: var(--text-tertiary); margin-bottom: 20px;"></i>
-                    <h4>Пока нет вопросов</h4>
-                    <p style="color: var(--text-tertiary);">Когда пользователи зададут вам вопросы, они появятся здесь</p>
+                <div class="question-card dashboard-empty">
+                    <div class="dashboard-empty-icon">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <h4 class="dashboard-empty-title">Пока нет вопросов</h4>
+                    <p class="dashboard-muted">Когда пользователи зададут вам вопросы, они появятся здесь</p>
                 </div>
             `;
         } else {
@@ -6519,7 +6580,7 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                     </div>
                     `;
                 return `
-                <div class="question-card" data-question-id="${question.id}">
+                <div class="question-card dashboard-card" data-question-id="${question.id}">
                     <div class="question-header">
                         <div class="question-avatar">${question.user.avatar}</div>
                         <div class="question-meta">
@@ -6570,6 +6631,24 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
                     textarea.value = '';
                 }
             });
+        }
+
+        const emojiPack = document.getElementById('dashboard-emoji-pack');
+        const textarea = document.getElementById('new-question-content');
+        if (emojiPack && textarea && !emojiPack._bound) {
+            emojiPack.addEventListener('click', (e) => {
+                const btn = e.target.closest('.emoji-chip');
+                if (!btn) return;
+                const emoji = btn.dataset.emoji || btn.textContent;
+                const start = textarea.selectionStart ?? textarea.value.length;
+                const end = textarea.selectionEnd ?? textarea.value.length;
+                const value = textarea.value;
+                textarea.value = value.slice(0, start) + emoji + value.slice(end);
+                textarea.focus();
+                const caret = start + emoji.length;
+                textarea.setSelectionRange(caret, caret);
+            });
+            emojiPack._bound = true;
         }
 
         this.attachAdminQuestionHandlers();
