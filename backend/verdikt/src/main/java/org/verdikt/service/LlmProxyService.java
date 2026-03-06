@@ -21,13 +21,18 @@ public class LlmProxyService {
     @Value("${llm.url:https://routerai.ru/api/v1/chat/completions}")
     private String llmUrl;
 
+    /** Ключ настроен (задан через LLM_API_KEY). */
+    public boolean isConfigured() {
+        return apiKey != null && !apiKey.isBlank();
+    }
+
     /**
      * Отправить запрос в LLM и вернуть тело ответа как есть (JSON).
      * Ключ подставляется на бэкенде, на клиент не передаётся.
      */
     public String chatCompletions(Map<String, Object> body) {
-        if (apiKey == null || apiKey.isBlank()) {
-            throw new IllegalStateException("LLM API ключ не настроен (LLM_API_KEY)");
+        if (!isConfigured()) {
+            throw new IllegalStateException("LLM API ключ не настроен. Задайте переменную окружения LLM_API_KEY.");
         }
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

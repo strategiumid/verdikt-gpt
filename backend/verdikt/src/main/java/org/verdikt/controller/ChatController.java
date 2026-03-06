@@ -45,6 +45,10 @@ public class ChatController {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
                     "Исчерпан лимит запросов на этот месяц. Обновите план подписки.");
         }
+        if (!llmProxyService.isConfigured()) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(Map.of("message", "LLM API ключ не настроен. Задайте переменную окружения LLM_API_KEY на сервере."));
+        }
         body.put("stream", false);
         String responseBody = llmProxyService.chatCompletions(body);
         userService.incrementAiRequests(user.getId());
