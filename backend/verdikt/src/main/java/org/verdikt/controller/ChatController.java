@@ -49,6 +49,7 @@ public class ChatController {
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                     .body(Map.of("message", "LLM API ключ не настроен. Задайте переменную окружения LLM_API_KEY на сервере."));
         }
+        // REST-эндпоинт всегда работает в нестриминговом режиме
         body.put("stream", false);
         String responseBody = llmProxyService.chatCompletions(body);
         userService.incrementAiRequests(user.getId());
