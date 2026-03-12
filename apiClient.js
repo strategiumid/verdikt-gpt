@@ -47,7 +47,6 @@ export class APIClient {
 
         // Добавляем инструкцию по форматированию в последнее сообщение
         const enhancedMessages = [...messages];
-        const formatHint = `\n\n[ФОРМАТИРОВАНИЕ: без #, заголовки **жирным**, списки через • или -. Завершай каждую мысль полным предложением; не обрывай ответ на полуслове.]`;
         
         const lastUserMessageIndex = [...enhancedMessages].reverse().findIndex(m => m.role === 'user');
         if (lastUserMessageIndex !== -1) {
@@ -59,7 +58,7 @@ export class APIClient {
                     const newContent = lastUserMsg.content.map(p => p.type === 'text' ? { ...p, text: (p.text || '') + formatHint } : p);
                     enhancedMessages[actualIndex] = { ...lastUserMsg, content: newContent };
                 } else {
-                    enhancedMessages[actualIndex] = { ...lastUserMsg, content: lastUserMsg.content + formatHint };
+                    enhancedMessages[actualIndex] = { ...lastUserMsg, content: lastUserMsg.content };
                 }
             }
         }

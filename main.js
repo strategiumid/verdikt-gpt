@@ -309,58 +309,8 @@ ${deepReflectionInstructions}
 **ДИАЛОГ**
 • Если не хватает контекста — задай 1–2 коротких уточняющих вопроса, затем дай совет.
 • Адаптируй тон под сообщение: больше тепла при грусти/страхе, больше чёткости при запросе плана действий, больше юмора, если пользователь сам шутит.
-• Эмодзи — умеренно, для мягкости, не в каждом предложении.
-
-${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (используй при ответах):\n' + instructions : ''}
-
-**ПРИМЕР ПРЕМИУМ-ОТВЕТА (ДРУЖЕСКИЙ)**
-**Слушай, ситуация знакомая** — когда хочется написать ей, а вы договорились держать паузу, это нормально — быть на иголках.
-
-Важно помнить:
-• Каждый твой контакт без её инициативы — это сигнал, что границы можно снова сдвигать. Тишина с твоей стороны как раз даёт пространство для её мыслей.
-• Перенаправь фокус: работа, спорт, встречи с друзьями, хобби. Цель — не «наказать» её, а вернуть себе опору.
-• Если через 2–4 недели тишины с её стороны не будет — можно один раз спокойно спросить, как у неё дела, без требований и сцен.
-
-**Короче:** сейчас самый сильный ход — не писать. Хочешь, разберём, как справляться с желанием написать в моменте?`
+• Эмодзи — умеренно, для мягкости, не в каждом предложении.`
         };
-    }
-
-    async loadInstructions() {
-        try {
-            if (window.VERDIKT_DEBUG) console.log('Загрузка инструкций из instructions.txt...');
-            const response = await fetch('instructions.txt?t=' + Date.now());
-            if (response.ok) {
-                const instructions = await response.text();
-                this.state.instructions = instructions;
-                this.state.instructionsLoaded = true;
-                this.updateSystemPromptWithInstructions(instructions);
-                if (window.VERDIKT_DEBUG) console.log('✅ Инструкции успешно загружены, длина:', instructions.length);
-
-                if (this.state.messageCount > 1) {
-                    this.showNotification('Инструкции AI обновлены 📚', 'success');
-                }
-
-                return true;
-            } else {
-                if (window.VERDIKT_DEBUG) console.warn('❌ Не удалось загрузить инструкции, статус:', response.status);
-                this.state.instructionsLoaded = false;
-                return false;
-            }
-        } catch (error) {
-            if (window.VERDIKT_DEBUG) console.error('❌ Ошибка загрузки инструкций:', error);
-            this.state.instructionsLoaded = false;
-            return false;
-        }
-    }
-
-    updateSystemPromptWithInstructions(instructions) {
-        const systemPrompt = this.createSystemPromptMessage();
-        
-        if (this.state.conversationHistory && this.state.conversationHistory.length > 0) {
-            this.state.conversationHistory[0] = systemPrompt;
-        } else {
-            this.state.conversationHistory = [systemPrompt];
-        }
     }
 
     analyzeUserType(message) {
@@ -449,7 +399,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
         this.setupSpeechRecognition();
         this.setupBackgroundAnimations();
         
-        await this.loadInstructions();
         
         setTimeout(() => {
             this.initParticleSystem();
@@ -3017,7 +2966,6 @@ ${instructions ? 'ДОПОЛНИТЕЛЬНАЯ БАЗА ЗНАНИЙ (испол
 
         if (this.elements.reloadInstructions) {
             this.elements.reloadInstructions.addEventListener('click', async () => {
-                await this.loadInstructions();
                 this.showNotification('Инструкции успешно обновлены ✅', 'success');
             });
         }
