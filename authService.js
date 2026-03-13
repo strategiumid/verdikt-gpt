@@ -44,6 +44,9 @@ export class AuthService {
         if (user) {
             setTimeout(() => this.app.loadDashboardData(), 1000);
             this.app.loadUsage().catch(() => {});
+            if (this.app.chatStore && this.app.chatStore.loadChatsFromBackend) {
+                this.app.chatStore.loadChatsFromBackend().catch(() => {});
+            }
         } else {
             this.app.state.usage = null;
             this.app.updateSidebarUsage && this.app.updateSidebarUsage();

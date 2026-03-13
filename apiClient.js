@@ -37,7 +37,7 @@ export class APIClient {
 
     try {
         if (window.VERDIKT_DEBUG) {
-            console.log('Отправка запроса к API...', {
+            console.log('Отправка запроса к API...asd', {
                 url: useBackendProxy ? (this.authConfig.baseUrl + '/api/chat/completions') : this.apiConfig.url,
                 model: this.apiConfig.model,
                 messagesCount: messages.length,
@@ -65,6 +65,12 @@ export class APIClient {
          let response;
         if (useBackendProxy) {
             const baseUrl = (this.authConfig.baseUrl || window.location.origin).replace(/\/$/, '');
+            const localChatId = this.app.chatManager ? this.app.chatManager.currentChatId : null;
+            const backendChatIds = (this.app.state && this.app.state.backendChatIds) || {};
+            const backendChatId = localChatId ? backendChatIds[localChatId] || null : null;
+            console.log('backendChatId', backendChatId);
+            console.log('localChatId', localChatId);
+
             response = await fetch(`${baseUrl}/api/chat/completions`, {
                 method: 'POST',
                 credentials: 'include',
@@ -74,7 +80,8 @@ export class APIClient {
                     messages: enhancedMessages,
                     max_tokens: maxTokens || this.apiConfig.maxTokens,
                     temperature: this.apiConfig.temperature,
-                    stream: false
+                    stream: false,
+                    chatId: backendChatId
                 })
             });
         } else {
@@ -149,7 +156,14 @@ export class APIClient {
      aiResponse = aiResponse.replace(/#{1,6}\s*/g, '**'); // Заменяем заголовки с # на жирный текст
         
         if (useBackendProxy) {
-            return { content: aiResponse, usedBackendProxy: true };
+            const localChatId = this.app.chatManager ? this.app.chatManager.currentChatId : null;
+            if (localChatId && data && data.chatId) {
+                if (!this.app.state.backendChatIds) {
+                    this.app.state.backendChatIds = {};
+                }
+                this.app.state.backendChatIds[localChatId] = data.chatId;
+            }
+            return { content: aiResponse, usedBackendProxy: true, chatId: data.chatId };
         }
         return aiResponse;
         

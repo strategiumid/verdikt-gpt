@@ -109,7 +109,8 @@ export class VerdiktChatApp {
             searchModeEnabled: false,
             deepReflectionMode: false,
             feedbackAnalyticsFromBackend: null,
-            attachedImage: null
+            attachedImage: null,
+            backendChatIds: {}
         };
 
         this.crypto = new VerdiktCrypto();
@@ -439,7 +440,7 @@ ${deepReflectionInstructions}
 
         if (window.VERDIKT_DEBUG) {
             console.log('✅ Verdikt GPT инициализирован');
-            console.log('📚 Инструкции загружены:', this.state.instructionsLoaded);
+            console.log('📚 Инструкции загруженыs:', this.state.instructionsLoaded);
         }
         this.loadFeedback();
         if (!this.state.user) this.updateAnalyticsFromFeedback();

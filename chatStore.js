@@ -38,6 +38,31 @@ export class ChatStore {
         }
     }
 
+    async saveChatToBackend(chatData) {
+        try {
+            if (!this.state.user) return;
+            const baseUrl = (this.app.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
+            const url = `${baseUrl}/api/chats/${encodeURIComponent(chatData.id)}`;
+            const headers = {
+                'Content-Type': 'application/json',
+                ...(this.app.getAuthHeaders ? this.app.getAuthHeaders() : {})
+            };
+            const response = await fetch(url, {
+                method: 'PUT',
+                credentials: 'include',
+                headers,
+                body: JSON.stringify(chatData)
+            });
+            if (!response.ok && window.VERDIKT_DEBUG) {
+                console.error('Failed to save chat to backend', response.status);
+            }
+        } catch (e) {
+            if (window.VERDIKT_DEBUG) {
+                console.error('Error saving chat to backend', e);
+            }
+        }
+    }
+
     async saveEncryptedChats() {
         try {
             const encryptedData = localStorage.getItem('verdikt_encrypted_data');
@@ -93,6 +118,43 @@ export class ChatStore {
             
             if (this.chatManager.chats.length >= 5 && !this.state.achievements.chatHistorian.unlocked) {
                 this.app.unlockAchievement('chatHistorian');
+            }
+        }
+
+        // Сохраняем на бэкенде для авторизованных пользователей
+        await this.saveChatToBackend(chatData);
+    }
+
+    async loadChatsFromBackend() {
+        try {
+            if (!this.state.user) return;
+            const baseUrl = (this.app.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
+            const url = `${baseUrl}/api/chats`;
+            const headers = this.app.getAuthHeaders ? this.app.getAuthHeaders() : {};
+            const response = await fetch(url, {
+                method: 'GET',
+                credentials: 'include',
+                headers
+            });
+            if (!response.ok) {
+                if (window.VERDIKT_DEBUG) {
+                    console.error('Failed to load chats from backend', response.status);
+                }
+                return;
+            }
+            const chats = await response.json();
+            if (!Array.isArray(chats)) return;
+
+            this.chatManager.chats = chats;
+            if (chats.length > 0 && !this.chatManager.currentChatId) {
+                this.chatManager.currentChatId = chats[0].id;
+            }
+            localStorage.setItem('verdikt_chats', JSON.stringify(chats));
+            this.state.stats.totalChats = chats.length;
+            this.app.updateSettingsStats();
+        } catch (e) {
+            if (window.VERDIKT_DEBUG) {
+                console.error('Error loading chats from backend', e);
             }
         }
     }

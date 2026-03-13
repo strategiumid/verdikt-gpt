@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.verdikt.dto.UsageResponse;
 import org.verdikt.entity.User;
+import org.verdikt.service.ChatHistoryService;
 import org.verdikt.service.LlmProxyService;
 import org.verdikt.service.UserService;
 import org.springframework.http.HttpStatus;
@@ -25,11 +26,13 @@ public class ChatController {
 
     private final LlmProxyService llmProxyService;
     private final UserService userService;
+    private final ChatHistoryService chatHistoryService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public ChatController(LlmProxyService llmProxyService, UserService userService) {
+    public ChatController(LlmProxyService llmProxyService, UserService userService, ChatHistoryService chatHistoryService) {
         this.llmProxyService = llmProxyService;
         this.userService = userService;
+        this.chatHistoryService = chatHistoryService;
     }
 
     @PostMapping(value = "/completions", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -51,10 +54,17 @@ public class ChatController {
         }
         // REST-эндпоинт всегда работает в нестриминговом режиме
         body.put("stream", false);
+
         String responseBody = llmProxyService.chatCompletions(body);
         userService.incrementAiRequests(user.getId());
         try {
             Map<String, Object> result = objectMapper.readValue(responseBody, new TypeReference<Map<String, Object>>() {});
+
+            String effectiveChatId = chatHistoryService.saveFromCompletion(user, body, result);
+            if (effectiveChatId != null) {
+                result.put("chatId", effectiveChatId);
+            }
+
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Ошибка формата ответа LLM");

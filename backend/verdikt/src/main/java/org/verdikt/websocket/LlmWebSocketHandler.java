@@ -29,7 +29,7 @@ public class LlmWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void handleTextMessage(WebSocketSession session, TextMessage message) {
         try {
-            Map<String, Object> body = objectMapper.readValue(message.getPayload(), Map.class);
+            Map body = objectMapper.readValue(message.getPayload(), Map.class);
 
             // Запускаем стриминг в отдельном потоке, чтобы не блокировать обработчик WebSocket
             CompletableFuture.runAsync(() -> {
