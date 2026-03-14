@@ -998,10 +998,14 @@ ${deepReflectionInstructions}
             if (chatsData && Array.isArray(chatsData)) {
                 this.chatManager.chats = chatsData;
                 
-                const maxId = Math.max(...this.chatManager.chats.map(chat => 
-                    parseInt(chat.id.replace('chat-', '')) || 0
-                ));
-                this.chatManager.nextChatId = maxId + 1;
+                if (this.chatManager.chats.length > 0) {
+                    const maxId = Math.max(...this.chatManager.chats.map(chat =>
+                        parseInt(chat.id.replace('chat-', ''), 10) || 0
+                    ));
+                    this.chatManager.nextChatId = maxId + 1;
+                } else {
+                    this.chatManager.nextChatId = 1;
+                }
                 
                 const lastActiveId = localStorage.getItem('verdikt_last_active_chat');
                 if (lastActiveId) {
@@ -1075,7 +1079,8 @@ ${deepReflectionInstructions}
 
     async createNewChat() {
         const newChatId = 'chat-' + this.chatManager.nextChatId++;
-        
+        console.log('newChatId', newChatId);
+        console.log('this.chatManager.currentChatId', this.chatManager.currentChatId);
         this.chatManager.currentChatId = newChatId;
         
         this.state.conversationHistory = [this.createSystemPromptMessage()];
@@ -5332,6 +5337,12 @@ ${deepReflectionInstructions}
     }
 
     setupServiceWorker() {
+        // Не регистрировать Service Worker на localhost — иначе кэш мешает видеть изменения при live-server
+        const isLocalhost = /^https?:\/\/localhost(:\d+)?(\/|$)/i.test(location.origin) || /^https?:\/\/127\.0\.0\.1(:\d+)?(\/|$)/i.test(location.origin);
+        if (isLocalhost && 'serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+            return;
+        }
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('service-worker.js')
                 .then(registration => {
