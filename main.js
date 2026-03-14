@@ -440,7 +440,7 @@ ${deepReflectionInstructions}
 
         if (window.VERDIKT_DEBUG) {
             console.log('✅ Verdikt GPT инициализирован');
-            console.log('📚 Инструкции загруженыs:', this.state.instructionsLoaded);
+            console.log('📚 Инструкции загружены:', this.state.instructionsLoaded);
         }
         this.loadFeedback();
         if (!this.state.user) this.updateAnalyticsFromFeedback();

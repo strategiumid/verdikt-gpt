@@ -2,6 +2,7 @@ package org.verdikt.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.verdikt.dto.LlmCompletionResult;
 import org.verdikt.dto.UsageResponse;
 import org.verdikt.entity.User;
 import org.verdikt.service.ChatHistoryService;
@@ -55,12 +56,12 @@ public class ChatController {
         // REST-эндпоинт всегда работает в нестриминговом режиме
         body.put("stream", false);
 
-        String responseBody = llmProxyService.chatCompletions(body);
+        LlmCompletionResult completionResult = llmProxyService.chatCompletions(body);
         userService.incrementAiRequests(user.getId());
         try {
-            Map<String, Object> result = objectMapper.readValue(responseBody, new TypeReference<Map<String, Object>>() {});
+            Map<String, Object> result = objectMapper.readValue(completionResult.getResponseBody(), new TypeReference<Map<String, Object>>() {});
 
-            String effectiveChatId = chatHistoryService.saveFromCompletion(user, body, result);
+            String effectiveChatId = chatHistoryService.saveFromCompletion(user, body, result, completionResult.getRagItemIds());
             if (effectiveChatId != null) {
                 result.put("chatId", effectiveChatId);
             }

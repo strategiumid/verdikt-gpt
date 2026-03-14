@@ -1,5 +1,7 @@
 package org.verdikt.controller;
 
+import org.verdikt.dto.ChatMessagesPageResponse;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -31,6 +33,23 @@ public class ChatHistoryController {
             @PathVariable String chatId
     ) {
         return chatHistoryService.getChat(user, chatId);
+    }
+
+    /**
+     * Пагинированный список сообщений чата. Доступ только у владельца чата или админа.
+     * Админ может передать query-параметр userId, чтобы получить сообщения чата другого пользователя.
+     */
+    @GetMapping("/{chatId}/messages")
+    public ChatMessagesPageResponse getMessages(
+            @AuthenticationPrincipal User user,
+            @PathVariable String chatId,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        if (size < 1) size = 1;
+        if (size > 100) size = 100;
+        return chatHistoryService.getMessages(user, chatId, userId, PageRequest.of(page, size));
     }
 
     @PutMapping("/{chatId}")

@@ -3,11 +3,15 @@ package org.verdikt.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.verdikt.dto.ChatMessageDto;
+import org.verdikt.dto.ChatMessagesPageResponse;
 import org.verdikt.entity.Chat;
 import org.verdikt.entity.ChatMessage;
 import org.verdikt.entity.User;
 import org.verdikt.repository.ChatMessageRepository;
 import org.verdikt.repository.ChatRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +39,7 @@ public class ChatHistoryService {
      * Сохранить чат по результату вызова completions:
      * берём исходный body (model, messages, chatId) и ответ LLM,
      * добавляем сообщение ассистента и сохраняем в БД.
+     * ragItemIds — список qaId RAG-элементов, использованных при генерации ответа (сохраняется в сообщении ассистента).
      *
      * Возвращает итоговый идентификатор чата (генерируется, если не был задан).
      */
@@ -42,7 +47,8 @@ public class ChatHistoryService {
     @SuppressWarnings("unchecked")
     public String saveFromCompletion(User user,
                                      Map<String, Object> requestBody,
-                                     Map<String, Object> llmResult) {
+                                     Map<String, Object> llmResult,
+                                     List<Long> ragItemIds) {
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Войдите в аккаунт");
         }
@@ -97,6 +103,13 @@ public class ChatHistoryService {
             aiMsg.setChat(chat);
             aiMsg.setRole("assistant");
             aiMsg.setContent(assistantContent);
+            if (ragItemIds != null && !ragItemIds.isEmpty()) {
+                try {
+                    aiMsg.setRagItemIdsJson(objectMapper.writeValueAsString(ragItemIds));
+                } catch (JsonProcessingException e) {
+                    // ignore: поле остаётся null
+                }
+            }
             chatMessageRepository.save(aiMsg);
         }
 
@@ -167,6 +180,53 @@ public class ChatHistoryService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Войдите в аккаунт");
         }
         chatRepository.deleteByUserIdAndChatKey(user.getId(), chatKey);
+    }
+
+    /**
+     * Пагинированный список сообщений чата. Доступ только у владельца чата или админа.
+     * Для админа можно передать userId (query), чтобы получить сообщения чата другого пользователя.
+     */
+    @Transactional(readOnly = true)
+    public ChatMessagesPageResponse getMessages(User user, String chatId, Long userIdParam, Pageable pageable) {
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Войдите в аккаунт");
+        }
+        if (chatId == null || chatId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Идентификатор чата обязателен");
+        }
+        boolean isAdmin = "ADMIN".equals(user.getRole());
+        Long ownerId = (isAdmin && userIdParam != null) ? userIdParam : user.getId();
+        Chat chat = chatRepository.findByUserIdAndChatKey(ownerId, chatId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Чат не найден"));
+        if (!isAdmin && !chat.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Нет доступа к этому чату");
+        }
+        Page<ChatMessage> page = chatMessageRepository.findByChatOrderByCreatedAtAsc(chat, pageable);
+        List<ChatMessageDto> content = page.getContent().stream()
+                .map(this::toMessageDto)
+                .collect(Collectors.toList());
+        return new ChatMessagesPageResponse(
+                content,
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.getSize(),
+                page.getNumber()
+        );
+    }
+
+    private ChatMessageDto toMessageDto(ChatMessage m) {
+        ChatMessageDto dto = new ChatMessageDto(m.getRole(), m.getContent());
+        dto.setId(m.getId());
+        dto.setCreatedAt(m.getCreatedAt());
+        if (m.getRagItemIdsJson() != null && !m.getRagItemIdsJson().isBlank()) {
+            try {
+                List<Long> ids = objectMapper.readValue(m.getRagItemIdsJson(), new TypeReference<List<Long>>() {});
+                dto.setRagItemIds(ids);
+            } catch (Exception ignored) {
+                // leave null
+            }
+        }
+        return dto;
     }
 
     @SuppressWarnings("unchecked")

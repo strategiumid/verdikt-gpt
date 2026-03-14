@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.verdikt.dto.LlmCompletionResult;
 import org.verdikt.dto.RagItemDto;
 
 import java.nio.charset.StandardCharsets;
@@ -11,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Прокси к LLM API (routerai.ru). Ключ хранится только на бэкенде (llm.api-key).
@@ -44,12 +46,13 @@ public class LlmProxyService {
     /**
      * Добавить system prompt (если его нет) и сообщение с контекстом из RAG-сервиса.
      * Ожидается, что body содержит поле "messages" в формате OpenAI Chat API.
+     * Возвращает список qaId использованных RAG-элементов (для сохранения в сообщении ассистента).
      */
     @SuppressWarnings("unchecked")
-    public void enrichWithRagContext(Map<String, Object> body) {
+    public List<Long> enrichWithRagContext(Map<String, Object> body) {
         Object messagesObj = body.get("messages");
         if (!(messagesObj instanceof List<?> rawList)) {
-            return;
+            return List.of();
         }
 
         List<Map<String, Object>> originalMessages = new ArrayList<>();
@@ -59,7 +62,7 @@ public class LlmProxyService {
             }
         }
         if (originalMessages.isEmpty()) {
-            return;
+            return List.of();
         }
 
         // Определяем последний пользовательский вопрос
@@ -124,18 +127,24 @@ public class LlmProxyService {
         }
 
         body.put("messages", newMessages);
+
+        List<Long> ragItemIds = top.stream()
+                .map(RagItemDto::getQaId)
+                .filter(id -> id != null)
+                .collect(Collectors.toList());
+        return ragItemIds;
     }
 
     /**
-     * Отправить запрос в LLM и вернуть тело ответа как есть (JSON).
+     * Отправить запрос в LLM и вернуть тело ответа и список ID RAG-элементов, использованных в контексте.
      * Ключ подставляется на бэкенде, на клиент не передаётся.
      */
-    public String chatCompletions(Map<String, Object> body) {
+    public LlmCompletionResult chatCompletions(Map<String, Object> body) {
         if (!isConfigured()) {
             throw new IllegalStateException("LLM API ключ не настроен. Задайте переменную окружения LLM_API_KEY.");
         }
         // По умолчанию обогащаем запрос контекстом RAG
-        enrichWithRagContext(body);
+        List<Long> ragItemIds = enrichWithRagContext(body);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -145,7 +154,7 @@ public class LlmProxyService {
         if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
             throw new RuntimeException("LLM API вернул " + (response.getStatusCode()));
         }
-        return response.getBody();
+        return new LlmCompletionResult(response.getBody(), ragItemIds);
     }
 
     /**

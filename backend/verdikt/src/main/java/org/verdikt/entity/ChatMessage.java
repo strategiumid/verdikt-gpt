@@ -23,6 +23,10 @@ public class ChatMessage {
     @Column(name = "content", nullable = false)
     private String content;
 
+    /** JSON-массив ID RAG-элементов (qaId), использованных при генерации ответа. Только для role=assistant. */
+    @Column(name = "rag_item_ids", length = 500)
+    private String ragItemIdsJson;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -56,6 +60,14 @@ public class ChatMessage {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public String getRagItemIdsJson() {
+        return ragItemIdsJson;
+    }
+
+    public void setRagItemIdsJson(String ragItemIdsJson) {
+        this.ragItemIdsJson = ragItemIdsJson;
     }
 
     public Instant getCreatedAt() {

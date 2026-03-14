@@ -29,6 +29,9 @@ public class ReplayProtectionFilter extends OncePerRequestFilter {
     @Value("${app.replay.enabled:true}")
     private boolean enabled;
 
+    @Value("${app.replay.allow-missing-headers:false}")
+    private boolean allowMissingHeaders;
+
     @Value("${app.replay.window-seconds:300}")
     private int windowSeconds;
 
@@ -56,6 +59,10 @@ public class ReplayProtectionFilter extends OncePerRequestFilter {
         String timestampHeader = request.getHeader("X-Timestamp");
 
         if (nonce == null || nonce.isBlank() || timestampHeader == null || timestampHeader.isBlank()) {
+            if (allowMissingHeaders) {
+                filterChain.doFilter(request, response);
+                return;
+            }
             sendReplayError(response, 400, "X-Nonce и X-Timestamp обязательны");
             return;
         }
