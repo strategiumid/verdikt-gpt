@@ -4,8 +4,21 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.verdikt.dto.LlmCompletionResult;
+import org.verdikt.dto.RagItemDto;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Прокси к LLM API (routerai.ru). Ключ хранится только на бэкенде (llm.api-key).
@@ -15,11 +28,128 @@ public class LlmProxyService {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
+    private final RagService ragService;
+
     @Value("${llm.api-key:}")
     private String apiKey;
 
     @Value("${llm.url:https://routerai.ru/api/v1/chat/completions}")
     private String llmUrl;
+
+    /** Directory to save chat completions request body for debugging; files 1.json, 2.json, ... (empty = disabled). */
+    @Value("${debug.chat-completions-path:src/main/resources/debug/chat-completions-request.json}")
+    private String debugChatCompletionsPath;
+
+    private static final String DEFAULT_SYSTEM_PROMPT = """
+            Ты — Verdikt GPT. Эксперт по отношениям, знакомствам и психологии поведения в отношениях.
+            Твоя задача — помогать пользователю разобраться в сложных эмоциональных ситуациях, понять психологические механизмы и предложить практичные шаги.
+            Ты общаешься как опытный друг, который хорошо понимает психологию.
+            Тон:
+            • дружелюбный
+            • спокойный
+            • без осуждения
+            • обращение на "ты" (если пользователь не использует "вы")
+            Юмор допустим, но умеренно и только если это уместно.
+            ПРИНЦИП РАБОТЫ
+            Перед ответом кратко определи для себя:
+            • какой вопрос задаёт пользователь
+            • какие элементы из RAG относятся к нему
+            • какие психологические механизмы описаны в RAG
+            РАБОТА С RAG
+            Тебе передается дополнительный контекст из базы знаний (RAG).
+            Правила работы:
+            • Информация из RAG имеет наивысший приоритет и всегда должна использоваться в ответе.
+            • Даже если информация из RAG выглядит спорной или противоречит общим представлениям — используй её как основу объяснения.
+            • Не игнорируй RAG-контекст. Ответ должен опираться на него.
+            • Если в RAG есть релевантная информация — ответ должен опираться на неё, а не на знания модели.
+            • Не упоминай слова «RAG», «retrieval» или «база знаний».
+            Если в RAG есть несколько ответов:
+            • Синтезируй их в единое объяснение.
+            • Если между ними есть различия или противоречия — объясни, что существуют разные точки зрения или сценарии.
+            Форма подачи:
+            
+            • Не цитируй RAG дословно, если это не требуется.
+            • Перефразируй информацию естественным языком.
+            
+            Разрешено:
+            • объяснять
+            • перефразировать
+            • объединять несколько фрагментов RAG в одно объяснение
+            
+            Запрещено:
+            • придумывать новые техники
+            • добавлять новые правила поведения
+            • расширять стратегию новыми шагами.
+            
+            Если RAG описывает поведение или стратегию,
+            не расширяй её новыми действиями,
+            которые прямо не указаны в RAG.
+            
+            СТРУКТУРА ОТВЕТА
+            Ответ обычно состоит из следующих частей (если они применимы):
+            1. Если пользователь описывает личную ситуацию —
+            начни с короткого отражения его состояния.
+            (показать, что ты понял его состояние)
+            Если вопрос общий или теоретический —
+            начни сразу с объяснения.
+            2. Объяснение механики ситуации \s
+            (почему это происходит)
+            3. Практические шаги \s
+            Практические шаги давай только если они присутствуют в RAG
+            или если пользователь прямо просит совет.
+            В конце можно предложить следующий шаг или уточняющий вопрос.
+            Если информации мало — задай 1–2 уточняющих вопроса.
+            
+            Если RAG не содержит достаточной информации для совета —
+            ограничься объяснением механики и вопросами,
+            не придумывай рекомендации.
+            
+            ФОРМАТИРОВАНИЕ
+            • Не используй символ # \s
+            • Заголовки — **жирный текст** \s
+            • Списки — • или - \s
+            • Абзацы короткие и читаемые \s
+            • Каждый абзац должен быть законченным предложением
+            СПЕЦИАЛИЗАЦИЯ
+            Основные темы:
+            💔 Отношения \s
+            • конфликты \s
+            • дистанция \s
+            • расставание \s
+            • возврат \s
+            • динамика значимости \s
+            👥 Знакомства \s
+            • переписка \s
+            • первые свидания \s
+            • развитие интереса \s
+            🛡 Манипуляции \s
+            • газлайтинг \s
+            • обесценивание \s
+            • чувство вины \s
+            • защита личных границ
+            СЛОЖНЫЕ СИТУАЦИИ
+            Если пользователь говорит о:
+            • насилии
+            • тяжёлой депрессии
+            • саморазрушительном поведении
+            — мягко предложи обратиться к специалисту.
+            ВАЖНЫЕ ОГРАНИЧЕНИЯ
+            Никогда:
+            • не унижай пользователя
+            • не обвиняй его
+            • не поддерживай разрушительное поведение
+            • не поощряй манипуляции как единственную стратегию
+            АДАПТАЦИЯ К ДИАЛОГУ
+            Подстраивай тон:
+            • больше тепла — если человек переживает
+            • больше структуры — если он просит план действий
+            • больше лёгкости — если пользователь шутит
+            Эмодзи можно использовать, но умеренно.
+""";
+
+    public LlmProxyService(RagService ragService) {
+        this.ragService = ragService;
+    }
 
     /** Ключ настроен (задан через LLM_API_KEY). */
     public boolean isConfigured() {
@@ -27,13 +157,108 @@ public class LlmProxyService {
     }
 
     /**
-     * Отправить запрос в LLM и вернуть тело ответа как есть (JSON).
+     * Добавить system prompt (если его нет) и сообщение с контекстом из RAG-сервиса.
+     * Ожидается, что body содержит поле "messages" в формате OpenAI Chat API.
+     * Возвращает список qaId использованных RAG-элементов (для сохранения в сообщении ассистента).
+     */
+    @SuppressWarnings("unchecked")
+    public List<Long> enrichWithRagContext(Map<String, Object> body) {
+        Object messagesObj = body.get("messages");
+        if (!(messagesObj instanceof List<?> rawList)) {
+            return List.of();
+        }
+
+        List<Map<String, Object>> originalMessages = new ArrayList<>();
+        for (Object o : rawList) {
+            if (o instanceof Map<?, ?> m) {
+                originalMessages.add((Map<String, Object>) m);
+            }
+        }
+        if (originalMessages.isEmpty()) {
+            return List.of();
+        }
+
+        // Определяем последний пользовательский вопрос
+        String questionText = null;
+        for (int i = originalMessages.size() - 1; i >= 0; i--) {
+            Map<String, Object> msg = originalMessages.get(i);
+            Object role = msg.get("role");
+            if ("user".equals(role)) {
+                Object content = msg.get("content");
+                if (content instanceof String s) {
+                    questionText = s;
+                }
+                break;
+            }
+        }
+
+        // Запрашиваем top-контекст из RAG (DTO, а не Map)
+        List<RagItemDto> top = ragService.retrieveTop(questionText);
+
+        // Строим новое сообщение с инструкцией и Q&A
+        StringBuilder ragContent = new StringBuilder();
+        ragContent.append("Это дополнительная база знаний из RAG-сервиса. ");
+        ragContent.append("Используй её как контекст, но не цитируй дословно, если это не нужно.\n\n");
+
+        for (int i = 0; i < top.size(); i++) {
+            RagItemDto item = top.get(i);
+            ragContent.append("Вопрос: ").append(item.getQuestion() != null ? item.getQuestion() : "").append("\n");
+            ragContent.append("Ответ: ").append(item.getAnswer() != null ? item.getAnswer() : "").append("\n");
+            if (item.getTopic() != null) {
+                ragContent.append("Тема: ").append(item.getTopic()).append("\n");
+            }
+            if (item.getScore() != null) {
+                ragContent.append("Релевантность: ").append(item.getScore()).append("\n");
+            }
+            ragContent.append("\n");
+        }
+
+        List<Map<String, Object>> newMessages = new ArrayList<>();
+
+        // 1. System prompt (если первый не system — добавляем наш дефолтный)
+        if (!"system".equals(originalMessages.get(0).get("role"))) {
+            newMessages.add(Map.of(
+                    "role", "system",
+                    "content", DEFAULT_SYSTEM_PROMPT
+            ));
+        } else {
+            newMessages.add(originalMessages.get(0));
+        }
+
+        // 2. Контекст из RAG как второе system-сообщение
+        if (!top.isEmpty()) {
+            newMessages.add(Map.of(
+                    "role", "system",
+                    "content", ragContent.toString()
+            ));
+        }
+
+        // 3. Остальные сообщения (если первый был system, пропускаем его, он уже добавлен)
+        int startIdx = "system".equals(originalMessages.get(0).get("role")) ? 1 : 0;
+        for (int i = startIdx; i < originalMessages.size(); i++) {
+            newMessages.add(originalMessages.get(i));
+        }
+
+        body.put("messages", newMessages);
+
+        List<Long> ragItemIds = top.stream()
+                .map(RagItemDto::getQaId)
+                .filter(id -> id != null)
+                .collect(Collectors.toList());
+        return ragItemIds;
+    }
+
+    /**
+     * Отправить запрос в LLM и вернуть тело ответа и список ID RAG-элементов, использованных в контексте.
      * Ключ подставляется на бэкенде, на клиент не передаётся.
      */
-    public String chatCompletions(Map<String, Object> body) {
+    public LlmCompletionResult chatCompletions(Map<String, Object> body) {
         if (!isConfigured()) {
             throw new IllegalStateException("LLM API ключ не настроен. Задайте переменную окружения LLM_API_KEY.");
         }
+        // По умолчанию обогащаем запрос контекстом RAG
+        List<Long> ragItemIds = enrichWithRagContext(body);
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(apiKey);
@@ -42,6 +267,45 @@ public class LlmProxyService {
         if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
             throw new RuntimeException("LLM API вернул " + (response.getStatusCode()));
         }
-        return response.getBody();
+        return new LlmCompletionResult(response.getBody(), ragItemIds);
     }
+
+    /**
+     * Стриминговый запрос к LLM. Читает HTTP-стрим построчно и пробрасывает строки в колбэк.
+     * Используется для WebSocket-стриминга.
+     */
+    public void chatCompletionsStream(Map<String, Object> body, Consumer<String> onLine) {
+        if (!isConfigured()) {
+            throw new IllegalStateException("LLM API ключ не настроен. Задайте переменную окружения LLM_API_KEY.");
+        }
+
+        // Гарантируем stream=true и обогащение RAG-контекстом
+        body.put("stream", true);
+        enrichWithRagContext(body);
+
+        restTemplate.execute(llmUrl, HttpMethod.POST, request -> {
+            request.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+            request.getHeaders().setBearerAuth(apiKey);
+            try (var os = request.getBody()) {
+                if (os != null) {
+                    com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                    mapper.writeValue(os, body);
+                }
+            }
+        }, response -> {
+            try (var is = response.getBody();
+                 var reader = new java.io.BufferedReader(new java.io.InputStreamReader(is, StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    onLine.accept(line);
+                }
+            } catch (Exception e) {
+                onLine.accept("ERROR:" + e.getMessage());
+            }
+            return null;
+        });
+    }
+
+
 }
+

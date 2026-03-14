@@ -37,7 +37,7 @@ export class APIClient {
 
     try {
         if (window.VERDIKT_DEBUG) {
-            console.log('Отправка запроса к API...', {
+            console.log('Отправка запроса к API...asd', {
                 url: useBackendProxy ? (this.authConfig.baseUrl + '/api/chat/completions') : this.apiConfig.url,
                 model: this.apiConfig.model,
                 messagesCount: messages.length,
@@ -47,7 +47,6 @@ export class APIClient {
 
         // Добавляем инструкцию по форматированию в последнее сообщение
         const enhancedMessages = [...messages];
-        const formatHint = `\n\n[ФОРМАТИРОВАНИЕ: без #, заголовки **жирным**, списки через • или -. Завершай каждую мысль полным предложением; не обрывай ответ на полуслове.]`;
         
         const lastUserMessageIndex = [...enhancedMessages].reverse().findIndex(m => m.role === 'user');
         if (lastUserMessageIndex !== -1) {
@@ -59,13 +58,19 @@ export class APIClient {
                     const newContent = lastUserMsg.content.map(p => p.type === 'text' ? { ...p, text: (p.text || '') + formatHint } : p);
                     enhancedMessages[actualIndex] = { ...lastUserMsg, content: newContent };
                 } else {
-                    enhancedMessages[actualIndex] = { ...lastUserMsg, content: lastUserMsg.content + formatHint };
+                    enhancedMessages[actualIndex] = { ...lastUserMsg, content: lastUserMsg.content };
                 }
             }
         }
          let response;
         if (useBackendProxy) {
             const baseUrl = (this.authConfig.baseUrl || window.location.origin).replace(/\/$/, '');
+            const localChatId = this.app.chatManager ? this.app.chatManager.currentChatId : null;
+            const backendChatIds = (this.app.state && this.app.state.backendChatIds) || {};
+            const backendChatId = localChatId ? backendChatIds[localChatId] || null : null;
+            console.log('backendChatId', backendChatId);
+            console.log('localChatId', localChatId);
+
             response = await fetch(`${baseUrl}/api/chat/completions`, {
                 method: 'POST',
                 credentials: 'include',
@@ -75,7 +80,8 @@ export class APIClient {
                     messages: enhancedMessages,
                     max_tokens: maxTokens || this.apiConfig.maxTokens,
                     temperature: this.apiConfig.temperature,
-                    stream: false
+                    stream: false,
+                    chatId: backendChatId
                 })
             });
         } else {
@@ -150,7 +156,14 @@ export class APIClient {
      aiResponse = aiResponse.replace(/#{1,6}\s*/g, '**'); // Заменяем заголовки с # на жирный текст
         
         if (useBackendProxy) {
-            return { content: aiResponse, usedBackendProxy: true };
+            const localChatId = this.app.chatManager ? this.app.chatManager.currentChatId : null;
+            if (localChatId && data && data.chatId) {
+                if (!this.app.state.backendChatIds) {
+                    this.app.state.backendChatIds = {};
+                }
+                this.app.state.backendChatIds[localChatId] = data.chatId;
+            }
+            return { content: aiResponse, usedBackendProxy: true, chatId: data.chatId };
         }
         return aiResponse;
         
