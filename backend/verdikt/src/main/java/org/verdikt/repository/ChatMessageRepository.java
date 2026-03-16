@@ -13,5 +13,11 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     List<ChatMessage> findByChatOrderByCreatedAtAsc(Chat chat);
 
     Page<ChatMessage> findByChatOrderByCreatedAtAsc(Chat chat, Pageable pageable);
+
+    /**
+     * Последние N сообщений по ключу чата (chat.chatKey), отсортированные по убыванию createdAt.
+     * Используется для восстановления недавнего контекста при стриминге через WebSocket.
+     */
+    List<ChatMessage> findTop10ByChat_ChatKeyOrderByIdDesc(String chatKey);
 }
 

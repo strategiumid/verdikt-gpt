@@ -36,6 +36,16 @@ public class LlmProxyService {
     @Value("${llm.url:https://routerai.ru/api/v1/chat/completions}")
     private String llmUrl;
 
+    /** Модель и параметры по умолчанию для запросов к LLM (если клиент их не задал). */
+    @Value("${llm.model:x-ai/grok-4-fast}")
+    private String defaultModel;
+
+    @Value("${llm.temperature:0.5}")
+    private double defaultTemperature;
+
+    @Value("${llm.max-tokens:2400}")
+    private int defaultMaxTokens;
+
     /** Directory to save chat completions request body for debugging; files 1.json, 2.json, ... (empty = disabled). */
     @Value("${debug.chat-completions-path:src/main/resources/debug/chat-completions-request.json}")
     private String debugChatCompletionsPath;
@@ -68,7 +78,7 @@ public class LlmProxyService {
             • Если между ними есть различия или противоречия — объясни, что существуют разные точки зрения или сценарии.
             Форма подачи:
             
-            • Не цитируй RAG дословно, если это не требуется.
+            • Не цитируй RAG дословно, используй его только как база знаний чтобы сгененировать ответ.
             • Перефразируй информацию естественным языком.
             
             Разрешено:
@@ -256,6 +266,8 @@ public class LlmProxyService {
         if (!isConfigured()) {
             throw new IllegalStateException("LLM API ключ не настроен. Задайте переменную окружения LLM_API_KEY.");
         }
+        // Подставляем значения по умолчанию (если клиент их не передал)
+        applyDefaults(body);
         // По умолчанию обогащаем запрос контекстом RAG
         List<Long> ragItemIds = enrichWithRagContext(body);
 
@@ -273,15 +285,19 @@ public class LlmProxyService {
     /**
      * Стриминговый запрос к LLM. Читает HTTP-стрим построчно и пробрасывает строки в колбэк.
      * Используется для WebSocket-стриминга.
+     * Возвращает результат с полным текстом ответа и списком ragItemIds.
      */
-    public void chatCompletionsStream(Map<String, Object> body, Consumer<String> onLine) {
+    public LlmCompletionResult chatCompletionsStream(Map<String, Object> body, Consumer<String> onLine) {
         if (!isConfigured()) {
             throw new IllegalStateException("LLM API ключ не настроен. Задайте переменную окружения LLM_API_KEY.");
         }
 
-        // Гарантируем stream=true и обогащение RAG-контекстом
+        // Гарантируем stream=true, значения по умолчанию и обогащение RAG-контекстом
         body.put("stream", true);
-        enrichWithRagContext(body);
+        applyDefaults(body);
+        List<Long> ragItemIds = enrichWithRagContext(body);
+
+        final StringBuilder fullText = new StringBuilder();
 
         restTemplate.execute(llmUrl, HttpMethod.POST, request -> {
             request.getHeaders().setContentType(MediaType.APPLICATION_JSON);
@@ -298,14 +314,121 @@ public class LlmProxyService {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     onLine.accept(line);
+                    String chunk = extractChunkFromStreamLine(line);
+                    if (chunk != null && !chunk.isBlank()) {
+                        fullText.append(chunk);
+                    }
                 }
             } catch (Exception e) {
                 onLine.accept("ERROR:" + e.getMessage());
             }
             return null;
         });
+
+        return new LlmCompletionResult(fullText.toString(), ragItemIds);
     }
 
+    /**
+     * Извлекает текстовый фрагмент ответа ассистента из одной строки стрима routerai/xAI.
+     * Ожидаемый формат:
+     *   data: { "choices": [ { "delta": { "content": "..." }, "message": { "content": "..." } } ] }
+     * Возвращает только текст контента (без префикса "data:" и без служебных полей).
+     */
+    @SuppressWarnings("unchecked")
+    private String extractChunkFromStreamLine(String line) {
+        if (line == null) return null;
+        String trimmed = line.trim();
+        if (trimmed.isEmpty() || "[DONE]".equals(trimmed)) {
+            return null;
+        }
 
+        String jsonPart = trimmed;
+        if (jsonPart.startsWith("data:")) {
+            jsonPart = jsonPart.substring(5).trim();
+        }
+        if (jsonPart.isEmpty() || "[DONE]".equals(jsonPart)) {
+            return null;
+        }
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, Object> data = mapper.readValue(jsonPart, Map.class);
+            Object choicesObj = data.get("choices");
+            if (!(choicesObj instanceof java.util.List<?> choices) || choices.isEmpty()) {
+                return null;
+            }
+            Object first = choices.get(0);
+            if (!(first instanceof Map<?, ?> choiceMapRaw)) {
+                return null;
+            }
+            Map<String, Object> choiceMap = (Map<String, Object>) choiceMapRaw;
+
+            Object deltaObj = choiceMap.get("delta");
+            if (deltaObj instanceof Map<?, ?> deltaMapRaw) {
+                Map<String, Object> deltaMap = (Map<String, Object>) deltaMapRaw;
+                Object contentObj = deltaMap.get("content");
+                if (contentObj instanceof String s && !s.isBlank()) {
+                    return s;
+                }
+            }
+
+            Object messageObj = choiceMap.get("message");
+            if (messageObj instanceof Map<?, ?> msgMapRaw) {
+                Map<String, Object> msgMap = (Map<String, Object>) msgMapRaw;
+                Object contentObj = msgMap.get("content");
+                if (contentObj instanceof String s && !s.isBlank()) {
+                    return s;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        return null;
+    }
+
+    /**
+     * Подставляет в body значения по умолчанию для модели и параметров генерации,
+     * если они не заданы клиентом, и гарантирует наличие системного промпта
+     * в начале списка сообщений.
+     */
+    private void applyDefaults(Map<String, Object> body) {
+        if (body == null) {
+            return;
+        }
+        body.putIfAbsent("model", defaultModel);
+        body.putIfAbsent("temperature", defaultTemperature);
+        body.putIfAbsent("max_tokens", defaultMaxTokens);
+
+        // Гарантируем, что первый элемент messages — system с DEFAULT_SYSTEM_PROMPT
+        Object messagesObj = body.get("messages");
+        java.util.List<Object> messages;
+        if (messagesObj instanceof java.util.List<?> list) {
+            messages = new java.util.ArrayList<>(list);
+        } else {
+            messages = new java.util.ArrayList<>();
+        }
+
+        if (messages.isEmpty()) {
+            java.util.Map<String, Object> systemMsg = new java.util.HashMap<>();
+            systemMsg.put("role", "system");
+            systemMsg.put("content", DEFAULT_SYSTEM_PROMPT);
+            messages.add(systemMsg);
+        } else {
+            Object first = messages.get(0);
+            boolean isSystem = false;
+            if (first instanceof java.util.Map<?, ?> m) {
+                Object role = m.get("role");
+                isSystem = "system".equals(role);
+            }
+            if (!isSystem) {
+                java.util.Map<String, Object> systemMsg = new java.util.HashMap<>();
+                systemMsg.put("role", "system");
+                systemMsg.put("content", DEFAULT_SYSTEM_PROMPT);
+                messages.add(0, systemMsg);
+            }
+        }
+
+        body.put("messages", messages);
+    }
 }
 

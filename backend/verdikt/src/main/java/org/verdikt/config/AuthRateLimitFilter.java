@@ -33,6 +33,11 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
+        if (isWebSocketHandshake(request)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String path = request.getRequestURI();
         if (!"POST".equalsIgnoreCase(request.getMethod())) {
             filterChain.doFilter(request, response);
@@ -63,6 +68,13 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
             return;
         }
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isWebSocketHandshake(HttpServletRequest request) {
+        String upgrade = request.getHeader("Upgrade");
+        String path = request.getRequestURI();
+        return (path != null && path.startsWith("/ws/"))
+                || (upgrade != null && "websocket".equalsIgnoreCase(upgrade));
     }
 
     private String getClientIp(HttpServletRequest request) {
