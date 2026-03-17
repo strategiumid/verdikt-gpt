@@ -2,62 +2,50 @@ package org.verdikt.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
-import org.verdikt.entity.ChatMessage;
 import org.verdikt.entity.User;
-import org.verdikt.repository.ChatMessageRepository;
 import org.verdikt.service.ChatHistoryService;
+import org.verdikt.service.ChatOrchestratorService;
 import org.verdikt.service.LlmProxyService;
+import org.verdikt.service.OrchestratorResult;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * WebSocket-обработчик для стриминга ответов LLM.
- * Клиент присылает DTO формата { \"message\": \"...\", \"chatId\": \"uuid\" }.
- * Бэкенд восстанавливает последние сообщения чата из БД, добавляет новое
- * сообщение пользователя, обогащает запрос системным промптом и RAG-контекстом
- * и стримит ответ LLM обратно по WebSocket, параллельно сохраняя историю чата.
+ * WebSocket handler for streaming LLM responses.
+ * Client sends: { "message": "...", "chatId": "uuid", "selectedTopicId": "topic_2" } (optional).
+ * Pipeline: topic routing → rewrite (turn 2+) → RAG retrieval → stream → persist.
  */
 @Component
 public class LlmWebSocketHandler extends TextWebSocketHandler {
 
     private final LlmProxyService llmProxyService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    private final ChatMessageRepository chatMessageRepository;
     private final ChatHistoryService chatHistoryService;
-
-    private static final int MAX_MESSAGES_TOTAL = 10;
-    private static final int MAX_MESSAGES_PER_ROLE = 5;
+    private final ChatOrchestratorService chatOrchestratorService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public LlmWebSocketHandler(LlmProxyService llmProxyService,
-                               ChatMessageRepository chatMessageRepository,
-                               ChatHistoryService chatHistoryService) {
+                               ChatHistoryService chatHistoryService,
+                               ChatOrchestratorService chatOrchestratorService) {
         this.llmProxyService = llmProxyService;
-        this.chatMessageRepository = chatMessageRepository;
         this.chatHistoryService = chatHistoryService;
+        this.chatOrchestratorService = chatOrchestratorService;
     }
 
     /**
-     * DTO, которое присылает фронтенд по WebSocket:
-     * { \"message\": \"...\", \"chatId\": \"uuid\" }
+     * DTO from frontend: { "message": "...", "chatId": "uuid", "selectedTopicId": "topic_2" } (optional).
      */
     public static class StreamRequestDto {
         public String message;
         public String chatId;
+        public String selectedTopicId;
     }
 
     @Override
@@ -73,11 +61,14 @@ public class LlmWebSocketHandler extends TextWebSocketHandler {
             }
 
             StreamRequestDto dto = objectMapper.readValue(message.getPayload(), StreamRequestDto.class);
-            Map<String, Object> body = buildRequestBodyFromDto(dto);
+            if (dto == null || dto.message == null || dto.message.isBlank()) {
+                if (session.isOpen()) {
+                    session.sendMessage(new TextMessage("ERROR:Message is required"));
+                }
+                return;
+            }
 
-            // Запускаем стриминг в отдельном потоке, чтобы не блокировать обработчик WebSocket
-            CompletableFuture.runAsync(() -> streamAndPersist(session, body, user, dto.chatId));
-
+            CompletableFuture.runAsync(() -> processTurn(session, user, dto));
         } catch (Exception e) {
             try {
                 if (session.isOpen()) {
@@ -89,40 +80,47 @@ public class LlmWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    private void streamAndPersist(WebSocketSession session, Map<String, Object> body, User user, String userChatId) {
+    private void processTurn(WebSocketSession session, User user, StreamRequestDto dto) {
         try {
-            boolean isNewChat = (userChatId == null || userChatId.isBlank());
+            OrchestratorResult result = chatOrchestratorService.processTurn(
+                    user, dto.chatId, dto.message, dto.selectedTopicId);
 
-            var completionResult = llmProxyService.chatCompletionsStream(body, line -> {
+            if (result instanceof OrchestratorResult.ChooseTopic choose) {
+                if (session.isOpen()) {
+                    session.sendMessage(new TextMessage(objectMapper.writeValueAsString(choose.response())));
+                    session.close(CloseStatus.NORMAL);
+                }
+                return;
+            }
+
+            OrchestratorResult.Stream stream = (OrchestratorResult.Stream) result;
+            boolean isNewChat = (dto.chatId == null || dto.chatId.isBlank());
+
+            var completionResult = llmProxyService.chatCompletionsStream(stream.body(), line -> {
                 try {
                     if (session.isOpen()) {
                         session.sendMessage(new TextMessage(line));
                     }
                 } catch (Exception ignored) {
-                    // Игнорируем дальнейшие ошибки отправки при обрыве соединения
                 }
             });
 
-            String chatId = null;
             String fullText = completionResult != null ? completionResult.getResponseBody() : null;
-            java.util.List<Long> ragItemIds = completionResult != null ? completionResult.getRagItemIds() : java.util.List.of();
+            List<Long> ragItemIds = completionResult != null ? completionResult.getRagItemIds() : List.of();
 
             if (user != null && fullText != null && !fullText.isBlank()) {
+                var updatedState = chatOrchestratorService.finishTurn(stream, fullText, ragItemIds);
                 Map<String, Object> llmResult = new HashMap<>();
                 llmResult.put("content", fullText);
-                chatId = chatHistoryService.saveFromCompletion(user, body, llmResult, ragItemIds);
-            }
-            saveDebugBody(body, chatId);
+                String chatId = chatHistoryService.saveFromCompletion(
+                        user, stream.body(), llmResult, ragItemIds, updatedState, stream.skipUserMessage());
 
-            // Для уже существующих чатов фронтенд и так знает chatId,
-            // поэтому отправляем его только для новых чатов.
-            if (isNewChat && chatId != null && session.isOpen()) {
-                // Сохраняем тело запроса для отладки (формат JSON)
-
-                Map<String, Object> chatIdMessage = new HashMap<>();
-                chatIdMessage.put("type", "chatId");
-                chatIdMessage.put("chatId", chatId);
-                session.sendMessage(new TextMessage(objectMapper.writeValueAsString(chatIdMessage)));
+                if (isNewChat && chatId != null && session.isOpen()) {
+                    Map<String, Object> chatIdMessage = new HashMap<>();
+                    chatIdMessage.put("type", "chatId");
+                    chatIdMessage.put("chatId", chatId);
+                    session.sendMessage(new TextMessage(objectMapper.writeValueAsString(chatIdMessage)));
+                }
             }
         } catch (Exception e) {
             try {
@@ -142,107 +140,20 @@ public class LlmWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    /**
-     * Сохраняет тело запроса к LLM в JSON-файл для отладки.
-     * Файлы кладутся в backend/verdikt/src/main/resources/debug/ws-chat-*.json.
-     */
-    private void saveDebugBody(Map<String, Object> body, String chatId) {
-        try {
-            if (body == null) return;
-            Path dir = Paths.get("backend/verdikt/src/main/resources/debug");
-            Files.createDirectories(dir);
-            String fileName = "ws-chat-" + (chatId != null ? chatId : "nochat") + "-" + Instant.now().toEpochMilli() + ".json";
-            Path file = dir.resolve(fileName);
-            String json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(body);
-            Files.writeString(file, json);
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
-    }
-
     private User getCurrentUser(WebSocketSession session) {
         if (session == null || session.getPrincipal() == null) {
             return null;
         }
-    
         Object principal = session.getPrincipal();
-    
         if (principal instanceof User u) {
             return u;
         }
-    
         if (principal instanceof Authentication authentication) {
             Object authPrincipal = authentication.getPrincipal();
             if (authPrincipal instanceof User u) {
                 return u;
             }
         }
-    
         return null;
     }
-
-    /**
-     * Собирает тело запроса к LLM из DTO:
-     * - загружает из БД последние N сообщений чата (по chatId), если он есть;
-     * - добавляет новое пользовательское сообщение из dto.message;
-     * - устанавливает поле chatId, чтобы LLM-прокси мог сохранить историю при необходимости.
-     * System prompt и RAG-контекст добавляются внутри LlmProxyService.enrichWithRagContext.
-     */
-    private Map<String, Object> buildRequestBodyFromDto(StreamRequestDto dto) {
-        Map<String, Object> body = new HashMap<>();
-        List<Map<String, Object>> messages = new ArrayList<>();
-
-        if (dto != null && dto.chatId != null && !dto.chatId.isBlank()) {
-            messages.addAll(loadRecentMessages(dto.chatId));
-            body.put("chatId", dto.chatId);
-        }
-
-        // Текущее пользовательское сообщение
-        if (dto != null && dto.message != null && !dto.message.isBlank()) {
-            Map<String, Object> userMsg = new HashMap<>();
-            userMsg.put("role", "user");
-            userMsg.put("content", dto.message);
-            messages.add(userMsg);
-        }
-
-        body.put("messages", messages);
-        return body;
-    }
-
-    /**
-     * Загружает недавние сообщения чата и ограничивает их максимум
-     * 10-ю сообщениями (по 5 user и assistant, если возможно), в хронологическом порядке.
-     */
-    private List<Map<String, Object>> loadRecentMessages(String chatId) {
-        List<ChatMessage> recent = chatMessageRepository
-                .findTop10ByChat_ChatKeyOrderByIdDesc(chatId);
-
-        List<ChatMessage> limited = new ArrayList<>();
-        int userCount = 0;
-        int assistantCount = 0;
-
-        for (ChatMessage m : recent) {
-            if (limited.size() >= MAX_MESSAGES_TOTAL) break;
-            String role = m.getRole();
-            if ("user".equals(role)) {
-                if (userCount >= MAX_MESSAGES_PER_ROLE) continue;
-                userCount++;
-            } else if ("assistant".equals(role)) {
-                if (assistantCount >= MAX_MESSAGES_PER_ROLE) continue;
-                assistantCount++;
-            }
-            limited.add(m);
-        }
-
-        Collections.reverse(limited);
-        List<Map<String, Object>> result = new ArrayList<>(limited.size());
-        for (ChatMessage m : limited) {
-            Map<String, Object> msg = new HashMap<>();
-            msg.put("role", m.getRole());
-            msg.put("content", m.getContent());
-            result.add(msg);
-        }
-        return result;
-    }
 }
-

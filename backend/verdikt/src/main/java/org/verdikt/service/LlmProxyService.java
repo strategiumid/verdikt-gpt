@@ -188,17 +188,23 @@ public class LlmProxyService {
             return List.of();
         }
 
-        // Определяем последний пользовательский вопрос
+        // Если задан ragQuery — используем его для RAG (rewritten query). Иначе — последнее user-сообщение.
         String questionText = null;
-        for (int i = originalMessages.size() - 1; i >= 0; i--) {
-            Map<String, Object> msg = originalMessages.get(i);
-            Object role = msg.get("role");
-            if ("user".equals(role)) {
-                Object content = msg.get("content");
-                if (content instanceof String s) {
-                    questionText = s;
+        Object ragQueryObj = body.get("ragQuery");
+        if (ragQueryObj instanceof String s && !s.isBlank()) {
+            questionText = s;
+        }
+        if (questionText == null) {
+            for (int i = originalMessages.size() - 1; i >= 0; i--) {
+                Map<String, Object> msg = originalMessages.get(i);
+                Object role = msg.get("role");
+                if ("user".equals(role)) {
+                    Object content = msg.get("content");
+                    if (content instanceof String s) {
+                        questionText = s;
+                    }
+                    break;
                 }
-                break;
             }
         }
 
@@ -255,7 +261,55 @@ public class LlmProxyService {
                 .map(RagItemDto::getQaId)
                 .filter(id -> id != null)
                 .collect(Collectors.toList());
+        body.remove("ragQuery");
         return ragItemIds;
+    }
+
+    /**
+     * Простой запрос к LLM без RAG. Используется для rewrite и других служебных вызовов.
+     * Возвращает только текст ответа ассистента.
+     */
+    @SuppressWarnings("unchecked")
+    public String completeSimple(String userMessage) {
+        if (!isConfigured()) {
+            throw new IllegalStateException("LLM API ключ не настроен. Задайте переменную окружения LLM_API_KEY.");
+        }
+        List<Map<String, Object>> messages = List.of(
+                Map.of("role", "user", "content", userMessage != null ? userMessage : "")
+        );
+        Map<String, Object> body = new java.util.HashMap<>();
+        body.put("model", defaultModel);
+        body.put("temperature", 0.3);
+        body.put("max_tokens", 200);
+        body.put("messages", messages);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(apiKey);
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+        ResponseEntity<String> response = restTemplate.exchange(llmUrl, HttpMethod.POST, request, String.class);
+        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+            throw new RuntimeException("LLM API вернул " + response.getStatusCode());
+        }
+        try {
+            Map<String, Object> data = new ObjectMapper().readValue(response.getBody(), Map.class);
+            Object choicesObj = data.get("choices");
+            if (choicesObj instanceof List<?> choices && !choices.isEmpty()) {
+                Object first = choices.get(0);
+                if (first instanceof Map<?, ?> choiceMap) {
+                    Object msgObj = ((Map<String, Object>) choiceMap).get("message");
+                    if (msgObj instanceof Map<?, ?> msgMap) {
+                        Object content = ((Map<String, Object>) msgMap).get("content");
+                        if (content instanceof String s) {
+                            return s != null ? s.trim() : "";
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse LLM response", e);
+        }
+        return "";
     }
 
     /**

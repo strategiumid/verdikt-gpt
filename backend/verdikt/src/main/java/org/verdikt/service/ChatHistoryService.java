@@ -3,6 +3,7 @@ package org.verdikt.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.verdikt.chat.model.ConversationState;
 import org.verdikt.dto.ChatMessageDto;
 import org.verdikt.dto.ChatMessagesPageResponse;
 import org.verdikt.entity.Chat;
@@ -36,19 +37,36 @@ public class ChatHistoryService {
     }
 
     /**
-     * Сохранить чат по результату вызова completions:
-     * берём исходный body (model, messages, chatId) и ответ LLM,
-     * добавляем сообщение ассистента и сохраняем в БД.
-     * ragItemIds — список qaId RAG-элементов, использованных при генерации ответа (сохраняется в сообщении ассистента).
-     *
-     * Возвращает итоговый идентификатор чата (генерируется, если не был задан).
+     * Сохранить чат по результату вызова completions.
+     * ragItemIds — список qaId RAG-элементов, использованных при генерации ответа.
+     * conversationState — если не null, сохраняется в Chat.payloadJson (ConversationState).
+     * @param skipUserMessage When true, user message was already saved (e.g. after choose_topic); only save assistant.
      */
     @Transactional
     @SuppressWarnings("unchecked")
     public String saveFromCompletion(User user,
                                      Map<String, Object> requestBody,
                                      Map<String, Object> llmResult,
-                                     List<Long> ragItemIds) {
+                                     List<Long> ragItemIds,
+                                     ConversationState conversationState,
+                                     boolean skipUserMessage) {
+        return doSaveFromCompletion(user, requestBody, llmResult, ragItemIds, conversationState, skipUserMessage);
+    }
+
+    public String saveFromCompletion(User user,
+                                     Map<String, Object> requestBody,
+                                     Map<String, Object> llmResult,
+                                     List<Long> ragItemIds,
+                                     ConversationState conversationState) {
+        return doSaveFromCompletion(user, requestBody, llmResult, ragItemIds, conversationState, false);
+    }
+
+    private String doSaveFromCompletion(User user,
+                                     Map<String, Object> requestBody,
+                                     Map<String, Object> llmResult,
+                                     List<Long> ragItemIds,
+                                     ConversationState conversationState,
+                                     boolean skipUserMessage) {
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Войдите в аккаунт");
         }
@@ -70,8 +88,13 @@ public class ChatHistoryService {
                     return c;
                 });
 
-        // Ensure payloadJson is not null (column is NOT NULL in schema)
-        if (chat.getPayloadJson() == null) {
+        if (conversationState != null) {
+            try {
+                chat.setPayloadJson(objectMapper.writeValueAsString(conversationState));
+            } catch (JsonProcessingException e) {
+                chat.setPayloadJson("{\"activeTopicId\":null,\"turnCounter\":0,\"topics\":[]}");
+            }
+        } else if (chat.getPayloadJson() == null) {
             try {
                 Map<String, Object> minimalPayload = new java.util.HashMap<>();
                 minimalPayload.put("id", finalChatKey);
@@ -86,11 +109,10 @@ public class ChatHistoryService {
         chat.setUpdatedAt(Instant.now());
         chat = chatRepository.save(chat);
 
-        // Находим последнее пользовательское сообщение в запросе
         String userContent = extractLastUserMessageContent(requestBody);
         String assistantContent = extractAssistantContent(llmResult);
 
-        if (userContent != null && !userContent.isBlank()) {
+        if (!skipUserMessage && userContent != null && !userContent.isBlank()) {
             ChatMessage userMsg = new ChatMessage();
             userMsg.setChat(chat);
             userMsg.setRole("user");
@@ -114,6 +136,38 @@ public class ChatHistoryService {
         }
 
         return chatKey;
+    }
+
+    /**
+     * Parse ConversationState from chat payloadJson. Returns empty state if payload is old format or invalid.
+     */
+    public ConversationState parseConversationState(Chat chat) {
+        String json = chat != null ? chat.getPayloadJson() : null;
+        if (json == null || json.isBlank()) {
+            return new ConversationState();
+        }
+        try {
+            ConversationState state = objectMapper.readValue(json, ConversationState.class);
+            return state != null ? state : new ConversationState();
+        } catch (Exception e) {
+            return new ConversationState();
+        }
+    }
+
+    /**
+     * Save only user message (e.g. before returning choose_topic). Returns the saved message id.
+     */
+    @Transactional
+    public Long saveUserMessageOnly(User user, String chatKey, String messageContent) {
+        if (user == null || messageContent == null || messageContent.isBlank()) return null;
+        Chat chat = chatRepository.findByUserIdAndChatKey(user.getId(), chatKey)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Чат не найден"));
+        ChatMessage msg = new ChatMessage();
+        msg.setChat(chat);
+        msg.setRole("user");
+        msg.setContent(messageContent);
+        msg = chatMessageRepository.save(msg);
+        return msg.getId();
     }
 
     @Transactional

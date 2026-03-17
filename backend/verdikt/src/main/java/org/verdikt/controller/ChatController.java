@@ -61,7 +61,7 @@ public class ChatController {
         try {
             Map<String, Object> result = objectMapper.readValue(completionResult.getResponseBody(), new TypeReference<Map<String, Object>>() {});
 
-            String effectiveChatId = chatHistoryService.saveFromCompletion(user, body, result, completionResult.getRagItemIds());
+            String effectiveChatId = chatHistoryService.saveFromCompletion(user, body, result, completionResult.getRagItemIds(), null);
             if (effectiveChatId != null) {
                 result.put("chatId", effectiveChatId);
             }
