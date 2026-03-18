@@ -7,12 +7,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 
     List<ChatMessage> findByChatOrderByCreatedAtAsc(Chat chat);
 
     Page<ChatMessage> findByChatOrderByCreatedAtAsc(Chat chat, Pageable pageable);
+
+    Optional<ChatMessage> findFirstByChatAndRoleOrderByCreatedAtAsc(Chat chat, String role);
 
     /**
      * Последние N сообщений по ключу чата (chat.chatKey), отсортированные по убыванию createdAt.

@@ -255,7 +255,11 @@ public class ChatHistoryService {
         }
         List<Chat> chats = chatRepository.findByUserIdOrderByUpdatedAtDesc(user.getId());
         return chats.stream()
-                .map(this::toPayload)
+                .map(chat -> {
+                    Map<String, Object> payload = toPayload(chat);
+                    applyChatTitleFromFirstUserMessage(chat, payload);
+                    return payload;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -265,7 +269,11 @@ public class ChatHistoryService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Войдите в аккаунт");
         }
         return chatRepository.findByUserIdAndChatKey(user.getId(), chatKey)
-                .map(this::toPayload)
+                .map(chat -> {
+                    Map<String, Object> payload = toPayload(chat);
+                    applyChatTitleFromFirstUserMessage(chat, payload);
+                    return payload;
+                })
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Чат не найден"));
     }
 
@@ -346,6 +354,38 @@ public class ChatHistoryService {
             fallback.put("timestamp", chat.getUpdatedAt() != null ? chat.getUpdatedAt().toEpochMilli() : Instant.now().toEpochMilli());
             return fallback;
         }
+    }
+
+    private void applyChatTitleFromFirstUserMessage(Chat chat, Map<String, Object> payload) {
+        if (chat == null || payload == null) return;
+        try {
+            String title = chatMessageRepository
+                    .findFirstByChatAndRoleOrderByCreatedAtAsc(chat, "user")
+                    .map(ChatMessage::getContent)
+                    .map(String::trim)
+                    .filter(s -> !s.isBlank())
+                    .map(this::truncateTitle)
+                    .orElse(null);
+
+            if (title != null) {
+                payload.put("title", title);
+            } else {
+                Object existing = payload.get("title");
+                if (!(existing instanceof String s) || s.isBlank()) {
+                    payload.put("title", "Чат");
+                }
+            }
+        } catch (Exception ignored) {
+            // Keep payload as-is on any lookup/DB errors.
+        }
+    }
+
+    private String truncateTitle(String title) {
+        if (title == null) return null;
+        String t = title.trim();
+        int max = 120;
+        if (t.length() <= max) return t;
+        return t.substring(0, max - 1) + "…";
     }
 
     /**
