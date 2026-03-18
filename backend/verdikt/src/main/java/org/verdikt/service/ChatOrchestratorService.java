@@ -28,17 +28,20 @@ public class ChatOrchestratorService {
     private final ChatTurnProcessor chatTurnProcessor;
     private final RewriteService rewriteService;
     private final TopicMemoryService topicMemoryService;
+    private final MemoryUpdateService memoryUpdateService;
 
     public ChatOrchestratorService(ChatRepository chatRepository,
                                   ChatHistoryService chatHistoryService,
                                   ChatTurnProcessor chatTurnProcessor,
                                   RewriteService rewriteService,
-                                  TopicMemoryService topicMemoryService) {
+                                  TopicMemoryService topicMemoryService,
+                                  MemoryUpdateService memoryUpdateService) {
         this.chatRepository = chatRepository;
         this.chatHistoryService = chatHistoryService;
         this.chatTurnProcessor = chatTurnProcessor;
         this.rewriteService = rewriteService;
         this.topicMemoryService = topicMemoryService;
+        this.memoryUpdateService = memoryUpdateService;
     }
 
     /**
@@ -79,20 +82,24 @@ public class ChatOrchestratorService {
         }
 
         if (decision.getType() == TurnDecision.Type.FIRST_MESSAGE) {
-            String effectiveQuery = message;
-            Map<String, Object> body = buildBody(effectiveChatKey, message, effectiveQuery);
+            String contextQuery = message;
+            Map<String, Object> body = buildBody(effectiveChatKey, message, contextQuery, contextQuery);
             state.setTurnCounter(0);
-            return new OrchestratorResult.Stream(body, state, message, effectiveQuery, false);
+            return new OrchestratorResult.Stream(body, state, message, contextQuery, false);
         }
 
         TopicMemory topic = decision.getTopic();
+        // Контекст для LLM и RAG: последние 10 user-сообщений + текущее
+        String contextQuery = chatHistoryService.buildLastUserMessagesContext(user, effectiveChatKey, message, 10);
+        // При этом всё ещё делаем rewrite и сохраняем его в памяти темы (для последующих turn'ов),
+        // но retrieval и LLM получают контекстный запрос, чтобы лучше понимать историю.
         String rewrite = rewriteService.rewrite(topic, message);
-        String effectiveQuery = rewrite != null && !rewrite.isBlank() ? rewrite : message;
+        String effectiveRewrite = (rewrite != null && !rewrite.isBlank()) ? rewrite : message;
 
-        Map<String, Object> body = buildBody(effectiveChatKey, message, effectiveQuery);
+        Map<String, Object> body = buildBody(effectiveChatKey, message, contextQuery, contextQuery);
         boolean skipUser = selectedTopicId != null && !selectedTopicId.isBlank();
 
-        return new OrchestratorResult.Stream(body, state, message, effectiveQuery, skipUser);
+        return new OrchestratorResult.Stream(body, state, message, effectiveRewrite, skipUser);
     }
 
     /**
@@ -109,6 +116,18 @@ public class ChatOrchestratorService {
             String effectiveQuery = (String) streamResult.body().get("ragQuery");
             if (effectiveQuery == null) effectiveQuery = rawMessage;
             chatTurnProcessor.initializeFirstTopic(state, rawMessage, effectiveQuery, ragItemIds);
+            TopicMemory topic = state.getTopics().isEmpty() ? null : state.getTopics().get(0);
+            if (topic != null) {
+                var update = memoryUpdateService.buildUpdate(
+                        topic.getTopicLabel(),
+                        topic.getDisplayTitle(),
+                        topic.getUserGoal(),
+                        topic.getFactsFromUser(),
+                        rawMessage,
+                        assistantText
+                );
+                memoryUpdateService.applyToTopic(topic, update);
+            }
         } else {
             TopicMemory topic = state.getTopics().stream()
                     .filter(t -> t.getTopicId().equals(state.getActiveTopicId()))
@@ -117,8 +136,16 @@ public class ChatOrchestratorService {
             if (topic != null) {
                 String rewrite = streamResult.effectiveQuery();
                 if (rewrite == null) rewrite = rawMessage;
-                String summary = buildAssistantSummary(assistantText);
-                topicMemoryService.updateTopic(topic, rawMessage, rewrite, summary, ragItemIds, turn);
+                topicMemoryService.updateTopic(topic, rawMessage, rewrite, topic.getAssistantReferenceSummary(), ragItemIds, turn);
+                var update = memoryUpdateService.buildUpdate(
+                        topic.getTopicLabel(),
+                        topic.getDisplayTitle(),
+                        topic.getUserGoal(),
+                        topic.getFactsFromUser(),
+                        rawMessage,
+                        assistantText
+                );
+                memoryUpdateService.applyToTopic(topic, update);
             }
             state.setTurnCounter(turn);
         }
@@ -126,25 +153,18 @@ public class ChatOrchestratorService {
         return state;
     }
 
-    private Map<String, Object> buildBody(String chatKey, String rawUserMessage, String ragQuery) {
+    private Map<String, Object> buildBody(String chatKey, String rawUserMessage, String llmUserMessage, String ragQuery) {
         Map<String, Object> body = new HashMap<>();
         body.put("chatId", chatKey);
+        body.put("originalUserMessage", rawUserMessage);
         List<Map<String, Object>> messages = new ArrayList<>();
         Map<String, Object> userMsg = new HashMap<>();
         userMsg.put("role", "user");
-        userMsg.put("content", rawUserMessage);
+        userMsg.put("content", llmUserMessage != null ? llmUserMessage : "");
         messages.add(userMsg);
         body.put("messages", messages);
         body.put("ragQuery", ragQuery);
         return body;
     }
 
-    private String buildAssistantSummary(String assistantText) {
-        if (assistantText == null || assistantText.isBlank()) {
-            return "Discussed the user's question.";
-        }
-        String trimmed = assistantText.trim();
-        if (trimmed.length() <= 120) return trimmed;
-        return trimmed.substring(0, 120) + "...";
-    }
 }

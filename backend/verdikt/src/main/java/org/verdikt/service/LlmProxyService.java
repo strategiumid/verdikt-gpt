@@ -40,6 +40,9 @@ public class LlmProxyService {
     @Value("${llm.model:x-ai/grok-4-fast}")
     private String defaultModel;
 
+    @Value("${llm.rewrite_model:deepseek/deepseek-v3.2}")
+    private String defaultRewriteModel;
+
     @Value("${llm.temperature:0.5}")
     private double defaultTemperature;
 
@@ -223,9 +226,6 @@ public class LlmProxyService {
             if (item.getTopic() != null) {
                 ragContent.append("Тема: ").append(item.getTopic()).append("\n");
             }
-            if (item.getScore() != null) {
-                ragContent.append("Релевантность: ").append(item.getScore()).append("\n");
-            }
             ragContent.append("\n");
         }
 
@@ -266,21 +266,29 @@ public class LlmProxyService {
     }
 
     /**
-     * Простой запрос к LLM без RAG. Используется для rewrite и других служебных вызовов.
+     * Простой запрос к LLM без RAG с возможностью задать system prompt.
      * Возвращает только текст ответа ассистента.
      */
     @SuppressWarnings("unchecked")
-    public String completeSimple(String userMessage) {
+    public String completeSimple(String systemPrompt, String userMessage, double temperature, int maxTokens) {
         if (!isConfigured()) {
             throw new IllegalStateException("LLM API ключ не настроен. Задайте переменную окружения LLM_API_KEY.");
         }
-        List<Map<String, Object>> messages = List.of(
-                Map.of("role", "user", "content", userMessage != null ? userMessage : "")
-        );
+        List<Map<String, Object>> messages;
+        if (systemPrompt != null && !systemPrompt.isBlank()) {
+            messages = List.of(
+                    Map.of("role", "system", "content", systemPrompt),
+                    Map.of("role", "user", "content", userMessage != null ? userMessage : "")
+            );
+        } else {
+            messages = List.of(
+                    Map.of("role", "user", "content", userMessage != null ? userMessage : "")
+            );
+        }
         Map<String, Object> body = new java.util.HashMap<>();
-        body.put("model", defaultModel);
-        body.put("temperature", 0.3);
-        body.put("max_tokens", 200);
+        body.put("model", defaultRewriteModel);
+        body.put("temperature", temperature);
+        body.put("max_tokens", maxTokens);
         body.put("messages", messages);
 
         HttpHeaders headers = new HttpHeaders();

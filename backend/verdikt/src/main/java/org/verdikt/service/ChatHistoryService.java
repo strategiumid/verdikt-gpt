@@ -20,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -34,6 +35,46 @@ public class ChatHistoryService {
     public ChatHistoryService(ChatRepository chatRepository, ChatMessageRepository chatMessageRepository) {
         this.chatRepository = chatRepository;
         this.chatMessageRepository = chatMessageRepository;
+    }
+
+    /**
+     * Собирает контекст из последних N user-сообщений + текущее сообщение.
+     * Возвращает многострочный текст (старые сверху, новое снизу).
+     */
+    public String buildLastUserMessagesContext(User user, String chatKey, String currentUserMessage, int maxMessages) {
+        if (currentUserMessage == null) currentUserMessage = "";
+        String trimmedCurrent = currentUserMessage.trim();
+        if (user == null || chatKey == null || chatKey.isBlank() || maxMessages <= 0) {
+            return trimmedCurrent;
+        }
+
+        List<ChatMessage> recent = chatMessageRepository
+                .findTop10ByChat_User_IdAndChat_ChatKeyAndRoleOrderByIdDesc(user.getId(), chatKey, "user");
+        if (recent == null || recent.isEmpty()) {
+            return trimmedCurrent;
+        }
+
+        // Repo returns newest-first; reverse to get chronological order.
+        List<ChatMessage> copy = new ArrayList<>(recent);
+        Collections.reverse(copy);
+
+        StringBuilder sb = new StringBuilder();
+        int start = Math.max(0, copy.size() - maxMessages);
+        for (int i = start; i < copy.size(); i++) {
+            String c = copy.get(i).getContent();
+            if (c == null) continue;
+            String t = c.trim();
+            if (t.isBlank()) continue;
+            if (!sb.isEmpty()) sb.append("\n");
+            sb.append(t);
+        }
+
+        if (!trimmedCurrent.isBlank()) {
+            if (!sb.isEmpty()) sb.append("\n");
+            sb.append(trimmedCurrent);
+        }
+
+        return sb.toString();
     }
 
     /**
@@ -355,6 +396,10 @@ public class ChatHistoryService {
      */
     @SuppressWarnings("unchecked")
     private String extractLastUserMessageContent(Map<String, Object> body) {
+        Object originalObj = body != null ? body.get("originalUserMessage") : null;
+        if (originalObj instanceof String s && !s.isBlank()) {
+            return s;
+        }
         Object messagesObj = body.get("messages");
         if (!(messagesObj instanceof java.util.List<?> rawList) || rawList.isEmpty()) {
             return null;

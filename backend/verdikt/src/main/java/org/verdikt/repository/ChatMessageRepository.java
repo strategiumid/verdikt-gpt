@@ -19,5 +19,10 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
      * Используется для восстановления недавнего контекста при стриминге через WebSocket.
      */
     List<ChatMessage> findTop10ByChat_ChatKeyOrderByIdDesc(String chatKey);
+
+    /**
+     * Последние N user-сообщений конкретного пользователя в конкретном чате (защита от утечек между юзерами).
+     */
+    List<ChatMessage> findTop10ByChat_User_IdAndChat_ChatKeyAndRoleOrderByIdDesc(Long userId, String chatKey, String role);
 }
 
