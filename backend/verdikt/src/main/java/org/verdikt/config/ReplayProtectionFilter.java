@@ -45,7 +45,7 @@ public class ReplayProtectionFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
-        if (!enabled) {
+        if (!enabled || isWebSocketHandshake(request)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -88,6 +88,13 @@ public class ReplayProtectionFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isWebSocketHandshake(HttpServletRequest request) {
+        String upgrade = request.getHeader("Upgrade");
+        String path = request.getRequestURI();
+        return (path != null && path.startsWith("/ws/"))
+                || (upgrade != null && "websocket".equalsIgnoreCase(upgrade));
     }
 
     private void sendReplayError(HttpServletResponse response, int status, String message) throws IOException {

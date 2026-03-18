@@ -3,6 +3,7 @@ package org.verdikt.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.verdikt.chat.model.ConversationState;
 import org.verdikt.dto.ChatMessageDto;
 import org.verdikt.dto.ChatMessagesPageResponse;
 import org.verdikt.entity.Chat;
@@ -19,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -36,19 +38,76 @@ public class ChatHistoryService {
     }
 
     /**
-     * Сохранить чат по результату вызова completions:
-     * берём исходный body (model, messages, chatId) и ответ LLM,
-     * добавляем сообщение ассистента и сохраняем в БД.
-     * ragItemIds — список qaId RAG-элементов, использованных при генерации ответа (сохраняется в сообщении ассистента).
-     *
-     * Возвращает итоговый идентификатор чата (генерируется, если не был задан).
+     * Собирает контекст из последних N user-сообщений + текущее сообщение.
+     * Возвращает многострочный текст (старые сверху, новое снизу).
+     */
+    public String buildLastUserMessagesContext(User user, String chatKey, String currentUserMessage, int maxMessages) {
+        if (currentUserMessage == null) currentUserMessage = "";
+        String trimmedCurrent = currentUserMessage.trim();
+        if (user == null || chatKey == null || chatKey.isBlank() || maxMessages <= 0) {
+            return trimmedCurrent;
+        }
+
+        List<ChatMessage> recent = chatMessageRepository
+                .findTop10ByChat_User_IdAndChat_ChatKeyAndRoleOrderByIdDesc(user.getId(), chatKey, "user");
+        if (recent == null || recent.isEmpty()) {
+            return trimmedCurrent;
+        }
+
+        // Repo returns newest-first; reverse to get chronological order.
+        List<ChatMessage> copy = new ArrayList<>(recent);
+        Collections.reverse(copy);
+
+        StringBuilder sb = new StringBuilder();
+        int start = Math.max(0, copy.size() - maxMessages);
+        for (int i = start; i < copy.size(); i++) {
+            String c = copy.get(i).getContent();
+            if (c == null) continue;
+            String t = c.trim();
+            if (t.isBlank()) continue;
+            if (!sb.isEmpty()) sb.append("\n");
+            sb.append(t);
+        }
+
+        if (!trimmedCurrent.isBlank()) {
+            if (!sb.isEmpty()) sb.append("\n");
+            sb.append(trimmedCurrent);
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * Сохранить чат по результату вызова completions.
+     * ragItemIds — список qaId RAG-элементов, использованных при генерации ответа.
+     * conversationState — если не null, сохраняется в Chat.payloadJson (ConversationState).
+     * @param skipUserMessage When true, user message was already saved (e.g. after choose_topic); only save assistant.
      */
     @Transactional
     @SuppressWarnings("unchecked")
     public String saveFromCompletion(User user,
                                      Map<String, Object> requestBody,
                                      Map<String, Object> llmResult,
-                                     List<Long> ragItemIds) {
+                                     List<Long> ragItemIds,
+                                     ConversationState conversationState,
+                                     boolean skipUserMessage) {
+        return doSaveFromCompletion(user, requestBody, llmResult, ragItemIds, conversationState, skipUserMessage);
+    }
+
+    public String saveFromCompletion(User user,
+                                     Map<String, Object> requestBody,
+                                     Map<String, Object> llmResult,
+                                     List<Long> ragItemIds,
+                                     ConversationState conversationState) {
+        return doSaveFromCompletion(user, requestBody, llmResult, ragItemIds, conversationState, false);
+    }
+
+    private String doSaveFromCompletion(User user,
+                                     Map<String, Object> requestBody,
+                                     Map<String, Object> llmResult,
+                                     List<Long> ragItemIds,
+                                     ConversationState conversationState,
+                                     boolean skipUserMessage) {
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Войдите в аккаунт");
         }
@@ -70,8 +129,13 @@ public class ChatHistoryService {
                     return c;
                 });
 
-        // Ensure payloadJson is not null (column is NOT NULL in schema)
-        if (chat.getPayloadJson() == null) {
+        if (conversationState != null) {
+            try {
+                chat.setPayloadJson(objectMapper.writeValueAsString(conversationState));
+            } catch (JsonProcessingException e) {
+                chat.setPayloadJson("{\"activeTopicId\":null,\"turnCounter\":0,\"topics\":[]}");
+            }
+        } else if (chat.getPayloadJson() == null) {
             try {
                 Map<String, Object> minimalPayload = new java.util.HashMap<>();
                 minimalPayload.put("id", finalChatKey);
@@ -86,11 +150,10 @@ public class ChatHistoryService {
         chat.setUpdatedAt(Instant.now());
         chat = chatRepository.save(chat);
 
-        // Находим последнее пользовательское сообщение в запросе
         String userContent = extractLastUserMessageContent(requestBody);
         String assistantContent = extractAssistantContent(llmResult);
 
-        if (userContent != null && !userContent.isBlank()) {
+        if (!skipUserMessage && userContent != null && !userContent.isBlank()) {
             ChatMessage userMsg = new ChatMessage();
             userMsg.setChat(chat);
             userMsg.setRole("user");
@@ -114,6 +177,38 @@ public class ChatHistoryService {
         }
 
         return chatKey;
+    }
+
+    /**
+     * Parse ConversationState from chat payloadJson. Returns empty state if payload is old format or invalid.
+     */
+    public ConversationState parseConversationState(Chat chat) {
+        String json = chat != null ? chat.getPayloadJson() : null;
+        if (json == null || json.isBlank()) {
+            return new ConversationState();
+        }
+        try {
+            ConversationState state = objectMapper.readValue(json, ConversationState.class);
+            return state != null ? state : new ConversationState();
+        } catch (Exception e) {
+            return new ConversationState();
+        }
+    }
+
+    /**
+     * Save only user message (e.g. before returning choose_topic). Returns the saved message id.
+     */
+    @Transactional
+    public Long saveUserMessageOnly(User user, String chatKey, String messageContent) {
+        if (user == null || messageContent == null || messageContent.isBlank()) return null;
+        Chat chat = chatRepository.findByUserIdAndChatKey(user.getId(), chatKey)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Чат не найден"));
+        ChatMessage msg = new ChatMessage();
+        msg.setChat(chat);
+        msg.setRole("user");
+        msg.setContent(messageContent);
+        msg = chatMessageRepository.save(msg);
+        return msg.getId();
     }
 
     @Transactional
@@ -160,7 +255,11 @@ public class ChatHistoryService {
         }
         List<Chat> chats = chatRepository.findByUserIdOrderByUpdatedAtDesc(user.getId());
         return chats.stream()
-                .map(this::toPayload)
+                .map(chat -> {
+                    Map<String, Object> payload = toPayload(chat);
+                    applyChatTitleFromFirstUserMessage(chat, payload);
+                    return payload;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -170,7 +269,11 @@ public class ChatHistoryService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Войдите в аккаунт");
         }
         return chatRepository.findByUserIdAndChatKey(user.getId(), chatKey)
-                .map(this::toPayload)
+                .map(chat -> {
+                    Map<String, Object> payload = toPayload(chat);
+                    applyChatTitleFromFirstUserMessage(chat, payload);
+                    return payload;
+                })
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Чат не найден"));
     }
 
@@ -253,6 +356,38 @@ public class ChatHistoryService {
         }
     }
 
+    private void applyChatTitleFromFirstUserMessage(Chat chat, Map<String, Object> payload) {
+        if (chat == null || payload == null) return;
+        try {
+            String title = chatMessageRepository
+                    .findFirstByChatAndRoleOrderByCreatedAtAsc(chat, "user")
+                    .map(ChatMessage::getContent)
+                    .map(String::trim)
+                    .filter(s -> !s.isBlank())
+                    .map(this::truncateTitle)
+                    .orElse(null);
+
+            if (title != null) {
+                payload.put("title", title);
+            } else {
+                Object existing = payload.get("title");
+                if (!(existing instanceof String s) || s.isBlank()) {
+                    payload.put("title", "Чат");
+                }
+            }
+        } catch (Exception ignored) {
+            // Keep payload as-is on any lookup/DB errors.
+        }
+    }
+
+    private String truncateTitle(String title) {
+        if (title == null) return null;
+        String t = title.trim();
+        int max = 120;
+        if (t.length() <= max) return t;
+        return t.substring(0, max - 1) + "…";
+    }
+
     /**
      * Извлекает контент ответа ассистента из разных возможных форматов ответа LLM.
      */
@@ -301,6 +436,10 @@ public class ChatHistoryService {
      */
     @SuppressWarnings("unchecked")
     private String extractLastUserMessageContent(Map<String, Object> body) {
+        Object originalObj = body != null ? body.get("originalUserMessage") : null;
+        if (originalObj instanceof String s && !s.isBlank()) {
+            return s;
+        }
         Object messagesObj = body.get("messages");
         if (!(messagesObj instanceof java.util.List<?> rawList) || rawList.isEmpty()) {
             return null;
