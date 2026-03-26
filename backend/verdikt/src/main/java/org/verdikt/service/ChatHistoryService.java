@@ -59,6 +59,7 @@ public class ChatHistoryService {
         Collections.reverse(copy);
 
         StringBuilder sb = new StringBuilder();
+        sb.append("Предыдущие сообщения пользователя в этом чате (используй для контекста но не отвечай на них):\n ");
         int start = Math.max(0, copy.size() - maxMessages);
         for (int i = start; i < copy.size(); i++) {
             String c = copy.get(i).getContent();
@@ -71,6 +72,7 @@ public class ChatHistoryService {
 
         if (!trimmedCurrent.isBlank()) {
             if (!sb.isEmpty()) sb.append("\n");
+            sb.append("Текущее сообщение пользователя:\n");
             sb.append(trimmedCurrent);
         }
 
