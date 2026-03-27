@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 /**
  * WebSocket handler for streaming LLM responses.
@@ -46,6 +47,12 @@ public class LlmWebSocketHandler extends TextWebSocketHandler {
         public String message;
         public String chatId;
         public String selectedTopicId;
+        public List<AttachmentDto> attachments;
+    }
+
+    public static class AttachmentDto {
+        public String type;
+        public String imageId;
     }
 
     @Override
@@ -61,12 +68,14 @@ public class LlmWebSocketHandler extends TextWebSocketHandler {
             }
 
             StreamRequestDto dto = objectMapper.readValue(message.getPayload(), StreamRequestDto.class);
-            if (dto == null || dto.message == null || dto.message.isBlank()) {
+            String userMessage = dto != null ? dto.message : null;
+            if (dto == null || userMessage == null || userMessage.isBlank()) {
                 if (session.isOpen()) {
                     session.sendMessage(new TextMessage("ERROR:Message is required"));
                 }
                 return;
             }
+            dto.message = userMessage;
 
             CompletableFuture.runAsync(() -> processTurn(session, user, dto));
         } catch (Exception e) {
@@ -83,7 +92,7 @@ public class LlmWebSocketHandler extends TextWebSocketHandler {
     private void processTurn(WebSocketSession session, User user, StreamRequestDto dto) {
         try {
             OrchestratorResult result = chatOrchestratorService.processTurn(
-                    user, dto.chatId, dto.message, dto.selectedTopicId);
+                    user, dto.chatId, dto.message, dto.selectedTopicId, extractImageIds(dto.attachments));
 
             if (result instanceof OrchestratorResult.ChooseTopic choose) {
                 if (session.isOpen()) {
@@ -138,6 +147,15 @@ public class LlmWebSocketHandler extends TextWebSocketHandler {
             } catch (Exception ignored) {
             }
         }
+    }
+
+    private List<String> extractImageIds(List<AttachmentDto> attachments) {
+        if (attachments == null || attachments.isEmpty()) return List.of();
+        return attachments.stream()
+                .filter(a -> a != null && "image".equalsIgnoreCase(a.type) && a.imageId != null && !a.imageId.isBlank())
+                .map(a -> a.imageId.trim())
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     private User getCurrentUser(WebSocketSession session) {

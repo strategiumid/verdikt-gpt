@@ -160,6 +160,7 @@ public class ChatHistoryService {
             userMsg.setChat(chat);
             userMsg.setRole("user");
             userMsg.setContent(userContent);
+            setMessageImagesMetadata(userMsg, requestBody);
             chatMessageRepository.save(userMsg);
         }
 
@@ -168,6 +169,7 @@ public class ChatHistoryService {
             aiMsg.setChat(chat);
             aiMsg.setRole("assistant");
             aiMsg.setContent(assistantContent);
+            setMessageImagesMetadata(aiMsg, requestBody);
             if (ragItemIds != null && !ragItemIds.isEmpty()) {
                 try {
                     aiMsg.setRagItemIdsJson(objectMapper.writeValueAsString(ragItemIds));
@@ -331,6 +333,17 @@ public class ChatHistoryService {
                 // leave null
             }
         }
+        if (m.getImageIdsJson() != null && !m.getImageIdsJson().isBlank()) {
+            try {
+                List<String> ids = objectMapper.readValue(m.getImageIdsJson(), new TypeReference<List<String>>() {});
+                dto.setImageIds(ids);
+            } catch (Exception ignored) {
+                // leave null
+            }
+        }
+        if (m.getImageAnalysisJson() != null && !m.getImageAnalysisJson().isBlank()) {
+            dto.setImageAnalysis(m.getImageAnalysisJson());
+        }
         return dto;
     }
 
@@ -457,6 +470,31 @@ public class ChatHistoryService {
             }
         }
         return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void setMessageImagesMetadata(ChatMessage msg, Map<String, Object> body) {
+        if (msg == null || body == null) return;
+        try {
+            Object imageIdsObj = body.get("imageIds");
+            if (imageIdsObj instanceof List<?> raw && !raw.isEmpty()) {
+                List<String> ids = raw.stream()
+                        .filter(v -> v instanceof String)
+                        .map(v -> ((String) v).trim())
+                        .filter(s -> !s.isBlank())
+                        .distinct()
+                        .collect(Collectors.toList());
+                if (!ids.isEmpty()) {
+                    msg.setImageIdsJson(objectMapper.writeValueAsString(ids));
+                }
+            }
+        } catch (Exception ignored) {
+            // leave null
+        }
+        Object analysisObj = body.get("imageAnalysis");
+        if (analysisObj instanceof String s && !s.isBlank()) {
+            msg.setImageAnalysisJson(s);
+        }
     }
 }
 

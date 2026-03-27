@@ -1,10 +1,12 @@
 package org.verdikt.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.verdikt.chat.dto.ChooseTopicResponse;
 import org.verdikt.chat.dto.TopicChoiceItem;
 import org.verdikt.chat.model.ConversationState;
 import org.verdikt.chat.model.TopicMemory;
+import org.verdikt.dto.multimodal.RetrievalQuery;
 import org.verdikt.entity.Chat;
 import org.verdikt.entity.User;
 import org.verdikt.repository.ChatRepository;
@@ -29,25 +31,29 @@ public class ChatOrchestratorService {
     private final RewriteService rewriteService;
     private final TopicMemoryService topicMemoryService;
     private final MemoryUpdateService memoryUpdateService;
+    private final MultimodalPreprocessingService multimodalPreprocessingService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ChatOrchestratorService(ChatRepository chatRepository,
                                   ChatHistoryService chatHistoryService,
                                   ChatTurnProcessor chatTurnProcessor,
                                   RewriteService rewriteService,
                                   TopicMemoryService topicMemoryService,
-                                  MemoryUpdateService memoryUpdateService) {
+                                  MemoryUpdateService memoryUpdateService,
+                                  MultimodalPreprocessingService multimodalPreprocessingService) {
         this.chatRepository = chatRepository;
         this.chatHistoryService = chatHistoryService;
         this.chatTurnProcessor = chatTurnProcessor;
         this.rewriteService = rewriteService;
         this.topicMemoryService = topicMemoryService;
         this.memoryUpdateService = memoryUpdateService;
+        this.multimodalPreprocessingService = multimodalPreprocessingService;
     }
 
     /**
      * Process a turn. Returns either choose_topic (no LLM) or stream request (body + state).
      */
-    public OrchestratorResult processTurn(User user, String chatKey, String message, String selectedTopicId) {
+    public OrchestratorResult processTurn(User user, String chatKey, String message, String selectedTopicId, List<String> imageIds) {
         if (message == null || message.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Сообщение не может быть пустым");
         }
@@ -84,6 +90,7 @@ public class ChatOrchestratorService {
         if (decision.getType() == TurnDecision.Type.FIRST_MESSAGE) {
             String contextQuery = message;
             Map<String, Object> body = buildBody(effectiveChatKey, message, contextQuery, contextQuery);
+            applyMultimodalIfNeeded(user, message, imageIds, body);
             state.setTurnCounter(0);
             return new OrchestratorResult.Stream(body, state, message, contextQuery, false);
         }
@@ -97,6 +104,7 @@ public class ChatOrchestratorService {
         String effectiveRewrite = (rewrite != null && !rewrite.isBlank()) ? rewrite : message;
 
         Map<String, Object> body = buildBody(effectiveChatKey, message, contextQuery, contextQuery);
+        applyMultimodalIfNeeded(user, message, imageIds, body);
         boolean skipUser = selectedTopicId != null && !selectedTopicId.isBlank();
 
         return new OrchestratorResult.Stream(body, state, message, effectiveRewrite, skipUser);
@@ -165,6 +173,37 @@ public class ChatOrchestratorService {
         body.put("messages", messages);
         body.put("ragQuery", ragQuery);
         return body;
+    }
+
+    private void applyMultimodalIfNeeded(User user, String message, List<String> imageIds, Map<String, Object> body) {
+        if (imageIds == null || imageIds.isEmpty()) {
+            return;
+        }
+        body.put("imageIds", imageIds.stream().filter(id -> id != null && !id.isBlank()).toList());
+        var multimodal = multimodalPreprocessingService.buildQueries(user, message, imageIds);
+        if (multimodal.queries() != null && !multimodal.queries().isEmpty()) {
+            List<String> queryTexts = multimodal.queries().stream()
+                    .map(RetrievalQuery::text)
+                    .filter(q -> q != null && !q.isBlank())
+                    .toList();
+            if (!queryTexts.isEmpty()) {
+                body.put("ragQueries", queryTexts);
+                body.put("ragQuery", queryTexts.get(0));
+            }
+        }
+        if (multimodal.extraction() != null || multimodal.planning() != null) {
+            try {
+                Map<String, Object> imageAnalysis = new HashMap<>();
+                if (multimodal.extraction() != null) {
+                    imageAnalysis.put("extraction", multimodal.extraction());
+                }
+                if (multimodal.planning() != null) {
+                    imageAnalysis.put("planning", multimodal.planning());
+                }
+                body.put("imageAnalysis", objectMapper.writeValueAsString(imageAnalysis));
+            } catch (Exception ignored) {
+            }
+        }
     }
 
 }

@@ -43,6 +43,9 @@ public class LlmProxyService {
     @Value("${llm.rewrite_model:deepseek/deepseek-v3.2}")
     private String defaultRewriteModel;
 
+    @Value("${llm.vision_model:x-ai/grok-4-fast}")
+    private String defaultVisionModel;
+
     @Value("${llm.temperature:0.5}")
     private double defaultTemperature;
 
@@ -191,13 +194,29 @@ public class LlmProxyService {
             return List.of();
         }
 
-        // Если задан ragQuery — используем его для RAG (rewritten query). Иначе — последнее user-сообщение.
-        String questionText = null;
+        // Attach image analysis into the latest user message text so LLM receives it as part of user input.
+        Object imageAnalysisObj = body.get("imageAnalysis");
+        if (imageAnalysisObj instanceof String analysis && !analysis.isBlank()) {
+            appendImageAnalysisToLastUserMessage(originalMessages, analysis);
+        }
+
+        // Если задан ragQueries (multimodal) — используем их. Иначе ragQuery или последнее user-сообщение.
+        List<String> queryTexts = new ArrayList<>();
         Object ragQueryObj = body.get("ragQuery");
+        Object ragQueriesObj = body.get("ragQueries");
+        if (ragQueriesObj instanceof List<?> rqList) {
+            for (Object q : rqList) {
+                if (q instanceof String s && !s.isBlank()) {
+                    queryTexts.add(s.trim());
+                }
+                if (queryTexts.size() >= 4) break;
+            }
+        }
+        String questionText = null;
         if (ragQueryObj instanceof String s && !s.isBlank()) {
             questionText = s;
         }
-        if (questionText == null) {
+        if (queryTexts.isEmpty() && questionText == null) {
             for (int i = originalMessages.size() - 1; i >= 0; i--) {
                 Map<String, Object> msg = originalMessages.get(i);
                 Object role = msg.get("role");
@@ -211,8 +230,14 @@ public class LlmProxyService {
             }
         }
 
-        // Запрашиваем top-контекст из RAG (DTO, а не Map)
-        List<RagItemDto> top = ragService.retrieveTop(questionText);
+        if (queryTexts.isEmpty() && questionText != null && !questionText.isBlank()) {
+            queryTexts.add(questionText);
+        }
+
+        // Запрашиваем top-контекст из RAG по одному или нескольким запросам
+        List<RagItemDto> top = queryTexts.size() > 1
+                ? ragService.retrieveTopByQuestions(queryTexts)
+                : ragService.retrieveTop(queryTexts.isEmpty() ? null : queryTexts.get(0));
 
         // Строим новое сообщение с инструкцией и Q&A
         StringBuilder ragContent = new StringBuilder();
@@ -227,6 +252,10 @@ public class LlmProxyService {
                 ragContent.append("Тема: ").append(item.getTopic()).append("\n");
             }
             ragContent.append("\n");
+        }
+        if (imageAnalysisObj instanceof String analysis && !analysis.isBlank()) {
+            ragContent.append("Ниже структурированный анализ приложенных скриншотов переписки:\n");
+            ragContent.append(analysis).append("\n\n");
         }
 
         List<Map<String, Object>> newMessages = new ArrayList<>();
@@ -262,7 +291,29 @@ public class LlmProxyService {
                 .filter(id -> id != null)
                 .collect(Collectors.toList());
         body.remove("ragQuery");
+        body.remove("ragQueries");
+        body.remove("imageAnalysis");
         return ragItemIds;
+    }
+
+    private void appendImageAnalysisToLastUserMessage(List<Map<String, Object>> messages, String analysis) {
+        if (messages == null || messages.isEmpty() || analysis == null || analysis.isBlank()) return;
+        for (int i = messages.size() - 1; i >= 0; i--) {
+            Map<String, Object> msg = messages.get(i);
+            if (msg == null) continue;
+            Object roleObj = msg.get("role");
+            if (!"user".equals(roleObj)) continue;
+            Object contentObj = msg.get("content");
+            String content = contentObj instanceof String s ? s : "";
+            if (content.contains("Image analysis:")) {
+                return;
+            }
+            String merged = content
+                    + "\n\nImage analysis:\n"
+                    + analysis;
+            msg.put("content", merged.trim());
+            return;
+        }
     }
 
     /**
@@ -318,6 +369,79 @@ public class LlmProxyService {
             throw new RuntimeException("Failed to parse LLM response", e);
         }
         return "";
+    }
+
+    /**
+     * Multimodal call: text + one or more images (as data URLs), expects plain text/JSON answer.
+     */
+    @SuppressWarnings("unchecked")
+    public String completeMultimodalJson(String systemPrompt,
+                                         String userMessage,
+                                         List<String> imageDataUrls,
+                                         double temperature,
+                                         int maxTokens) {
+        return completeMultimodalJson(systemPrompt, userMessage, imageDataUrls, temperature, maxTokens, defaultVisionModel);
+    }
+
+    @SuppressWarnings("unchecked")
+    public String completeMultimodalJson(String systemPrompt,
+                                         String userMessage,
+                                         List<String> imageDataUrls,
+                                         double temperature,
+                                         int maxTokens,
+                                         String model) {
+        if (!isConfigured()) {
+            throw new IllegalStateException("LLM API ключ не настроен. Задайте переменную окружения LLM_API_KEY.");
+        }
+        List<Map<String, Object>> content = new ArrayList<>();
+        content.add(Map.of("type", "text", "text", userMessage != null ? userMessage : ""));
+        if (imageDataUrls != null) {
+            for (String dataUrl : imageDataUrls) {
+                if (dataUrl == null || dataUrl.isBlank()) continue;
+                content.add(Map.of("type", "image_url", "image_url", Map.of("url", dataUrl)));
+            }
+        }
+
+        List<Map<String, Object>> messages = new ArrayList<>();
+        if (systemPrompt != null && !systemPrompt.isBlank()) {
+            messages.add(Map.of("role", "system", "content", systemPrompt));
+        }
+        messages.add(Map.of("role", "user", "content", content));
+
+        Map<String, Object> body = new java.util.HashMap<>();
+        body.put("model", (model != null && !model.isBlank()) ? model : defaultVisionModel);
+        body.put("temperature", temperature);
+        body.put("max_tokens", maxTokens);
+        body.put("messages", messages);
+        body.put("stream", false);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(apiKey);
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+        ResponseEntity<String> response = restTemplate.exchange(llmUrl, HttpMethod.POST, request, String.class);
+        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+            throw new RuntimeException("LLM API вернул " + response.getStatusCode());
+        }
+        try {
+            Map<String, Object> data = new ObjectMapper().readValue(response.getBody(), Map.class);
+            Object choicesObj = data.get("choices");
+            if (choicesObj instanceof List<?> choices && !choices.isEmpty()) {
+                Object first = choices.get(0);
+                if (first instanceof Map<?, ?> choiceMap) {
+                    Object msgObj = ((Map<String, Object>) choiceMap).get("message");
+                    if (msgObj instanceof Map<?, ?> msgMap) {
+                        Object contentObj = ((Map<String, Object>) msgMap).get("content");
+                        if (contentObj instanceof String s) {
+                            return s != null ? s.trim() : "";
+                        }
+                    }
+                }
+            }
+            return "";
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse multimodal response", e);
+        }
     }
 
     /**
@@ -429,7 +553,8 @@ public class LlmProxyService {
             if (deltaObj instanceof Map<?, ?> deltaMapRaw) {
                 Map<String, Object> deltaMap = (Map<String, Object>) deltaMapRaw;
                 Object contentObj = deltaMap.get("content");
-                if (contentObj instanceof String s && !s.isBlank()) {
+                // Important: keep newline/whitespace-only chunks, otherwise markdown formatting gets glued.
+                if (contentObj instanceof String s) {
                     return s;
                 }
             }
@@ -438,7 +563,7 @@ public class LlmProxyService {
             if (messageObj instanceof Map<?, ?> msgMapRaw) {
                 Map<String, Object> msgMap = (Map<String, Object>) msgMapRaw;
                 Object contentObj = msgMap.get("content");
-                if (contentObj instanceof String s && !s.isBlank()) {
+                if (contentObj instanceof String s) {
                     return s;
                 }
             }
