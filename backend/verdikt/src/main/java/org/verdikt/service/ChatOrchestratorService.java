@@ -75,7 +75,34 @@ public class ChatOrchestratorService {
         TurnDecision decision = chatTurnProcessor.decide(state, message, selectedTopicId);
 
         if (decision.getType() == TurnDecision.Type.ASK_USER_TO_CHOOSE) {
-            Long messageId = chatHistoryService.saveUserMessageOnly(user, effectiveChatKey, message);
+            String imageAnalysisJson = null;
+            List<String> cleanImageIds = imageIds == null
+                    ? List.of()
+                    : imageIds.stream().filter(id -> id != null && !id.isBlank()).map(String::trim).distinct().toList();
+            if (!cleanImageIds.isEmpty()) {
+                try {
+                    var multimodal = multimodalPreprocessingService.buildQueries(user, message, cleanImageIds);
+                    Map<String, Object> imageAnalysis = new HashMap<>();
+                    if (multimodal.extraction() != null) {
+                        imageAnalysis.put("extraction", multimodal.extraction());
+                    }
+                    if (multimodal.planning() != null) {
+                        imageAnalysis.put("planning", multimodal.planning());
+                    }
+                    if (!imageAnalysis.isEmpty()) {
+                        imageAnalysisJson = objectMapper.writeValueAsString(imageAnalysis);
+                    }
+                } catch (Exception ignored) {
+                    // Do not block choose_topic flow if analysis build fails.
+                }
+            }
+            Long messageId = chatHistoryService.saveUserMessageOnly(
+                    user,
+                    effectiveChatKey,
+                    message,
+                    cleanImageIds,
+                    imageAnalysisJson
+            );
             ChooseTopicResponse response = new ChooseTopicResponse();
             response.setChatId(effectiveChatKey);
             response.setMessageId(messageId);

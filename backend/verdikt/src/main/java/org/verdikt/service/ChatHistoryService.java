@@ -204,6 +204,15 @@ public class ChatHistoryService {
      */
     @Transactional
     public Long saveUserMessageOnly(User user, String chatKey, String messageContent) {
+        return saveUserMessageOnly(user, chatKey, messageContent, null, null);
+    }
+
+    @Transactional
+    public Long saveUserMessageOnly(User user,
+                                    String chatKey,
+                                    String messageContent,
+                                    List<String> imageIds,
+                                    String imageAnalysis) {
         if (user == null || messageContent == null || messageContent.isBlank()) return null;
         Chat chat = chatRepository.findByUserIdAndChatKey(user.getId(), chatKey)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Чат не найден"));
@@ -211,6 +220,23 @@ public class ChatHistoryService {
         msg.setChat(chat);
         msg.setRole("user");
         msg.setContent(messageContent);
+        if (imageIds != null && !imageIds.isEmpty()) {
+            try {
+                List<String> cleanIds = imageIds.stream()
+                        .filter(id -> id != null && !id.isBlank())
+                        .map(String::trim)
+                        .distinct()
+                        .collect(Collectors.toList());
+                if (!cleanIds.isEmpty()) {
+                    msg.setImageIdsJson(objectMapper.writeValueAsString(cleanIds));
+                }
+            } catch (Exception ignored) {
+                // leave null
+            }
+        }
+        if (imageAnalysis != null && !imageAnalysis.isBlank()) {
+            msg.setImageAnalysisJson(imageAnalysis);
+        }
         msg = chatMessageRepository.save(msg);
         return msg.getId();
     }
