@@ -501,7 +501,7 @@ public class LlmProxyService {
                 while ((line = reader.readLine()) != null) {
                     onLine.accept(line);
                     String chunk = extractChunkFromStreamLine(line);
-                    if (chunk != null && !chunk.isBlank()) {
+                    if (chunk != null) {
                         fullText.append(chunk);
                     }
                 }
