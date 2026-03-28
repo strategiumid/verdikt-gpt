@@ -105,7 +105,7 @@ public class LlmWebSocketHandler extends TextWebSocketHandler {
             OrchestratorResult.Stream stream = (OrchestratorResult.Stream) result;
             boolean isNewChat = (dto.chatId == null || dto.chatId.isBlank());
 
-            var completionResult = llmProxyService.chatCompletionsStream(stream.body(), line -> {
+            var completionResult = llmProxyService.chatCompletionsStream(stream.request(), line -> {
                 try {
                     if (session.isOpen()) {
                         session.sendMessage(new TextMessage(line));
@@ -122,7 +122,7 @@ public class LlmWebSocketHandler extends TextWebSocketHandler {
                 Map<String, Object> llmResult = new HashMap<>();
                 llmResult.put("content", fullText);
                 String chatId = chatHistoryService.saveFromCompletion(
-                        user, stream.body(), llmResult, ragItemIds, updatedState, stream.skipUserMessage());
+                        user, stream.request(), llmResult, ragItemIds, updatedState, stream.skipUserMessage());
 
                 if (isNewChat && chatId != null && session.isOpen()) {
                     Map<String, Object> chatIdMessage = new HashMap<>();

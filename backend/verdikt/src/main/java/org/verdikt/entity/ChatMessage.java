@@ -3,6 +3,8 @@ package org.verdikt.entity;
 import jakarta.persistence.*;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "chat_messages")
@@ -27,14 +29,13 @@ public class ChatMessage {
     @Column(name = "rag_item_ids", length = 500)
     private String ragItemIdsJson;
 
-    /** JSON-массив ID вложенных изображений (для user-сообщений). */
-    @Column(name = "image_ids", length = 2000)
-    private String imageIdsJson;
+    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("sortOrder ASC")
+    private List<ChatMessageImage> messageImages = new ArrayList<>();
 
-    /** JSON с анализом изображений, использованным в multimodal-пайплайне. */
-    @Lob
-    @Column(name = "image_analysis")
-    private String imageAnalysisJson;
+    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id ASC")
+    private List<ChatMessageImageAnalysis> imageAnalyses = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
@@ -79,20 +80,20 @@ public class ChatMessage {
         this.ragItemIdsJson = ragItemIdsJson;
     }
 
-    public String getImageIdsJson() {
-        return imageIdsJson;
+    public List<ChatMessageImage> getMessageImages() {
+        return messageImages;
     }
 
-    public void setImageIdsJson(String imageIdsJson) {
-        this.imageIdsJson = imageIdsJson;
+    public void setMessageImages(List<ChatMessageImage> messageImages) {
+        this.messageImages = messageImages != null ? messageImages : new ArrayList<>();
     }
 
-    public String getImageAnalysisJson() {
-        return imageAnalysisJson;
+    public List<ChatMessageImageAnalysis> getImageAnalyses() {
+        return imageAnalyses;
     }
 
-    public void setImageAnalysisJson(String imageAnalysisJson) {
-        this.imageAnalysisJson = imageAnalysisJson;
+    public void setImageAnalyses(List<ChatMessageImageAnalysis> imageAnalyses) {
+        this.imageAnalyses = imageAnalyses != null ? imageAnalyses : new ArrayList<>();
     }
 
     public Instant getCreatedAt() {
@@ -103,4 +104,3 @@ public class ChatMessage {
         this.createdAt = createdAt;
     }
 }
-

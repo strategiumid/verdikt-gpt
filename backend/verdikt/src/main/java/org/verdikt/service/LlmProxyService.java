@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.verdikt.dto.ChatCompletionsRequest;
 import org.verdikt.dto.LlmCompletionResult;
 import org.verdikt.dto.RagItemDto;
 
@@ -14,9 +15,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -174,13 +175,13 @@ public class LlmProxyService {
 
     /**
      * Добавить system prompt (если его нет) и сообщение с контекстом из RAG-сервиса.
-     * Ожидается, что body содержит поле "messages" в формате OpenAI Chat API.
+     * Ожидается, что request содержит поле messages в формате OpenAI Chat API.
      * Возвращает список qaId использованных RAG-элементов (для сохранения в сообщении ассистента).
      */
     @SuppressWarnings("unchecked")
-    public List<Long> enrichWithRagContext(Map<String, Object> body) {
-        Object messagesObj = body.get("messages");
-        if (!(messagesObj instanceof List<?> rawList)) {
+    public List<Long> enrichWithRagContext(ChatCompletionsRequest request) {
+        List<Map<String, Object>> rawList = request.getMessages();
+        if (rawList == null || rawList.isEmpty()) {
             return List.of();
         }
 
@@ -194,27 +195,26 @@ public class LlmProxyService {
             return List.of();
         }
 
-        // Attach image analysis into the latest user message text so LLM receives it as part of user input.
-        Object imageAnalysisObj = body.get("imageAnalysis");
-        if (imageAnalysisObj instanceof String analysis && !analysis.isBlank()) {
-            appendImageAnalysisToLastUserMessage(originalMessages, analysis);
+        String imageAnalysisStr = request.getImageAnalysis();
+        if (imageAnalysisStr != null && !imageAnalysisStr.isBlank()) {
+            appendImageAnalysisToLastUserMessage(originalMessages, imageAnalysisStr);
         }
 
         // Если задан ragQueries (multimodal) — используем их. Иначе ragQuery или последнее user-сообщение.
         List<String> queryTexts = new ArrayList<>();
-        Object ragQueryObj = body.get("ragQuery");
-        Object ragQueriesObj = body.get("ragQueries");
-        if (ragQueriesObj instanceof List<?> rqList) {
-            for (Object q : rqList) {
-                if (q instanceof String s && !s.isBlank()) {
-                    queryTexts.add(s.trim());
+        List<String> ragQueriesList = request.getRagQueries();
+        if (ragQueriesList != null) {
+            for (String q : ragQueriesList) {
+                if (q != null && !q.isBlank()) {
+                    queryTexts.add(q.trim());
                 }
                 if (queryTexts.size() >= 4) break;
             }
         }
         String questionText = null;
-        if (ragQueryObj instanceof String s && !s.isBlank()) {
-            questionText = s;
+        String ragQueryField = request.getRagQuery();
+        if (ragQueryField != null && !ragQueryField.isBlank()) {
+            questionText = ragQueryField;
         }
         if (queryTexts.isEmpty() && questionText == null) {
             for (int i = originalMessages.size() - 1; i >= 0; i--) {
@@ -253,9 +253,9 @@ public class LlmProxyService {
             }
             ragContent.append("\n");
         }
-        if (imageAnalysisObj instanceof String analysis && !analysis.isBlank()) {
+        if (imageAnalysisStr != null && !imageAnalysisStr.isBlank()) {
             ragContent.append("Ниже структурированный анализ приложенных скриншотов переписки:\n");
-            ragContent.append(analysis).append("\n\n");
+            ragContent.append(imageAnalysisStr).append("\n\n");
         }
 
         List<Map<String, Object>> newMessages = new ArrayList<>();
@@ -284,16 +284,12 @@ public class LlmProxyService {
             newMessages.add(originalMessages.get(i));
         }
 
-        body.put("messages", newMessages);
+        request.setMessages(newMessages);
 
-        List<Long> ragItemIds = top.stream()
+        return top.stream()
                 .map(RagItemDto::getQaId)
                 .filter(id -> id != null)
                 .collect(Collectors.toList());
-        body.remove("ragQuery");
-        body.remove("ragQueries");
-        body.remove("imageAnalysis");
-        return ragItemIds;
     }
 
     private void appendImageAnalysisToLastUserMessage(List<Map<String, Object>> messages, String analysis) {
@@ -448,20 +444,18 @@ public class LlmProxyService {
      * Отправить запрос в LLM и вернуть тело ответа и список ID RAG-элементов, использованных в контексте.
      * Ключ подставляется на бэкенде, на клиент не передаётся.
      */
-    public LlmCompletionResult chatCompletions(Map<String, Object> body) {
+    public LlmCompletionResult chatCompletions(ChatCompletionsRequest request) {
         if (!isConfigured()) {
             throw new IllegalStateException("LLM API ключ не настроен. Задайте переменную окружения LLM_API_KEY.");
         }
-        // Подставляем значения по умолчанию (если клиент их не передал)
-        applyDefaults(body);
-        // По умолчанию обогащаем запрос контекстом RAG
-        List<Long> ragItemIds = enrichWithRagContext(body);
+        applyDefaults(request);
+        List<Long> ragItemIds = enrichWithRagContext(request);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(apiKey);
-        HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
-        ResponseEntity<String> response = restTemplate.exchange(llmUrl, HttpMethod.POST, request, String.class);
+        HttpEntity<Map<String, Object>> httpEntity = new HttpEntity<>(request.toUpstreamPayload(), headers);
+        ResponseEntity<String> response = restTemplate.exchange(llmUrl, HttpMethod.POST, httpEntity, String.class);
         if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
             throw new RuntimeException("LLM API вернул " + (response.getStatusCode()));
         }
@@ -473,25 +467,25 @@ public class LlmProxyService {
      * Используется для WebSocket-стриминга.
      * Возвращает результат с полным текстом ответа и списком ragItemIds.
      */
-    public LlmCompletionResult chatCompletionsStream(Map<String, Object> body, Consumer<String> onLine) {
+    public LlmCompletionResult chatCompletionsStream(ChatCompletionsRequest request, Consumer<String> onLine) {
         if (!isConfigured()) {
             throw new IllegalStateException("LLM API ключ не настроен. Задайте переменную окружения LLM_API_KEY.");
         }
 
-        // Гарантируем stream=true, значения по умолчанию и обогащение RAG-контекстом
-        body.put("stream", true);
-        applyDefaults(body);
-        List<Long> ragItemIds = enrichWithRagContext(body);
+        request.setStream(true);
+        applyDefaults(request);
+        List<Long> ragItemIds = enrichWithRagContext(request);
 
         final StringBuilder fullText = new StringBuilder();
 
-        restTemplate.execute(llmUrl, HttpMethod.POST, request -> {
-            request.getHeaders().setContentType(MediaType.APPLICATION_JSON);
-            request.getHeaders().setBearerAuth(apiKey);
-            try (var os = request.getBody()) {
+        Map<String, Object> outbound = request.toUpstreamPayload();
+        restTemplate.execute(llmUrl, HttpMethod.POST, httpRequest -> {
+            httpRequest.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+            httpRequest.getHeaders().setBearerAuth(apiKey);
+            try (var os = httpRequest.getBody()) {
                 if (os != null) {
                     com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-                    mapper.writeValue(os, body);
+                    mapper.writeValue(os, outbound);
                 }
             }
         }, response -> {
@@ -578,44 +572,48 @@ public class LlmProxyService {
      * если они не заданы клиентом, и гарантирует наличие системного промпта
      * в начале списка сообщений.
      */
-    private void applyDefaults(Map<String, Object> body) {
-        if (body == null) {
+    private void applyDefaults(ChatCompletionsRequest request) {
+        if (request == null) {
             return;
         }
-        body.putIfAbsent("model", defaultModel);
-        body.putIfAbsent("temperature", defaultTemperature);
-        body.putIfAbsent("max_tokens", defaultMaxTokens);
+        if (request.getModel() == null || request.getModel().isBlank()) {
+            request.setModel(defaultModel);
+        }
+        if (request.getTemperature() == null) {
+            request.setTemperature(defaultTemperature);
+        }
+        if (request.getMaxTokens() == null) {
+            request.setMaxTokens(defaultMaxTokens);
+        }
 
-        // Гарантируем, что первый элемент messages — system с DEFAULT_SYSTEM_PROMPT
-        Object messagesObj = body.get("messages");
-        java.util.List<Object> messages;
-        if (messagesObj instanceof java.util.List<?> list) {
-            messages = new java.util.ArrayList<>(list);
+        List<Map<String, Object>> messages = request.getMessages();
+        if (messages == null) {
+            messages = new ArrayList<>();
+            request.setMessages(messages);
         } else {
-            messages = new java.util.ArrayList<>();
+            messages = new ArrayList<>(messages);
+            request.setMessages(messages);
         }
 
         if (messages.isEmpty()) {
-            java.util.Map<String, Object> systemMsg = new java.util.HashMap<>();
+            Map<String, Object> systemMsg = new HashMap<>();
             systemMsg.put("role", "system");
             systemMsg.put("content", DEFAULT_SYSTEM_PROMPT);
             messages.add(systemMsg);
         } else {
             Object first = messages.get(0);
             boolean isSystem = false;
-            if (first instanceof java.util.Map<?, ?> m) {
+            if (first instanceof Map<?, ?> m) {
                 Object role = m.get("role");
                 isSystem = "system".equals(role);
             }
             if (!isSystem) {
-                java.util.Map<String, Object> systemMsg = new java.util.HashMap<>();
+                Map<String, Object> systemMsg = new HashMap<>();
                 systemMsg.put("role", "system");
                 systemMsg.put("content", DEFAULT_SYSTEM_PROMPT);
                 messages.add(0, systemMsg);
             }
         }
-
-        body.put("messages", messages);
     }
 }
 

@@ -2,6 +2,9 @@ package org.verdikt.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import java.time.Instant;
+import java.util.List;
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ChatMessageDto {
 
@@ -9,12 +12,12 @@ public class ChatMessageDto {
     private String role;
     private String content;
     /** ID RAG-элементов (qaId), использованных при генерации ответа. Только для assistant. */
-    private java.util.List<Long> ragItemIds;
-    /** ID изображений, прикрепленных к сообщению пользователя. */
-    private java.util.List<String> imageIds;
-    /** JSON анализа изображений, связанный с сообщением. */
-    private String imageAnalysis;
-    private java.time.Instant createdAt;
+    private List<Long> ragItemIds;
+    /** ID изображений, прикреплённых к сообщению (порядок как при отправке). */
+    private List<String> imageIds;
+    /** Одна или несколько записей анализа (мультимодальный пайплайн), каждая со своим набором imageIds. */
+    private List<MessageImageAnalysisDto> imageAnalyses;
+    private Instant createdAt;
 
     public ChatMessageDto() {
     }
@@ -48,36 +51,35 @@ public class ChatMessageDto {
         this.content = content;
     }
 
-    public java.util.List<Long> getRagItemIds() {
+    public List<Long> getRagItemIds() {
         return ragItemIds;
     }
 
-    public void setRagItemIds(java.util.List<Long> ragItemIds) {
+    public void setRagItemIds(List<Long> ragItemIds) {
         this.ragItemIds = ragItemIds;
     }
 
-    public java.util.List<String> getImageIds() {
+    public List<String> getImageIds() {
         return imageIds;
     }
 
-    public void setImageIds(java.util.List<String> imageIds) {
+    public void setImageIds(List<String> imageIds) {
         this.imageIds = imageIds;
     }
 
-    public String getImageAnalysis() {
-        return imageAnalysis;
+    public List<MessageImageAnalysisDto> getImageAnalyses() {
+        return imageAnalyses;
     }
 
-    public void setImageAnalysis(String imageAnalysis) {
-        this.imageAnalysis = imageAnalysis;
+    public void setImageAnalyses(List<MessageImageAnalysisDto> imageAnalyses) {
+        this.imageAnalyses = imageAnalyses;
     }
 
-    public java.time.Instant getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(java.time.Instant createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 }
-
