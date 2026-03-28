@@ -1,5 +1,6 @@
 package org.verdikt.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.slf4j.Logger;
@@ -7,13 +8,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import org.verdikt.dto.multimodal.ConversationAnalysisItem;
 import org.verdikt.dto.multimodal.ConversationDynamics;
 import org.verdikt.dto.multimodal.ConversationHypothesis;
 import org.verdikt.dto.multimodal.ExtractionQuality;
+import org.verdikt.dto.multimodal.ExtractedConversation;
 import org.verdikt.dto.multimodal.ExtractedMessage;
 import org.verdikt.dto.multimodal.InteractionAnalysisResult;
 import org.verdikt.dto.multimodal.InteractionFeatureItem;
 import org.verdikt.dto.multimodal.MessageAnnotation;
+import org.verdikt.dto.multimodal.MultimodalAnalysisPlanResult;
 import org.verdikt.dto.multimodal.ParticipantSideMetrics;
 import org.verdikt.dto.multimodal.MultimodalResult;
 import org.verdikt.dto.multimodal.QueryPlanningResult;
@@ -22,17 +26,11 @@ import org.verdikt.dto.multimodal.ToneHypothesis;
 import org.verdikt.dto.multimodal.VisionExtractionResult;
 import org.verdikt.entity.User;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,16 +41,17 @@ public class MultimodalPreprocessingService {
     private static final int MAX_QUERY_LENGTH = 180;
 
     private static final int EXTRACTION_MAX_TOKENS = 6000;
-    private static final int INTERACTION_MAX_TOKENS = 3500;
-    private static final int INTERACTION_RETRY_MAX_TOKENS = 5000;
-    private static final int PLANNING_MAX_TOKENS = 4000;
-    private static final int PLANNING_RETRY_MAX_TOKENS = 5000;
+    private static final int STAGE2_ANALYSIS_MAX_TOKENS = 5600;
+    private static final int STAGE2_ANALYSIS_RETRY_MAX_TOKENS = 6800;
 
     private static final int MAX_EVIDENCE_STRINGS = 2;
     private static final int MAX_EVIDENCE_MESSAGE_IDS = 2;
     private static final int MAX_INTERACTION_FEATURES = 8;
     private static final int MAX_CONVERSATION_HYPOTHESES = 4;
     private static final int MAX_RETRIEVAL_QUERIES = 4;
+    /** Сжатый контекст для stage 2: меньше токенов, без полного visible_facts. */
+    private static final int STAGE2_MAX_MESSAGES = 50;
+    private static final int STAGE2_MAX_MISSING_CONTEXT_LINES = 8;
 
     /** Текст user-сообщения для vision-API: без вопроса пользователя, только контекст картинок. */
     private static final String VISION_EXTRACTION_USER_MESSAGE = """
@@ -66,30 +65,49 @@ public class MultimodalPreprocessingService {
             «холодная», «заинтересована», «теряет интерес», «игнорирует», «проверяет», «отталкивает», «манипулирует» и т.п.
             Только то, что можно проверить глазами на изображении.
                         
-            Задача этапа — аккуратный «OCR + разметка»: одно логическое сообщение = одна запись в messages. Не сливай несколько реплик в одну.
-            Сохраняй орфографию в тексте как на скрине. Элементы интерфейса не считай сообщениями, если это не пузырь/реплика чата.
+            Задача этапа — только факты: OCR + разметка. Одно логическое сообщение = одна запись в messages. Не сливай несколько реплик в одну.
+            Сохраняй орфографию в text как на скрине. Элементы интерфейса не считай сообщениями, если это не пузырь/реплика чата.
                         
-            Верни только JSON по схеме (без markdown, без текста вне JSON):
+            Для каждого изображения определи видимый заголовок чата в верхней части UI (имя собеседницы / название чата), если читается.
+            conversations[]: по одному объекту на каждый скрин (свой image_index). Несколько скринов ОДНОГО И ТОГО ЖЕ чата должны использовать ОДИН И ТОТ ЖЕ conversation_id (повтори тот же id с разными image_index) — так downstream поймёт, что это один диалог, а не разные переписки.
+            Если скрины из разных чатов — разные conversation_id.
+            Поля chat_title и other_participant_label — как на скрине; если не читается уверенно — null.
+                        
+            Каждое сообщение: conversation_id из того чата, к которому относится скрин этого сообщения.
+            sender: user|woman|unknown.
+            sender_confidence: 0.0–1.0 — уверенность в том, кто отправитель (по пузырю/стороне/подписи); не смешивай с OCR.
+            sender_label — для woman, если подпись видна уверенно; иначе null.
+            text_confidence: 0.0–1.0 — только уверенность в прочтении текста в пузыре (OCR), не зависит от sender.
+            timestamp_text: время/дата у сообщения, если видны в UI рядом с пузырём; иначе null. Не выдумывай.
+                        
+            Верни только JSON (без markdown, без текста вне JSON):
                         
             {
-              "schema_version": "2.0",
+              "schema_version": "2.1",
+              "conversations": [
+                {
+                  "conversation_id": "c1",
+                  "image_index": 0,
+                  "chat_title": "string|null",
+                  "other_participant_label": "string|null"
+                }
+              ],
               "messages": [
                 {
-                  "message_id": "string — стабильный id внутри ответа, например m1, m2",
+                  "message_id": "m1",
                   "global_order": 0,
                   "image_index": 0,
                   "order_in_image": 0,
+                  "conversation_id": "c1",
                   "sender": "user|woman|unknown",
                   "sender_confidence": 0.0,
-                  "message_type": "text|emoji_only|sticker|media|system|unknown",
-                  "bubble_side": "left|right|center|unknown",
-                  "has_emoji": true,
-                  "replies_to_visible_message_id": "string|null — id другого сообщения из этого же массива, если визуально видно ответ",
+                  "sender_label": "string|null",
+                  "replies_to_visible_message_id": "string|null",
                   "text": "string",
                   "text_confidence": 0.0,
                   "timestamp_text": "string|null",
-                  "is_partial": true,
-                  "has_unreadable_fragment": true
+                  "is_partial": false,
+                  "has_unreadable_fragment": false
                 }
               ],
               "visible_facts": ["string — только проверяемые наблюдения с экрана"],
@@ -101,156 +119,115 @@ public class MultimodalPreprocessingService {
             }
                         
             Эмодзи и UI-элементы (строгое правило):
-            - В text попадают ТОЛЬКО символы, находящиеся ВНУТРИ пузыря сообщения.
-            - Любые элементы вне пузыря (включая):
-              - реакции Telegram
-              - маленькие эмодзи под сообщением
-              - плашки
-              - иконки
-              - аватары
-              - декоративные элементы
-            — полностью игнорируются:
-              ❌ не добавлять в text
-              ❌ не создавать записи в messages
-              ❌ не учитывать как emoji_only / sticker / media
-                        
-            message_type (только для содержимого внутри пузыря):
-            - emoji_only — в пузыре только эмодзи как отдельное сообщение.
-            - sticker / media — только если стикер/медиа внутри пузыря сообщения, а не UI снаружи.
-            - system / text / unknown — по обычным правилам.
-                        
-            Пример: пузырь «Привет», под ним снаружи пузыря ❤️ (реакция) — в messages одна запись с text «Привет»; ❤️ не в text, не отдельная запись, не emoji_only.
+            - В text попадают ТОЛЬКО символы ВНУТРИ пузыря сообщения.
+            - Всё вне пузыря (реакции Telegram, эмодзи под сообщением, плашки, иконки, аватары, декор) — полностью игнорируй: не в text, не отдельные записи в messages.
+            - is_partial / has_unreadable_fragment — если текст в пузыре читается неуверенно; не угадывай слова.
                         
             Правила:
-            - global_order: сквозной порядок по всем скриншотам (0,1,2,…) в порядке чтения переписки.
-            - messages: порядок сверху вниз по видимой ленте; image_index = индекс картинки во входном наборе (0..N-1).
-            - sender_confidence, text_confidence — от 0.0 до 1.0.
-            - is_partial / has_unreadable_fragment — как в схеме.
-            - Если text_confidence низкий — не угадывай и не восстанавливай слова; помечай неуверенность и при необходимости has_unreadable_fragment.
-            - Если внутри пузыря только стикер — message_type=sticker; внутри пузыря только эмодзи (отдельное сообщение) — emoji_only; не выдумывай обычный текст в поле text.
-            - Не объединяй соседние короткие сообщения одного отправителя в одно: каждая отдельная реплика в UI = отдельный элемент messages.
-            - replies_to_visible_message_id указывай только если визуальная связь «ответ на …» действительно видна на скрине.
-            - Если sender выводится только по стороне/цвету пузыря и это неочевидно — снижай sender_confidence и при сомнении sender=unknown.
+            - global_order: сквозной порядок (0,1,2,…) по чтению переписки на всех скринах.
+            - messages: сверху вниз; image_index = индекс картинки во входном наборе (0..N-1).
+            - Дедуп при пролистывании: если одна и та же реплика (тот же текст и тот же отправитель) видна на двух соседних скринах на стыке — включи её один раз в messages, не дублируй.
+            - Не объединяй разные реплики в одну запись.
+            - replies_to_visible_message_id только при явной визуальной связи «ответ на …».
+            - Если sender неочевиден — sender=unknown и снижай sender_confidence; плохой OCR текста — снижай text_confidence (это разные шкалы).
             - Если сообщений нет — messages: [] и причина в missing_context.
-            - Не добавляй поле user_text и не копируй гипотетический «вопрос пользователя» — извлечение только по картинкам.
+            - Не добавляй поле user_text.
             """;
 
-    private static final String INTERACTION_ANALYSIS_PROMPT = """
-            Ты анализируешь СТРУКТУРУ взаимодействия в переписке по УЖЕ извлечённым данным (extraction_result), а не «смысл отношений» и не психологию личности.
-            Ты не психолог и не выносишь диагнозов. Не используй токсичные или обвиняющие ярлыки (навязчивость, абьюз, манипуляция и т.д.).
-            Опирайся только на видимое в extraction: тексты, порядок, типы сообщений, частичность, метки отправителя, confidence.
-            Ищи нейтральные наблюдаемые паттерны: инициатива, усилие, взаимность, короткие ответы, реактивность, вопросы, движение/закрытие темы, сдвиг динамики.
+    /**
+     * Один текстовый вызов: паттерны взаимодействия + интерпретация + RAG-запросы по JSON извлечения и вопросу пользователя.
+     */
+    private static final String ANALYSIS_AND_PLANNING_PROMPT = """
+            Ты анализируешь переписки по УЖЕ извлечённому extraction_result (факты с экрана) и отвечаешь на user_text.
+            Ты не психолог и не выносишь диагнозов. Не используй токсичные или обвиняющие ярлыки.
                         
-            Порядок работы:
-            - Сначала оцени наблюдаемые паттерны по каждому участнику (participant_user / participant_woman), затем асимметрию между ними.
-            - Не делай сильных выводов по 1–2 сообщениям; при очень короткой переписке чаще используй unclear на уровнях.
-            - Каждый interaction_feature должен опираться на конкретные message_id из extraction, а не на общую интуицию.
+            Вход — один JSON:
+            - user_text — что хочет пользователь (сравнить чаты, интерес, совет и т.д.)
+            - extraction_result — сжатое извлечение: conversations, messages (лимит), extraction_quality, missing_context, total_message_count.
                         
-            Верни только JSON (без markdown):
+            Выход — отдельный полный анализ для КАЖДОГО логического conversation_id из extraction (каждая переписка — свой объект в conversation_analyses).
+            Не смешивай message_id, evidence и гипотезы между разными conversation_id.
+            Если user_text про одну девушку/один чат — всё равно заполни блок для каждого conversation_id, релевантный ответ отрази в intent_summary внутри нужного блока.
                         
-            {
-              "schema_version": "2.0",
-              "participant_user": {
-                "initiative_level": "low|medium|high|unclear",
-                "effort_level": "low|medium|high|unclear",
-                "reciprocity_level": "low|medium|high|unclear",
-                "questioning_level": "low|medium|high|unclear",
-                "topic_advancement_level": "low|medium|high|unclear"
-              },
-              "participant_woman": {
-                "initiative_level": "low|medium|high|unclear",
-                "effort_level": "low|medium|high|unclear",
-                "reciprocity_level": "low|medium|high|unclear",
-                "questioning_level": "low|medium|high|unclear",
-                "topic_advancement_level": "low|medium|high|unclear"
-              },
-              "interaction_features": [
-                {
-                  "label": "short_replies|initiative_imbalance|low_reciprocity|low_question_reciprocity|effort_asymmetry|topic_closure|topic_maintenance_asymmetry|question_avoidance|answer_without_expansion|delayed_responsiveness|warmth_asymmetry|reactive_participation|mixed_signals|other",
-                  "applies_to": "user|woman|conversation|unclear",
-                  "confidence": 0.0,
-                  "evidence_message_ids": ["message_id из extraction"]
-                }
-              ],
-              "conversation_dynamics": {
-                "initiative_balance": "user_dominant|balanced|woman_dominant|unclear",
-                "engagement_balance": "user_heavier|balanced|woman_heavier|unclear",
-                "warmth_balance": "user_warmer|balanced|woman_warmer|unclear",
-                "responsiveness_pattern": "engaged|mixed|dry|unclear",
-                "trajectory": "warming|stable|cooling|mixed|unclear"
-              }
-            }
+            Для каждой переписки порядок работы:
+            1) Сначала 1–2 главных interaction_features по сообщениям ТОЛЬКО этого conversation_id.
+            2) Затем одна главная conversation_hypothesis (остальные вторичны).
+            3) Затем retrieval_queries — из этих главных паттернов/гипотезы (не 4 слабых сигнала).
                         
-            Про applies_to: используй conversation для признаков про связь/асимметрию между сторонами (initiative_imbalance, effort_asymmetry, warmth_asymmetry и т.п.), user|woman — когда паттерн в основном про одну сторону, unclear — при нехватке данных.
+            Противоречивые сигналы внутри одного чата: не выбирай один полюс насильно; mixed_signals, mixed_interest, dry_communication, unclear. Не «разруливай» двусмысленность за счёт эмоционального user_text.
                         
-            Лимиты:
-            - interaction_features: не больше 8 объектов.
-            - У каждого признака evidence_message_ids: не больше 2 id.
-            - Не выдумывай message_id — только из extraction_result.messages.
-            - Поля conversation_dynamics — ТОЛЬКО перечисленные enum-значения, без свободного текста.
-            """;
-
-    private static final String QUERY_PLANNING_PROMPT = """
-            Ты строишь осторожную интерпретацию и retrieval-запросы для RAG по отношениям и перепискам.
+            Короткая выборка (только сообщения этого conversation_id): если < 4 — сильные жёсткие labels в interaction_features не использовать (кроме unclear, mixed_signals, dry_communication и близких). При 1–2 сообщениях max confidence гипотез ~0.55; при 3 — осторожнее.
                         
-            Вход (JSON-объект в тексте запроса пользователя):
-            - user_text — что спрашивает пользователь
-            - extraction_result — только видимые факты и разметка (этап 1)
-            - interaction_analysis — паттерны взаимодействия (этап 2); если null, опирайся только на extraction, очень осторожно
+            Учитывай text_confidence, sender_confidence, is_partial, has_unreadable_fragment, extraction_quality — при плохом OCR или sender=unknown не завышай confidence интерпретации.
+            timestamp_text — для delayed_responsiveness только если время есть в данных.
                         
-            Разделение:
-            - Факты — из extraction.
-            - Паттерны — из interaction_analysis.
-            - Гипотезы ниже — только как гипотезы, не как истина; у каждой есть confidence и evidence (макс. 2 пункта).
-            - retrieval_queries строить из паттернов и гипотез, а не из «сырых» сообщений в обход interaction_analysis (если он есть).
-                        
-            Важно (против overclaiming):
-            - Если interaction_analysis = null, НЕ компенсируй это агрессивной интерпретацией только по коротким сообщениям; держи гипотезы узкими и чаще unclear.
-            - Если extraction неполный, много is_partial/has_unreadable_fragment или низкие text_confidence — гипотезы должны быть уже и осторожнее, confidence ниже.
-            - Не повышай confidence гипотез и тона только потому, что user_text эмоционально окрашен — опирайся на extraction и (если есть) interaction_analysis.
-                        
-            Сначала кратко сформулируй intent_summary: что пользователь хочет понять (интерес/дистанцию, как отвечать, стоит ли продолжать и т.д.).
-                        
-            Верни только JSON:
+            Верни один JSON (без markdown):
                         
             {
-              "schema_version": "2.0",
-              "intent_summary": "string",
-              "message_annotations": [
+              "schema_version": "2.1",
+              "conversation_analyses": [
                 {
-                  "message_id": "string — только из extraction.messages",
-                  "tone_hypothesis": {
-                    "label": "neutral|warm|cold|flirty|ignoring|rejecting|testing|unclear",
-                    "confidence": 0.0,
-                    "evidence": ["максимум 2 коротких пункта"]
+                  "conversation_id": "c1",
+                  "intent_summary": "string — что важно для user_text именно по этому чату",
+                  "participant_user": {
+                    "initiative_level": "low|medium|high|unclear",
+                    "effort_level": "low|medium|high|unclear",
+                    "reciprocity_level": "low|medium|high|unclear",
+                    "questioning_level": "low|medium|high|unclear",
+                    "topic_advancement_level": "low|medium|high|unclear"
                   },
-                  "interaction_role": "initiative|response|question|answer|acknowledgment|topic_shift|topic_close|avoidance|unclear",
-                  "effort_signal": "high|medium|low|unclear",
-                  "reciprocity_signal": "high|medium|low|unclear"
-                }
-              ],
-              "conversation_hypotheses": [
-                {
-                  "label": "low_engagement|one_sided_investment|mixed_interest|dry_communication|polite_distance|balanced_interest|reactive_communication|uneven_reciprocity|unclear|other",
-                  "confidence": 0.0,
-                  "evidence": ["максимум 2 пункта"]
-                }
-              ],
-              "retrieval_queries": [
-                {
-                  "type": "primary|interpretation|action|lexical",
-                  "text": "string",
-                  "confidence": 0.0
+                  "participant_woman": {
+                    "initiative_level": "low|medium|high|unclear",
+                    "effort_level": "low|medium|high|unclear",
+                    "reciprocity_level": "low|medium|high|unclear",
+                    "questioning_level": "low|medium|high|unclear",
+                    "topic_advancement_level": "low|medium|high|unclear"
+                  },
+                  "interaction_features": [
+                    {
+                      "label": "short_replies|initiative_imbalance|initiative_without_reciprocity|minimal_acknowledgment_pattern|low_reciprocity|low_question_reciprocity|effort_asymmetry|topic_closure|topic_maintenance_asymmetry|question_avoidance|answer_without_expansion|delayed_responsiveness|warmth_asymmetry|reactive_participation|mixed_signals|other",
+                      "applies_to": "user|woman|conversation|unclear",
+                      "confidence": 0.0,
+                      "evidence_message_ids": ["message_id только этого чата"]
+                    }
+                  ],
+                  "conversation_dynamics": {
+                    "initiative_balance": "user_dominant|balanced|woman_dominant|unclear",
+                    "engagement_balance": "user_heavier|balanced|woman_heavier|unclear",
+                    "warmth_balance": "user_warmer|balanced|woman_warmer|unclear",
+                    "responsiveness_pattern": "engaged|mixed|dry|unclear",
+                    "trajectory": "warming|stable|cooling|mixed|unclear"
+                  },
+                  "message_annotations": [
+                    {
+                      "message_id": "string",
+                      "tone_hypothesis": {
+                        "label": "neutral|warm|cold|flirty|ignoring|rejecting|testing|unclear",
+                        "confidence": 0.0,
+                        "evidence": ["макс. 2 коротких пункта"]
+                      },
+                      "interaction_role": "initiative|response|question|answer|acknowledgment|topic_shift|topic_close|avoidance|unclear",
+                      "effort_signal": "high|medium|low|unclear",
+                      "reciprocity_signal": "high|medium|low|unclear"
+                    }
+                  ],
+                  "conversation_hypotheses": [
+                    {
+                      "label": "low_engagement|one_sided_investment|mixed_interest|dry_communication|polite_distance|balanced_interest|reactive_communication|uneven_reciprocity|unclear|other",
+                      "confidence": 0.0,
+                      "evidence": ["макс. 2 пункта"]
+                    }
+                  ],
+                  "retrieval_queries": [
+                    {
+                      "type": "primary|interpretation|action|lexical",
+                      "text": "string",
+                      "confidence": 0.0
+                    }
+                  ]
                 }
               ]
             }
-                        
-            Правила:
-            - message_annotations только для сообщений, реально присутствующих в extraction.messages (видимые реплики).
-            - conversation_hypotheses: не больше 4.
-            - retrieval_queries: от 1 до 4, разные по смыслу; primary / interpretation / action / lexical — как раньше; lexical не обязателен.
-            - Низкая уверенность в извлечении (text_confidence, has_unreadable_fragment) → чаще unclear и ниже confidence.
-            - Не добавляй markdown и текст вне JSON.
             """;
 
     private final LlmProxyService llmProxyService;
@@ -269,16 +246,16 @@ public class MultimodalPreprocessingService {
         this.multimodalVisionModel = multimodalVisionModel;
     }
 
-    /** Сырой ответ этапа interaction, результат после нормализации и текст ошибки при сбое. */
-    private record InteractionStageResult(
-            InteractionAnalysisResult result,
+    /** Сырой ответ объединённого текстового этапа и ошибка при сбое. */
+    private record Stage2PlanResult(
+            MultimodalAnalysisPlanResult result,
             String rawResponse,
             String failureSummary
     ) {}
 
     public MultimodalResult buildQueries(User user, String userText, List<String> imageIds) {
         if (imageIds == null || imageIds.isEmpty()) {
-            return new MultimodalResult(List.of(), null, null, null);
+            return new MultimodalResult(List.of(), null, null);
         }
 
         List<String> dataUrls = new ArrayList<>();
@@ -305,65 +282,299 @@ public class MultimodalPreprocessingService {
         int maxImageIndex = Math.max(0, totalImages - 1);
         VisionExtractionResult extraction = parseExtraction(extractionJsonRaw, maxImageIndex);
 
-        InteractionStageResult stage2 = runInteractionStage(extraction);
-        InteractionAnalysisResult interaction = stage2.result();
+        Stage2PlanResult stage2 = runAnalysisPlanningStage(userText, extraction);
 
-        String planningInput = buildPlanningInput(userText, extraction, interaction);
-
-        final String planningJsonRaw;
-        try {
-            planningJsonRaw = fetchPlanningJson(planningInput);
-        } catch (Exception e) {
+        if (stage2.result() == null) {
             List<RetrievalQuery> fallback = fallbackQueries(userText);
-            saveDebugBundle(extractionJsonRaw, stage2, null);
-            return new MultimodalResult(fallback, extraction, interaction, null);
+            saveDebugBundle(extractionJsonRaw, stage2.rawResponse(), stage2.failureSummary());
+            return new MultimodalResult(fallback, extraction, null);
         }
 
         try {
-            QueryPlanningResult planningParsed = objectMapper.readValue(extractJsonPayload(planningJsonRaw), QueryPlanningResult.class);
-            QueryPlanningResult planning = normalizePlanning(planningParsed, extraction);
-            List<RetrievalQuery> queries = sanitizeQueries(planning != null ? planning.retrievalQueries() : null, userText);
-            QueryPlanningResult normalizedPlanning = planning == null
-                    ? null
-                    : new QueryPlanningResult(
-                    safe(planning.schemaVersion()).isBlank() ? "2.0" : planning.schemaVersion(),
-                    safe(planning.intentSummary()),
-                    nullSafe(planning.messageAnnotations()),
-                    nullSafe(planning.conversationHypotheses()),
-                    queries
-            );
-            saveDebugBundle(extractionJsonRaw, stage2, planningJsonRaw);
-            return new MultimodalResult(queries, extraction, interaction, normalizedPlanning);
+            MultimodalAnalysisPlanResult normalized = normalizeAnalysisPlan(stage2.result(), extraction);
+            List<RetrievalQuery> queries = sanitizeQueries(collectAllRetrievalQueries(normalized), userText);
+            saveDebugBundle(extractionJsonRaw, stage2.rawResponse(), stage2.failureSummary());
+            return new MultimodalResult(queries, extraction, normalized);
         } catch (Exception e) {
+            log.warn("Multimodal stage2 normalize failed: {}", e.getMessage());
             List<RetrievalQuery> fallback = fallbackQueries(userText);
-            saveDebugBundle(extractionJsonRaw, stage2, planningJsonRaw);
-            return new MultimodalResult(fallback, extraction, interaction, null);
+            saveDebugBundle(extractionJsonRaw, stage2.rawResponse(), e.getClass().getSimpleName() + ": " + safe(e.getMessage()));
+            return new MultimodalResult(fallback, extraction, null);
         }
     }
 
-    private InteractionStageResult runInteractionStage(VisionExtractionResult extraction) {
-        String extractionJson = toJson(extraction);
-        String interactionRaw = null;
-        try {
-            interactionRaw = fetchInteractionJson(extractionJson);
-            InteractionAnalysisResult parsed = objectMapper.readValue(extractJsonPayload(interactionRaw), InteractionAnalysisResult.class);
-            InteractionAnalysisResult normalized = normalizeInteraction(parsed, extraction);
-            return new InteractionStageResult(normalized, interactionRaw, null);
-        } catch (Exception e) {
-            log.warn("Multimodal stage2 (interaction) failed: {} — rawLength={}",
-                    e.getMessage(), interactionRaw != null ? interactionRaw.length() : 0, e);
-            persistStage2FailureSidecar(extractionJson, interactionRaw, e);
-            String summary = e.getClass().getSimpleName() + ": " + safe(e.getMessage());
-            return new InteractionStageResult(null, interactionRaw != null ? interactionRaw : "", summary);
-        }
-    }
-
-    private String buildPlanningInput(String userText, VisionExtractionResult extraction, InteractionAnalysisResult interaction) {
+    private Stage2PlanResult runAnalysisPlanningStage(String userText, VisionExtractionResult extraction) {
         LinkedHashMap<String, Object> payload = new LinkedHashMap<>();
         payload.put("user_text", safe(userText));
-        payload.put("extraction_result", extraction);
-        payload.put("interaction_analysis", interaction);
-        return toJson(payload);
+        payload.put("extraction_result", buildCompactExtractionForStage2(extraction));
+        String inputJson = toJson(payload);
+        String raw = null;
+        try {
+            raw = fetchAnalysisPlanningJson(inputJson);
+            MultimodalAnalysisPlanResult parsed = parseStage2Response(raw);
+            return new Stage2PlanResult(parsed, raw, null);
+        } catch (Exception e) {
+            log.warn("Multimodal stage2 (analysis+planning) failed: {} — rawLength={}",
+                    e.getMessage(), raw != null ? raw.length() : 0, e);
+            persistStage2FailureSidecar(toJson(extraction), raw, e);
+            String summary = e.getClass().getSimpleName() + ": " + safe(e.getMessage());
+            return new Stage2PlanResult(null, raw != null ? raw : "", summary);
+        }
+    }
+
+    private MultimodalAnalysisPlanResult normalizeAnalysisPlan(MultimodalAnalysisPlanResult raw, VisionExtractionResult extraction) {
+        if (raw == null) {
+            return null;
+        }
+        Set<String> validConvIds = nullSafe(extraction.conversations()).stream()
+                .filter(Objects::nonNull)
+                .map(ExtractedConversation::conversationId)
+                .filter(id -> id != null && !id.isBlank())
+                .map(String::trim)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        String inferredSingle = inferSingleConversationId(extraction);
+        String schema = safe(raw.schemaVersion()).isBlank() ? "2.1" : raw.schemaVersion().trim();
+
+        List<ConversationAnalysisItem> blocks = new ArrayList<>();
+        for (ConversationAnalysisItem block : nullSafe(raw.conversationAnalyses())) {
+            if (block == null) {
+                continue;
+            }
+            String cid = trimToNull(block.conversationId());
+            if (cid == null) {
+                cid = inferredSingle;
+            }
+            if (cid != null && !validConvIds.contains(cid)) {
+                cid = null;
+            }
+            if (cid == null) {
+                log.warn("Multimodal stage2: dropping analysis block with unknown or missing conversation_id");
+                continue;
+            }
+            VisionExtractionResult slice = sliceExtractionByConversationId(extraction, cid);
+            InteractionAnalysisResult ia = normalizeInteraction(
+                    new InteractionAnalysisResult(
+                            schema,
+                            block.participantUser(),
+                            block.participantWoman(),
+                            block.interactionFeatures(),
+                            block.conversationDynamics()),
+                    slice);
+            QueryPlanningResult qp = normalizePlanning(
+                    new QueryPlanningResult(
+                            schema,
+                            block.intentSummary(),
+                            block.messageAnnotations(),
+                            block.conversationHypotheses(),
+                            block.retrievalQueries()),
+                    slice);
+            ConversationAnalysisItem merged = new ConversationAnalysisItem(
+                    cid,
+                    safe(qp.intentSummary()),
+                    ia.participantUser(),
+                    ia.participantWoman(),
+                    ia.interactionFeatures(),
+                    ia.conversationDynamics(),
+                    qp.messageAnnotations(),
+                    qp.conversationHypotheses(),
+                    qp.retrievalQueries());
+            blocks.add(applyShortSampleGuardToBlock(merged, slice));
+        }
+        if (blocks.isEmpty()) {
+            return null;
+        }
+        return new MultimodalAnalysisPlanResult(schema, blocks);
+    }
+
+    /**
+     * Ограничивает confidence гипотез при очень малом числе сообщений в данной переписке.
+     */
+    private ConversationAnalysisItem applyShortSampleGuardToBlock(ConversationAnalysisItem block, VisionExtractionResult slice) {
+        int n = nullSafe(slice.messages()).size();
+        if (n > 3 || block == null) {
+            return block;
+        }
+        double cap = n <= 2 ? 0.55 : 0.65;
+        List<ConversationHypothesis> hy = nullSafe(block.conversationHypotheses()).stream()
+                .filter(Objects::nonNull)
+                .map(h -> new ConversationHypothesis(
+                        h.label(),
+                        Math.min(clamp01(h.confidence()), cap),
+                        h.evidence()))
+                .collect(Collectors.toList());
+        return new ConversationAnalysisItem(
+                block.conversationId(),
+                block.intentSummary(),
+                block.participantUser(),
+                block.participantWoman(),
+                block.interactionFeatures(),
+                block.conversationDynamics(),
+                block.messageAnnotations(),
+                hy,
+                block.retrievalQueries());
+    }
+
+    private static List<RetrievalQuery> collectAllRetrievalQueries(MultimodalAnalysisPlanResult plan) {
+        if (plan == null) {
+            return List.of();
+        }
+        List<RetrievalQuery> all = new ArrayList<>();
+        for (ConversationAnalysisItem b : nullSafe(plan.conversationAnalyses())) {
+            if (b == null) {
+                continue;
+            }
+            all.addAll(nullSafe(b.retrievalQueries()));
+        }
+        return all;
+    }
+
+    private static String inferSingleConversationId(VisionExtractionResult extraction) {
+        if (extraction == null) {
+            return null;
+        }
+        Set<String> ids = nullSafe(extraction.conversations()).stream()
+                .filter(Objects::nonNull)
+                .map(ExtractedConversation::conversationId)
+                .filter(id -> id != null && !id.isBlank())
+                .map(String::trim)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        return ids.size() == 1 ? ids.iterator().next() : null;
+    }
+
+    private static VisionExtractionResult sliceExtractionByConversationId(VisionExtractionResult extraction, String conversationId) {
+        if (extraction == null || conversationId == null || conversationId.isBlank()) {
+            return extraction;
+        }
+        String cid = conversationId.trim();
+        List<ExtractedMessage> msgs = nullSafe(extraction.messages()).stream()
+                .filter(m -> m != null && cid.equals(safe(m.conversationId()).trim()))
+                .collect(Collectors.toList());
+        List<ExtractedConversation> convs = nullSafe(extraction.conversations()).stream()
+                .filter(c -> c != null && cid.equals(safe(c.conversationId()).trim()))
+                .collect(Collectors.toList());
+        if (convs.isEmpty() && !msgs.isEmpty()) {
+            Integer minImg = msgs.stream()
+                    .map(ExtractedMessage::imageIndex)
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .orElse(0);
+            convs = List.of(new ExtractedConversation(cid, minImg, null, null));
+        }
+        return new VisionExtractionResult(
+                extraction.schemaVersion(),
+                extraction.userText(),
+                convs.isEmpty() ? extraction.conversations() : convs,
+                msgs,
+                extraction.visibleFacts(),
+                extraction.missingContext(),
+                extraction.extractionQuality());
+    }
+
+    private MultimodalAnalysisPlanResult parseStage2Response(String raw) throws IOException {
+        String payload = extractJsonPayload(raw);
+        JsonNode root = objectMapper.readTree(payload);
+        if (root.has("conversation_analyses")) {
+            return objectMapper.readValue(payload, MultimodalAnalysisPlanResult.class);
+        }
+        if (root.has("intent_summary") || root.has("participant_user") || root.has("interaction_features")) {
+            String schema = root.path("schema_version").asText("2.1");
+            String convId = legacyStage2TextOrNull(root.get("target_conversation_id"));
+            String intent = root.path("intent_summary").asText("");
+            ParticipantSideMetrics pu = convertStage2SubNode(root.get("participant_user"), ParticipantSideMetrics.class);
+            ParticipantSideMetrics pw = convertStage2SubNode(root.get("participant_woman"), ParticipantSideMetrics.class);
+            List<InteractionFeatureItem> feats = convertStage2List(root.get("interaction_features"), InteractionFeatureItem.class);
+            ConversationDynamics dyn = convertStage2SubNode(root.get("conversation_dynamics"), ConversationDynamics.class);
+            List<MessageAnnotation> ann = convertStage2List(root.get("message_annotations"), MessageAnnotation.class);
+            List<ConversationHypothesis> hyp = convertStage2List(root.get("conversation_hypotheses"), ConversationHypothesis.class);
+            List<RetrievalQuery> rq = convertStage2List(root.get("retrieval_queries"), RetrievalQuery.class);
+            ConversationAnalysisItem item = new ConversationAnalysisItem(
+                    trimToNull(convId),
+                    intent,
+                    pu,
+                    pw,
+                    feats,
+                    dyn,
+                    ann,
+                    hyp,
+                    rq);
+            return new MultimodalAnalysisPlanResult(schema, List.of(item));
+        }
+        return objectMapper.readValue(payload, MultimodalAnalysisPlanResult.class);
+    }
+
+    private static String legacyStage2TextOrNull(JsonNode n) {
+        if (n == null || n.isNull()) {
+            return null;
+        }
+        if (!n.isTextual()) {
+            return null;
+        }
+        String t = n.asText().trim();
+        return t.isEmpty() ? null : t;
+    }
+
+    private <T> T convertStage2SubNode(JsonNode n, Class<T> type) {
+        if (n == null || n.isNull()) {
+            return null;
+        }
+        return objectMapper.convertValue(n, type);
+    }
+
+    private <T> List<T> convertStage2List(JsonNode n, Class<T> type) {
+        if (n == null || !n.isArray()) {
+            return List.of();
+        }
+        List<T> out = new ArrayList<>();
+        for (JsonNode x : n) {
+            if (x != null && !x.isNull()) {
+                out.add(objectMapper.convertValue(x, type));
+            }
+        }
+        return out;
+    }
+
+    private Map<String, Object> buildCompactExtractionForStage2(VisionExtractionResult extraction) {
+        List<ExtractedMessage> msgs = nullSafe(extraction.messages()).stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(ArrayList::new));
+        msgs.sort(Comparator.comparingInt(m -> m.globalOrder() != null ? m.globalOrder() : Integer.MAX_VALUE));
+        if (msgs.size() > STAGE2_MAX_MESSAGES) {
+            msgs = new ArrayList<>(msgs.subList(0, STAGE2_MAX_MESSAGES));
+        }
+        List<Map<String, Object>> slim = new ArrayList<>();
+        for (ExtractedMessage m : msgs) {
+            if (m == null) {
+                continue;
+            }
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("message_id", m.messageId());
+            row.put("conversation_id", m.conversationId());
+            row.put("sender", m.sender());
+            row.put("sender_confidence", m.senderConfidence());
+            row.put("sender_label", m.senderLabel());
+            row.put("text", m.text());
+            row.put("text_confidence", m.textConfidence());
+            row.put("timestamp_text", m.timestampText());
+            row.put("is_partial", m.isPartial());
+            row.put("has_unreadable_fragment", m.hasUnreadableFragment());
+            row.put("image_index", m.imageIndex());
+            slim.add(row);
+        }
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("schema_version", extraction.schemaVersion());
+        out.put("conversations", nullSafe(extraction.conversations()));
+        out.put("messages", slim);
+        out.put("extraction_quality", extraction.extractionQuality());
+        out.put("missing_context", nullSafe(extraction.missingContext()).stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .limit(STAGE2_MAX_MISSING_CONTEXT_LINES)
+                .collect(Collectors.toList()));
+        out.put("total_message_count", nullSafe(extraction.messages()).size());
+        out.put("note", "Сжатый контекст: первые сообщения по global_order, лимит %d; visible_facts не передаются."
+                .formatted(STAGE2_MAX_MESSAGES));
+        return out;
     }
 
     private InteractionAnalysisResult normalizeInteraction(InteractionAnalysisResult raw, VisionExtractionResult extraction) {
@@ -375,7 +586,7 @@ public class MultimodalPreprocessingService {
                 .filter(Objects::nonNull)
                 .limit(MAX_INTERACTION_FEATURES)
                 .map(f -> new InteractionFeatureItem(
-                        safe(f.label()),
+                        normalizeFeatureLabel(f.label()),
                         normalizeAppliesTo(f.appliesTo()),
                         clamp01(f.confidence()),
                         capList(f.evidenceMessageIds(), MAX_EVIDENCE_MESSAGE_IDS, allowedIds)
@@ -383,7 +594,7 @@ public class MultimodalPreprocessingService {
                 .collect(Collectors.toList());
 
         return new InteractionAnalysisResult(
-                safe(raw.schemaVersion()).isBlank() ? "2.0" : raw.schemaVersion(),
+                safe(raw.schemaVersion()).isBlank() ? "2.1" : raw.schemaVersion(),
                 normalizeParticipantSide(raw.participantUser()),
                 normalizeParticipantSide(raw.participantWoman()),
                 features,
@@ -413,12 +624,17 @@ public class MultimodalPreprocessingService {
                 ))
                 .collect(Collectors.toList());
 
+        List<RetrievalQuery> queries = nullSafe(raw.retrievalQueries()).stream()
+                .filter(Objects::nonNull)
+                .limit(MAX_RETRIEVAL_QUERIES)
+                .collect(Collectors.toList());
+
         return new QueryPlanningResult(
-                safe(raw.schemaVersion()).isBlank() ? "2.0" : raw.schemaVersion(),
+                safe(raw.schemaVersion()).isBlank() ? "2.1" : raw.schemaVersion(),
                 safe(raw.intentSummary()),
                 annotations,
                 hypotheses,
-                nullSafe(raw.retrievalQueries())
+                queries
         );
     }
 
@@ -480,6 +696,17 @@ public class MultimodalPreprocessingService {
         return switch (s) {
             case "user", "woman", "conversation", "unclear" -> s;
             default -> "unclear";
+        };
+    }
+
+    private static String normalizeFeatureLabel(String label) {
+        String s = safe(label).toLowerCase(Locale.ROOT).trim();
+        return switch (s) {
+            case "short_replies", "initiative_imbalance", "initiative_without_reciprocity", "minimal_acknowledgment_pattern",
+                 "low_reciprocity", "low_question_reciprocity", "effort_asymmetry", "topic_closure",
+                 "topic_maintenance_asymmetry", "question_avoidance", "answer_without_expansion",
+                 "delayed_responsiveness", "warmth_asymmetry", "reactive_participation", "mixed_signals", "other" -> s;
+            default -> "other";
         };
     }
 
@@ -626,6 +853,13 @@ public class MultimodalPreprocessingService {
     }
 
     private VisionExtractionResult normalizeExtraction(VisionExtractionResult parsed, int maxImageIndexInclusive) {
+        List<ExtractedConversation> conversations = normalizeConversations(parsed, maxImageIndexInclusive);
+        Set<String> validConvIds = conversations.stream()
+                .map(ExtractedConversation::conversationId)
+                .filter(id -> id != null && !id.isBlank())
+                .collect(Collectors.toCollection(HashSet::new));
+        Map<Integer, String> imageToConvId = mapImageToPrimaryConversationId(conversations);
+
         List<ExtractedMessage> raw = nullSafe(parsed.messages());
         LinkedHashSet<String> usedIds = new LinkedHashSet<>();
         List<ExtractedMessage> pass1 = new ArrayList<>();
@@ -634,11 +868,8 @@ public class MultimodalPreprocessingService {
             if (m == null) {
                 continue;
             }
-            if ("reaction".equalsIgnoreCase(safe(m.messageType()).trim())) {
-                continue;
-            }
             String id = allocateMessageId(m.messageId(), usedIds, seq);
-            pass1.add(normalizeExtractedMessageFields(m, id, seq, maxImageIndexInclusive));
+            pass1.add(normalizeSlimMessage(m, id, seq, maxImageIndexInclusive, validConvIds, imageToConvId));
             seq++;
         }
         Set<String> allIds = pass1.stream().map(ExtractedMessage::messageId).collect(Collectors.toSet());
@@ -663,12 +894,174 @@ public class MultimodalPreprocessingService {
         ExtractionQuality quality = normalizeExtractionQuality(parsed.extractionQuality());
 
         return new VisionExtractionResult(
-                safe(parsed.schemaVersion()).isBlank() ? "2.0" : parsed.schemaVersion().trim(),
+                safe(parsed.schemaVersion()).isBlank() ? "2.1" : parsed.schemaVersion().trim(),
                 "",
+                conversations,
                 messages,
                 visibleFacts,
                 missingContext,
                 quality
+        );
+    }
+
+    private static List<ExtractedConversation> normalizeConversations(VisionExtractionResult parsed, int maxImageIndexInclusive) {
+        Set<String> reservedIds = new HashSet<>();
+        for (ExtractedConversation c : nullSafe(parsed.conversations())) {
+            if (c != null && c.conversationId() != null && !c.conversationId().isBlank()) {
+                reservedIds.add(c.conversationId().trim());
+            }
+        }
+        List<ExtractedConversation> out = new ArrayList<>();
+        int autoCounter = 1;
+        for (ExtractedConversation c : nullSafe(parsed.conversations())) {
+            if (c == null) {
+                continue;
+            }
+            String id = safe(c.conversationId()).trim();
+            if (id.isEmpty()) {
+                String gen;
+                do {
+                    gen = "c" + autoCounter++;
+                } while (reservedIds.contains(gen));
+                reservedIds.add(gen);
+                id = gen;
+            }
+            int img = c.imageIndex() == null ? 0 : c.imageIndex();
+            if (maxImageIndexInclusive >= 0) {
+                img = Math.max(0, Math.min(img, maxImageIndexInclusive));
+            }
+            String title = trimToNull(c.chatTitle());
+            String label = trimToNull(c.otherParticipantLabel());
+            out.add(new ExtractedConversation(id, img, title, label));
+        }
+        if (out.isEmpty() && maxImageIndexInclusive >= 0) {
+            for (int i = 0; i <= maxImageIndexInclusive; i++) {
+                out.add(new ExtractedConversation("c" + (i + 1), i, null, null));
+            }
+        }
+        return resolveImageIndexConversationConflicts(out);
+    }
+
+    /**
+     * Один image_index не должен молча маппиться на разные conversation_id: оставляем первый id по порядку списка, остальные строки сливаем/отбрасываем.
+     */
+    private static List<ExtractedConversation> resolveImageIndexConversationConflicts(List<ExtractedConversation> conversations) {
+        Map<Integer, String> imageToCanonical = new LinkedHashMap<>();
+        Map<Integer, Set<String>> imageToIds = new LinkedHashMap<>();
+        for (ExtractedConversation c : conversations) {
+            if (c == null) {
+                continue;
+            }
+            int img = c.imageIndex() == null ? 0 : c.imageIndex();
+            String id = safe(c.conversationId()).trim();
+            if (id.isEmpty()) {
+                continue;
+            }
+            imageToIds.computeIfAbsent(img, k -> new LinkedHashSet<>()).add(id);
+            imageToCanonical.putIfAbsent(img, id);
+        }
+        for (Map.Entry<Integer, Set<String>> e : imageToIds.entrySet()) {
+            if (e.getValue().size() > 1) {
+                log.warn("Multimodal extraction: image_index {} has multiple conversation_ids {}; canonical id {}",
+                        e.getKey(), e.getValue(), imageToCanonical.get(e.getKey()));
+            }
+        }
+        Set<String> seenImageCanonical = new LinkedHashSet<>();
+        List<ExtractedConversation> rewritten = new ArrayList<>();
+        for (ExtractedConversation c : conversations) {
+            if (c == null) {
+                continue;
+            }
+            int img = c.imageIndex() == null ? 0 : c.imageIndex();
+            String canonical = imageToCanonical.get(img);
+            if (canonical == null) {
+                String id = safe(c.conversationId()).trim();
+                canonical = id.isEmpty() ? null : id;
+            }
+            if (canonical == null) {
+                continue;
+            }
+            String key = img + "\0" + canonical;
+            if (seenImageCanonical.contains(key)) {
+                continue;
+            }
+            seenImageCanonical.add(key);
+            rewritten.add(new ExtractedConversation(canonical, c.imageIndex(), c.chatTitle(), c.otherParticipantLabel()));
+        }
+        return rewritten.isEmpty() ? conversations : rewritten;
+    }
+
+    private static Map<Integer, String> mapImageToPrimaryConversationId(List<ExtractedConversation> conversations) {
+        Map<Integer, String> map = new HashMap<>();
+        for (ExtractedConversation c : conversations) {
+            if (c == null || c.imageIndex() == null || c.conversationId() == null) {
+                continue;
+            }
+            map.putIfAbsent(c.imageIndex(), c.conversationId());
+        }
+        return map;
+    }
+
+    private static String trimToNull(String s) {
+        if (s == null) {
+            return null;
+        }
+        String t = s.trim();
+        return t.isEmpty() ? null : t;
+    }
+
+    private static ExtractedMessage normalizeSlimMessage(ExtractedMessage m,
+                                                         String messageId,
+                                                         int defaultOrderIndex,
+                                                         int maxImageIndexInclusive,
+                                                         Set<String> validConvIds,
+                                                         Map<Integer, String> imageToConvId) {
+        Integer gOrder = m.globalOrder();
+        if (gOrder == null || gOrder < 0) {
+            gOrder = defaultOrderIndex;
+        }
+        Integer imgIdx = m.imageIndex();
+        if (maxImageIndexInclusive >= 0) {
+            if (imgIdx == null || imgIdx < 0) {
+                imgIdx = 0;
+            } else {
+                imgIdx = Math.min(imgIdx, maxImageIndexInclusive);
+            }
+        }
+        Integer orderInImage = m.orderInImage();
+        if (orderInImage != null && orderInImage < 0) {
+            orderInImage = 0;
+        }
+        String sender = normalizeExtractionSender(m.sender());
+        Double senderConf = normalizeExtractionConfidence(m.senderConfidence());
+        String convId = safe(m.conversationId()).trim();
+        if (convId.isEmpty() || !validConvIds.contains(convId)) {
+            convId = imageToConvId.getOrDefault(imgIdx, validConvIds.isEmpty() ? "c1" : validConvIds.iterator().next());
+        }
+        String senderLabel = trimToNull(m.senderLabel());
+        String text = m.text() != null ? m.text() : "";
+        Double textConf = normalizeExtractionConfidence(m.textConfidence());
+        String timestampText = m.timestampText();
+        if (timestampText != null && timestampText.isBlank()) {
+            timestampText = null;
+        }
+        boolean partial = Boolean.TRUE.equals(m.isPartial());
+        boolean unread = Boolean.TRUE.equals(m.hasUnreadableFragment());
+        return new ExtractedMessage(
+                messageId,
+                gOrder,
+                imgIdx,
+                orderInImage,
+                convId,
+                sender,
+                senderConf,
+                senderLabel,
+                m.repliesToVisibleMessageId(),
+                text,
+                textConf,
+                timestampText,
+                partial,
+                unread
         );
     }
 
@@ -687,58 +1080,6 @@ public class MultimodalPreprocessingService {
         return candidate;
     }
 
-    private static ExtractedMessage normalizeExtractedMessageFields(ExtractedMessage m,
-                                                                   String messageId,
-                                                                   int defaultOrderIndex,
-                                                                   int maxImageIndexInclusive) {
-        Integer gOrder = m.globalOrder();
-        if (gOrder == null || gOrder < 0) {
-            gOrder = defaultOrderIndex;
-        }
-        Integer imgIdx = m.imageIndex();
-        if (maxImageIndexInclusive >= 0) {
-            if (imgIdx == null || imgIdx < 0) {
-                imgIdx = 0;
-            } else {
-                imgIdx = Math.min(imgIdx, maxImageIndexInclusive);
-            }
-        }
-        Integer orderInImage = m.orderInImage();
-        if (orderInImage != null && orderInImage < 0) {
-            orderInImage = 0;
-        }
-        String sender = normalizeExtractionSender(m.sender());
-        Double sc = normalizeExtractionConfidence(m.senderConfidence());
-        Double tc = normalizeExtractionConfidence(m.textConfidence());
-        String messageType = normalizeExtractionMessageType(m.messageType());
-        String bubbleSide = normalizeExtractionBubbleSide(m.bubbleSide());
-        boolean hasEmoji = Boolean.TRUE.equals(m.hasEmoji());
-        String text = m.text() != null ? m.text() : "";
-        String timestampText = m.timestampText();
-        if (timestampText != null && timestampText.isBlank()) {
-            timestampText = null;
-        }
-        boolean partial = Boolean.TRUE.equals(m.isPartial());
-        boolean unread = Boolean.TRUE.equals(m.hasUnreadableFragment());
-        return new ExtractedMessage(
-                messageId,
-                gOrder,
-                imgIdx,
-                orderInImage,
-                sender,
-                sc,
-                messageType,
-                bubbleSide,
-                hasEmoji,
-                m.repliesToVisibleMessageId(),
-                text,
-                tc,
-                timestampText,
-                partial,
-                unread
-        );
-    }
-
     private static ExtractedMessage fixReplyTarget(ExtractedMessage m, Set<String> allIds) {
         String fixedReply = resolveReplyRef(m.repliesToVisibleMessageId(), allIds);
         return new ExtractedMessage(
@@ -746,11 +1087,10 @@ public class MultimodalPreprocessingService {
                 m.globalOrder(),
                 m.imageIndex(),
                 m.orderInImage(),
+                m.conversationId(),
                 m.sender(),
                 m.senderConfidence(),
-                m.messageType(),
-                m.bubbleSide(),
-                m.hasEmoji(),
+                m.senderLabel(),
                 fixedReply,
                 m.text(),
                 m.textConfidence(),
@@ -775,25 +1115,6 @@ public class MultimodalPreprocessingService {
         String s = safe(sender).toLowerCase(Locale.ROOT).trim();
         return switch (s) {
             case "user", "woman", "unknown" -> s;
-            default -> "unknown";
-        };
-    }
-
-    private static String normalizeExtractionMessageType(String value) {
-        String s = safe(value).toLowerCase(Locale.ROOT).trim();
-        if ("reaction".equals(s)) {
-            return "unknown";
-        }
-        return switch (s) {
-            case "text", "emoji_only", "sticker", "media", "system", "unknown" -> s;
-            default -> "unknown";
-        };
-    }
-
-    private static String normalizeExtractionBubbleSide(String value) {
-        String s = safe(value).toLowerCase(Locale.ROOT).trim();
-        return switch (s) {
-            case "left", "right", "center", "unknown" -> s;
             default -> "unknown";
         };
     }
@@ -894,7 +1215,7 @@ public class MultimodalPreprocessingService {
         return v;
     }
 
-    private <T> List<T> nullSafe(List<T> list) {
+    private static <T> List<T> nullSafe(List<T> list) {
         return list == null ? List.of() : list.stream().filter(Objects::nonNull).collect(Collectors.toList());
     }
 
@@ -910,24 +1231,14 @@ public class MultimodalPreprocessingService {
         return value == null ? "" : value;
     }
 
-    private String fetchInteractionJson(String extractionJson) {
-        String first = llmProxyService.completeSimple(INTERACTION_ANALYSIS_PROMPT, extractionJson, 0.2, INTERACTION_MAX_TOKENS);
+    private String fetchAnalysisPlanningJson(String userPayloadJson) {
+        String first = llmProxyService.completeSimple(ANALYSIS_AND_PLANNING_PROMPT, userPayloadJson, 0.2, STAGE2_ANALYSIS_MAX_TOKENS);
         if (!looksLikeTruncatedJson(first)) {
             return first;
         }
-        String compact = INTERACTION_ANALYSIS_PROMPT
-                + "\nДополнительно: компактный JSON; evidence_message_ids ≤ 2; interaction_features ≤ 8; conversation_dynamics строго enum из схемы; applies_to: user|woman|conversation|unclear.";
-        return llmProxyService.completeSimple(compact, extractionJson, 0.2, INTERACTION_RETRY_MAX_TOKENS);
-    }
-
-    private String fetchPlanningJson(String queryInput) {
-        String first = llmProxyService.completeSimple(QUERY_PLANNING_PROMPT, queryInput, 0.2, PLANNING_MAX_TOKENS);
-        if (!looksLikeTruncatedJson(first)) {
-            return first;
-        }
-        String compactPrompt = QUERY_PLANNING_PROMPT
-                + "\nДополнительно: компактный ответ; evidence ≤ 2; conversation_hypotheses ≤ 4; reciprocity_signal для каждой аннотации; не завышай confidence.";
-        return llmProxyService.completeSimple(compactPrompt, queryInput, 0.2, PLANNING_RETRY_MAX_TOKENS);
+        String compact = ANALYSIS_AND_PLANNING_PROMPT
+                + "\nДополнительно: компактный JSON; conversation_analyses[] по одному блоку на conversation_id; evidence_message_ids ≤ 2; features ≤ 8; не смешивать чаты; reciprocity_signal у каждой аннотации; hypotheses ≤ 4; при малых n — низкий confidence гипотез; не завышай confidence.";
+        return llmProxyService.completeSimple(compact, userPayloadJson, 0.2, STAGE2_ANALYSIS_RETRY_MAX_TOKENS);
     }
 
     private boolean looksLikeTruncatedJson(String raw) {
@@ -945,7 +1256,7 @@ public class MultimodalPreprocessingService {
         return braces > 0 || brackets > 0 || !s.trim().endsWith("}");
     }
 
-    private void saveDebugBundle(String extractionRaw, InteractionStageResult stage2, String planningRaw) {
+    private void saveDebugBundle(String extractionRaw, String stage2AnalysisRaw, String stage2ErrorOrNull) {
         if (debugPlanningPath == null || debugPlanningPath.isBlank()) {
             return;
         }
@@ -957,11 +1268,10 @@ public class MultimodalPreprocessingService {
             }
             LinkedHashMap<String, Object> bundle = new LinkedHashMap<>();
             bundle.put("stage1_extraction_raw", safe(extractionRaw));
-            bundle.put("stage2_interaction_raw", stage2 != null ? safe(stage2.rawResponse()) : "");
-            if (stage2 != null && stage2.failureSummary() != null && !stage2.failureSummary().isBlank()) {
-                bundle.put("stage2_error", stage2.failureSummary());
+            bundle.put("stage2_analysis_planning_raw", safe(stage2AnalysisRaw));
+            if (stage2ErrorOrNull != null && !stage2ErrorOrNull.isBlank()) {
+                bundle.put("stage2_error", stage2ErrorOrNull);
             }
-            bundle.put("stage3_planning_raw", safe(planningRaw));
             Files.writeString(path, objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(bundle), StandardCharsets.UTF_8);
         } catch (Exception ignored) {
         }
@@ -982,7 +1292,7 @@ public class MultimodalPreprocessingService {
             Path sidecar = dir.resolve("multimodal-stage2-failure.json");
             LinkedHashMap<String, Object> failure = new LinkedHashMap<>();
             failure.put("extraction_input_json", safe(extractionJson));
-            failure.put("interaction_raw", safe(interactionRaw));
+            failure.put("stage2_analysis_raw", safe(interactionRaw));
             failure.put("error_class", error.getClass().getName());
             failure.put("error_message", safe(error.getMessage()));
             Files.writeString(sidecar, objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(failure), StandardCharsets.UTF_8);

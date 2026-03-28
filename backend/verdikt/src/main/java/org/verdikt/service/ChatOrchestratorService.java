@@ -10,7 +10,11 @@ import org.verdikt.chat.dto.TopicChoiceItem;
 import org.verdikt.chat.model.ConversationState;
 import org.verdikt.chat.model.TopicMemory;
 import org.verdikt.dto.ChatCompletionsRequest;
+import org.verdikt.dto.multimodal.ConversationAnalysisItem;
+import org.verdikt.dto.multimodal.InteractionAnalysisResult;
+import org.verdikt.dto.multimodal.MultimodalAnalysisPlanResult;
 import org.verdikt.dto.multimodal.MultimodalResult;
+import org.verdikt.dto.multimodal.QueryPlanningResult;
 import org.verdikt.dto.multimodal.RetrievalQuery;
 import org.verdikt.entity.Chat;
 import org.verdikt.entity.User;
@@ -280,18 +284,18 @@ public class ChatOrchestratorService {
     }
 
     private String serializeImageAnalysis(MultimodalResult multimodal) {
-        if (multimodal.extraction() == null && multimodal.interaction() == null && multimodal.planning() == null) {
+        if (multimodal.extraction() == null && multimodal.analysisPlan() == null) {
             return null;
         }
         Map<String, Object> payload = new HashMap<>();
         if (multimodal.extraction() != null) {
             payload.put("extraction", multimodal.extraction());
         }
-        if (multimodal.interaction() != null) {
-            payload.put("interaction", multimodal.interaction());
-        }
-        if (multimodal.planning() != null) {
-            payload.put("planning", multimodal.planning());
+        MultimodalAnalysisPlanResult plan = multimodal.analysisPlan();
+        if (plan != null) {
+            payload.put("analysis_plan", plan);
+            payload.put("interaction", sliceInteraction(plan));
+            payload.put("planning", slicePlanning(plan, multimodal.queries()));
         }
         if (payload.isEmpty()) {
             return null;
@@ -301,6 +305,44 @@ public class ChatOrchestratorService {
         } catch (JsonProcessingException e) {
             return null;
         }
+    }
+
+    private static ConversationAnalysisItem firstConversationBlock(MultimodalAnalysisPlanResult p) {
+        if (p == null || p.conversationAnalyses() == null || p.conversationAnalyses().isEmpty()) {
+            return null;
+        }
+        return p.conversationAnalyses().get(0);
+    }
+
+    private static InteractionAnalysisResult sliceInteraction(MultimodalAnalysisPlanResult p) {
+        String schema = p != null && p.schemaVersion() != null && !p.schemaVersion().isBlank() ? p.schemaVersion() : "2.1";
+        ConversationAnalysisItem b = firstConversationBlock(p);
+        if (b == null) {
+            return new InteractionAnalysisResult(schema, null, null, List.of(), null);
+        }
+        return new InteractionAnalysisResult(
+                schema,
+                b.participantUser(),
+                b.participantWoman(),
+                b.interactionFeatures(),
+                b.conversationDynamics());
+    }
+
+    private static QueryPlanningResult slicePlanning(MultimodalAnalysisPlanResult p, List<RetrievalQuery> queries) {
+        String schema = p != null && p.schemaVersion() != null && !p.schemaVersion().isBlank() ? p.schemaVersion() : "2.1";
+        ConversationAnalysisItem b = firstConversationBlock(p);
+        List<RetrievalQuery> merged = queries != null && !queries.isEmpty()
+                ? queries
+                : (b != null && b.retrievalQueries() != null ? b.retrievalQueries() : List.of());
+        if (b == null) {
+            return new QueryPlanningResult(schema, "", List.of(), List.of(), merged != null ? merged : List.of());
+        }
+        return new QueryPlanningResult(
+                schema,
+                b.intentSummary(),
+                b.messageAnnotations(),
+                b.conversationHypotheses(),
+                merged != null ? merged : List.of());
     }
 
     private static List<TopicChoiceItem> toTopicChoiceItems(List<TopicMemory> topics) {

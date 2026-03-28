@@ -5,6 +5,5 @@ import java.util.List;
 public record MultimodalResult(
         List<RetrievalQuery> queries,
         VisionExtractionResult extraction,
-        InteractionAnalysisResult interaction,
-        QueryPlanningResult planning
+        MultimodalAnalysisPlanResult analysisPlan
 ) {}
