@@ -367,17 +367,6 @@ public class LlmProxyService {
         return "";
     }
 
-    /**
-     * Multimodal call: text + one or more images (as data URLs), expects plain text/JSON answer.
-     */
-    @SuppressWarnings("unchecked")
-    public String completeMultimodalJson(String systemPrompt,
-                                         String userMessage,
-                                         List<String> imageDataUrls,
-                                         double temperature,
-                                         int maxTokens) {
-        return completeMultimodalJson(systemPrompt, userMessage, imageDataUrls, temperature, maxTokens, defaultVisionModel);
-    }
 
     @SuppressWarnings("unchecked")
     public String completeMultimodalJson(String systemPrompt,

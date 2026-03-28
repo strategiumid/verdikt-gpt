@@ -143,7 +143,7 @@ public class ChatOrchestratorService {
         String rewrite = rewriteService.rewrite(topic, message);
         String effectiveRewrite = (rewrite != null && !rewrite.isBlank()) ? rewrite : message;
 
-        ChatCompletionsRequest request = newCompletionsRequest(chatKey, message, contextForLlm, contextForLlm);
+        ChatCompletionsRequest request = newCompletionsRequest(chatKey, message, contextForLlm, effectiveRewrite);
         attachMultimodal(user, message, imageIds, request);
 
         boolean skipSavingUserAgain = selectedTopicId != null && !selectedTopicId.isBlank();
@@ -280,12 +280,15 @@ public class ChatOrchestratorService {
     }
 
     private String serializeImageAnalysis(MultimodalResult multimodal) {
-        if (multimodal.extraction() == null && multimodal.planning() == null) {
+        if (multimodal.extraction() == null && multimodal.interaction() == null && multimodal.planning() == null) {
             return null;
         }
         Map<String, Object> payload = new HashMap<>();
         if (multimodal.extraction() != null) {
             payload.put("extraction", multimodal.extraction());
+        }
+        if (multimodal.interaction() != null) {
+            payload.put("interaction", multimodal.interaction());
         }
         if (multimodal.planning() != null) {
             payload.put("planning", multimodal.planning());
