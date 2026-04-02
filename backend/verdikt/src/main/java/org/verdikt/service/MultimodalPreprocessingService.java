@@ -286,19 +286,16 @@ public class MultimodalPreprocessingService {
 
         if (stage2.result() == null) {
             List<RetrievalQuery> fallback = fallbackQueries(userText);
-            saveDebugBundle(extractionJsonRaw, stage2.rawResponse(), stage2.failureSummary());
             return new MultimodalResult(fallback, extraction, null);
         }
 
         try {
             MultimodalAnalysisPlanResult normalized = normalizeAnalysisPlan(stage2.result(), extraction);
             List<RetrievalQuery> queries = sanitizeQueries(collectAllRetrievalQueries(normalized), userText);
-            saveDebugBundle(extractionJsonRaw, stage2.rawResponse(), stage2.failureSummary());
             return new MultimodalResult(queries, extraction, normalized);
         } catch (Exception e) {
             log.warn("Multimodal stage2 normalize failed: {}", e.getMessage());
             List<RetrievalQuery> fallback = fallbackQueries(userText);
-            saveDebugBundle(extractionJsonRaw, stage2.rawResponse(), e.getClass().getSimpleName() + ": " + safe(e.getMessage()));
             return new MultimodalResult(fallback, extraction, null);
         }
     }
@@ -1256,26 +1253,26 @@ public class MultimodalPreprocessingService {
         return braces > 0 || brackets > 0 || !s.trim().endsWith("}");
     }
 
-    private void saveDebugBundle(String extractionRaw, String stage2AnalysisRaw, String stage2ErrorOrNull) {
-        if (debugPlanningPath == null || debugPlanningPath.isBlank()) {
-            return;
-        }
-        try {
-            Path path = Path.of(debugPlanningPath).toAbsolutePath().normalize();
-            Path parent = path.getParent();
-            if (parent != null) {
-                Files.createDirectories(parent);
-            }
-            LinkedHashMap<String, Object> bundle = new LinkedHashMap<>();
-            bundle.put("stage1_extraction_raw", safe(extractionRaw));
-            bundle.put("stage2_analysis_planning_raw", safe(stage2AnalysisRaw));
-            if (stage2ErrorOrNull != null && !stage2ErrorOrNull.isBlank()) {
-                bundle.put("stage2_error", stage2ErrorOrNull);
-            }
-            Files.writeString(path, objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(bundle), StandardCharsets.UTF_8);
-        } catch (Exception ignored) {
-        }
-    }
+//    private void saveDebugBundle(String extractionRaw, String stage2AnalysisRaw, String stage2ErrorOrNull) {
+//        if (debugPlanningPath == null || debugPlanningPath.isBlank()) {
+//            return;
+//        }
+//        try {
+//            Path path = Path.of(debugPlanningPath).toAbsolutePath().normalize();
+//            Path parent = path.getParent();
+//            if (parent != null) {
+//                Files.createDirectories(parent);
+//            }
+//            LinkedHashMap<String, Object> bundle = new LinkedHashMap<>();
+//            bundle.put("stage1_extraction_raw", safe(extractionRaw));
+//            bundle.put("stage2_analysis_planning_raw", safe(stage2AnalysisRaw));
+//            if (stage2ErrorOrNull != null && !stage2ErrorOrNull.isBlank()) {
+//                bundle.put("stage2_error", stage2ErrorOrNull);
+//            }
+//            Files.writeString(path, objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(bundle), StandardCharsets.UTF_8);
+//        } catch (Exception ignored) {
+//        }
+//    }
 
     /** Отдельный файл при падении stage2: сырой ответ и вход extraction (рядом с debug.multimodal-planning-path). */
     private void persistStage2FailureSidecar(String extractionJson, String interactionRaw, Exception error) {

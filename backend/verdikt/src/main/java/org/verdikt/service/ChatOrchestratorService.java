@@ -1,6 +1,7 @@
 package org.verdikt.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -22,9 +23,12 @@ import org.verdikt.repository.ChatRepository;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Orchestrates the chat turn pipeline: topic routing, optional multimodal preprocessing, rewrite, then
@@ -94,13 +98,123 @@ public class ChatOrchestratorService {
                                         List<Long> ragItemIds) {
         ConversationState state = stream.state();
         String rawUserMessage = stream.rawUserMessage();
-
+        String multimodalMemorySummary = buildMultimodalMemorySummary(stream.request().getImageAnalysis());
         if (state.getTopics().isEmpty()) {
-            initializeTopicAfterFirstStream(stream, state, rawUserMessage, assistantText, ragItemIds);
+            initializeTopicAfterFirstStream(stream, state, rawUserMessage, assistantText, ragItemIds, multimodalMemorySummary);
         } else {
-            updateTopicAfterStream(stream, state, rawUserMessage, assistantText, ragItemIds);
+            updateTopicAfterStream(stream, state, rawUserMessage, assistantText, ragItemIds, multimodalMemorySummary);
         }
         return state;
+    }
+
+    /**
+     * Краткий нейтральный контекст для обновления памяти: только поля extraction (без stage-2 интерпретаций).
+     */
+    private String buildMultimodalMemorySummary(String imageAnalysisJson) {
+        if (imageAnalysisJson == null || imageAnalysisJson.isBlank()) {
+            return "";
+        }
+        try {
+            JsonNode root = objectMapper.readTree(imageAnalysisJson);
+            JsonNode extraction = root.path("extraction");
+            if (extraction.isMissingNode() || extraction.isNull()) {
+                return "";
+            }
+
+            Set<String> conversationIds = new LinkedHashSet<>();
+            JsonNode conversations = extraction.path("conversations");
+            int screenBlocks = 0;
+            if (conversations.isArray()) {
+                screenBlocks = conversations.size();
+                for (JsonNode c : conversations) {
+                    String id = jsonText(c, "conversation_id");
+                    if (!id.isEmpty()) {
+                        conversationIds.add(id);
+                    }
+                }
+            }
+
+            JsonNode messages = extraction.path("messages");
+            int messageCount = messages.isArray() ? messages.size() : 0;
+            if (conversationIds.isEmpty() && messages.isArray()) {
+                for (JsonNode m : messages) {
+                    String id = jsonText(m, "conversation_id");
+                    if (!id.isEmpty()) {
+                        conversationIds.add(id);
+                    }
+                }
+            }
+
+            List<String> parts = new ArrayList<>();
+            int distinctChats = conversationIds.size();
+
+            if (distinctChats > 1) {
+                parts.add("Пользователь прислал скриншоты нескольких переписок (%d разных чатов).".formatted(distinctChats));
+            } else if (screenBlocks > 1) {
+                parts.add("Пользователь прислал несколько скриншотов одной переписки.");
+            } else if (screenBlocks > 0 || messageCount > 0) {
+                parts.add("Пользователь прислал скриншот(ы) переписки.");
+            } else {
+                parts.add("К сообщению приложены скриншоты чата.");
+            }
+
+            if (messageCount > 0) {
+                parts.add("В распознанном фрагменте на скринах видно примерно %d сообщений.".formatted(messageCount));
+            }
+
+            JsonNode missing = extraction.path("missing_context");
+            if (missing.isArray() && !missing.isEmpty()) {
+                parts.add("Часть контекста переписки на скриншотах неполная или обрезана.");
+            }
+
+            JsonNode quality = extraction.path("extraction_quality");
+            String qLabel = jsonText(quality, "label");
+            if ("low".equalsIgnoreCase(qLabel)) {
+                parts.add("Качество распознавания текста на скринах оценено как низкое.");
+            } else if ("medium".equalsIgnoreCase(qLabel)) {
+                parts.add("Качество распознавания текста на скринах среднее.");
+            }
+
+            JsonNode facts = extraction.path("visible_facts");
+            if (facts.isArray()) {
+                List<String> factBits = new ArrayList<>();
+                for (JsonNode f : facts) {
+                    if (factBits.size() >= 2) {
+                        break;
+                    }
+                    if (!f.isTextual()) {
+                        continue;
+                    }
+                    String t = f.asText().trim();
+                    if (t.isEmpty()) {
+                        continue;
+                    }
+                    if (t.length() > 120) {
+                        t = t.substring(0, 117) + "...";
+                    }
+                    factBits.add(t);
+                }
+                if (!factBits.isEmpty()) {
+                    parts.add("По скринам (наблюдения): " + String.join(" ", factBits));
+                }
+            }
+
+            String joined = String.join(" ", parts).trim();
+            if (joined.length() > 650) {
+                joined = joined.substring(0, 647) + "...";
+            }
+            return joined;
+        } catch (Exception ignored) {
+            return "";
+        }
+    }
+
+    private static String jsonText(JsonNode node, String field) {
+        if (node == null || !node.isObject()) {
+            return "";
+        }
+        JsonNode v = node.get(field);
+        return v != null && v.isTextual() ? v.asText().trim() : "";
     }
 
     // --- processTurn branches ---
@@ -187,15 +301,21 @@ public class ChatOrchestratorService {
                                                  ConversationState state,
                                                  String rawUserMessage,
                                                  String assistantText,
-                                                 List<Long> ragItemIds) {
-        String ragQuery = stream.request().getRagQuery();
+                                                 List<Long> ragItemIds,
+                                                 String multimodalMemorySummary) {
+        String ragQuery = stream.request().getRagQueries() != null && !stream.request().getRagQueries().isEmpty() ?
+                stream.request()
+                        .getRagQueries()
+                        .stream()
+                        .map(Object::toString) // если уже String, можно убрать
+                        .collect(Collectors.joining("\n")) : stream.request().getRagQuery();
         String effectiveQuery = ragQuery != null ? ragQuery : rawUserMessage;
 
         chatTurnProcessor.initializeFirstTopic(state, rawUserMessage, effectiveQuery, ragItemIds);
 
         TopicMemory topic = state.getTopics().isEmpty() ? null : state.getTopics().get(0);
         if (topic != null) {
-            applyMemoryUpdate(topic, rawUserMessage, assistantText);
+            applyMemoryUpdate(topic, rawUserMessage, assistantText, multimodalMemorySummary);
         }
     }
 
@@ -203,7 +323,8 @@ public class ChatOrchestratorService {
                                         ConversationState state,
                                         String rawUserMessage,
                                         String assistantText,
-                                        List<Long> ragItemIds) {
+                                        List<Long> ragItemIds,
+                                        String multimodalMemorySummary) {
         int nextTurn = state.getTurnCounter() + 1;
 
         TopicMemory topic = findTopicById(state, state.getActiveTopicId());
@@ -219,19 +340,23 @@ public class ChatOrchestratorService {
                     topic.getAssistantReferenceSummary(),
                     ragItemIds,
                     nextTurn);
-            applyMemoryUpdate(topic, rawUserMessage, assistantText);
+            applyMemoryUpdate(topic, rawUserMessage, assistantText, multimodalMemorySummary);
         }
         state.setTurnCounter(nextTurn);
     }
 
-    private void applyMemoryUpdate(TopicMemory topic, String rawUserMessage, String assistantText) {
+    private void applyMemoryUpdate(TopicMemory topic,
+                                   String rawUserMessage,
+                                   String assistantText,
+                                   String multimodalMemorySummary) {
         var update = memoryUpdateService.buildUpdate(
                 topic.getTopicLabel(),
                 topic.getDisplayTitle(),
                 topic.getUserGoal(),
                 topic.getFactsFromUser(),
                 rawUserMessage,
-                assistantText);
+                assistantText,
+                multimodalMemorySummary);
         memoryUpdateService.applyToTopic(topic, update);
     }
 
