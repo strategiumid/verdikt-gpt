@@ -1,6 +1,7 @@
 package org.verdikt.service;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,6 +20,8 @@ import java.util.UUID;
 
 @Service
 public class ImageAttachmentService {
+
+    public record OwnedImageBytes(byte[] data, String contentType) {}
 
     private static final long MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 
@@ -81,7 +84,10 @@ public class ImageAttachmentService {
         );
     }
 
-    public String loadOwnedImageAsDataUrl(User user, String imageId) {
+    /**
+     * Байты файла и Content-Type; только владелец ({@code user}) может скачать.
+     */
+    public OwnedImageBytes loadOwnedImageBytes(User user, String imageId) {
         if (user == null || imageId == null || imageId.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Некорректный imageId");
         }
@@ -93,11 +99,20 @@ public class ImageAttachmentService {
         }
         try {
             byte[] bytes = Files.readAllBytes(path);
-            String base64 = Base64.getEncoder().encodeToString(bytes);
-            return "data:" + attachment.getContentType() + ";base64," + base64;
+            String ct = attachment.getContentType();
+            if (ct == null || ct.isBlank()) {
+                ct = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+            }
+            return new OwnedImageBytes(bytes, ct);
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Не удалось прочитать файл изображения");
         }
+    }
+
+    public String loadOwnedImageAsDataUrl(User user, String imageId) {
+        OwnedImageBytes loaded = loadOwnedImageBytes(user, imageId);
+        String base64 = Base64.getEncoder().encodeToString(loaded.data());
+        return "data:" + loaded.contentType() + ";base64," + base64;
     }
 
     private String normalizeFileName(String originalName) {

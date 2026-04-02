@@ -28,4 +28,24 @@ public class ImageAttachmentController {
         ImageUploadResponse response = imageAttachmentService.upload(user, image);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    /**
+     * Скачивание своего вложения по {@code imageId} (тот же id, что в ответе загрузки и в {@code imageIds} сообщений).
+     */
+    @GetMapping("/{imageId}")
+    public ResponseEntity<byte[]> download(
+            @AuthenticationPrincipal User user,
+            @PathVariable String imageId
+    ) {
+        ImageAttachmentService.OwnedImageBytes owned = imageAttachmentService.loadOwnedImageBytes(user, imageId);
+        MediaType ct = MediaType.APPLICATION_OCTET_STREAM;
+        try {
+            ct = MediaType.parseMediaType(owned.contentType());
+        } catch (Exception ignored) {
+            // оставляем octet-stream
+        }
+        return ResponseEntity.ok()
+                .contentType(ct)
+                .body(owned.data());
+    }
 }
