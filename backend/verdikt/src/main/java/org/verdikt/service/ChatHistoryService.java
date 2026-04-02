@@ -355,17 +355,6 @@ public class ChatHistoryService {
                     .map(ChatMessageImage::getImageId)
                     .toList());
         }
-        if (!m.getImageAnalyses().isEmpty()) {
-            List<MessageImageAnalysisDto> analyses = new ArrayList<>(m.getImageAnalyses().size());
-            for (ChatMessageImageAnalysis a : m.getImageAnalyses()) {
-                MessageImageAnalysisDto ad = new MessageImageAnalysisDto();
-                ad.setId(a.getId());
-                ad.setPayloadJson(a.getPayloadJson());
-                ad.setImageIds(List.copyOf(a.getAnalyzedImageIds()));
-                analyses.add(ad);
-            }
-            dto.setImageAnalyses(analyses);
-        }
         return dto;
     }
 

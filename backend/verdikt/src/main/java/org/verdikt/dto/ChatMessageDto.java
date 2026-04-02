@@ -15,8 +15,6 @@ public class ChatMessageDto {
     private List<Long> ragItemIds;
     /** ID изображений, прикреплённых к сообщению (порядок как при отправке). */
     private List<String> imageIds;
-    /** Одна или несколько записей анализа (мультимодальный пайплайн), каждая со своим набором imageIds. */
-    private List<MessageImageAnalysisDto> imageAnalyses;
     private Instant createdAt;
 
     public ChatMessageDto() {
@@ -67,13 +65,6 @@ public class ChatMessageDto {
         this.imageIds = imageIds;
     }
 
-    public List<MessageImageAnalysisDto> getImageAnalyses() {
-        return imageAnalyses;
-    }
-
-    public void setImageAnalyses(List<MessageImageAnalysisDto> imageAnalyses) {
-        this.imageAnalyses = imageAnalyses;
-    }
 
     public Instant getCreatedAt() {
         return createdAt;
