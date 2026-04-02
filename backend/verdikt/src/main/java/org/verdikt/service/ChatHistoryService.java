@@ -2,6 +2,7 @@ package org.verdikt.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.verdikt.chat.model.ConversationState;
 import org.verdikt.dto.ChatCompletionsRequest;
@@ -66,12 +67,18 @@ public class ChatHistoryService {
         sb.append("Предыдущие сообщения пользователя в этом чате (используй для контекста но не отвечай на них):\n ");
         int start = Math.max(0, copy.size() - maxMessages);
         for (int i = start; i < copy.size(); i++) {
-            String c = copy.get(i).getContent();
+            ChatMessage message = copy.get(i);
+            String c = message.getContent();
             if (c == null) continue;
             String t = c.trim();
             if (t.isBlank()) continue;
             if (!sb.isEmpty()) sb.append("\n");
             sb.append(t);
+            String extractionContext = extractHistoryExtractionContext(message);
+            if (!extractionContext.isBlank()) {
+                sb.append("\n[Image Extraction Context]\n");
+                sb.append(extractionContext);
+            }
         }
 
         if (!trimmedCurrent.isBlank()) {
@@ -527,6 +534,36 @@ public class ChatHistoryService {
                 .map(String::trim)
                 .distinct()
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Возвращает extraction JSON из первого analysis payload у user-сообщения (если есть).
+     * В контекст добавляется только extraction, без analysis_plan/interaction/planning.
+     */
+    private String extractHistoryExtractionContext(ChatMessage message) {
+        if (message == null || message.getImageAnalyses() == null || message.getImageAnalyses().isEmpty()) {
+            return "";
+        }
+        for (ChatMessageImageAnalysis analysis : message.getImageAnalyses()) {
+            if (analysis == null) {
+                continue;
+            }
+            String payload = analysis.getPayloadJson();
+            if (payload == null || payload.isBlank()) {
+                continue;
+            }
+            try {
+                JsonNode root = objectMapper.readTree(payload);
+                JsonNode extraction = root.path("extraction");
+                if (extraction.isMissingNode() || extraction.isNull()) {
+                    continue;
+                }
+                return objectMapper.writeValueAsString(extraction);
+            } catch (Exception ignored) {
+                // Skip malformed payload and try next analysis row if present.
+            }
+        }
+        return "";
     }
 }
 

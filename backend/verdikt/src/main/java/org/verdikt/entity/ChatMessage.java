@@ -1,6 +1,7 @@
 package org.verdikt.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -29,10 +30,12 @@ public class ChatMessage {
     @Column(name = "rag_item_ids", length = 500)
     private String ragItemIdsJson;
 
+    @BatchSize(size = 32)
     @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("sortOrder ASC")
     private List<ChatMessageImage> messageImages = new ArrayList<>();
 
+    @BatchSize(size = 32)
     @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("id ASC")
     private List<ChatMessageImageAnalysis> imageAnalyses = new ArrayList<>();

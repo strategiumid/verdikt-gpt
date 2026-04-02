@@ -14,7 +14,8 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
     List<ChatMessage> findByChatOrderByCreatedAtAsc(Chat chat);
 
-    @EntityGraph(attributePaths = {"messageImages", "imageAnalyses"})
+    /** Только один bag за раз — иначе {@code MultipleBagFetchException}. {@code messageImages} — через {@link org.hibernate.annotations.BatchSize} на сущности. */
+    @EntityGraph(attributePaths = {"imageAnalyses"})
     Page<ChatMessage> findByChatOrderByCreatedAtAsc(Chat chat, Pageable pageable);
 
     Optional<ChatMessage> findFirstByChatAndRoleOrderByCreatedAtAsc(Chat chat, String role);
@@ -27,7 +28,9 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
     /**
      * Последние N user-сообщений конкретного пользователя в конкретном чате (защита от утечек между юзерами).
+     * Подгружаем анализы скринов в том же запросе — иначе {@link ChatMessage#getImageAnalyses()} падает вне сессии.
      */
+    @EntityGraph(attributePaths = {"imageAnalyses"})
     List<ChatMessage> findTop10ByChat_User_IdAndChat_ChatKeyAndRoleOrderByIdDesc(Long userId, String chatKey, String role);
 }
 

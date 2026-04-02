@@ -116,94 +116,38 @@ public class ChatOrchestratorService {
         }
         try {
             JsonNode root = objectMapper.readTree(imageAnalysisJson);
-            JsonNode extraction = root.path("extraction");
-            if (extraction.isMissingNode() || extraction.isNull()) {
-                return "";
-            }
 
-            Set<String> conversationIds = new LinkedHashSet<>();
-            JsonNode conversations = extraction.path("conversations");
-            int screenBlocks = 0;
-            if (conversations.isArray()) {
-                screenBlocks = conversations.size();
-                for (JsonNode c : conversations) {
-                    String id = jsonText(c, "conversation_id");
-                    if (!id.isEmpty()) {
-                        conversationIds.add(id);
+            // Собираем intent_summary из каждой переписки в analysis_plan
+            JsonNode analyses = root.path("analysis_plan").path("conversation_analyses");
+
+            if (analyses.isArray() && !analyses.isEmpty()) {
+                List<String> summaries = new ArrayList<>();
+                for (JsonNode conv : analyses) {
+                    String convId = jsonText(conv, "conversation_id");
+                    String intentSummary = jsonText(conv, "intent_summary");
+                    if (!intentSummary.isEmpty()) {
+                        String prefix = !convId.isEmpty() ? "[" + convId + "] " : "";
+                        summaries.add(prefix + intentSummary);
                     }
+                }
+                if (!summaries.isEmpty()) {
+                    String joined = String.join(" | ", summaries);
+                    if (joined.length() > 650) {
+                        joined = joined.substring(0, 647) + "...";
+                    }
+                    return joined;
                 }
             }
 
-            JsonNode messages = extraction.path("messages");
-            int messageCount = messages.isArray() ? messages.size() : 0;
-            if (conversationIds.isEmpty() && messages.isArray()) {
-                for (JsonNode m : messages) {
-                    String id = jsonText(m, "conversation_id");
-                    if (!id.isEmpty()) {
-                        conversationIds.add(id);
-                    }
-                }
+            // Фоллбэк: planning.intent_summary если analysis_plan пустой
+            String planningIntent = jsonText(root.path("planning"), "intent_summary");
+            if (!planningIntent.isEmpty()) {
+                return planningIntent.length() > 650
+                        ? planningIntent.substring(0, 647) + "..."
+                        : planningIntent;
             }
 
-            List<String> parts = new ArrayList<>();
-            int distinctChats = conversationIds.size();
-
-            if (distinctChats > 1) {
-                parts.add("Пользователь прислал скриншоты нескольких переписок (%d разных чатов).".formatted(distinctChats));
-            } else if (screenBlocks > 1) {
-                parts.add("Пользователь прислал несколько скриншотов одной переписки.");
-            } else if (screenBlocks > 0 || messageCount > 0) {
-                parts.add("Пользователь прислал скриншот(ы) переписки.");
-            } else {
-                parts.add("К сообщению приложены скриншоты чата.");
-            }
-
-            if (messageCount > 0) {
-                parts.add("В распознанном фрагменте на скринах видно примерно %d сообщений.".formatted(messageCount));
-            }
-
-            JsonNode missing = extraction.path("missing_context");
-            if (missing.isArray() && !missing.isEmpty()) {
-                parts.add("Часть контекста переписки на скриншотах неполная или обрезана.");
-            }
-
-            JsonNode quality = extraction.path("extraction_quality");
-            String qLabel = jsonText(quality, "label");
-            if ("low".equalsIgnoreCase(qLabel)) {
-                parts.add("Качество распознавания текста на скринах оценено как низкое.");
-            } else if ("medium".equalsIgnoreCase(qLabel)) {
-                parts.add("Качество распознавания текста на скринах среднее.");
-            }
-
-            JsonNode facts = extraction.path("visible_facts");
-            if (facts.isArray()) {
-                List<String> factBits = new ArrayList<>();
-                for (JsonNode f : facts) {
-                    if (factBits.size() >= 2) {
-                        break;
-                    }
-                    if (!f.isTextual()) {
-                        continue;
-                    }
-                    String t = f.asText().trim();
-                    if (t.isEmpty()) {
-                        continue;
-                    }
-                    if (t.length() > 120) {
-                        t = t.substring(0, 117) + "...";
-                    }
-                    factBits.add(t);
-                }
-                if (!factBits.isEmpty()) {
-                    parts.add("По скринам (наблюдения): " + String.join(" ", factBits));
-                }
-            }
-
-            String joined = String.join(" ", parts).trim();
-            if (joined.length() > 650) {
-                joined = joined.substring(0, 647) + "...";
-            }
-            return joined;
+            return "";
         } catch (Exception ignored) {
             return "";
         }
