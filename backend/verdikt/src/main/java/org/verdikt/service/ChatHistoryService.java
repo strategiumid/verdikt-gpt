@@ -169,6 +169,10 @@ public class ChatHistoryService {
             userMsg.setRole("user");
             userMsg.setContent(userContent);
             attachMessageMediaFromRequest(userMsg, completionRequest);
+            String ragRewrite = completionRequest != null ? completionRequest.getRagRetrievalRewriteJson() : null;
+            if (ragRewrite != null && !ragRewrite.isBlank()) {
+                userMsg.setRagRetrievalRewriteJson(ragRewrite);
+            }
             chatMessageRepository.save(userMsg);
         }
 
@@ -200,7 +204,9 @@ public class ChatHistoryService {
         }
         try {
             ConversationState state = objectMapper.readValue(json, ConversationState.class);
-            return state != null ? state : new ConversationState();
+            ConversationState out = state != null ? state : new ConversationState();
+            TopicMemoryFactsHelper.dedupeAllTopicFacts(out);
+            return out;
         } catch (Exception e) {
             return new ConversationState();
         }
@@ -354,6 +360,9 @@ public class ChatHistoryService {
             dto.setImageIds(m.getMessageImages().stream()
                     .map(ChatMessageImage::getImageId)
                     .toList());
+        }
+        if (m.getRagRetrievalRewriteJson() != null && !m.getRagRetrievalRewriteJson().isBlank()) {
+            dto.setRagRetrievalRewriteJson(m.getRagRetrievalRewriteJson());
         }
         return dto;
     }

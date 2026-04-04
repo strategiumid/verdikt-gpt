@@ -15,6 +15,8 @@ public class ChatMessageDto {
     private List<Long> ragItemIds;
     /** ID изображений, прикреплённых к сообщению (порядок как при отправке). */
     private List<String> imageIds;
+    /** JSON ответа LLM query rewriter для RAG (режимы auto/reasoner, не первый ход). */
+    private String ragRetrievalRewriteJson;
     private Instant createdAt;
 
     public ChatMessageDto() {
@@ -65,6 +67,13 @@ public class ChatMessageDto {
         this.imageIds = imageIds;
     }
 
+    public String getRagRetrievalRewriteJson() {
+        return ragRetrievalRewriteJson;
+    }
+
+    public void setRagRetrievalRewriteJson(String ragRetrievalRewriteJson) {
+        this.ragRetrievalRewriteJson = ragRetrievalRewriteJson;
+    }
 
     public Instant getCreatedAt() {
         return createdAt;

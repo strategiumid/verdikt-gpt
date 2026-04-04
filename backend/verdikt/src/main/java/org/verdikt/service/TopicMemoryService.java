@@ -17,7 +17,8 @@ public class TopicMemoryService {
         topic.setTopicLabel("general");
         topic.setDisplayTitle(buildDisplayTitle(userMessage));
         topic.setLastUsedTurn(1);
-        topic.getFactsFromUser().add(userMessage);
+        // factsFromUser только из MemoryUpdateService (устойчивые факты), не сырой текст каждого сообщения.
+        topic.setLastRagRetrievalQueries(rewrite != null && !rewrite.isBlank() ? rewrite : "");
         topic.setUserGoal("understand and get advice");
         topic.setLastRewrite(rewrite);
         topic.setAssistantReferenceSummary("Discussed the user's initial question.");
@@ -28,17 +29,17 @@ public class TopicMemoryService {
     public void updateTopic(TopicMemory topic,
                             String userMessage,
                             String rewrite,
+                            String lastRagRetrievalQueries,
                             String assistantSummary,
                             List<Long> qaIds,
                             int turnNumber) {
         topic.setLastUsedTurn(turnNumber);
         topic.setLastRewrite(rewrite);
+        topic.setLastRagRetrievalQueries(lastRagRetrievalQueries != null ? lastRagRetrievalQueries : "");
         topic.setAssistantReferenceSummary(assistantSummary);
         topic.setLastQaIds(qaIds);
 
-        if (topic.getFactsFromUser().size() < 10) {
-            topic.getFactsFromUser().add(userMessage);
-        }
+        TopicMemoryFactsHelper.dedupePreserveOrder(topic.getFactsFromUser());
     }
 
     private String buildDisplayTitle(String userMessage) {

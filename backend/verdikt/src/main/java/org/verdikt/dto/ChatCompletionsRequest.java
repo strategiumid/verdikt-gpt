@@ -38,13 +38,20 @@ public class ChatCompletionsRequest {
     private String ragQuery;
     private List<String> ragQueries;
 
+    /** Режим модели Verdikt (WebSocket); не уходит в upstream LLM. */
+    private VerdiktModelType verdiktModelType;
+
+    /** Сырой JSON ответа LLM query rewriter (RAG); сохраняется в user-сообщении. */
+    private String ragRetrievalRewriteJson;
+
     /** Extra parameters to forward to the LLM API (top_p, tools, etc.). */
     private Map<String, Object> passthrough = new HashMap<>();
 
     private static final java.util.Set<String> RESERVED =
             java.util.Set.of(
                     "model", "messages", "max_tokens", "maxTokens", "temperature", "stream",
-                    "chatId", "originalUserMessage", "imageIds", "imageAnalysis", "ragQuery", "ragQueries");
+                    "chatId", "originalUserMessage", "imageIds", "imageAnalysis", "ragQuery", "ragQueries",
+                    "verdiktModelType", "ragRetrievalRewriteJson");
 
     public String getModel() {
         return model;
@@ -132,6 +139,22 @@ public class ChatCompletionsRequest {
 
     public void setRagQueries(List<String> ragQueries) {
         this.ragQueries = ragQueries;
+    }
+
+    public VerdiktModelType getVerdiktModelType() {
+        return verdiktModelType;
+    }
+
+    public void setVerdiktModelType(VerdiktModelType verdiktModelType) {
+        this.verdiktModelType = verdiktModelType;
+    }
+
+    public String getRagRetrievalRewriteJson() {
+        return ragRetrievalRewriteJson;
+    }
+
+    public void setRagRetrievalRewriteJson(String ragRetrievalRewriteJson) {
+        this.ragRetrievalRewriteJson = ragRetrievalRewriteJson;
     }
 
     @JsonAnySetter

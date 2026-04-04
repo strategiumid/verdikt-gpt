@@ -7,6 +7,7 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import org.verdikt.dto.VerdiktModelType;
 import org.verdikt.entity.User;
 import org.verdikt.service.ChatHistoryService;
 import org.verdikt.service.ChatOrchestratorService;
@@ -47,6 +48,8 @@ public class LlmWebSocketHandler extends TextWebSocketHandler {
         public String message;
         public String chatId;
         public String selectedTopicId;
+        /** {@code verdikt-chat} | {@code verdikt-reasoner} | {@code verdikt-auto}; по умолчанию chat. */
+        public VerdiktModelType modelType;
         public List<AttachmentDto> attachments;
     }
 
@@ -91,8 +94,9 @@ public class LlmWebSocketHandler extends TextWebSocketHandler {
 
     private void processTurn(WebSocketSession session, User user, StreamRequestDto dto) {
         try {
+            VerdiktModelType modelType = dto.modelType != null ? dto.modelType : VerdiktModelType.VERDIKT_CHAT;
             OrchestratorResult result = chatOrchestratorService.processTurn(
-                    user, dto.chatId, dto.message, dto.selectedTopicId, extractImageIds(dto.attachments));
+                    user, dto.chatId, dto.message, dto.selectedTopicId, extractImageIds(dto.attachments), modelType);
 
             if (result instanceof OrchestratorResult.ChooseTopic choose) {
                 if (session.isOpen()) {

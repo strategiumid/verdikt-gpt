@@ -10,7 +10,10 @@ import org.verdikt.chat.dto.ChooseTopicResponse;
 import org.verdikt.chat.dto.TopicChoiceItem;
 import org.verdikt.chat.model.ConversationState;
 import org.verdikt.chat.model.TopicMemory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.verdikt.dto.ChatCompletionsRequest;
+import org.verdikt.dto.VerdiktModelType;
 import org.verdikt.dto.multimodal.ConversationAnalysisItem;
 import org.verdikt.dto.multimodal.InteractionAnalysisResult;
 import org.verdikt.dto.multimodal.MultimodalAnalysisPlanResult;
@@ -37,6 +40,8 @@ import java.util.stream.Collectors;
 @Service
 public class ChatOrchestratorService {
 
+    private static final Logger log = LoggerFactory.getLogger(ChatOrchestratorService.class);
+
     private static final int USER_CONTEXT_MESSAGE_WINDOW = 10;
 
     private final ChatRepository chatRepository;
@@ -46,6 +51,7 @@ public class ChatOrchestratorService {
     private final TopicMemoryService topicMemoryService;
     private final MemoryUpdateService memoryUpdateService;
     private final MultimodalPreprocessingService multimodalPreprocessingService;
+    private final RagQueryRewriteService ragQueryRewriteService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ChatOrchestratorService(ChatRepository chatRepository,
@@ -54,7 +60,8 @@ public class ChatOrchestratorService {
                                  RewriteService rewriteService,
                                  TopicMemoryService topicMemoryService,
                                  MemoryUpdateService memoryUpdateService,
-                                 MultimodalPreprocessingService multimodalPreprocessingService) {
+                                 MultimodalPreprocessingService multimodalPreprocessingService,
+                                 RagQueryRewriteService ragQueryRewriteService) {
         this.chatRepository = chatRepository;
         this.chatHistoryService = chatHistoryService;
         this.chatTurnProcessor = chatTurnProcessor;
@@ -62,6 +69,7 @@ public class ChatOrchestratorService {
         this.topicMemoryService = topicMemoryService;
         this.memoryUpdateService = memoryUpdateService;
         this.multimodalPreprocessingService = multimodalPreprocessingService;
+        this.ragQueryRewriteService = ragQueryRewriteService;
     }
 
     /**
@@ -73,8 +81,11 @@ public class ChatOrchestratorService {
                                           String chatKey,
                                           String message,
                                           String selectedTopicId,
-                                          List<String> imageIds) {
+                                          List<String> imageIds,
+                                          VerdiktModelType modelType) {
         requireNonBlankMessage(message);
+
+        VerdiktModelType mt = modelType != null ? modelType : VerdiktModelType.VERDIKT_CHAT;
 
         String effectiveChatKey = resolveChatKey(chatKey);
         Chat chat = loadOrCreateChatPlaceholder(user, effectiveChatKey);
@@ -84,9 +95,9 @@ public class ChatOrchestratorService {
 
         return switch (decision.getType()) {
             case ASK_USER_TO_CHOOSE -> askUserToChooseTopic(user, effectiveChatKey, message, imageIds, decision);
-            case FIRST_MESSAGE -> streamNewConversation(user, effectiveChatKey, message, imageIds, state);
+            case FIRST_MESSAGE -> streamNewConversation(user, effectiveChatKey, message, imageIds, state, mt);
             case USE_TOPIC -> streamWithExistingTopic(
-                    user, effectiveChatKey, message, imageIds, selectedTopicId, state, decision.getTopic());
+                    user, effectiveChatKey, message, imageIds, selectedTopicId, state, decision.getTopic(), mt);
         };
     }
 
@@ -185,11 +196,52 @@ public class ChatOrchestratorService {
                                                      String chatKey,
                                                      String message,
                                                      List<String> imageIds,
-                                                     ConversationState state) {
-        ChatCompletionsRequest request = newCompletionsRequest(chatKey, message, message, message);
+                                                     ConversationState state,
+                                                     VerdiktModelType modelType) {
+        boolean hasImages = !normalizeImageIds(imageIds).isEmpty();
+        VerdiktModelType mt = effectiveModelType(modelType, hasImages);
+
+        String effectiveQuery = message;
+        String ragQueryForRetrieval = message;
+        String rewriterJson = null;
+        List<String> ragQueriesFromRewriter = null;
+        String ragRewriterPlanType = null;
+
+        // С картинками эффективный тип — reasoner, rewriter не вызывается (multimodal RAG).
+        // Без картинок: chat — сырой текст; auto/reasoner — RagQueryRewriteService как на следующих ходах.
+        if (!hasImages && mt.usesLlmRagQueryRewriter()) {
+            try {
+                RagQueryRewriteService.RagRewriteResult rr = ragQueryRewriteService.rewriteUserMessage(
+                        message,
+                        List.of(),
+                        "",
+                        "");
+                ragRewriterPlanType = rr.planType();
+                rewriterJson = rr.rawJson();
+                List<String> qs = rr.queries();
+                if (qs != null && !qs.isEmpty()) {
+                    ragQueriesFromRewriter = qs;
+                    ragQueryForRetrieval = qs.get(0);
+                    effectiveQuery = String.join("\n", qs);
+                }
+            } catch (Exception e) {
+                log.warn("RAG query rewriter failed on first message, falling back to user text: {}", e.getMessage());
+                rewriterJson = null;
+            }
+        }
+
+        ChatCompletionsRequest request = newCompletionsRequest(chatKey, message, message, ragQueryForRetrieval);
+        if (ragQueriesFromRewriter != null) {
+            request.setRagQueries(ragQueriesFromRewriter);
+        }
+        if (!hasImages && mt.usesLlmRagQueryRewriter() && rewriterJson != null && !rewriterJson.isBlank()) {
+            request.setRagRetrievalRewriteJson(rewriterJson);
+        }
+        request.setVerdiktModelType(mt);
+        applyAnswerMaxTokens(request, ragRewriterPlanType);
         attachMultimodal(user, message, imageIds, request);
         state.setTurnCounter(0);
-        return new OrchestratorResult.Stream(request, state, message, message, false);
+        return new OrchestratorResult.Stream(request, state, message, effectiveQuery, false);
     }
 
     private OrchestratorResult streamWithExistingTopic(User user,
@@ -198,14 +250,67 @@ public class ChatOrchestratorService {
                                                          List<String> imageIds,
                                                          String selectedTopicId,
                                                          ConversationState state,
-                                                         TopicMemory topic) {
-        // RAG / LLM see recent user lines + current message; rewrite still runs for topic memory.
+                                                         TopicMemory topic,
+                                                         VerdiktModelType modelType) {
+        boolean hasImages = !normalizeImageIds(imageIds).isEmpty();
+        VerdiktModelType mt = effectiveModelType(modelType, hasImages);
         String contextForLlm = chatHistoryService.buildLastUserMessagesContext(
                 user, chatKey, message, USER_CONTEXT_MESSAGE_WINDOW);
-        String rewrite = rewriteService.rewrite(topic, message);
-        String effectiveRewrite = (rewrite != null && !rewrite.isBlank()) ? rewrite : message;
 
-        ChatCompletionsRequest request = newCompletionsRequest(chatKey, message, contextForLlm, effectiveRewrite);
+        String effectiveRewrite;
+        String ragQueryForRetrieval;
+        String rewriterJson = null;
+        List<String> ragQueriesFromRewriter = null;
+        String ragRewriterPlanType = null;
+
+        if (hasImages) {
+            // С картинками RAG-запросы задаёт multimodal; RewriteService / RagQueryRewriteService не вызываем.
+            ragQueryForRetrieval = message;
+            effectiveRewrite = message;
+        } else if (mt == VerdiktModelType.VERDIKT_CHAT) {
+            String rewrite = rewriteService.rewrite(topic, message);
+            effectiveRewrite = (rewrite != null && !rewrite.isBlank()) ? rewrite : message;
+            ragQueryForRetrieval = effectiveRewrite;
+        } else if (mt.usesLlmRagQueryRewriter()) {
+            try {
+                List<String> memFacts = topic.getFactsFromUser() != null ? topic.getFactsFromUser() : List.of();
+                RagQueryRewriteService.RagRewriteResult rr = ragQueryRewriteService.rewriteUserMessage(
+                        message,
+                        memFacts,
+                        nullToEmpty(topic.getLastRewrite()),
+                        nullToEmpty(topic.getLastRagRetrievalQueries()));
+                ragRewriterPlanType = rr.planType();
+                rewriterJson = rr.rawJson();
+                List<String> qs = rr.queries();
+                if (qs != null && !qs.isEmpty()) {
+                    ragQueriesFromRewriter = qs;
+                    ragQueryForRetrieval = qs.get(0);
+                    effectiveRewrite = String.join("\n", qs);
+                } else {
+                    ragQueryForRetrieval = message;
+                    effectiveRewrite = message;
+                }
+            } catch (Exception e) {
+                log.warn("RAG query rewriter failed, falling back to user message: {}", e.getMessage());
+                ragQueryForRetrieval = message;
+                effectiveRewrite = message;
+                rewriterJson = null;
+            }
+        } else {
+            ragQueryForRetrieval = message;
+            effectiveRewrite = message;
+        }
+
+        ChatCompletionsRequest request = newCompletionsRequest(chatKey, message, contextForLlm, ragQueryForRetrieval);
+        if (ragQueriesFromRewriter != null) {
+            request.setRagQueries(ragQueriesFromRewriter);
+        }
+        if (!hasImages && mt.usesLlmRagQueryRewriter() && rewriterJson != null && !rewriterJson.isBlank()) {
+            request.setRagRetrievalRewriteJson(rewriterJson);
+        }
+        request.setVerdiktModelType(mt);
+        applyAnswerMaxTokens(request, ragRewriterPlanType);
+
         attachMultimodal(user, message, imageIds, request);
 
         boolean skipSavingUserAgain = selectedTopicId != null && !selectedTopicId.isBlank();
@@ -277,14 +382,15 @@ public class ChatOrchestratorService {
             if (rewrite == null) {
                 rewrite = rawUserMessage;
             }
+            applyMemoryUpdate(topic, rawUserMessage, assistantText, multimodalMemorySummary);
             topicMemoryService.updateTopic(
                     topic,
                     rawUserMessage,
                     rewrite,
+                    joinRagQueriesFromRequest(stream.request()),
                     topic.getAssistantReferenceSummary(),
                     ragItemIds,
                     nextTurn);
-            applyMemoryUpdate(topic, rawUserMessage, assistantText, multimodalMemorySummary);
         }
         state.setTurnCounter(nextTurn);
     }
@@ -310,6 +416,47 @@ public class ChatOrchestratorService {
         if (message == null || message.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Сообщение не может быть пустым");
         }
+    }
+
+    private static String nullToEmpty(String s) {
+        return s != null ? s : "";
+    }
+
+    /** Текст запросов к RAG из request (как в enrichWithRagContext). */
+    private static String joinRagQueriesFromRequest(ChatCompletionsRequest req) {
+        if (req == null) {
+            return "";
+        }
+        List<String> list = req.getRagQueries();
+        if (list != null && !list.isEmpty()) {
+            return list.stream()
+                    .filter(q -> q != null && !q.isBlank())
+                    .map(String::trim)
+                    .collect(Collectors.joining("\n"));
+        }
+        String q = req.getRagQuery();
+        return q != null ? q.trim() : "";
+    }
+
+    /**
+     * С прикреплёнными изображениями режим всегда {@link VerdiktModelType#VERDIKT_REASONER}.
+     */
+    private static VerdiktModelType effectiveModelType(VerdiktModelType modelType, boolean hasImages) {
+        VerdiktModelType mt = modelType != null ? modelType : VerdiktModelType.VERDIKT_CHAT;
+        return hasImages ? VerdiktModelType.VERDIKT_REASONER : mt;
+    }
+
+    /**
+     * Лимит токенов финального ответа основной LLM: {@code type: "multi"} у RAG rewriter или выбран {@link VerdiktModelType#VERDIKT_REASONER} → 3000, иначе 1500.
+     */
+    private static void applyAnswerMaxTokens(ChatCompletionsRequest request, String ragRewriterPlanType) {
+        if (request == null) {
+            return;
+        }
+        boolean multi = ragRewriterPlanType != null && "multi".equalsIgnoreCase(ragRewriterPlanType.trim());
+        VerdiktModelType mt = request.getVerdiktModelType();
+        boolean reasoner = mt == VerdiktModelType.VERDIKT_REASONER;
+        request.setMaxTokens((multi || reasoner) ? 3000 : 1500);
     }
 
     private static String resolveChatKey(String chatKey) {

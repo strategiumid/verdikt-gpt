@@ -30,6 +30,11 @@ public class ChatMessage {
     @Column(name = "rag_item_ids", length = 500)
     private String ragItemIdsJson;
 
+    /** Ответ LLM query rewriter (JSON) для RAG; только для user при режимах verdikt-auto / verdikt-reasoner. */
+    @Lob
+    @Column(name = "rag_retrieval_rewrite_json")
+    private String ragRetrievalRewriteJson;
+
     @BatchSize(size = 32)
     @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("sortOrder ASC")
@@ -81,6 +86,14 @@ public class ChatMessage {
 
     public void setRagItemIdsJson(String ragItemIdsJson) {
         this.ragItemIdsJson = ragItemIdsJson;
+    }
+
+    public String getRagRetrievalRewriteJson() {
+        return ragRetrievalRewriteJson;
+    }
+
+    public void setRagRetrievalRewriteJson(String ragRetrievalRewriteJson) {
+        this.ragRetrievalRewriteJson = ragRetrievalRewriteJson;
     }
 
     public List<ChatMessageImage> getMessageImages() {
