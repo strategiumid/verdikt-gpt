@@ -19,8 +19,8 @@ import java.util.Map;
 @Service
 public class RagService {
 
-    private static final String RAG_URL = "http://localhost:8081/api/retrieve";
-    private static final String RAG_TOP_URL = "http://localhost:8081/api/retrieve-top";
+    private static final String RAG_URL = "https://verdikt-gpt.online/api/retrieve";
+    private static final String RAG_TOP_URL = "https://verdikt-gpt.online/api/retrieve-top";
     private static final String SECRET_HEADER = "X-Secret-Phrase";
     private static final String SECRET_VALUE = "1q2w3e$R%T^Y";
 
