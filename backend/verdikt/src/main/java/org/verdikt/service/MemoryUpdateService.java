@@ -38,6 +38,19 @@ public class MemoryUpdateService {
             - Только факты, относящиеся к этой теме
             - Все значения в JSON (summary/facts/goal) должны быть на русском языке
 
+            Если MULTIMODAL CONTEXT SUMMARY непустой:
+            - используй его только как дополнительный контекст темы
+            - не считай его прямыми словами пользователя
+            - не переносить гипотезы и интерпретации из multimodal анализа в newFactsFromUser как пользовательские факты
+            - в newFactsFromUser можно сохранять только нейтральные факты о предоставленных пользователем скриншотах, если они важны для темы
+
+            Если MULTIMODAL CONTEXT SUMMARY пустой — игнорируй этот блок целиком.
+
+            Разделяй:
+            - факты, явно сказанные пользователем
+            - нейтральные факты о присланных скриншотах
+            Не записывай модельные интерпретации скриншотов как факты пользователя.
+
             Верни JSON строго по схеме:
             {
               "assistantReferenceSummary": "string",
@@ -55,7 +68,8 @@ public class MemoryUpdateService {
                                          String previousUserGoal,
                                          List<String> existingFacts,
                                          String currentUserMessage,
-                                         String assistantAnswer) {
+                                         String assistantAnswer,
+                                         String multimodalMemorySummary) {
         String prompt = """
                 CURRENT TOPIC LABEL:
                 %s
@@ -72,6 +86,9 @@ public class MemoryUpdateService {
                 CURRENT USER MESSAGE:
                 %s
 
+                MULTIMODAL CONTEXT SUMMARY:
+                %s
+
                 ASSISTANT ANSWER:
                 %s
                 """.formatted(
@@ -80,6 +97,7 @@ public class MemoryUpdateService {
                 safe(previousUserGoal),
                 toJsonArray(existingFacts),
                 safe(currentUserMessage),
+                safe(multimodalMemorySummary),
                 safe(assistantAnswer)
         );
 
@@ -97,10 +115,13 @@ public class MemoryUpdateService {
             String summary = asString(map.get("assistantReferenceSummary"));
             List<String> newFacts = asStringList(map.get("newFactsFromUser"));
             String updatedGoal = asString(map.get("updatedUserGoal"));
-            if (summary == null || summary.isBlank()) {
+            String summaryTrimmed = (summary != null && !summary.isBlank()) ? trimTo(summary, 500) : null;
+            boolean hasFacts = !newFacts.isEmpty();
+            boolean hasGoal = updatedGoal != null && !updatedGoal.isBlank();
+            if (summaryTrimmed == null && !hasFacts && !hasGoal) {
                 return null;
             }
-            return new MemoryUpdateResult(summary, newFacts, updatedGoal);
+            return new MemoryUpdateResult(summaryTrimmed, newFacts, updatedGoal);
         } catch (Exception ignored) {
             return null;
         }
@@ -108,18 +129,21 @@ public class MemoryUpdateService {
 
     public void applyToTopic(TopicMemory topic, MemoryUpdateResult update) {
         if (topic == null || update == null) return;
-        topic.setAssistantReferenceSummary(trimTo(update.assistantReferenceSummary(), 200));
+        if (update.assistantReferenceSummary() != null && !update.assistantReferenceSummary().isBlank()) {
+            topic.setAssistantReferenceSummary(trimTo(update.assistantReferenceSummary(), 500));
+        }
         if (update.updatedUserGoal() != null && !update.updatedUserGoal().isBlank()) {
             topic.setUserGoal(trimTo(update.updatedUserGoal(), 160));
         }
         if (update.newFactsFromUser() != null) {
             for (String f : update.newFactsFromUser()) {
-                if (f == null) continue;
-                String tf = f.trim();
-                if (tf.isBlank()) continue;
-                if (topic.getFactsFromUser().size() >= 10) break;
-                topic.getFactsFromUser().add(trimTo(tf, 240));
+                TopicMemoryFactsHelper.addIfMissing(
+                        topic.getFactsFromUser(),
+                        f,
+                        TopicMemoryFactsHelper.MAX_FACT_LENGTH,
+                        TopicMemoryFactsHelper.MAX_FACTS);
             }
+            TopicMemoryFactsHelper.dedupePreserveOrder(topic.getFactsFromUser());
         }
     }
 

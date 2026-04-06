@@ -41,7 +41,7 @@ public class SecurityConfig {
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/logout", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
-                .requestMatchers("/api/auth/me", "/api/users/**", "/api/questions/**", "/api/admin/**", "/api/chat/**", "/api/chats/**", "/ws/**").authenticated()
+                .requestMatchers("/api/auth/me", "/api/users/**", "/api/questions/**", "/api/admin/**", "/api/chat/**", "/api/chats/**", "/api/images/**", "/ws/**").authenticated()
                 .anyRequest().permitAll());
         return http.build();
     }

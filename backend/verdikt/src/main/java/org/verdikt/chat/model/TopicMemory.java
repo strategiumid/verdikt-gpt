@@ -12,6 +12,8 @@ public class TopicMemory {
     private List<String> factsFromUser = new ArrayList<>();
     private String userGoal;
     private String lastRewrite;
+    /** Строка запросов к RAG на прошлом ходе (для query rewriter), например несколько строк через \\n. */
+    private String lastRagRetrievalQueries;
     private String assistantReferenceSummary;
     private List<Long> lastQaIds = new ArrayList<>();
 
@@ -48,6 +50,9 @@ public class TopicMemory {
     }
 
     public List<String> getFactsFromUser() {
+        if (factsFromUser == null) {
+            factsFromUser = new ArrayList<>();
+        }
         return factsFromUser;
     }
 
@@ -71,6 +76,14 @@ public class TopicMemory {
         this.lastRewrite = lastRewrite;
     }
 
+    public String getLastRagRetrievalQueries() {
+        return lastRagRetrievalQueries;
+    }
+
+    public void setLastRagRetrievalQueries(String lastRagRetrievalQueries) {
+        this.lastRagRetrievalQueries = lastRagRetrievalQueries;
+    }
+
     public String getAssistantReferenceSummary() {
         return assistantReferenceSummary;
     }
@@ -80,6 +93,9 @@ public class TopicMemory {
     }
 
     public List<Long> getLastQaIds() {
+        if (lastQaIds == null) {
+            lastQaIds = new ArrayList<>();
+        }
         return lastQaIds;
     }
 

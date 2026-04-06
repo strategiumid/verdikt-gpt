@@ -7,6 +7,7 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import org.verdikt.dto.VerdiktModelType;
 import org.verdikt.entity.User;
 import org.verdikt.service.ChatHistoryService;
 import org.verdikt.service.ChatOrchestratorService;
@@ -17,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 /**
  * WebSocket handler for streaming LLM responses.
@@ -46,6 +48,14 @@ public class LlmWebSocketHandler extends TextWebSocketHandler {
         public String message;
         public String chatId;
         public String selectedTopicId;
+        /** {@code verdikt-chat} | {@code verdikt-reasoner} | {@code verdikt-auto}; по умолчанию chat. */
+        public VerdiktModelType modelType;
+        public List<AttachmentDto> attachments;
+    }
+
+    public static class AttachmentDto {
+        public String type;
+        public String imageId;
     }
 
     @Override
@@ -61,12 +71,14 @@ public class LlmWebSocketHandler extends TextWebSocketHandler {
             }
 
             StreamRequestDto dto = objectMapper.readValue(message.getPayload(), StreamRequestDto.class);
-            if (dto == null || dto.message == null || dto.message.isBlank()) {
+            String userMessage = dto != null ? dto.message : null;
+            if (dto == null || userMessage == null || userMessage.isBlank()) {
                 if (session.isOpen()) {
                     session.sendMessage(new TextMessage("ERROR:Message is required"));
                 }
                 return;
             }
+            dto.message = userMessage;
 
             CompletableFuture.runAsync(() -> processTurn(session, user, dto));
         } catch (Exception e) {
@@ -82,8 +94,9 @@ public class LlmWebSocketHandler extends TextWebSocketHandler {
 
     private void processTurn(WebSocketSession session, User user, StreamRequestDto dto) {
         try {
+            VerdiktModelType modelType = dto.modelType != null ? dto.modelType : VerdiktModelType.VERDIKT_CHAT;
             OrchestratorResult result = chatOrchestratorService.processTurn(
-                    user, dto.chatId, dto.message, dto.selectedTopicId);
+                    user, dto.chatId, dto.message, dto.selectedTopicId, extractImageIds(dto.attachments), modelType);
 
             if (result instanceof OrchestratorResult.ChooseTopic choose) {
                 if (session.isOpen()) {
@@ -96,7 +109,7 @@ public class LlmWebSocketHandler extends TextWebSocketHandler {
             OrchestratorResult.Stream stream = (OrchestratorResult.Stream) result;
             boolean isNewChat = (dto.chatId == null || dto.chatId.isBlank());
 
-            var completionResult = llmProxyService.chatCompletionsStream(stream.body(), line -> {
+            var completionResult = llmProxyService.chatCompletionsStream(stream.request(), line -> {
                 try {
                     if (session.isOpen()) {
                         session.sendMessage(new TextMessage(line));
@@ -113,7 +126,7 @@ public class LlmWebSocketHandler extends TextWebSocketHandler {
                 Map<String, Object> llmResult = new HashMap<>();
                 llmResult.put("content", fullText);
                 String chatId = chatHistoryService.saveFromCompletion(
-                        user, stream.body(), llmResult, ragItemIds, updatedState, stream.skipUserMessage());
+                        user, stream.request(), llmResult, ragItemIds, updatedState, stream.skipUserMessage());
 
                 if (isNewChat && chatId != null && session.isOpen()) {
                     Map<String, Object> chatIdMessage = new HashMap<>();
@@ -138,6 +151,15 @@ public class LlmWebSocketHandler extends TextWebSocketHandler {
             } catch (Exception ignored) {
             }
         }
+    }
+
+    private List<String> extractImageIds(List<AttachmentDto> attachments) {
+        if (attachments == null || attachments.isEmpty()) return List.of();
+        return attachments.stream()
+                .filter(a -> a != null && "image".equalsIgnoreCase(a.type) && a.imageId != null && !a.imageId.isBlank())
+                .map(a -> a.imageId.trim())
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     private User getCurrentUser(WebSocketSession session) {

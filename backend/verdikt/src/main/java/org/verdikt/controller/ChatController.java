@@ -2,6 +2,7 @@ package org.verdikt.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.verdikt.dto.ChatCompletionsRequest;
 import org.verdikt.dto.LlmCompletionResult;
 import org.verdikt.dto.UsageResponse;
 import org.verdikt.entity.User;
@@ -39,7 +40,7 @@ public class ChatController {
     @PostMapping(value = "/completions", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> completions(
             @AuthenticationPrincipal User user,
-            @RequestBody Map<String, Object> body
+            @RequestBody ChatCompletionsRequest request
     ) {
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Войдите в аккаунт");
@@ -53,15 +54,14 @@ public class ChatController {
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                     .body(Map.of("message", "LLM API ключ не настроен. Задайте переменную окружения LLM_API_KEY на сервере."));
         }
-        // REST-эндпоинт всегда работает в нестриминговом режиме
-        body.put("stream", false);
+        request.setStream(false);
 
-        LlmCompletionResult completionResult = llmProxyService.chatCompletions(body);
+        LlmCompletionResult completionResult = llmProxyService.chatCompletions(request);
         userService.incrementAiRequests(user.getId());
         try {
             Map<String, Object> result = objectMapper.readValue(completionResult.getResponseBody(), new TypeReference<Map<String, Object>>() {});
 
-            String effectiveChatId = chatHistoryService.saveFromCompletion(user, body, result, completionResult.getRagItemIds(), null);
+            String effectiveChatId = chatHistoryService.saveFromCompletion(user, request, result, completionResult.getRagItemIds(), null);
             if (effectiveChatId != null) {
                 result.put("chatId", effectiveChatId);
             }

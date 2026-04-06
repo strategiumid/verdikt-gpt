@@ -2,6 +2,9 @@ package org.verdikt.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import java.time.Instant;
+import java.util.List;
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ChatMessageDto {
 
@@ -9,8 +12,12 @@ public class ChatMessageDto {
     private String role;
     private String content;
     /** ID RAG-элементов (qaId), использованных при генерации ответа. Только для assistant. */
-    private java.util.List<Long> ragItemIds;
-    private java.time.Instant createdAt;
+    private List<Long> ragItemIds;
+    /** ID изображений, прикреплённых к сообщению (порядок как при отправке). */
+    private List<String> imageIds;
+    /** JSON ответа LLM query rewriter для RAG (режимы auto/reasoner, не первый ход). */
+    private String ragRetrievalRewriteJson;
+    private Instant createdAt;
 
     public ChatMessageDto() {
     }
@@ -44,20 +51,35 @@ public class ChatMessageDto {
         this.content = content;
     }
 
-    public java.util.List<Long> getRagItemIds() {
+    public List<Long> getRagItemIds() {
         return ragItemIds;
     }
 
-    public void setRagItemIds(java.util.List<Long> ragItemIds) {
+    public void setRagItemIds(List<Long> ragItemIds) {
         this.ragItemIds = ragItemIds;
     }
 
-    public java.time.Instant getCreatedAt() {
+    public List<String> getImageIds() {
+        return imageIds;
+    }
+
+    public void setImageIds(List<String> imageIds) {
+        this.imageIds = imageIds;
+    }
+
+    public String getRagRetrievalRewriteJson() {
+        return ragRetrievalRewriteJson;
+    }
+
+    public void setRagRetrievalRewriteJson(String ragRetrievalRewriteJson) {
+        this.ragRetrievalRewriteJson = ragRetrievalRewriteJson;
+    }
+
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(java.time.Instant createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 }
-

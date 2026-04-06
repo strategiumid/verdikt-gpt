@@ -2,9 +2,14 @@ package org.verdikt.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.verdikt.chat.model.ConversationState;
+import org.verdikt.dto.ChatCompletionsRequest;
 import org.verdikt.dto.ChatMessageDto;
+import org.verdikt.dto.MessageImageAnalysisDto;
+import org.verdikt.entity.ChatMessageImage;
+import org.verdikt.entity.ChatMessageImageAnalysis;
 import org.verdikt.dto.ChatMessagesPageResponse;
 import org.verdikt.entity.Chat;
 import org.verdikt.entity.ChatMessage;
@@ -62,12 +67,18 @@ public class ChatHistoryService {
         sb.append("Предыдущие сообщения пользователя в этом чате (используй для контекста но не отвечай на них):\n ");
         int start = Math.max(0, copy.size() - maxMessages);
         for (int i = start; i < copy.size(); i++) {
-            String c = copy.get(i).getContent();
+            ChatMessage message = copy.get(i);
+            String c = message.getContent();
             if (c == null) continue;
             String t = c.trim();
             if (t.isBlank()) continue;
             if (!sb.isEmpty()) sb.append("\n");
             sb.append(t);
+            String extractionContext = extractHistoryExtractionContext(message);
+            if (!extractionContext.isBlank()) {
+                sb.append("\n[Image Extraction Context]\n");
+                sb.append(extractionContext);
+            }
         }
 
         if (!trimmedCurrent.isBlank()) {
@@ -86,26 +97,25 @@ public class ChatHistoryService {
      * @param skipUserMessage When true, user message was already saved (e.g. after choose_topic); only save assistant.
      */
     @Transactional
-    @SuppressWarnings("unchecked")
     public String saveFromCompletion(User user,
-                                     Map<String, Object> requestBody,
+                                     ChatCompletionsRequest completionRequest,
                                      Map<String, Object> llmResult,
                                      List<Long> ragItemIds,
                                      ConversationState conversationState,
                                      boolean skipUserMessage) {
-        return doSaveFromCompletion(user, requestBody, llmResult, ragItemIds, conversationState, skipUserMessage);
+        return doSaveFromCompletion(user, completionRequest, llmResult, ragItemIds, conversationState, skipUserMessage);
     }
 
     public String saveFromCompletion(User user,
-                                     Map<String, Object> requestBody,
+                                     ChatCompletionsRequest completionRequest,
                                      Map<String, Object> llmResult,
                                      List<Long> ragItemIds,
                                      ConversationState conversationState) {
-        return doSaveFromCompletion(user, requestBody, llmResult, ragItemIds, conversationState, false);
+        return doSaveFromCompletion(user, completionRequest, llmResult, ragItemIds, conversationState, false);
     }
 
     private String doSaveFromCompletion(User user,
-                                     Map<String, Object> requestBody,
+                                     ChatCompletionsRequest completionRequest,
                                      Map<String, Object> llmResult,
                                      List<Long> ragItemIds,
                                      ConversationState conversationState,
@@ -114,9 +124,7 @@ public class ChatHistoryService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Войдите в аккаунт");
         }
 
-        // Определяем или создаём чат
-        Object chatIdObj = requestBody.get("chatId");
-        String chatKey = chatIdObj != null ? chatIdObj.toString() : null;
+        String chatKey = completionRequest != null ? completionRequest.getChatId() : null;
         if (chatKey == null || chatKey.isBlank()) {
             chatKey = java.util.UUID.randomUUID().toString();
         }
@@ -152,7 +160,7 @@ public class ChatHistoryService {
         chat.setUpdatedAt(Instant.now());
         chat = chatRepository.save(chat);
 
-        String userContent = extractLastUserMessageContent(requestBody);
+        String userContent = extractLastUserMessageContent(completionRequest);
         String assistantContent = extractAssistantContent(llmResult);
 
         if (!skipUserMessage && userContent != null && !userContent.isBlank()) {
@@ -160,6 +168,11 @@ public class ChatHistoryService {
             userMsg.setChat(chat);
             userMsg.setRole("user");
             userMsg.setContent(userContent);
+            attachMessageMediaFromRequest(userMsg, completionRequest);
+            String ragRewrite = completionRequest != null ? completionRequest.getRagRetrievalRewriteJson() : null;
+            if (ragRewrite != null && !ragRewrite.isBlank()) {
+                userMsg.setRagRetrievalRewriteJson(ragRewrite);
+            }
             chatMessageRepository.save(userMsg);
         }
 
@@ -191,7 +204,9 @@ public class ChatHistoryService {
         }
         try {
             ConversationState state = objectMapper.readValue(json, ConversationState.class);
-            return state != null ? state : new ConversationState();
+            ConversationState out = state != null ? state : new ConversationState();
+            TopicMemoryFactsHelper.dedupeAllTopicFacts(out);
+            return out;
         } catch (Exception e) {
             return new ConversationState();
         }
@@ -202,6 +217,15 @@ public class ChatHistoryService {
      */
     @Transactional
     public Long saveUserMessageOnly(User user, String chatKey, String messageContent) {
+        return saveUserMessageOnly(user, chatKey, messageContent, null, null);
+    }
+
+    @Transactional
+    public Long saveUserMessageOnly(User user,
+                                    String chatKey,
+                                    String messageContent,
+                                    List<String> imageIds,
+                                    String imageAnalysis) {
         if (user == null || messageContent == null || messageContent.isBlank()) return null;
         Chat chat = chatRepository.findByUserIdAndChatKey(user.getId(), chatKey)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Чат не найден"));
@@ -209,6 +233,7 @@ public class ChatHistoryService {
         msg.setChat(chat);
         msg.setRole("user");
         msg.setContent(messageContent);
+        attachMessageMedia(msg, imageIds, imageAnalysis);
         msg = chatMessageRepository.save(msg);
         return msg.getId();
     }
@@ -331,6 +356,14 @@ public class ChatHistoryService {
                 // leave null
             }
         }
+        if (!m.getMessageImages().isEmpty()) {
+            dto.setImageIds(m.getMessageImages().stream()
+                    .map(ChatMessageImage::getImageId)
+                    .toList());
+        }
+        if (m.getRagRetrievalRewriteJson() != null && !m.getRagRetrievalRewriteJson().isBlank()) {
+            dto.setRagRetrievalRewriteJson(m.getRagRetrievalRewriteJson());
+        }
         return dto;
     }
 
@@ -434,21 +467,21 @@ public class ChatHistoryService {
     }
 
     /**
-     * Извлекает текст последнего пользовательского сообщения из body запроса.
+     * Извлекает текст последнего пользовательского сообщения из запроса completions.
      */
-    @SuppressWarnings("unchecked")
-    private String extractLastUserMessageContent(Map<String, Object> body) {
-        Object originalObj = body != null ? body.get("originalUserMessage") : null;
-        if (originalObj instanceof String s && !s.isBlank()) {
-            return s;
+    private String extractLastUserMessageContent(ChatCompletionsRequest request) {
+        if (request == null) return null;
+        String original = request.getOriginalUserMessage();
+        if (original != null && !original.isBlank()) {
+            return original;
         }
-        Object messagesObj = body.get("messages");
-        if (!(messagesObj instanceof java.util.List<?> rawList) || rawList.isEmpty()) {
+        List<Map<String, Object>> rawList = request.getMessages();
+        if (rawList == null || rawList.isEmpty()) {
             return null;
         }
         for (int i = rawList.size() - 1; i >= 0; i--) {
-            Object o = rawList.get(i);
-            if (!(o instanceof java.util.Map<?, ?> m)) continue;
+            Map<String, Object> m = rawList.get(i);
+            if (m == null) continue;
             Object roleObj = m.get("role");
             if (!"user".equals(roleObj)) continue;
             Object contentObj = m.get("content");
@@ -457,6 +490,78 @@ public class ChatHistoryService {
             }
         }
         return null;
+    }
+
+    private void attachMessageMediaFromRequest(ChatMessage msg, ChatCompletionsRequest request) {
+        if (msg == null || request == null) {
+            return;
+        }
+        attachMessageMedia(msg, request.getImageIds(), request.getImageAnalysis());
+    }
+
+    /**
+     * Persists image attachment ids on the message and optional multimodal analysis (one row, multiple image ids).
+     */
+    private void attachMessageMedia(ChatMessage msg, List<String> imageIds, String analysisPayloadJson) {
+        if (msg == null) {
+            return;
+        }
+        List<String> cleanIds = normalizeImageIdList(imageIds);
+        for (int i = 0; i < cleanIds.size(); i++) {
+            ChatMessageImage row = new ChatMessageImage();
+            row.setMessage(msg);
+            row.setImageId(cleanIds.get(i));
+            row.setSortOrder(i);
+            msg.getMessageImages().add(row);
+        }
+        if (analysisPayloadJson != null && !analysisPayloadJson.isBlank() && !cleanIds.isEmpty()) {
+            ChatMessageImageAnalysis analysis = new ChatMessageImageAnalysis();
+            analysis.setMessage(msg);
+            analysis.setPayloadJson(analysisPayloadJson);
+            analysis.setAnalyzedImageIds(cleanIds);
+            msg.getImageAnalyses().add(analysis);
+        }
+    }
+
+    private static List<String> normalizeImageIdList(List<String> imageIds) {
+        if (imageIds == null || imageIds.isEmpty()) {
+            return List.of();
+        }
+        return imageIds.stream()
+                .filter(id -> id != null && !id.isBlank())
+                .map(String::trim)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Возвращает extraction JSON из первого analysis payload у user-сообщения (если есть).
+     * В контекст добавляется только extraction, без analysis_plan/interaction/planning.
+     */
+    private String extractHistoryExtractionContext(ChatMessage message) {
+        if (message == null || message.getImageAnalyses() == null || message.getImageAnalyses().isEmpty()) {
+            return "";
+        }
+        for (ChatMessageImageAnalysis analysis : message.getImageAnalyses()) {
+            if (analysis == null) {
+                continue;
+            }
+            String payload = analysis.getPayloadJson();
+            if (payload == null || payload.isBlank()) {
+                continue;
+            }
+            try {
+                JsonNode root = objectMapper.readTree(payload);
+                JsonNode extraction = root.path("extraction");
+                if (extraction.isMissingNode() || extraction.isNull()) {
+                    continue;
+                }
+                return objectMapper.writeValueAsString(extraction);
+            } catch (Exception ignored) {
+                // Skip malformed payload and try next analysis row if present.
+            }
+        }
+        return "";
     }
 }
 

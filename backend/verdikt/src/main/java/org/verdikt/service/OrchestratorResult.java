@@ -2,8 +2,7 @@ package org.verdikt.service;
 
 import org.verdikt.chat.dto.ChooseTopicResponse;
 import org.verdikt.chat.model.ConversationState;
-
-import java.util.Map;
+import org.verdikt.dto.ChatCompletionsRequest;
 
 /**
  * Result of ChatOrchestratorService.processTurn.
@@ -13,10 +12,10 @@ public sealed interface OrchestratorResult permits OrchestratorResult.ChooseTopi
     record ChooseTopic(ChooseTopicResponse response) implements OrchestratorResult {}
 
     /**
-     * Body for LlmProxyService.chatCompletionsStream. After streaming, call ChatOrchestratorService.finishTurn.
-     * effectiveQuery is the query used for RAG (body.ragQuery); stored separately because LlmProxyService removes it.
+     * Request for LlmProxyService.chatCompletionsStream. After streaming, call ChatOrchestratorService.finishTurn.
+     * effectiveQuery is the rewrite/query used for topic memory; request may still carry ragQuery after RAG enrich.
      */
-    record Stream(Map<String, Object> body,
+    record Stream(ChatCompletionsRequest request,
                  ConversationState state,
                  String rawUserMessage,
                  String effectiveQuery,

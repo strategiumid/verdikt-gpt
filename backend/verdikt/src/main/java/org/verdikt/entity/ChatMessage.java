@@ -1,8 +1,11 @@
 package org.verdikt.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "chat_messages")
@@ -26,6 +29,21 @@ public class ChatMessage {
     /** JSON-массив ID RAG-элементов (qaId), использованных при генерации ответа. Только для role=assistant. */
     @Column(name = "rag_item_ids", length = 500)
     private String ragItemIdsJson;
+
+    /** Ответ LLM query rewriter (JSON) для RAG; только для user при режимах verdikt-auto / verdikt-reasoner. */
+    @Lob
+    @Column(name = "rag_retrieval_rewrite_json")
+    private String ragRetrievalRewriteJson;
+
+    @BatchSize(size = 32)
+    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("sortOrder ASC")
+    private List<ChatMessageImage> messageImages = new ArrayList<>();
+
+    @BatchSize(size = 32)
+    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id ASC")
+    private List<ChatMessageImageAnalysis> imageAnalyses = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
@@ -70,6 +88,30 @@ public class ChatMessage {
         this.ragItemIdsJson = ragItemIdsJson;
     }
 
+    public String getRagRetrievalRewriteJson() {
+        return ragRetrievalRewriteJson;
+    }
+
+    public void setRagRetrievalRewriteJson(String ragRetrievalRewriteJson) {
+        this.ragRetrievalRewriteJson = ragRetrievalRewriteJson;
+    }
+
+    public List<ChatMessageImage> getMessageImages() {
+        return messageImages;
+    }
+
+    public void setMessageImages(List<ChatMessageImage> messageImages) {
+        this.messageImages = messageImages != null ? messageImages : new ArrayList<>();
+    }
+
+    public List<ChatMessageImageAnalysis> getImageAnalyses() {
+        return imageAnalyses;
+    }
+
+    public void setImageAnalyses(List<ChatMessageImageAnalysis> imageAnalyses) {
+        this.imageAnalyses = imageAnalyses != null ? imageAnalyses : new ArrayList<>();
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
@@ -78,4 +120,3 @@ public class ChatMessage {
         this.createdAt = createdAt;
     }
 }
-
