@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +47,9 @@ public class LlmProxyService {
 
     @Value("${llm.vision_model:x-ai/grok-4-fast}")
     private String defaultVisionModel;
+
+    @Value("${llm.transcription_model:google/gemini-2.5-flash-lite}")
+    private String defaultTranscriptionModel;
 
     @Value("${llm.temperature:0.5}")
     private double defaultTemperature;
@@ -503,6 +507,69 @@ public class LlmProxyService {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    public TranscriptionResult transcribeAudio(byte[] audioBytes, String contentType) {
+        if (!isConfigured()) {
+            throw new IllegalStateException("LLM API ключ не настроен. Задайте переменную окружения LLM_API_KEY.");
+        }
+        if (audioBytes == null || audioBytes.length == 0) {
+            throw new IllegalArgumentException("Пустой аудиофайл");
+        }
+        String format = detectAudioFormat(contentType);
+        String b64 = Base64.getEncoder().encodeToString(audioBytes);
+
+        List<Map<String, Object>> content = new ArrayList<>();
+        content.add(Map.of(
+                "type", "text",
+                "text", "Сделай точную транскрипцию аудио. Верни только текст транскрипции без комментариев."
+        ));
+        content.add(Map.of(
+                "type", "input_audio",
+                "input_audio", Map.of(
+                        "data", b64,
+                        "format", format
+                )
+        ));
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("model", defaultTranscriptionModel);
+        body.put("temperature", 0.0);
+        body.put("max_tokens", 1600);
+        body.put("stream", false);
+        body.put("messages", List.of(
+                Map.of("role", "user", "content", content)
+        ));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(apiKey);
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+        ResponseEntity<String> response = restTemplate.exchange(llmUrl, HttpMethod.POST, request, String.class);
+        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+            throw new RuntimeException("LLM API вернул " + response.getStatusCode());
+        }
+
+        try {
+            Map<String, Object> data = new ObjectMapper().readValue(response.getBody(), Map.class);
+            Object choicesObj = data.get("choices");
+            if (choicesObj instanceof List<?> choices && !choices.isEmpty()) {
+                Object first = choices.get(0);
+                if (first instanceof Map<?, ?> choiceMap) {
+                    Object msgObj = ((Map<String, Object>) choiceMap).get("message");
+                    if (msgObj instanceof Map<?, ?> msgMap) {
+                        Object contentObj = ((Map<String, Object>) msgMap).get("content");
+                        if (contentObj instanceof String s && !s.isBlank()) {
+                            return new TranscriptionResult(s.trim(), defaultTranscriptionModel);
+                        }
+                    }
+                }
+            }
+            return new TranscriptionResult("", defaultTranscriptionModel);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse transcription response", e);
+        }
+    }
+
     /**
      * Отправить запрос в LLM и вернуть тело ответа и список ID RAG-элементов, использованных в контексте.
      * Ключ подставляется на бэкенде, на клиент не передаётся.
@@ -629,6 +696,21 @@ public class LlmProxyService {
 
         return null;
     }
+
+    private String detectAudioFormat(String contentType) {
+        if (contentType == null || contentType.isBlank()) {
+            return "mp3";
+        }
+        String ct = contentType.toLowerCase();
+        if (ct.contains("wav") || ct.contains("wave")) return "wav";
+        if (ct.contains("mpeg") || ct.contains("mp3")) return "mp3";
+        if (ct.contains("ogg")) return "ogg";
+        if (ct.contains("webm")) return "webm";
+        if (ct.contains("mp4") || ct.contains("m4a")) return "mp4";
+        return "mp3";
+    }
+
+    public record TranscriptionResult(String text, String model) {}
 
     /**
      * Подставляет в body значения по умолчанию для модели и параметров генерации,
