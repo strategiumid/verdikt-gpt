@@ -521,7 +521,7 @@ public class LlmProxyService {
         List<Map<String, Object>> content = new ArrayList<>();
         content.add(Map.of(
                 "type", "text",
-                "text", "Сделай точную транскрипцию аудио. Верни только текст транскрипции без комментариев."
+                "text", "Сделай точную транскрипцию аудио. Верни только текст транскрипции без комментариев. Если в аудио нет речи или полезного содержимого, верни пустую строку."
         ));
         content.add(Map.of(
                 "type", "input_audio",
