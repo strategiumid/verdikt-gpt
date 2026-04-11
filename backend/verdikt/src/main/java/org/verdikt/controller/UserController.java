@@ -113,7 +113,9 @@ public class UserController {
     }
 
     /**
-     * POST /api/users/me/feedback — сохранить оценку ответа ИИ (полезно / не полезно).
+     * POST /api/users/me/feedback — сохранить оценку ответа ИИ (полезно / не полезно), в т.ч. с мобильного:
+     * {@code rating}, {@code chatId}, {@code messageId} (id сообщения ассистента), опционально {@code comment};
+     * пользователь и время создаются на сервере.
      */
     @PostMapping("/me/feedback")
     public ResponseEntity<FeedbackResponse> saveFeedback(

@@ -5,8 +5,10 @@ import jakarta.persistence.*;
 import java.time.Instant;
 
 /**
- * Оценка ответа ИИ: полезно (1) или не полезно (-1).
- * Привязана к пользователю.
+ * Оценка ответа ИИ (в т.ч. мобильное приложение).
+ * <p>Обычно клиент передаёт: {@code chatId}, {@code messageId} (id сообщения ассистента в чате, строка),
+ * {@link #rating}, опционально {@link #comment}. Пользователь и время создания задаются на сервере.
+ * Рейтинг: {@code 1} — полезно, {@code -1} — не полезно.
  */
 @Entity
 @Table(name = "ai_feedback")
@@ -23,6 +25,7 @@ public class AiFeedback {
     @Column(name = "chat_id", length = 64)
     private String chatId;
 
+    /** Id сообщения ассистента (как в API/WebSocket), строка до 64 символов. */
     @Column(name = "message_id", length = 64)
     private String messageId;
 
@@ -38,6 +41,10 @@ public class AiFeedback {
 
     @Column(name = "topic", length = 50)
     private String topic;
+
+    /** Произвольный комментарий пользователя к оценке (мобильный клиент). Колонка {@code feedback_comment} — не ключевое слово SQL. */
+    @Column(name = "feedback_comment", length = 2000)
+    private String comment;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
@@ -104,6 +111,14 @@ public class AiFeedback {
 
     public void setTopic(String topic) {
         this.topic = topic;
+    }
+
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
     }
 
     public Instant getCreatedAt() {

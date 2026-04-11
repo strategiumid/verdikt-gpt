@@ -15,6 +15,7 @@ public class FeedbackResponse {
     private Instant createdAt;
     private String messageId;
     private String chatId;
+    private String comment;
     /** Имя оценщика (для админ-аналитики по всем пользователям) */
     private String userName;
 
@@ -26,6 +27,7 @@ public class FeedbackResponse {
         r.setCreatedAt(f.getCreatedAt());
         r.setMessageId(f.getMessageId());
         r.setChatId(f.getChatId());
+        r.setComment(f.getComment());
         return r;
     }
 
@@ -85,6 +87,14 @@ public class FeedbackResponse {
 
     public void setChatId(String chatId) {
         this.chatId = chatId;
+    }
+
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
     }
 
     public String getUserName() {

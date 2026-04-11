@@ -125,13 +125,15 @@ public class LlmWebSocketHandler extends TextWebSocketHandler {
                 var updatedState = chatOrchestratorService.finishTurn(stream, fullText, ragItemIds);
                 Map<String, Object> llmResult = new HashMap<>();
                 llmResult.put("content", fullText);
-                String chatId = chatHistoryService.saveFromCompletion(
+                ChatHistoryService.CompletionSaveResult saved = chatHistoryService.saveFromCompletion(
                         user, stream.request(), llmResult, ragItemIds, updatedState, stream.skipUserMessage());
+                String chatId = saved.chatId();
 
                 if (isNewChat && chatId != null && session.isOpen()) {
                     Map<String, Object> chatIdMessage = new HashMap<>();
                     chatIdMessage.put("type", "chatId");
                     chatIdMessage.put("chatId", chatId);
+                    chatIdMessage.put("assistantMessageId", saved.assistantMessageId());
                     session.sendMessage(new TextMessage(objectMapper.writeValueAsString(chatIdMessage)));
                 }
             }

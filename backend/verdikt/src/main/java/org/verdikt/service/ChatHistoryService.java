@@ -95,9 +95,10 @@ public class ChatHistoryService {
      * ragItemIds — список qaId RAG-элементов, использованных при генерации ответа.
      * conversationState — если не null, сохраняется в Chat.payloadJson (ConversationState).
      * @param skipUserMessage When true, user message was already saved (e.g. after choose_topic); only save assistant.
+     * @return ключ чата и id сохранённого сообщения ассистента (если ответ был непустым)
      */
     @Transactional
-    public String saveFromCompletion(User user,
+    public CompletionSaveResult saveFromCompletion(User user,
                                      ChatCompletionsRequest completionRequest,
                                      Map<String, Object> llmResult,
                                      List<Long> ragItemIds,
@@ -106,7 +107,7 @@ public class ChatHistoryService {
         return doSaveFromCompletion(user, completionRequest, llmResult, ragItemIds, conversationState, skipUserMessage);
     }
 
-    public String saveFromCompletion(User user,
+    public CompletionSaveResult saveFromCompletion(User user,
                                      ChatCompletionsRequest completionRequest,
                                      Map<String, Object> llmResult,
                                      List<Long> ragItemIds,
@@ -114,7 +115,7 @@ public class ChatHistoryService {
         return doSaveFromCompletion(user, completionRequest, llmResult, ragItemIds, conversationState, false);
     }
 
-    private String doSaveFromCompletion(User user,
+    private CompletionSaveResult doSaveFromCompletion(User user,
                                      ChatCompletionsRequest completionRequest,
                                      Map<String, Object> llmResult,
                                      List<Long> ragItemIds,
@@ -176,6 +177,7 @@ public class ChatHistoryService {
             chatMessageRepository.save(userMsg);
         }
 
+        Long assistantMessageId = null;
         if (assistantContent != null && !assistantContent.isBlank()) {
             ChatMessage aiMsg = new ChatMessage();
             aiMsg.setChat(chat);
@@ -188,11 +190,15 @@ public class ChatHistoryService {
                     // ignore: поле остаётся null
                 }
             }
-            chatMessageRepository.save(aiMsg);
+            ChatMessage savedAssistant = chatMessageRepository.save(aiMsg);
+            assistantMessageId = savedAssistant.getId();
         }
 
-        return chatKey;
+        return new CompletionSaveResult(chatKey, assistantMessageId);
     }
+
+    /** Результат сохранения чата после ответа ассистента: ключ чата и id последнего сообщения ассистента (если сохранялось). */
+    public record CompletionSaveResult(String chatId, Long assistantMessageId) {}
 
     /**
      * Parse ConversationState from chat payloadJson. Returns empty state if payload is old format or invalid.

@@ -6,7 +6,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 /**
- * Тело запроса POST /api/users/me/feedback — оценка ответа ИИ.
+ * Тело запроса POST /api/users/me/feedback — оценка ответа ИИ (в т.ч. мобильный клиент).
+ * Обязательны {@code rating}; для привязки к чату желательны {@code chatId} и {@code messageId}
+ * (id сообщения ассистента, строка, как в WebSocket {@code assistantMessageId}).
  */
 public class FeedbackRequest {
 
@@ -30,6 +32,10 @@ public class FeedbackRequest {
 
     @Size(max = 50)
     private String topic;
+
+    /** Необязательный текстовый комментарий к оценке. */
+    @Size(max = 2000)
+    private String comment;
 
     public Integer getRating() {
         return rating;
@@ -77,5 +83,13 @@ public class FeedbackRequest {
 
     public void setTopic(String topic) {
         this.topic = topic;
+    }
+
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
     }
 }

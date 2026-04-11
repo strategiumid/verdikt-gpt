@@ -47,6 +47,11 @@ public class FeedbackService {
         f.setUserPrompt(request.getUserPrompt());
         f.setAiContent(request.getAiContent());
         f.setTopic(request.getTopic());
+        String comment = request.getComment();
+        if (comment != null) {
+            String t = comment.trim();
+            f.setComment(t.isEmpty() ? null : t);
+        }
         f = feedbackRepository.save(f);
         return FeedbackResponse.from(f);
     }
