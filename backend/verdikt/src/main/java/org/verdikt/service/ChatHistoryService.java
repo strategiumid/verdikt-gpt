@@ -7,13 +7,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.verdikt.chat.model.ConversationState;
 import org.verdikt.dto.ChatCompletionsRequest;
 import org.verdikt.dto.ChatMessageDto;
+import org.verdikt.dto.FeedbackResponse;
 import org.verdikt.dto.MessageImageAnalysisDto;
 import org.verdikt.entity.ChatMessageImage;
 import org.verdikt.entity.ChatMessageImageAnalysis;
 import org.verdikt.dto.ChatMessagesPageResponse;
+import org.verdikt.entity.AiFeedback;
 import org.verdikt.entity.Chat;
 import org.verdikt.entity.ChatMessage;
 import org.verdikt.entity.User;
+import org.verdikt.repository.AiFeedbackRepository;
 import org.verdikt.repository.ChatMessageRepository;
 import org.verdikt.repository.ChatRepository;
 import org.springframework.data.domain.Page;
@@ -26,6 +29,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -35,11 +39,15 @@ public class ChatHistoryService {
 
     private final ChatRepository chatRepository;
     private final ChatMessageRepository chatMessageRepository;
+    private final AiFeedbackRepository aiFeedbackRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public ChatHistoryService(ChatRepository chatRepository, ChatMessageRepository chatMessageRepository) {
+    public ChatHistoryService(ChatRepository chatRepository,
+                             ChatMessageRepository chatMessageRepository,
+                             AiFeedbackRepository aiFeedbackRepository) {
         this.chatRepository = chatRepository;
         this.chatMessageRepository = chatMessageRepository;
+        this.aiFeedbackRepository = aiFeedbackRepository;
     }
 
     /**
@@ -338,8 +346,9 @@ public class ChatHistoryService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Нет доступа к этому чату");
         }
         Page<ChatMessage> page = chatMessageRepository.findByChatOrderByCreatedAtAsc(chat, pageable);
+        Map<String, FeedbackResponse> feedbackByMessageId = loadLatestFeedbackForAssistantMessages(ownerId, chatId, page.getContent());
         List<ChatMessageDto> content = page.getContent().stream()
-                .map(this::toMessageDto)
+                .map(m -> toMessageDto(m, feedbackForMessage(m, feedbackByMessageId)))
                 .collect(Collectors.toList());
         return new ChatMessagesPageResponse(
                 content,
@@ -350,10 +359,50 @@ public class ChatHistoryService {
         );
     }
 
-    private ChatMessageDto toMessageDto(ChatMessage m) {
+    private static FeedbackResponse feedbackForMessage(ChatMessage m, Map<String, FeedbackResponse> byMessageId) {
+        if (m == null || !"assistant".equals(m.getRole()) || m.getId() == null || byMessageId == null) {
+            return null;
+        }
+        return byMessageId.get(String.valueOf(m.getId()));
+    }
+
+    /**
+     * Последняя оценка на каждое сообщение ассистента (messageId в {@link AiFeedback} — id сообщения строкой).
+     */
+    private Map<String, FeedbackResponse> loadLatestFeedbackForAssistantMessages(Long ownerUserId,
+                                                                                 String chatKey,
+                                                                                 List<ChatMessage> messages) {
+        if (ownerUserId == null || chatKey == null || messages == null || messages.isEmpty()) {
+            return Map.of();
+        }
+        List<String> ids = messages.stream()
+                .filter(m -> "assistant".equals(m.getRole()) && m.getId() != null)
+                .map(m -> String.valueOf(m.getId()))
+                .distinct()
+                .toList();
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        List<AiFeedback> rows = aiFeedbackRepository.findByUserIdAndChatIdAndMessageIdInOrderByCreatedAtDesc(
+                ownerUserId, chatKey, ids);
+        Map<String, FeedbackResponse> out = new HashMap<>();
+        for (AiFeedback f : rows) {
+            String mid = f.getMessageId();
+            if (mid == null || mid.isBlank()) {
+                continue;
+            }
+            out.putIfAbsent(mid, FeedbackResponse.from(f));
+        }
+        return out;
+    }
+
+    private ChatMessageDto toMessageDto(ChatMessage m, FeedbackResponse feedback) {
         ChatMessageDto dto = new ChatMessageDto(m.getRole(), m.getContent());
         dto.setId(m.getId());
         dto.setCreatedAt(m.getCreatedAt());
+        if (feedback != null) {
+            dto.setFeedback(feedback);
+        }
         if (m.getRagItemIdsJson() != null && !m.getRagItemIdsJson().isBlank()) {
             try {
                 List<Long> ids = objectMapper.readValue(m.getRagItemIdsJson(), new TypeReference<List<Long>>() {});

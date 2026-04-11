@@ -11,6 +11,8 @@ public class ChatMessageDto {
     private Long id;
     private String role;
     private String content;
+    /** Оценка пользователя на ответ ассистента (если сохранялась через POST /api/users/me/feedback). */
+    private FeedbackResponse feedback;
     /** ID RAG-элементов (qaId), использованных при генерации ответа. Только для assistant. */
     private List<Long> ragItemIds;
     /** ID изображений, прикреплённых к сообщению (порядок как при отправке). */
@@ -49,6 +51,14 @@ public class ChatMessageDto {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public FeedbackResponse getFeedback() {
+        return feedback;
+    }
+
+    public void setFeedback(FeedbackResponse feedback) {
+        this.feedback = feedback;
     }
 
     public List<Long> getRagItemIds() {
