@@ -69,6 +69,11 @@ public class RateLimitService {
         return tryConsume("usage_inc:user:" + userId, usageIncrementMaxPerMinute, 60);
     }
 
+    /** Универсальный in-memory rate-limit для произвольных ключей/окон. */
+    public Result tryCustom(String key, int maxAttempts, int windowSeconds) {
+        return tryConsume(key, maxAttempts, windowSeconds);
+    }
+
     private Result tryConsume(String key, int maxAttempts, int windowSeconds) {
         long now = System.currentTimeMillis();
         Window w = store.compute(key, (k, existing) -> {

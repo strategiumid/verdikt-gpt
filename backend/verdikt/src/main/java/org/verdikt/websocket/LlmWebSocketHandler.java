@@ -69,6 +69,13 @@ public class LlmWebSocketHandler extends TextWebSocketHandler {
                 }
                 return;
             }
+            if (!user.isEmailVerified()) {
+                if (session.isOpen()) {
+                    session.sendMessage(new TextMessage("ERROR:EMAIL_NOT_VERIFIED"));
+                    session.close(CloseStatus.POLICY_VIOLATION);
+                }
+                return;
+            }
 
             StreamRequestDto dto = objectMapper.readValue(message.getPayload(), StreamRequestDto.class);
             String userMessage = dto != null ? dto.message : null;

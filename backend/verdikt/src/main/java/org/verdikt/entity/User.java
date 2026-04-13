@@ -64,6 +64,10 @@ public class User {
     @Column(name = "banned", nullable = false)
     private boolean banned = false;
 
+    /** Подтвержден ли email пользователя. */
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified = false;
+
     /** Подписка: free, lite, pro, ultimate. По умолчанию free. */
     @Size(max = 20)
     @Column(name = "subscription", length = 20)
@@ -166,6 +170,14 @@ public class User {
 
     public void setBanned(boolean banned) {
         this.banned = banned;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
     }
 
     public String getSubscription() {

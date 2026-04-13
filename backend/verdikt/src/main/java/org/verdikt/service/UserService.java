@@ -26,12 +26,18 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final RateLimitService rateLimitService;
+    private final EmailVerificationService emailVerificationService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService, RateLimitService rateLimitService) {
+    public UserService(UserRepository userRepository,
+                       PasswordEncoder passwordEncoder,
+                       JwtService jwtService,
+                       RateLimitService rateLimitService,
+                       EmailVerificationService emailVerificationService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.rateLimitService = rateLimitService;
+        this.emailVerificationService = emailVerificationService;
     }
 
     /**
@@ -46,6 +52,7 @@ public class UserService {
         }
         User user = new User();
         user.setEmail(email);
+        user.setEmailVerified(false);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         if (request.getName() != null && !request.getName().isBlank()) {
             user.setName(request.getName().trim());
@@ -56,6 +63,19 @@ public class UserService {
         user = userRepository.save(user);
         request.clearPassword();
         return UserResponse.from(user);
+    }
+
+    @Transactional
+    public LoginResponse registerForAuth(RegisterRequest request, String clientIp) {
+        UserResponse userResp = register(request);
+        User user = userRepository.findByEmail(userResp.getEmail()).orElseThrow();
+        try {
+            sendVerificationCode(userResp.getEmail(), clientIp);
+        } catch (Exception ignored) {
+            // Keep neutral registration flow even if email sending failed.
+        }
+        String token = jwtService.generateToken(user);
+        return new LoginResponse(token, UserResponse.from(user));
     }
 
     /**
@@ -75,6 +95,39 @@ public class UserService {
         request.clearPassword();
         String token = jwtService.generateToken(user);
         return new LoginResponse(token, UserResponse.from(user));
+    }
+
+    public String signupVerificationPurpose() {
+        return emailVerificationService.signupPurpose();
+    }
+
+    @Transactional
+    public void sendVerificationCode(String email, String clientIp) {
+        emailVerificationService.sendCode(email, emailVerificationService.signupPurpose(), clientIp);
+    }
+
+    @Transactional
+    public void sendPasswordResetCode(String email, String clientIp) {
+        emailVerificationService.sendCode(email, emailVerificationService.resetPasswordPurpose(), clientIp);
+    }
+
+    @Transactional
+    public boolean resetPasswordWithCode(String email, String code, String newPassword) {
+        boolean ok = emailVerificationService.verifyCode(email, emailVerificationService.resetPasswordPurpose(), code);
+        if (!ok) {
+            return false;
+        }
+        String normalized = email == null ? null : email.trim().toLowerCase();
+        if (normalized == null || normalized.isBlank()) {
+            return false;
+        }
+        User user = userRepository.findByEmail(normalized).orElse(null);
+        if (user == null) {
+            return false;
+        }
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        return true;
     }
 
     /**

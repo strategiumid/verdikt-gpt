@@ -22,11 +22,16 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final AuthRateLimitFilter authRateLimitFilter;
     private final ReplayProtectionFilter replayProtectionFilter;
+    private final EmailVerifiedFilter emailVerifiedFilter;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, AuthRateLimitFilter authRateLimitFilter, ReplayProtectionFilter replayProtectionFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+                          AuthRateLimitFilter authRateLimitFilter,
+                          ReplayProtectionFilter replayProtectionFilter,
+                          EmailVerifiedFilter emailVerifiedFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.authRateLimitFilter = authRateLimitFilter;
         this.replayProtectionFilter = replayProtectionFilter;
+        this.emailVerifiedFilter = emailVerifiedFilter;
     }
 
     @Bean
@@ -39,8 +44,13 @@ public class SecurityConfig {
             .addFilterBefore(replayProtectionFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(authRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(emailVerifiedFilter, JwtAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/logout", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
+                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/logout",
+                        "/api/auth/password-reset/send", "/api/auth/password-reset/confirm",
+                        "/api/auth/pin/login",
+                        "/api/auth/email-verification/send", "/api/auth/email-verification/verify",
+                        "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/api/auth/me", "/api/users/**", "/api/questions/**", "/api/admin/**", "/api/chat/**", "/api/chats/**", "/api/images/**", "/ws/**").authenticated()
                 .anyRequest().permitAll());
         return http.build();

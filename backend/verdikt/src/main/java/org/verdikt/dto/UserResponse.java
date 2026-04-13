@@ -21,6 +21,7 @@ public class UserResponse {
     private Instant createdAt;
     private String role;
     private Boolean banned;
+    private Boolean emailVerified;
     private String subscription;
 
     public static UserResponse from(User user) {
@@ -35,6 +36,7 @@ public class UserResponse {
         r.setCreatedAt(user.getCreatedAt());
         r.setRole(user.getRole());
         r.setBanned(user.isBanned());
+        r.setEmailVerified(user.isEmailVerified());
         r.setSubscription(user.getSubscription());
         return r;
     }
@@ -125,5 +127,13 @@ public class UserResponse {
 
     public void setSubscription(String subscription) {
         this.subscription = subscription;
+    }
+
+    public Boolean getEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(Boolean emailVerified) {
+        this.emailVerified = emailVerified;
     }
 }
