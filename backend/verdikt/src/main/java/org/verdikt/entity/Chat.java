@@ -31,6 +31,9 @@ public class Chat {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt = Instant.now();
 
+    @Column(name = "is_private", nullable = false)
+    private boolean isPrivate = false;
+
     public Long getId() {
         return id;
     }
@@ -77,6 +80,14 @@ public class Chat {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public boolean isPrivate() {
+        return isPrivate;
+    }
+
+    public void setPrivate(boolean aPrivate) {
+        isPrivate = aPrivate;
     }
 }
 

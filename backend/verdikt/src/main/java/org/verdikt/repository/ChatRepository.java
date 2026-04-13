@@ -11,6 +11,7 @@ public interface ChatRepository extends JpaRepository<Chat, Long> {
     Optional<Chat> findByUserIdAndChatKey(Long userId, String chatKey);
 
     List<Chat> findByUserIdOrderByUpdatedAtDesc(Long userId);
+    List<Chat> findByUserIdAndIsPrivateFalseOrderByUpdatedAtDesc(Long userId);
 
     void deleteByUserIdAndChatKey(Long userId, String chatKey);
 }

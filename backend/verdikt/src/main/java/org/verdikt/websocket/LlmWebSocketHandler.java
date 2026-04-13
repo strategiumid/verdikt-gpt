@@ -48,6 +48,8 @@ public class LlmWebSocketHandler extends TextWebSocketHandler {
         public String message;
         public String chatId;
         public String selectedTopicId;
+        /** If true, this chat is persisted as private and hidden from chat history list. */
+        public Boolean isPrivate;
         /** {@code verdikt-chat} | {@code verdikt-reasoner} | {@code verdikt-auto}; по умолчанию chat. */
         public VerdiktModelType modelType;
         public List<AttachmentDto> attachments;
@@ -132,8 +134,9 @@ public class LlmWebSocketHandler extends TextWebSocketHandler {
                 var updatedState = chatOrchestratorService.finishTurn(stream, fullText, ragItemIds);
                 Map<String, Object> llmResult = new HashMap<>();
                 llmResult.put("content", fullText);
+                boolean isPrivate = dto.isPrivate != null && dto.isPrivate;
                 ChatHistoryService.CompletionSaveResult saved = chatHistoryService.saveFromCompletion(
-                        user, stream.request(), llmResult, ragItemIds, updatedState, stream.skipUserMessage());
+                        user, stream.request(), llmResult, ragItemIds, updatedState, stream.skipUserMessage(), isPrivate);
                 String chatId = saved.chatId();
 
                 if (chatId != null && session.isOpen()) {

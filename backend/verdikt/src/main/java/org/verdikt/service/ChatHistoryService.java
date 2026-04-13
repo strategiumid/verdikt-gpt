@@ -112,7 +112,18 @@ public class ChatHistoryService {
                                      List<Long> ragItemIds,
                                      ConversationState conversationState,
                                      boolean skipUserMessage) {
-        return doSaveFromCompletion(user, completionRequest, llmResult, ragItemIds, conversationState, skipUserMessage);
+        return doSaveFromCompletion(user, completionRequest, llmResult, ragItemIds, conversationState, skipUserMessage, false);
+    }
+
+    @Transactional
+    public CompletionSaveResult saveFromCompletion(User user,
+                                     ChatCompletionsRequest completionRequest,
+                                     Map<String, Object> llmResult,
+                                     List<Long> ragItemIds,
+                                     ConversationState conversationState,
+                                     boolean skipUserMessage,
+                                     boolean isPrivate) {
+        return doSaveFromCompletion(user, completionRequest, llmResult, ragItemIds, conversationState, skipUserMessage, isPrivate);
     }
 
     public CompletionSaveResult saveFromCompletion(User user,
@@ -120,7 +131,7 @@ public class ChatHistoryService {
                                      Map<String, Object> llmResult,
                                      List<Long> ragItemIds,
                                      ConversationState conversationState) {
-        return doSaveFromCompletion(user, completionRequest, llmResult, ragItemIds, conversationState, false);
+        return doSaveFromCompletion(user, completionRequest, llmResult, ragItemIds, conversationState, false, false);
     }
 
     private CompletionSaveResult doSaveFromCompletion(User user,
@@ -128,7 +139,8 @@ public class ChatHistoryService {
                                      Map<String, Object> llmResult,
                                      List<Long> ragItemIds,
                                      ConversationState conversationState,
-                                     boolean skipUserMessage) {
+                                     boolean skipUserMessage,
+                                     boolean isPrivate) {
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Войдите в аккаунт");
         }
@@ -147,6 +159,9 @@ public class ChatHistoryService {
                     c.setCreatedAt(Instant.now());
                     return c;
                 });
+        if (isPrivate) {
+            chat.setPrivate(true);
+        }
 
         if (conversationState != null) {
             try {
@@ -294,7 +309,7 @@ public class ChatHistoryService {
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Войдите в аккаунт");
         }
-        List<Chat> chats = chatRepository.findByUserIdOrderByUpdatedAtDesc(user.getId());
+        List<Chat> chats = chatRepository.findByUserIdAndIsPrivateFalseOrderByUpdatedAtDesc(user.getId());
         return chats.stream()
                 .map(chat -> {
                     Map<String, Object> payload = toPayload(chat);
