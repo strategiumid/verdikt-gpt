@@ -1,13 +1,18 @@
 package org.verdikt.controller;
 
 import org.verdikt.dto.AnalyticsResponse;
+import org.verdikt.dto.AdminPushBroadcastRequest;
+import org.verdikt.dto.PushSendRequest;
 import org.verdikt.dto.QuestionResponse;
 import org.verdikt.dto.SetRoleRequest;
 import org.verdikt.dto.SetSubscriptionRequest;
 import org.verdikt.dto.UserResponse;
+import org.verdikt.entity.UserPushToken;
 import org.verdikt.entity.User;
 import org.verdikt.service.AdminService;
 import org.verdikt.service.FeedbackService;
+import org.verdikt.service.PushNotificationService;
+import org.verdikt.service.UserPushTokenService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -26,10 +31,17 @@ public class AdminController {
 
     private final AdminService adminService;
     private final FeedbackService feedbackService;
+    private final UserPushTokenService userPushTokenService;
+    private final PushNotificationService pushNotificationService;
 
-    public AdminController(AdminService adminService, FeedbackService feedbackService) {
+    public AdminController(AdminService adminService,
+                           FeedbackService feedbackService,
+                           UserPushTokenService userPushTokenService,
+                           PushNotificationService pushNotificationService) {
         this.adminService = adminService;
         this.feedbackService = feedbackService;
+        this.userPushTokenService = userPushTokenService;
+        this.pushNotificationService = pushNotificationService;
     }
 
     @SuppressWarnings("unchecked")
@@ -128,5 +140,42 @@ public class AdminController {
     ) {
         if (!isAdmin(user)) return forbidden();
         return ResponseEntity.ok(feedbackService.getAllAnalyticsForAdmin(limit));
+    }
+
+    /** Send push to all active devices of one user (admin only). */
+    @PostMapping("/push/send/user/{userId}")
+    public ResponseEntity<java.util.Map<String, Object>> sendPushToUser(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long userId,
+            @Valid @RequestBody PushSendRequest request
+    ) throws Exception {
+        if (!isAdmin(user)) return forbidden();
+        java.util.List<UserPushToken> rows = userPushTokenService.getActiveTokensForUser(userId);
+        PushNotificationService.PushBatchResult result = pushNotificationService.sendToTokens(
+                rows, request.getTitle(), request.getBody(), request.getData());
+        return ResponseEntity.ok(java.util.Map.of(
+                "successCount", result.successCount(),
+                "failureCount", result.failureCount(),
+                "deactivatedTokens", result.deactivatedTokens()
+        ));
+    }
+
+    /** Broadcast push (admin only). If userIds provided, sends only to those users. */
+    @PostMapping("/push/send/broadcast")
+    public ResponseEntity<java.util.Map<String, Object>> sendPushBroadcast(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody AdminPushBroadcastRequest request
+    ) throws Exception {
+        if (!isAdmin(user)) return forbidden();
+        java.util.List<UserPushToken> rows = (request.getUserIds() == null || request.getUserIds().isEmpty())
+                ? userPushTokenService.getAllActiveTokens()
+                : userPushTokenService.getActiveTokensForUsers(request.getUserIds());
+        PushNotificationService.PushBatchResult result = pushNotificationService.sendToTokens(
+                rows, request.getTitle(), request.getBody(), request.getData());
+        return ResponseEntity.ok(java.util.Map.of(
+                "successCount", result.successCount(),
+                "failureCount", result.failureCount(),
+                "deactivatedTokens", result.deactivatedTokens()
+        ));
     }
 }

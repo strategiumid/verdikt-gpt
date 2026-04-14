@@ -5,6 +5,7 @@ import org.verdikt.dto.FeedbackRequest;
 import org.verdikt.dto.FeedbackResponse;
 import org.verdikt.dto.SetSubscriptionRequest;
 import org.verdikt.dto.SettingsResponse;
+import org.verdikt.dto.PushTokenUpsertRequest;
 import org.verdikt.dto.UpdateProfileRequest;
 import org.verdikt.dto.UpdateSettingsRequest;
 import org.verdikt.dto.UsageResponse;
@@ -12,6 +13,7 @@ import org.verdikt.dto.UserResponse;
 import org.verdikt.entity.User;
 import org.verdikt.service.FeedbackService;
 import org.verdikt.service.UserService;
+import org.verdikt.service.UserPushTokenService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -27,10 +29,12 @@ public class UserController {
 
     private final UserService userService;
     private final FeedbackService feedbackService;
+    private final UserPushTokenService userPushTokenService;
 
-    public UserController(UserService userService, FeedbackService feedbackService) {
+    public UserController(UserService userService, FeedbackService feedbackService, UserPushTokenService userPushTokenService) {
         this.userService = userService;
         this.feedbackService = feedbackService;
+        this.userPushTokenService = userPushTokenService;
     }
 
     /**
@@ -141,5 +145,31 @@ public class UserController {
             return ResponseEntity.status(401).build();
         }
         return ResponseEntity.ok(feedbackService.getAnalytics(user.getId(), Math.min(limit, 100)));
+    }
+
+    /** Register or refresh FCM push token for current user/device. */
+    @PostMapping("/me/push-token")
+    public ResponseEntity<java.util.Map<String, Object>> upsertPushToken(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody PushTokenUpsertRequest request
+    ) {
+        if (user == null) {
+            return ResponseEntity.status(401).build();
+        }
+        userPushTokenService.upsertToken(user.getId(), request.getFcmToken(), request.getPlatform(), request.getDeviceId());
+        return ResponseEntity.ok(java.util.Map.of("saved", true));
+    }
+
+    /** Deactivate current user's token (e.g., on mobile logout). */
+    @DeleteMapping("/me/push-token")
+    public ResponseEntity<java.util.Map<String, Object>> deactivatePushToken(
+            @AuthenticationPrincipal User user,
+            @RequestParam("fcmToken") String fcmToken
+    ) {
+        if (user == null) {
+            return ResponseEntity.status(401).build();
+        }
+        userPushTokenService.deactivateToken(user.getId(), fcmToken);
+        return ResponseEntity.ok(java.util.Map.of("deactivated", true));
     }
 }
