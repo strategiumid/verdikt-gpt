@@ -1565,6 +1565,48 @@
             font-size: 14px;
         }
     }
+
+    .legal-modal {
+        max-width: 920px;
+        max-height: 86vh;
+        overflow-y: auto;
+    }
+
+    .legal-modal h2 {
+        margin: 0 0 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .legal-modal .legal-date {
+        color: var(--text-secondary);
+        font-size: 0.92rem;
+        margin-bottom: 16px;
+    }
+
+    .legal-modal .legal-body h3 {
+        margin: 14px 0 8px;
+        font-size: 1rem;
+    }
+
+    .legal-modal .legal-body p,
+    .legal-modal .legal-body li {
+        color: var(--text-primary);
+        line-height: 1.6;
+    }
+
+    .legal-modal .legal-body ul {
+        margin: 0 0 10px;
+        padding-left: 20px;
+    }
+
+    .legal-modal-actions {
+        margin-top: 18px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
     </style>
 </head>
 
@@ -1654,11 +1696,11 @@
                     <i class="fas fa-bell"></i>
                     <span>Уведомления</span>
                 </div>
-                <a class="nav-item" id="nav-privacy" href="privacy.html">
+                <a class="nav-item" id="nav-privacy" href="#">
                     <i class="fas fa-shield-alt"></i>
                     <span>Конфиденциальность</span>
                 </a>
-                <a class="nav-item" id="nav-support" href="support.html">
+                <a class="nav-item" id="nav-support" href="#">
                     <i class="fab fa-telegram"></i>
                     <span>Поддержка</span>
                 </a>
@@ -3409,11 +3451,83 @@
                 </div>
                 <div class="footer-links">
                     <a href="#" id="model-info"><i class="fas fa-robot"></i> О модели</a>
-                    <a href="privacy.html" id="privacy-policy"><i class="fas fa-shield-alt"></i> Конфиденциальность</a>
-                    <a href="support.html" id="support-link"><i class="fab fa-telegram"></i> Поддержка</a>
+                    <a href="#" id="privacy-policy"><i class="fas fa-shield-alt"></i> Конфиденциальность</a>
+                    <a href="#" id="support-link"><i class="fab fa-telegram"></i> Поддержка</a>
                 </div>
             </div>
         </footer>
+    </div>
+
+    <div class="modal" id="privacy-modal">
+        <div class="modal-content legal-modal">
+            <button class="modal-close" id="privacy-close">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2><i class="fas fa-shield-alt"></i> Политика конфиденциальности</h2>
+            <p class="legal-date">Дата обновления: 23.04.2026</p>
+            <div class="legal-body">
+                <p>Настоящая Политика конфиденциальности определяет порядок сбора, использования, хранения и защиты персональных данных пользователей мобильного приложения «Verdikt GPT» (далее — «Приложение»)</p>
+
+                <h3>1. Какие данные мы собираем</h3>
+                <p>В рамках использования Приложения могут обрабатываться следующие данные:</p>
+                <ul>
+                    <li>ФИО пользователя</li>
+                    <li>Контактные данные (адрес электронной почты)</li>
+                    <li>Техническая информация (тип устройства, версия ОС)</li>
+                </ul>
+
+                <h3>2. Цели обработки персональных данных</h3>
+                <p>Персональные данные используются исключительно для:</p>
+                <ul>
+                    <li>идентификации пользователя;</li>
+                    <li>направления уведомлений и сообщений;</li>
+                </ul>
+
+                <h3>3. Хранение и защита данных</h3>
+                <p>Мы принимаем необходимые организационные и технические меры для защиты персональных данных от несанкционированного доступа, утраты, изменения или распространения.</p>
+
+                <h3>4. Передача данных третьим лицам</h3>
+                <p>Персональные данные пользователей не передаются третьим лицам</p>
+
+                <h3>5. Права пользователя</h3>
+                <p>Пользователь имеет право:</p>
+                <ul>
+                    <li>получать информацию о своих персональных данных;</li>
+                    <li>требовать их уточнения или обновления;</li>
+                </ul>
+
+                <h3>6. Изменение политики конфиденциальности</h3>
+                <p>Мы вправе вносить изменения в настоящую Политику. Актуальная версия всегда доступна в Приложении и на официальном сайте.</p>
+
+                <h3>7. Контактная информация</h3>
+                <p>По вопросам обработки персональных данных вы можете связаться с нами:</p>
+                <p>Email: no-reply@verdikt.online<br>Телефон: 8 (706) 641 19 00</p>
+            </div>
+            <div class="legal-modal-actions">
+                <button class="ios-button secondary" id="privacy-open-support"><i class="fas fa-life-ring"></i> Перейти в поддержку</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="support-modal">
+        <div class="modal-content legal-modal">
+            <button class="modal-close" id="support-close">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2><i class="fas fa-life-ring"></i> Поддержка</h2>
+            <div class="legal-body">
+                <p>Если у вас есть вопросы по работе приложения, приватности или подписке, напишите нам в Telegram.</p>
+                <p>
+                    <a class="ios-button" href="https://t.me/tensamore" target="_blank" rel="noopener noreferrer">
+                        <i class="fab fa-telegram"></i> Связаться: @tensamore
+                    </a>
+                </p>
+                <p>Мы стараемся отвечать максимально быстро в рабочее время.</p>
+            </div>
+            <div class="legal-modal-actions">
+                <button class="ios-button secondary" id="support-open-privacy"><i class="fas fa-shield-alt"></i> Политика конфиденциальности</button>
+            </div>
+        </div>
     </div>
 
     <!-- Модальное окно авторизации -->

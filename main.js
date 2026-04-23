@@ -209,6 +209,8 @@ export class VerdiktChatApp {
             navSecurity: document.getElementById('nav-security'),
             navNotifications: document.getElementById('nav-notifications'),
             navSubscription: document.getElementById('nav-subscription'),
+            navPrivacy: document.getElementById('nav-privacy'),
+            navSupport: document.getElementById('nav-support'),
             questionsBadge: document.getElementById('questions-badge'),
             likesBadge: document.getElementById('likes-badge'),
             commentsBadge: document.getElementById('comments-badge'),
@@ -1851,6 +1853,22 @@ export class VerdiktChatApp {
             });
         }
 
+        if (this.elements.navPrivacy) {
+            this.elements.navPrivacy.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.showModal('privacy-modal');
+                this.hideSidebar();
+            });
+        }
+
+        if (this.elements.navSupport) {
+            this.elements.navSupport.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.showModal('support-modal');
+                this.hideSidebar();
+            });
+        }
+
         if (this.elements.logoutSidebar) {
             this.elements.logoutSidebar.addEventListener('click', () => {
                 this.logout();
@@ -3008,10 +3026,64 @@ export class VerdiktChatApp {
             });
         }
         
-        document.getElementById('privacy-policy').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.showNotification('Данные чатов хранятся локально в вашем браузере', 'info');
-        });
+        const privacyPolicyLink = document.getElementById('privacy-policy');
+        if (privacyPolicyLink) {
+            privacyPolicyLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.showModal('privacy-modal');
+            });
+        }
+
+        const supportLink = document.getElementById('support-link');
+        if (supportLink) {
+            supportLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.showModal('support-modal');
+            });
+        }
+
+        const privacyClose = document.getElementById('privacy-close');
+        if (privacyClose) {
+            privacyClose.addEventListener('click', () => this.hideModal('privacy-modal'));
+        }
+
+        const supportClose = document.getElementById('support-close');
+        if (supportClose) {
+            supportClose.addEventListener('click', () => this.hideModal('support-modal'));
+        }
+
+        const privacyOpenSupport = document.getElementById('privacy-open-support');
+        if (privacyOpenSupport) {
+            privacyOpenSupport.addEventListener('click', () => {
+                this.hideModal('privacy-modal');
+                this.showModal('support-modal');
+            });
+        }
+
+        const supportOpenPrivacy = document.getElementById('support-open-privacy');
+        if (supportOpenPrivacy) {
+            supportOpenPrivacy.addEventListener('click', () => {
+                this.hideModal('support-modal');
+                this.showModal('privacy-modal');
+            });
+        }
+
+        const privacyModal = document.getElementById('privacy-modal');
+        if (privacyModal) {
+            privacyModal.addEventListener('click', (e) => {
+                if (e.target === privacyModal) this.hideModal('privacy-modal');
+            });
+        }
+
+        const supportModal = document.getElementById('support-modal');
+        if (supportModal) {
+            supportModal.addEventListener('click', (e) => {
+                if (e.target === supportModal) this.hideModal('support-modal');
+            });
+        }
+
+        window.addEventListener('hashchange', () => this.handleLegalModalHashNavigation());
+        this.handleLegalModalHashNavigation();
         
         document.getElementById('encryption-manager')?.addEventListener('click', () => {
             this.showEncryptionManager();
@@ -4993,6 +5065,7 @@ export class VerdiktChatApp {
     showModal(modalId) {
         document.getElementById(modalId).classList.add('active');
         document.body.style.overflow = 'hidden';
+        this.syncLegalModalHash(modalId, true);
     }
 
     hideModal(modalId) {
@@ -5000,6 +5073,60 @@ export class VerdiktChatApp {
         const el = document.getElementById(modalId);
         if (el) el.classList.remove('active');
         document.body.style.overflow = '';
+        this.syncLegalModalHash(modalId, false);
+    }
+
+    getLegalModalHash(modalId) {
+        if (modalId === 'privacy-modal') return '#privacy';
+        if (modalId === 'support-modal') return '#support';
+        return '';
+    }
+
+    getLegalModalIdFromHash() {
+        const hash = (window.location.hash || '').toLowerCase();
+        if (hash === '#privacy') return 'privacy-modal';
+        if (hash === '#support') return 'support-modal';
+        return '';
+    }
+
+    syncLegalModalHash(modalId, isOpen) {
+        const targetHash = this.getLegalModalHash(modalId);
+        if (!targetHash) return;
+
+        const currentHash = (window.location.hash || '').toLowerCase();
+        if (isOpen) {
+            if (currentHash !== targetHash) {
+                history.replaceState(null, '', `${window.location.pathname}${window.location.search}${targetHash}`);
+            }
+            return;
+        }
+
+        if (currentHash === targetHash) {
+            history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+        }
+    }
+
+    handleLegalModalHashNavigation() {
+        const modalId = this.getLegalModalIdFromHash();
+        const privacyModal = document.getElementById('privacy-modal');
+        const supportModal = document.getElementById('support-modal');
+        if (!privacyModal || !supportModal) return;
+
+        if (!modalId) {
+            if (privacyModal.classList.contains('active')) this.hideModal('privacy-modal');
+            if (supportModal.classList.contains('active')) this.hideModal('support-modal');
+            return;
+        }
+
+        const otherModalId = modalId === 'privacy-modal' ? 'support-modal' : 'privacy-modal';
+        const otherModal = document.getElementById(otherModalId);
+        if (otherModal && otherModal.classList.contains('active')) {
+            otherModal.classList.remove('active');
+        }
+
+        if (!document.getElementById(modalId)?.classList.contains('active')) {
+            this.showModal(modalId);
+        }
     }
 
     showSettingsModal() {
