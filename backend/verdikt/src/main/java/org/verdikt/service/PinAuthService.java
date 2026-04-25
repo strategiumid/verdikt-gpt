@@ -48,6 +48,9 @@ public class PinAuthService {
         if (user.isBanned()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Аккаунт заблокирован");
         }
+        if (user.isDeleted()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Аккаунт удален");
+        }
         if (!user.isEmailVerified()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Подтвердите email");
         }
@@ -75,7 +78,7 @@ public class PinAuthService {
         UserPinAuth pinAuth = userPinAuthRepository.findByDeviceId(deviceId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Неверный deviceId или pinCode"));
         User user = pinAuth.getUser();
-        if (user == null || user.isBanned() || !user.isEmailVerified()) {
+        if (user == null || user.isBanned() || user.isDeleted() || !user.isEmailVerified()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Доступ запрещён");
         }
         if (!passwordEncoder.matches(pinCode, pinAuth.getPinHash())) {

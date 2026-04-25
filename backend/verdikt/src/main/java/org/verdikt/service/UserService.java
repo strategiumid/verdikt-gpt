@@ -47,8 +47,20 @@ public class UserService {
     @Transactional
     public UserResponse register(RegisterRequest request) {
         String email = request.getEmail().trim().toLowerCase();
-        if (userRepository.findByEmail(email).isPresent()) {
+        User existingUser = userRepository.findByEmail(email).orElse(null);
+        if (existingUser != null && !existingUser.isDeleted()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Пользователь с таким email уже зарегистрирован");
+        }
+        if (existingUser != null) {
+            existingUser.setDeleted(false);
+            existingUser.setEmailVerified(false);
+            existingUser.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+            if (request.getName() != null && !request.getName().isBlank()) {
+                existingUser.setName(request.getName().trim());
+            }
+            User restored = userRepository.save(existingUser);
+            request.clearPassword();
+            return UserResponse.from(restored);
         }
         User user = new User();
         user.setEmail(email);
@@ -86,6 +98,9 @@ public class UserService {
         String email = request.getEmail().trim().toLowerCase();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Неверный email или пароль"));
+        if (user.isDeleted()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Аккаунт удален");
+        }
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Неверный email или пароль");
         }
@@ -264,5 +279,17 @@ public class UserService {
         r.setLimit(limit);
         r.setPeriodStart(user.getUsagePeriodStart());
         return r;
+    }
+
+    @Transactional
+    public void deleteMyAccount(Long userId, String rawPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь не найден"));
+        String password = rawPassword == null ? "" : rawPassword;
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Неверный пароль");
+        }
+        user.setDeleted(true);
+        userRepository.save(user);
     }
 }

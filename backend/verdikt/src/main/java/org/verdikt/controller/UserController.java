@@ -19,6 +19,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 /**
  * Эндпоинты для текущего пользователя (профиль).
@@ -51,6 +53,21 @@ public class UserController {
         }
         UserResponse updated = userService.updateProfile(user.getId(), request);
         return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * DELETE /api/users/me — мягкое удаление аккаунта текущего пользователя.
+     */
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> deleteMyAccount(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody DeleteAccountRequest request
+    ) {
+        if (user == null) {
+            return ResponseEntity.status(401).build();
+        }
+        userService.deleteMyAccount(user.getId(), request.getPassword());
+        return ResponseEntity.noContent().build();
     }
 
     /**
@@ -171,5 +188,19 @@ public class UserController {
         }
         userPushTokenService.deactivateToken(user.getId(), fcmToken);
         return ResponseEntity.ok(java.util.Map.of("deactivated", true));
+    }
+
+    public static class DeleteAccountRequest {
+        @NotBlank
+        @Size(min = 6, max = 100)
+        private String password;
+
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
+        }
     }
 }

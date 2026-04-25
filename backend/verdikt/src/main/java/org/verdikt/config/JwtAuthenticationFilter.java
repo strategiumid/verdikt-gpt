@@ -69,7 +69,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
             User user = userRepository.findById(userId).orElse(null);
-            if (user == null || user.isBanned()) {
+            if (user == null || user.isBanned() || user.isDeleted()) {
                 token = null;
                 filterChain.doFilter(request, response);
                 return;

@@ -68,6 +68,10 @@ public class User {
     @Column(name = "email_verified", nullable = false)
     private boolean emailVerified = false;
 
+    /** Мягкое удаление аккаунта пользователем. */
+    @Column(name = "is_deleted", nullable = false, columnDefinition = "boolean default false")
+    private boolean deleted = false;
+
     /** Подписка: free, lite, pro, ultimate. По умолчанию free. */
     @Size(max = 20)
     @Column(name = "subscription", length = 20)
@@ -178,6 +182,14 @@ public class User {
 
     public void setEmailVerified(boolean emailVerified) {
         this.emailVerified = emailVerified;
+    }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
     }
 
     public String getSubscription() {
