@@ -99,7 +99,7 @@ public class UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Неверный email или пароль"));
         if (user.isDeleted()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Аккаунт удален");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Аккаунт удален");
         }
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Неверный email или пароль");

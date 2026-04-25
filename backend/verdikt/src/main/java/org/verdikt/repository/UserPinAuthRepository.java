@@ -8,5 +8,4 @@ import java.util.Optional;
 public interface UserPinAuthRepository extends JpaRepository<UserPinAuth, Long> {
     Optional<UserPinAuth> findByDeviceId(String deviceId);
     Optional<UserPinAuth> findByUser_Id(Long userId);
-    void deleteByUser_Id(Long userId);
 }

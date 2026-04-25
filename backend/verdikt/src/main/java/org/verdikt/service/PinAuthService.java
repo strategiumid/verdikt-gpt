@@ -55,14 +55,23 @@ public class PinAuthService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Подтвердите email");
         }
 
-        userPinAuthRepository.findByDeviceId(deviceId).ifPresent(existing -> userPinAuthRepository.delete(existing));
-        userPinAuthRepository.deleteByUser_Id(userId);
+        // If the device is bound to another user, free it so device_id unique constraint holds
+        userPinAuthRepository.findByDeviceId(deviceId).ifPresent(existingOnDevice -> {
+            if (!existingOnDevice.getUser().getId().equals(userId)) {
+                userPinAuthRepository.delete(existingOnDevice);
+            }
+        });
+        userPinAuthRepository.flush();
 
-        UserPinAuth pinAuth = new UserPinAuth();
-        pinAuth.setUser(user);
+        UserPinAuth pinAuth = userPinAuthRepository.findByUser_Id(userId)
+                .orElseGet(() -> {
+                    UserPinAuth created = new UserPinAuth();
+                    created.setUser(user);
+                    created.setCreatedAt(Instant.now());
+                    return created;
+                });
         pinAuth.setDeviceId(deviceId);
         pinAuth.setPinHash(passwordEncoder.encode(pinCode));
-        pinAuth.setCreatedAt(Instant.now());
         pinAuth.setUpdatedAt(Instant.now());
         userPinAuthRepository.save(pinAuth);
     }
@@ -76,7 +85,7 @@ public class PinAuthService {
         }
 
         UserPinAuth pinAuth = userPinAuthRepository.findByDeviceId(deviceId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Неверный deviceId или pinCode"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Неверный deviceId или pinCode"));
         User user = pinAuth.getUser();
         if (user == null || user.isBanned() || user.isDeleted() || !user.isEmailVerified()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Доступ запрещён");
