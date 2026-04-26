@@ -159,6 +159,9 @@ public class ChatHistoryService {
                     c.setCreatedAt(Instant.now());
                     return c;
                 });
+        if (chat.isDeleted()) {
+            chat.setDeleted(false);
+        }
         if (isPrivate) {
             chat.setPrivate(true);
         }
@@ -256,7 +259,7 @@ public class ChatHistoryService {
                                     List<String> imageIds,
                                     String imageAnalysis) {
         if (user == null || messageContent == null || messageContent.isBlank()) return null;
-        Chat chat = chatRepository.findByUserIdAndChatKey(user.getId(), chatKey)
+        Chat chat = chatRepository.findByUserIdAndChatKeyAndIsDeletedFalse(user.getId(), chatKey)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Чат не найден"));
         ChatMessage msg = new ChatMessage();
         msg.setChat(chat);
@@ -293,6 +296,9 @@ public class ChatHistoryService {
                         c.setCreatedAt(Instant.now());
                         return c;
                     });
+            if (chat.isDeleted()) {
+                chat.setDeleted(false);
+            }
 
             chat.setPayloadJson(json);
             chat.setUpdatedAt(Instant.now());
@@ -309,7 +315,7 @@ public class ChatHistoryService {
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Войдите в аккаунт");
         }
-        List<Chat> chats = chatRepository.findByUserIdAndIsPrivateFalseOrderByUpdatedAtDesc(user.getId());
+        List<Chat> chats = chatRepository.findByUserIdAndIsPrivateFalseAndIsDeletedFalseOrderByUpdatedAtDesc(user.getId());
         return chats.stream()
                 .map(chat -> {
                     Map<String, Object> payload = toPayload(chat);
@@ -324,7 +330,7 @@ public class ChatHistoryService {
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Войдите в аккаунт");
         }
-        return chatRepository.findByUserIdAndChatKey(user.getId(), chatKey)
+        return chatRepository.findByUserIdAndChatKeyAndIsDeletedFalse(user.getId(), chatKey)
                 .map(chat -> {
                     Map<String, Object> payload = toPayload(chat);
                     applyChatTitleFromFirstUserMessage(chat, payload);
@@ -338,7 +344,10 @@ public class ChatHistoryService {
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Войдите в аккаунт");
         }
-        chatRepository.deleteByUserIdAndChatKey(user.getId(), chatKey);
+        int affected = chatRepository.softDeleteByUserIdAndChatKey(user.getId(), chatKey);
+        if (affected == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Чат не найден");
+        }
     }
 
     /**
@@ -355,7 +364,7 @@ public class ChatHistoryService {
         }
         boolean isAdmin = "ADMIN".equals(user.getRole());
         Long ownerId = (isAdmin && userIdParam != null) ? userIdParam : user.getId();
-        Chat chat = chatRepository.findByUserIdAndChatKey(ownerId, chatId)
+        Chat chat = chatRepository.findByUserIdAndChatKeyAndIsDeletedFalse(ownerId, chatId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Чат не найден"));
         if (!isAdmin && !chat.getUser().getId().equals(user.getId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Нет доступа к этому чату");

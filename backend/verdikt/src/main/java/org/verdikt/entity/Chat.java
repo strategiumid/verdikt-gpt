@@ -34,6 +34,9 @@ public class Chat {
     @Column(name = "is_private", nullable = false)
     private boolean isPrivate = false;
 
+    @Column(name = "is_deleted", nullable = false, columnDefinition = "boolean default false")
+    private boolean isDeleted = false;
+
     public Long getId() {
         return id;
     }
@@ -88,6 +91,14 @@ public class Chat {
 
     public void setPrivate(boolean aPrivate) {
         isPrivate = aPrivate;
+    }
+
+    public boolean isDeleted() {
+        return isDeleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        isDeleted = deleted;
     }
 }
 
