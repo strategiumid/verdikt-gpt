@@ -234,7 +234,13 @@ export class VerdiktChatApp {
             profileSettingsForm: document.getElementById('profile-settings-form'),
             
             reloadInstructions: document.getElementById('reload-instructions'),
-            subscriptionClose: document.getElementById('subscription-close')
+            subscriptionClose: document.getElementById('subscription-close'),
+
+            emailVerificationBanner: document.getElementById('email-verification-banner'),
+            emailVerificationTarget: document.getElementById('email-verification-target'),
+            emailVerificationCode: document.getElementById('email-verification-code'),
+            emailVerificationSubmit: document.getElementById('email-verification-submit'),
+            emailVerificationResend: document.getElementById('email-verification-resend')
         };
 
         this.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -464,6 +470,7 @@ export class VerdiktChatApp {
         this.setupServiceWorker();
         this.setupSettingsTabs();
         this.setupAuthUI();
+        this.setupEmailVerificationUI();
         
         this.setupSidebar();
         this.setupDashboard();
@@ -4691,6 +4698,118 @@ export class VerdiktChatApp {
         if (activityTab) activityTab.style.display = this.state.isAdmin ? '' : 'none';
         if (analyticsContent) analyticsContent.style.display = this.state.isAdmin ? '' : 'none';
         if (activityContent) activityContent.style.display = this.state.isAdmin ? '' : 'none';
+
+        this.updateEmailVerificationBanner();
+    }
+
+    userNeedsEmailVerification() {
+        const u = this.state.user;
+        if (!u) return false;
+        return u.emailVerified === false;
+    }
+
+    updateEmailVerificationBanner() {
+        const el = this.elements.emailVerificationBanner;
+        if (!el) return;
+        const need = this.userNeedsEmailVerification();
+        if (need) {
+            const email = (this.state.user && this.state.user.email) ? this.state.user.email : '';
+            if (this.elements.emailVerificationTarget) {
+                this.elements.emailVerificationTarget.textContent = email || 'вашу почту';
+            }
+            el.style.display = '';
+        } else {
+            el.style.display = 'none';
+            if (this.elements.emailVerificationCode) this.elements.emailVerificationCode.value = '';
+        }
+    }
+
+    async sendEmailVerificationCode() {
+        const email = this.state.user?.email;
+        if (!email) {
+            this.showNotification('Сначала войдите в аккаунт', 'warning');
+            return;
+        }
+        const base = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
+        const response = await fetch(`${base}/api/auth/email-verification/send`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json', ...this.getReplayHeaders() },
+            body: JSON.stringify({ email })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (response.status === 429) {
+            throw new Error(data.message || 'Слишком много запросов, попробуйте позже');
+        }
+        if (!response.ok) {
+            throw new Error(data.message || 'Не удалось отправить код');
+        }
+        return data;
+    }
+
+    async submitEmailVerification() {
+        const email = this.state.user?.email;
+        const code = (this.elements.emailVerificationCode && this.elements.emailVerificationCode.value)
+            ? this.elements.emailVerificationCode.value.trim() : '';
+        if (!email) {
+            this.showNotification('Нет email в сессии', 'warning');
+            return;
+        }
+        if (code.length !== 6 || !/^\d{6}$/.test(code)) {
+            this.showNotification('Введите 6 цифр из письма', 'warning');
+            return;
+        }
+        const base = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
+        const response = await fetch(`${base}/api/auth/email-verification/verify`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json', ...this.getReplayHeaders() },
+            body: JSON.stringify({ email, code })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data.message || 'Неверный или просроченный код');
+        }
+        await this.restoreSession();
+        this.updateEmailVerificationBanner();
+        this.showNotification('Email подтверждён', 'success');
+        try {
+            await this.loadUsage();
+        } catch (_) {}
+    }
+
+    setupEmailVerificationUI() {
+        const submit = this.elements.emailVerificationSubmit;
+        const resend = this.elements.emailVerificationResend;
+        const codeInput = this.elements.emailVerificationCode;
+
+        if (submit) {
+            submit.addEventListener('click', async () => {
+                try {
+                    await this.submitEmailVerification();
+                } catch (e) {
+                    this.showNotification(e.message || 'Ошибка подтверждения', 'error');
+                }
+            });
+        }
+        if (resend) {
+            resend.addEventListener('click', async () => {
+                try {
+                    await this.sendEmailVerificationCode();
+                    this.showNotification('Если адрес допустим, код будет отправлен на почту', 'info');
+                } catch (e) {
+                    this.showNotification(e.message || 'Не удалось отправить код', 'error');
+                }
+            });
+        }
+        if (codeInput) {
+            codeInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (this.elements.emailVerificationSubmit) this.elements.emailVerificationSubmit.click();
+                }
+            });
+        }
     }
 
     getCurrentTime() {
