@@ -3414,6 +3414,7 @@
             <div class="auth-tabs">
                 <button class="auth-tab active" data-tab="login">Вход</button>
                 <button class="auth-tab" data-tab="register">Регистрация</button>
+                <button class="auth-tab" data-tab="reset">Сброс пароля</button>
             </div>
 
             <div class="auth-forms">
@@ -3426,6 +3427,9 @@
                         <label for="login-password">Пароль</label>
                         <input type="password" id="login-password" placeholder="Ваш пароль" required>
                     </div>
+                    <p style="margin: -4px 0 10px 0; text-align: right;">
+                        <button type="button" id="login-goto-reset" style="background:none;border:none;color:var(--accent-primary, #60a5fa);cursor:pointer;font-size:0.88rem;text-decoration:underline;padding:0;">Забыли пароль?</button>
+                    </p>
                     <button type="submit" class="ios-button" id="login-submit">
                         <i class="fas fa-sign-in-alt"></i> Войти
                     </button>
@@ -3446,6 +3450,34 @@
                     </div>
                     <button type="submit" class="ios-button" id="register-submit">
                         <i class="fas fa-user-plus"></i> Зарегистрироваться
+                    </button>
+                </form>
+
+                <form id="reset-form" class="auth-form">
+                    <p class="auth-hint" style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4; margin: 0 0 12px 0;">
+                        Укажите email, нажмите «Отправить код». В письме — 6 цифр. Письмо уходит только если аккаунт есть и email уже подтверждён.
+                    </p>
+                    <div class="auth-field">
+                        <label for="reset-email">Email</label>
+                        <input type="email" id="reset-email" placeholder="you@example.com" required autocomplete="email">
+                    </div>
+                    <button type="button" class="ios-button secondary" id="reset-send-btn" style="width: 100%; margin-bottom: 8px;">
+                        <i class="fas fa-paper-plane"></i> Отправить код
+                    </button>
+                    <div class="auth-field">
+                        <label for="reset-code">Код из письма</label>
+                        <input type="text" id="reset-code" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="000000" autocomplete="one-time-code">
+                    </div>
+                    <div class="auth-field">
+                        <label for="reset-new-password">Новый пароль</label>
+                        <input type="password" id="reset-new-password" placeholder="Минимум 6 символов" minlength="6" autocomplete="new-password">
+                    </div>
+                    <div class="auth-field">
+                        <label for="reset-new-password2">Повтор пароля</label>
+                        <input type="password" id="reset-new-password2" placeholder="Ещё раз" minlength="6" autocomplete="new-password">
+                    </div>
+                    <button type="submit" class="ios-button" id="reset-submit">
+                        <i class="fas fa-key"></i> Установить новый пароль
                     </button>
                 </form>
 

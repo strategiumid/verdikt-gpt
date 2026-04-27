@@ -105,5 +105,35 @@ export class AuthService {
         const data = await response.json();
         this.setUser(data.user);
     }
+
+    async requestPasswordReset(email) {
+        const base = (this.authConfig.baseUrl || window.location.origin).replace(/\/$/, '');
+        const response = await fetch(`${base}/api/auth/password-reset/send`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
+            body: JSON.stringify({ email })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data.message || 'Не удалось отправить код');
+        }
+        return data;
+    }
+
+    async confirmPasswordReset(email, code, newPassword) {
+        const base = (this.authConfig.baseUrl || window.location.origin).replace(/\/$/, '');
+        const response = await fetch(`${base}/api/auth/password-reset/confirm`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
+            body: JSON.stringify({ email, code, newPassword })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data.message || 'Неверный или просроченный код');
+        }
+        return data;
+    }
 }
 

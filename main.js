@@ -4450,6 +4450,36 @@ export class VerdiktChatApp {
         this.setUser(data.user);
     }
 
+    async requestPasswordReset(email) {
+        const base = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
+        const response = await fetch(`${base}/api/auth/password-reset/send`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json', ...this.getReplayHeaders() },
+            body: JSON.stringify({ email })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data.message || 'Не удалось отправить код');
+        }
+        return data;
+    }
+
+    async confirmPasswordReset(email, code, newPassword) {
+        const base = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
+        const response = await fetch(`${base}/api/auth/password-reset/confirm`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json', ...this.getReplayHeaders() },
+            body: JSON.stringify({ email, code, newPassword })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data.message || 'Неверный или просроченный код');
+        }
+        return data;
+    }
+
     setupAuthUI() {
         const loginBtn = this.elements.loginButton;
         const logoutBtn = document.getElementById('logout-button');
@@ -4457,6 +4487,7 @@ export class VerdiktChatApp {
         const authTabs = document.querySelectorAll('.auth-tab');
         const loginForm = document.getElementById('login-form');
         const registerForm = document.getElementById('register-form');
+        const resetForm = document.getElementById('reset-form');
 
         if (loginBtn) {
             loginBtn.addEventListener('click', () => {
@@ -4532,6 +4563,83 @@ export class VerdiktChatApp {
                     this.showNotification('Регистрация прошла успешно ✅', 'success');
                 } catch (error) {
                     this.showNotification(error.message || 'Ошибка регистрации', 'error');
+                }
+            });
+        }
+
+        const resetSendBtn = document.getElementById('reset-send-btn');
+        const loginGotoReset = document.getElementById('login-goto-reset');
+
+        if (loginGotoReset) {
+            loginGotoReset.addEventListener('click', () => {
+                authTabs.forEach(t => t.classList.remove('active'));
+                const resetTab = document.querySelector('.auth-tab[data-tab="reset"]');
+                if (resetTab) resetTab.classList.add('active');
+                document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
+                if (resetForm) resetForm.classList.add('active');
+            });
+        }
+
+        if (resetSendBtn) {
+            resetSendBtn.addEventListener('click', async () => {
+                const emailEl = document.getElementById('reset-email');
+                const email = emailEl ? emailEl.value.trim() : '';
+                if (!email) {
+                    this.showNotification('Введите email', 'warning');
+                    return;
+                }
+                try {
+                    await this.requestPasswordReset(email);
+                    this.showNotification('Если адрес допустим, код будет отправлен на почту.', 'info');
+                } catch (err) {
+                    this.showNotification(err.message || 'Ошибка отправки', 'error');
+                }
+            });
+        }
+
+        if (resetForm) {
+            resetForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('reset-email').value.trim();
+                const code = document.getElementById('reset-code').value.trim();
+                const pw = document.getElementById('reset-new-password').value;
+                const pw2 = document.getElementById('reset-new-password2').value;
+                if (!email || !code || !pw) {
+                    this.showNotification('Заполните email, код и новый пароль', 'warning');
+                    return;
+                }
+                if (code.length !== 6 || !/^\d{6}$/.test(code)) {
+                    this.showNotification('Код — 6 цифр из письма', 'warning');
+                    return;
+                }
+                if (pw.length < 6) {
+                    this.showNotification('Пароль не короче 6 символов', 'warning');
+                    return;
+                }
+                if (pw !== pw2) {
+                    this.showNotification('Пароли не совпадают', 'warning');
+                    return;
+                }
+                try {
+                    await this.confirmPasswordReset(email, code, pw);
+                    this.hideModal('auth-modal');
+                    this.showNotification('Пароль обновлён. Войдите с новым паролем.', 'success');
+                    const loginTab = document.querySelector('.auth-tab[data-tab="login"]');
+                    if (loginTab) {
+                        authTabs.forEach(t => t.classList.remove('active'));
+                        loginTab.classList.add('active');
+                        document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
+                        if (loginForm) loginForm.classList.add('active');
+                    }
+                    const le = document.getElementById('login-email');
+                    const lp = document.getElementById('login-password');
+                    if (le) le.value = email;
+                    if (lp) lp.value = '';
+                    document.getElementById('reset-code').value = '';
+                    document.getElementById('reset-new-password').value = '';
+                    document.getElementById('reset-new-password2').value = '';
+                } catch (err) {
+                    this.showNotification(err.message || 'Неверный или просроченный код', 'error');
                 }
             });
         }
