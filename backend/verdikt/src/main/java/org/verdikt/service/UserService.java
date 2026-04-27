@@ -205,11 +205,15 @@ public class UserService {
     }
 
     /**
-     * Смена плана подписки пользователя (для себя — /api/users/me/subscription).
-     * Ограничение частоты вызовов (защита от брутфорса): RateLimitService.trySubscriptionChange.
+     * Смена плана для себя — /api/users/me/subscription. Платные тарифы (lite/pro/ultimate) выдаёт только админ;
+     * пользователь может запросить только free (например, отказ от прежнего плана, если бизнес-логика позволит).
      */
     @Transactional
     public UserResponse updateSubscription(Long userId, SetSubscriptionRequest request) {
+        if (request.getSubscription() == null || !"free".equalsIgnoreCase(request.getSubscription().trim())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Платные тарифы (Lite, Pro, Ultimate) назначаются только администратором. Укажите free или обратитесь в поддержку.");
+        }
         RateLimitService.Result limit = rateLimitService.trySubscriptionChange(userId);
         if (!limit.allowed()) {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
@@ -217,7 +221,7 @@ public class UserService {
         }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь не найден"));
-        user.setSubscription(request.getSubscription());
+        user.setSubscription("free");
         user = userRepository.save(user);
         return UserResponse.from(user);
     }
@@ -228,12 +232,18 @@ public class UserService {
     private static final int LIMIT_ULTIMATE = 300;
 
     private int getUsageLimit(String subscription) {
-        if (subscription == null) return LIMIT_FREE;
+        if (subscription == null) {
+            return LIMIT_FREE;
+        }
         switch (subscription.trim().toLowerCase()) {
-            case "lite": return LIMIT_LITE;
-            case "pro": return LIMIT_PRO;
-            case "ultimate": return LIMIT_ULTIMATE;
-            default: return LIMIT_FREE;
+            case "lite":
+                return LIMIT_LITE;
+            case "pro":
+                return LIMIT_PRO;
+            case "ultimate":
+                return LIMIT_ULTIMATE;
+            default:
+                return LIMIT_FREE;
         }
     }
 

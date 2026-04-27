@@ -96,8 +96,9 @@ public class UserController {
     }
 
     /**
-     * PATCH /api/users/me/subscription — смена плана подписки текущего пользователя (без оплаты).
-     * Защита от replay: ReplayProtectionFilter требует заголовки X-Nonce и X-Timestamp.
+     * PATCH /api/users/me/subscription — только переход на {@code free}.
+     * Lite/Pro/Ultimate задаётся через {@code PATCH /api/admin/users/{id}/subscription}.
+     * Защита от replay: ReplayProtectionFilter (X-Nonce, X-Timestamp).
      */
     @PatchMapping("/me/subscription")
     public ResponseEntity<UserResponse> updateMySubscription(

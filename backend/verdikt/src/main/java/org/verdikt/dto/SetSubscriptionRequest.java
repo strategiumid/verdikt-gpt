@@ -5,7 +5,8 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 /**
- * Тело запроса PATCH /api/admin/users/{id}/subscription.
+ * Тело запроса PATCH /api/admin/users/{id}/subscription (free, lite, pro, ultimate).
+ * PATCH /api/users/me/subscription принимает только free (платные тарифы — через админку, см. UserService.updateSubscription).
  */
 public class SetSubscriptionRequest {
 
