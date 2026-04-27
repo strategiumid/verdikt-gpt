@@ -119,7 +119,7 @@ public class EmailVerificationService {
         repository.save(entity);
 
         String idempotencyKey = "email-verification:" + p + ":" + email + ":" + UUID.randomUUID();
-        emailSender.sendVerificationCode(email, code, idempotencyKey);
+        emailSender.sendVerificationCode(email, code, idempotencyKey, p);
     }
 
     @Transactional

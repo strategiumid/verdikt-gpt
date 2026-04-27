@@ -24,19 +24,33 @@ public class ResendEmailSender implements EmailSender {
     private final RestTemplate restTemplate = new RestTemplate();
 
     @Override
-    public void sendVerificationCode(String toEmail, String code, String idempotencyKey) {
+    public void sendVerificationCode(String toEmail, String code, String idempotencyKey, String purpose) {
         if (apiKey == null || apiKey.isBlank()) {
             return;
         }
-        String html = """
-            <div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5">
-              <h2>Подтверждение email</h2>
-              <p>Ваш код подтверждения:</p>
-              <div style="font-size:28px;font-weight:bold;letter-spacing:4px;">%s</div>
-              <p>Код действует 5 минут.</p>
-              <p>Если это были не вы, просто проигнорируйте письмо.</p>
-            </div>
-            """.formatted(code);
+        boolean reset = purpose != null && purpose.equalsIgnoreCase("reset_password");
+        String subject = reset ? "Сброс пароля — код" : "Код подтверждения";
+        String html;
+        if (reset) {
+            html = """
+                <div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5">
+                  <h2>Сброс пароля</h2>
+                  <p>Вы запросили смену пароля. Ваш код:</p>
+                  <div style="font-size:28px;font-weight:bold;letter-spacing:4px;">%s</div>
+                  <p>Код действует 5 минут. Если вы не запрашивали сброс, проигнорируйте письмо.</p>
+                </div>
+                """.formatted(code);
+        } else {
+            html = """
+                <div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5">
+                  <h2>Подтверждение email</h2>
+                  <p>Ваш код подтверждения:</p>
+                  <div style="font-size:28px;font-weight:bold;letter-spacing:4px;">%s</div>
+                  <p>Код действует 5 минут.</p>
+                  <p>Если это были не вы, просто проигнорируйте письмо.</p>
+                </div>
+                """.formatted(code);
+        }
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -46,7 +60,7 @@ public class ResendEmailSender implements EmailSender {
         Map<String, Object> body = Map.of(
                 "from", from,
                 "to", List.of(toEmail),
-                "subject", "Код подтверждения",
+                "subject", subject,
                 "html", html
         );
         HttpEntity<Map<String, Object>> req = new HttpEntity<>(body, headers);
