@@ -3190,6 +3190,21 @@
         </div>
         
         <div class="main-content">
+            <!-- Подтверждение email: видно, пока пользователь вошёл, но email не подтверждён -->
+            <div class="email-verification-banner" id="email-verification-banner" style="display: none;" role="alert" aria-live="polite">
+                <div class="email-verification-inner">
+                    <i class="fas fa-envelope-circle-check" aria-hidden="true"></i>
+                    <div class="email-verification-copy">
+                        <strong>Подтвердите email</strong>
+                        <p id="email-verification-hint" class="email-verification-hint">Мы отправили 6-значный код на <span id="email-verification-target"></span>. Введите его ниже, чтобы пользоваться чатом и API.</p>
+                    </div>
+                    <div class="email-verification-controls">
+                        <input type="text" id="email-verification-code" maxlength="6" inputmode="numeric" pattern="[0-9]*" class="email-verification-code-input" placeholder="000000" autocomplete="one-time-code" aria-label="Код из письма">
+                        <button type="button" class="ios-button small" id="email-verification-submit">Подтвердить</button>
+                        <button type="button" class="ios-button small secondary" id="email-verification-resend">Отправить код снова</button>
+                    </div>
+                </div>
+            </div>
             <!-- Эффект загрузки API -->
             <div class="api-loading-overlay" id="api-loading-overlay">
                 <div class="api-loading-content">
