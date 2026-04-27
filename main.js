@@ -490,7 +490,8 @@ export class VerdiktChatApp {
         
         this.startAutoSave();
 
-        this.setupSubscriptionModal();
+        // SINGLE TARIFF: выбор плана отложен — см. setupSubscriptionModal / subscription-modal в index.html
+        // this.setupSubscriptionModal();
 
         if (window.VERDIKT_DEBUG) {
             console.log('✅ Verdikt GPT инициализирован');
@@ -1846,12 +1847,14 @@ export class VerdiktChatApp {
             });
         }
 
+        /* SINGLE TARIFF: пункт «План подписок» в сайдбаре закомментирован в index.html
         if (this.elements.navSubscription) {
             this.elements.navSubscription.addEventListener('click', () => {
                 this.showSubscriptionModal();
                 this.hideSidebar();
             });
         }
+        */
 
         if (this.elements.navPrivacy) {
             this.elements.navPrivacy.addEventListener('click', (e) => {
@@ -2106,19 +2109,8 @@ export class VerdiktChatApp {
     }
 
     updateSubscriptionModalState() {
-    const modal = document.getElementById('subscription-modal');
-    if (!modal) return;
-    const current = this.state.user ? (this.state.user.subscription || 'free').toLowerCase() : null;
-    modal.querySelectorAll('.subscription-card').forEach(card => {
-        const plan = (card.getAttribute('data-plan') || '').toLowerCase();
-        const btn = card.querySelector('.subscription-plan-btn');
-        if (!btn) return;
-        const isCurrent = current !== null && plan === current;
-        btn.textContent = isCurrent ? 'Текущий план' : 'Выбрать';
-        btn.classList.toggle('secondary', isCurrent);
-        btn.disabled = isCurrent;
-    });
-}
+        // SINGLE TARIFF: #subscription-modal убран из index.html; старое обновление кнопок планов — в истории git
+    }
 
     setupDashboard() {
         this.elements.dashboardTabs = document.querySelectorAll('.dashboard-tab');
@@ -2350,22 +2342,11 @@ export class VerdiktChatApp {
             });
         });
         
+        /* SINGLE TARIFF: карточки выбора подписки в профиле убраны из разметки
         const subscriptionCards = document.querySelectorAll('.subscription-card-profile');
         const subscriptionButtons = document.querySelectorAll('.subscription-select-btn');
-        
-        subscriptionButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const subscription = btn.dataset.subscription;
-                subscriptionCards.forEach(card => card.classList.remove('active'));
-                const card = document.querySelector(`.subscription-card-profile[data-subscription="${subscription}"]`);
-                if (card) {
-                    card.classList.add('active');
-                    localStorage.setItem('verdikt_user_subscription', subscription);
-                    this.showNotification(`Подписка изменена на ${subscription.toUpperCase()}`, 'success');
-                }
-            });
-        });
+        subscriptionButtons.forEach(btn => { ... });
+        */
         
         const profilePromoInput = document.getElementById('profile-promo-input');
         const profilePromoApply = document.getElementById('profile-promo-apply');
@@ -2591,11 +2572,7 @@ export class VerdiktChatApp {
             }
         });
         
-        const currentSubscription = localStorage.getItem('verdikt_user_subscription') || 'free';
-        const subscriptionCard = document.querySelector(`.subscription-card-profile[data-subscription="${currentSubscription}"]`);
-        if (subscriptionCard) {
-            subscriptionCard.classList.add('active');
-        }
+        // SINGLE TARIFF: localStorage 'verdikt_user_subscription' больше не используется для UI
         
         const currentAIMode = localStorage.getItem('verdikt_ai_mode') || this.state.currentMode || 'balanced';
         const modeItems = document.querySelectorAll('.mode-item-settings');
@@ -2646,6 +2623,9 @@ export class VerdiktChatApp {
     }
 
     getActiveSubscription() {
+        if (this.state.user && this.state.user.subscription) {
+            return String(this.state.user.subscription).toLowerCase();
+        }
         try {
             return (localStorage.getItem('verdikt_user_subscription') || 'free').toLowerCase();
         } catch (_) {
@@ -2654,8 +2634,9 @@ export class VerdiktChatApp {
     }
 
     getSubscriptionDisplayName(key) {
+        const k = (key || 'free').toLowerCase();
         const names = { free: 'Verdikt-GPT FREE', lite: 'Verdikt-GPT Lite', pro: 'Verdikt-GPT Pro', ultimate: 'Verdikt-GPT Ultimate' };
-        return names[key] || names.free;
+        return names[k] || names.free;
     }
 
     updateProfileSubscriptionDisplay() {
@@ -3127,11 +3108,13 @@ export class VerdiktChatApp {
             });
         });
 
+        /* SINGLE TARIFF: #subscription-close удалён вместе с модалкой
         if (this.elements.subscriptionClose) {
             this.elements.subscriptionClose.addEventListener('click', () => {
                 this.hideModal('subscription-modal');
             });
         }
+        */
     }
 
     /** Сжимает изображение для уменьшения использования памяти (max 1024px, JPEG quality 0.82). */
@@ -7036,7 +7019,7 @@ export class VerdiktChatApp {
                             <label style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.05);">
                                 <i class="fas fa-gem" style="opacity: 0.8;"></i>
                                 <span style="font-size: 0.85rem; color: var(--text-secondary);">Подписка</span>
-                                <select data-action="user-subscription" data-user-id="${user.id}" style="background: transparent; color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 8px;">
+                                <select data-action="user-subscription" data-user-id="${user.id}" title="Платные тарифы только через админку" style="background: transparent; color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 8px;">
                                     <option value="free" ${sub === 'free' ? 'selected' : ''}>FREE</option>
                                     <option value="lite" ${sub === 'lite' ? 'selected' : ''}>LITE</option>
                                     <option value="pro" ${sub === 'pro' ? 'selected' : ''}>PRO</option>
@@ -7827,52 +7810,12 @@ export class VerdiktChatApp {
     }
 
     showSubscriptionModal() {
-    this.showModal('subscription-modal');
-    this.updateSubscriptionModalState();
-}
+        // SINGLE TARIFF: выбор плана отключён (модалка закомментирована в index.html)
+    }
 
     setupSubscriptionModal() {
-    const modal = document.getElementById('subscription-modal');
-    if (!modal) return;
-    modal.querySelectorAll('.subscription-plan-btn').forEach(btn => {
-        if (btn._subscriptionBound) return;
-        btn._subscriptionBound = true;
-        btn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            const plan = (btn.getAttribute('data-plan') || 'free').toLowerCase();
-            const current = (this.state.user?.subscription || 'free').toLowerCase();
-            if (plan === current) return;
-            if (!this.state.user) {
-                this.showNotification('Войдите в аккаунт, чтобы сменить план', 'warning');
-                return;
-            }
-            const baseUrl = (this.AUTH_CONFIG.baseUrl || window.location.origin).replace(/\/$/, '');
-            try {
-                const response = await fetch(`${baseUrl}/api/users/me/subscription`, {
-                    method: 'PATCH',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json', ...this.getReplayHeaders() },
-                    body: JSON.stringify({ subscription: plan })
-                });
-                if (!response.ok) {
-                    const err = await response.json().catch(() => ({}));
-                    this.showNotification(err.message || 'Не удалось сменить план', 'error');
-                    return;
-                }
-                const user = await response.json();
-                this.state.user = user;
-                this.authService.saveUserToStorage();
-                this.updateSubscriptionModalState();
-                this.updateSidebarInfo();
-                const labels = { free: 'FREE', lite: 'Lite', pro: 'Pro', ultimate: 'Ultimate' };
-                this.showNotification(`План изменён на ${labels[plan] || plan}`, 'success');
-                this.hideModal('subscription-modal');
-            } catch (e) {
-                this.showNotification('Ошибка запроса', 'error');
-            }
-        });
-    });
-}
+        // SINGLE TARIFF: раньше — обработчики .subscription-plan-btn и PATCH /api/users/me/subscription; см. git history
+    }
     
     toggleShareMenu(messageId) {
         const messageElement = document.getElementById(messageId);
