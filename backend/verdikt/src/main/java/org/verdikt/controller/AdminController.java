@@ -1,6 +1,7 @@
 package org.verdikt.controller;
 
 import org.verdikt.dto.AnalyticsResponse;
+import org.verdikt.dto.AdminChatResponse;
 import org.verdikt.dto.AdminPushBroadcastRequest;
 import org.verdikt.dto.PushSendRequest;
 import org.verdikt.dto.QuestionResponse;
@@ -56,10 +57,35 @@ public class AdminController {
     @GetMapping("/users")
     public ResponseEntity<Page<UserResponse>> listUsers(
             @AuthenticationPrincipal User user,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) String subscription,
+            @RequestParam(required = false) Boolean banned,
+            @RequestParam(required = false) Boolean deleted,
+            @RequestParam(required = false) Boolean emailVerified,
             @PageableDefault(size = 20) Pageable pageable
     ) {
         if (!isAdmin(user)) return forbidden();
-        return ResponseEntity.ok(adminService.listUsers(pageable));
+        return ResponseEntity.ok(adminService.listUsers(
+                pageable, search, role, subscription, banned, deleted, emailVerified
+        ));
+    }
+
+    @GetMapping("/users/{id}/chats")
+    public ResponseEntity<Page<AdminChatResponse>> listUserChats(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Boolean isPrivate,
+            @RequestParam(required = false) Boolean deleted,
+            @RequestParam(defaultValue = "updatedAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @PageableDefault(size = 20) Pageable pageable
+    ) {
+        if (!isAdmin(user)) return forbidden();
+        return ResponseEntity.ok(adminService.listUserChats(
+                id, pageable, search, isPrivate, deleted, sortBy, sortDir
+        ));
     }
 
     @PatchMapping("/users/{id}/ban")
