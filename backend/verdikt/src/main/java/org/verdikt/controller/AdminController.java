@@ -2,7 +2,9 @@ package org.verdikt.controller;
 
 import org.verdikt.dto.AnalyticsResponse;
 import org.verdikt.dto.AdminChatResponse;
+import org.verdikt.dto.AdminFeedbackTotalsResponse;
 import org.verdikt.dto.AdminPushBroadcastRequest;
+import org.verdikt.dto.FeedbackResponse;
 import org.verdikt.dto.PushSendRequest;
 import org.verdikt.dto.QuestionResponse;
 import org.verdikt.dto.SetRoleRequest;
@@ -19,9 +21,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import java.time.Instant;
 
 /**
  * Эндпоинты админ-панели. Доступ только для пользователей с ролью ADMIN.
@@ -166,6 +170,32 @@ public class AdminController {
     ) {
         if (!isAdmin(user)) return forbidden();
         return ResponseEntity.ok(feedbackService.getAllAnalyticsForAdmin(limit));
+    }
+
+    @GetMapping("/feedback")
+    public ResponseEntity<Page<FeedbackResponse>> listFeedback(
+            @AuthenticationPrincipal User user,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) Integer rating,
+            @RequestParam(required = false) String topic,
+            @RequestParam(required = false) String chatId,
+            @RequestParam(required = false) String messageId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            @PageableDefault(size = 20, sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable
+    ) {
+        if (!isAdmin(user)) return forbidden();
+        return ResponseEntity.ok(feedbackService.listFeedbackForAdmin(
+                pageable, search, userId, rating, topic, chatId, messageId, from, to
+        ));
+    }
+
+    @GetMapping("/feedback/analytics/v2")
+    public ResponseEntity<AdminFeedbackTotalsResponse> getFeedbackAnalyticsV2(
+            @AuthenticationPrincipal User user) {
+        if (!isAdmin(user)) return forbidden();
+        return ResponseEntity.ok(feedbackService.getAllAnalyticsForAdminV2());
     }
 
     /** Send push to all active devices of one user (admin only). */
