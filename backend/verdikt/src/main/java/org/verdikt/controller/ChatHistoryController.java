@@ -1,5 +1,11 @@
 package org.verdikt.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.verdikt.dto.ChatMessagesPageResponse;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -39,12 +45,28 @@ public class ChatHistoryController {
      * Пагинированный список сообщений чата. Доступ только у владельца чата или админа.
      * Админ может передать query-параметр userId, чтобы получить сообщения чата другого пользователя.
      */
+    @Operation(
+            summary = "Получить сообщения чата",
+            description = "Возвращает сообщения чата с пагинацией. "
+                    + "Обычный пользователь может читать только свои чаты. "
+                    + "Администратор может читать чат любого пользователя, передав query-параметр userId."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Сообщения успешно получены",
+                    content = @Content(schema = @Schema(implementation = ChatMessagesPageResponse.class))),
+            @ApiResponse(responseCode = "403", description = "Недостаточно прав"),
+            @ApiResponse(responseCode = "404", description = "Чат не найден")
+    })
     @GetMapping("/{chatId}/messages")
     public ChatMessagesPageResponse getMessages(
             @AuthenticationPrincipal User user,
+            @Parameter(description = "Идентификатор чата (chatKey)", example = "chat_12345")
             @PathVariable String chatId,
+            @Parameter(description = "ID пользователя-владельца чата. Используется администратором для доступа к чужому чату.", example = "42")
             @RequestParam(required = false) Long userId,
+            @Parameter(description = "Номер страницы (с 0)", example = "0")
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Размер страницы (1..100)", example = "20")
             @RequestParam(defaultValue = "20") int size
     ) {
         if (size < 1) size = 1;

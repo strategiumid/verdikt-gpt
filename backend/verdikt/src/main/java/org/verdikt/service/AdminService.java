@@ -9,6 +9,7 @@ import org.verdikt.dto.SetSubscriptionRequest;
 import org.verdikt.dto.UserResponse;
 import org.verdikt.entity.Chat;
 import org.verdikt.entity.User;
+import org.verdikt.repository.ChatMessageRepository;
 import org.verdikt.repository.ChatRepository;
 import org.verdikt.repository.UserRepository;
 import org.springframework.data.domain.Page;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -28,15 +30,18 @@ public class AdminService {
 
     private final UserRepository userRepository;
     private final ChatRepository chatRepository;
+    private final ChatMessageRepository chatMessageRepository;
     private final QuestionService questionService;
     private final ObjectMapper objectMapper;
 
     public AdminService(UserRepository userRepository,
                         ChatRepository chatRepository,
+                        ChatMessageRepository chatMessageRepository,
                         QuestionService questionService,
                         ObjectMapper objectMapper) {
         this.userRepository = userRepository;
         this.chatRepository = chatRepository;
+        this.chatMessageRepository = chatMessageRepository;
         this.questionService = questionService;
         this.objectMapper = objectMapper;
     }
@@ -162,7 +167,24 @@ public class AdminService {
         }
 
         return chatRepository.findAll(spec, effectivePageable)
-                .map(chat -> AdminChatResponse.from(chat, extractTitle(chat.getPayloadJson())));
+                .map(chat -> AdminChatResponse.from(chat, resolveTitle(chat)));
+    }
+
+    private String resolveTitle(Chat chat) {
+        try {
+            String firstUserMessageTitle = chatMessageRepository
+                    .findFirstByChatAndRoleOrderByCreatedAtAsc(chat, "user")
+                    .map(m -> m.getContent() == null ? null : m.getContent().trim())
+                    .filter(s -> s != null && !s.isBlank())
+                    .map(this::truncateTitle)
+                    .orElse(null);
+            if (firstUserMessageTitle != null) {
+                return firstUserMessageTitle;
+            }
+        } catch (Exception ignored) {
+            // Fallback to payload/default title when DB lookup fails.
+        }
+        return extractTitle(chat.getPayloadJson());
     }
 
     private Pageable withSafeSorting(Pageable pageable, String sortBy, String sortDir) {
@@ -186,6 +208,10 @@ public class AdminService {
         }
         try {
             Map<String, Object> map = objectMapper.readValue(payloadJson, new TypeReference<Map<String, Object>>() {});
+            String firstMessageTitle = extractTitleFromMessages(map.get("messages"));
+            if (firstMessageTitle != null) {
+                return firstMessageTitle;
+            }
             Object title = map.get("title");
             if (title instanceof String s && !s.isBlank()) {
                 return s.trim();
@@ -194,6 +220,57 @@ public class AdminService {
             // Ignore malformed payload and fallback to default title.
         }
         return "Чат";
+    }
+
+    private String extractTitleFromMessages(Object messagesObj) {
+        if (!(messagesObj instanceof List<?> messages) || messages.isEmpty()) {
+            return null;
+        }
+
+        for (Object messageObj : messages) {
+            if (!(messageObj instanceof Map<?, ?> messageMap)) {
+                continue;
+            }
+            Object roleObj = messageMap.get("role");
+            if (!(roleObj instanceof String role) || !"user".equalsIgnoreCase(role.trim())) {
+                continue;
+            }
+            String content = extractMessageContent(messageMap.get("content"));
+            if (content != null) {
+                return content;
+            }
+        }
+
+        for (Object messageObj : messages) {
+            if (!(messageObj instanceof Map<?, ?> messageMap)) {
+                continue;
+            }
+            String content = extractMessageContent(messageMap.get("content"));
+            if (content != null) {
+                return content;
+            }
+        }
+
+        return null;
+    }
+
+    private String extractMessageContent(Object contentObj) {
+        if (contentObj instanceof String s && !s.isBlank()) {
+            return s.trim();
+        }
+        return null;
+    }
+
+    private String truncateTitle(String title) {
+        if (title == null) {
+            return null;
+        }
+        String trimmed = title.trim();
+        int max = 120;
+        if (trimmed.length() <= max) {
+            return trimmed;
+        }
+        return trimmed.substring(0, max - 1) + "…";
     }
 
     @Transactional
