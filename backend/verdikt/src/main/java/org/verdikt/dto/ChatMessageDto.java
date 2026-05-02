@@ -19,6 +19,10 @@ public class ChatMessageDto {
     private List<String> imageIds;
     /** JSON ответа LLM query rewriter для RAG (режимы auto/reasoner, не первый ход). */
     private String ragRetrievalRewriteJson;
+    /** RAG-запросы, сгенерированные rewriter для user-сообщения (только для admin). */
+    private List<String> ragRewriteQueries;
+    /** Факты памяти, переданные в rewriter для генерации запросов (только для admin). */
+    private List<String> ragRewriteFacts;
     private Instant createdAt;
 
     public ChatMessageDto() {
@@ -83,6 +87,22 @@ public class ChatMessageDto {
 
     public void setRagRetrievalRewriteJson(String ragRetrievalRewriteJson) {
         this.ragRetrievalRewriteJson = ragRetrievalRewriteJson;
+    }
+
+    public List<String> getRagRewriteQueries() {
+        return ragRewriteQueries;
+    }
+
+    public void setRagRewriteQueries(List<String> ragRewriteQueries) {
+        this.ragRewriteQueries = ragRewriteQueries;
+    }
+
+    public List<String> getRagRewriteFacts() {
+        return ragRewriteFacts;
+    }
+
+    public void setRagRewriteFacts(List<String> ragRewriteFacts) {
+        this.ragRewriteFacts = ragRewriteFacts;
     }
 
     public Instant getCreatedAt() {

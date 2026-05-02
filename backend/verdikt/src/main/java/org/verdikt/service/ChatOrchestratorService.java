@@ -205,6 +205,7 @@ public class ChatOrchestratorService {
         String ragQueryForRetrieval = message;
         String rewriterJson = null;
         List<String> ragQueriesFromRewriter = null;
+        List<String> usedFactsForRewrite = null;
         String ragRewriterPlanType = null;
 
         // С картинками эффективный тип — reasoner, rewriter не вызывается (multimodal RAG).
@@ -216,6 +217,7 @@ public class ChatOrchestratorService {
                         List.of(),
                         "",
                         "");
+                usedFactsForRewrite = List.of();
                 ragRewriterPlanType = rr.planType();
                 rewriterJson = rr.rawJson();
                 List<String> qs = rr.queries();
@@ -233,6 +235,10 @@ public class ChatOrchestratorService {
         ChatCompletionsRequest request = newCompletionsRequest(chatKey, message, message, ragQueryForRetrieval);
         if (ragQueriesFromRewriter != null) {
             request.setRagQueries(ragQueriesFromRewriter);
+            request.setRagRewriteQueriesUsed(ragQueriesFromRewriter);
+        }
+        if (usedFactsForRewrite != null) {
+            request.setRagRewriteFactsUsed(usedFactsForRewrite);
         }
         if (!hasImages && mt.usesLlmRagQueryRewriter() && rewriterJson != null && !rewriterJson.isBlank()) {
             request.setRagRetrievalRewriteJson(rewriterJson);
@@ -261,6 +267,7 @@ public class ChatOrchestratorService {
         String ragQueryForRetrieval;
         String rewriterJson = null;
         List<String> ragQueriesFromRewriter = null;
+        List<String> usedFactsForRewrite = null;
         String ragRewriterPlanType = null;
 
         if (hasImages) {
@@ -268,12 +275,26 @@ public class ChatOrchestratorService {
             ragQueryForRetrieval = message;
             effectiveRewrite = message;
         } else if (mt == VerdiktModelType.VERDIKT_CHAT) {
+            usedFactsForRewrite = topic.getFactsFromUser() != null ? topic.getFactsFromUser() : List.of();
             String rewrite = rewriteService.rewrite(topic, message);
             effectiveRewrite = (rewrite != null && !rewrite.isBlank()) ? rewrite : message;
             ragQueryForRetrieval = effectiveRewrite;
+            if (effectiveRewrite != null && !effectiveRewrite.isBlank()) {
+                ragQueriesFromRewriter = List.of(effectiveRewrite);
+                try {
+                    Map<String, Object> payload = new HashMap<>();
+                    payload.put("type", "single");
+                    payload.put("reason", message);
+                    payload.put("queries", ragQueriesFromRewriter);
+                    rewriterJson = objectMapper.writeValueAsString(payload);
+                } catch (Exception ignored) {
+                    rewriterJson = null;
+                }
+            }
         } else if (mt.usesLlmRagQueryRewriter()) {
             try {
                 List<String> memFacts = topic.getFactsFromUser() != null ? topic.getFactsFromUser() : List.of();
+                usedFactsForRewrite = memFacts;
                 RagQueryRewriteService.RagRewriteResult rr = ragQueryRewriteService.rewriteUserMessage(
                         message,
                         memFacts,
@@ -304,8 +325,12 @@ public class ChatOrchestratorService {
         ChatCompletionsRequest request = newCompletionsRequest(chatKey, message, contextForLlm, ragQueryForRetrieval);
         if (ragQueriesFromRewriter != null) {
             request.setRagQueries(ragQueriesFromRewriter);
+            request.setRagRewriteQueriesUsed(ragQueriesFromRewriter);
         }
-        if (!hasImages && mt.usesLlmRagQueryRewriter() && rewriterJson != null && !rewriterJson.isBlank()) {
+        if (usedFactsForRewrite != null) {
+            request.setRagRewriteFactsUsed(usedFactsForRewrite);
+        }
+        if (!hasImages && rewriterJson != null && !rewriterJson.isBlank()) {
             request.setRagRetrievalRewriteJson(rewriterJson);
         }
         request.setVerdiktModelType(mt);

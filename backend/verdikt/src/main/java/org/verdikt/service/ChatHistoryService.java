@@ -200,6 +200,16 @@ public class ChatHistoryService {
             if (ragRewrite != null && !ragRewrite.isBlank()) {
                 userMsg.setRagRetrievalRewriteJson(ragRewrite);
             }
+            if (completionRequest != null) {
+                String ragRewriteQueriesJson = toJsonArrayOrNull(completionRequest.getRagRewriteQueriesUsed());
+                if (ragRewriteQueriesJson != null) {
+                    userMsg.setRagRewriteQueriesJson(ragRewriteQueriesJson);
+                }
+                String ragRewriteFactsJson = toJsonArrayOrNull(completionRequest.getRagRewriteFactsUsed());
+                if (ragRewriteFactsJson != null) {
+                    userMsg.setRagRewriteFactsJson(ragRewriteFactsJson);
+                }
+            }
             chatMessageRepository.save(userMsg);
         }
 
@@ -372,7 +382,7 @@ public class ChatHistoryService {
         Page<ChatMessage> page = chatMessageRepository.findByChatOrderByCreatedAtAsc(chat, pageable);
         Map<String, FeedbackResponse> feedbackByMessageId = loadLatestFeedbackForAssistantMessages(ownerId, chatId, page.getContent());
         List<ChatMessageDto> content = page.getContent().stream()
-                .map(m -> toMessageDto(m, feedbackForMessage(m, feedbackByMessageId)))
+                .map(m -> toMessageDto(m, feedbackForMessage(m, feedbackByMessageId), isAdmin))
                 .collect(Collectors.toList());
         return new ChatMessagesPageResponse(
                 content,
@@ -420,7 +430,7 @@ public class ChatHistoryService {
         return out;
     }
 
-    private ChatMessageDto toMessageDto(ChatMessage m, FeedbackResponse feedback) {
+    private ChatMessageDto toMessageDto(ChatMessage m, FeedbackResponse feedback, boolean includeAdminOnlyFields) {
         ChatMessageDto dto = new ChatMessageDto(m.getRole(), m.getContent());
         dto.setId(m.getId());
         dto.setCreatedAt(m.getCreatedAt());
@@ -443,7 +453,48 @@ public class ChatHistoryService {
         if (m.getRagRetrievalRewriteJson() != null && !m.getRagRetrievalRewriteJson().isBlank()) {
             dto.setRagRetrievalRewriteJson(m.getRagRetrievalRewriteJson());
         }
+        if (includeAdminOnlyFields) {
+            dto.setRagRewriteQueries(parseStringListJson(m.getRagRewriteQueriesJson()));
+            dto.setRagRewriteFacts(parseStringListJson(m.getRagRewriteFactsJson()));
+        }
         return dto;
+    }
+
+    private String toJsonArrayOrNull(List<String> values) {
+        if (values == null || values.isEmpty()) {
+            return null;
+        }
+        List<String> cleaned = values.stream()
+                .filter(v -> v != null && !v.isBlank())
+                .map(String::trim)
+                .toList();
+        if (cleaned.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(cleaned);
+        } catch (JsonProcessingException ignored) {
+            return null;
+        }
+    }
+
+    private List<String> parseStringListJson(String json) {
+        if (json == null || json.isBlank()) {
+            return null;
+        }
+        try {
+            List<String> parsed = objectMapper.readValue(json, new TypeReference<List<String>>() {});
+            if (parsed == null || parsed.isEmpty()) {
+                return null;
+            }
+            List<String> cleaned = parsed.stream()
+                    .filter(v -> v != null && !v.isBlank())
+                    .map(String::trim)
+                    .toList();
+            return cleaned.isEmpty() ? null : cleaned;
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     @SuppressWarnings("unchecked")

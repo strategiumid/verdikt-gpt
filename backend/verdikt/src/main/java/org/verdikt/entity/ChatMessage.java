@@ -34,6 +34,14 @@ public class ChatMessage {
     @Lob
     @Column(name = "rag_retrieval_rewrite_json")
     private String ragRetrievalRewriteJson;
+    /** JSON-массив строк с запросами, сгенерированными rewriter для этого user-сообщения. */
+    @Lob
+    @Column(name = "rag_rewrite_queries_json")
+    private String ragRewriteQueriesJson;
+    /** JSON-массив фактов из памяти темы, переданных в rewriter для генерации запросов. */
+    @Lob
+    @Column(name = "rag_rewrite_facts_json")
+    private String ragRewriteFactsJson;
 
     @BatchSize(size = 32)
     @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -94,6 +102,22 @@ public class ChatMessage {
 
     public void setRagRetrievalRewriteJson(String ragRetrievalRewriteJson) {
         this.ragRetrievalRewriteJson = ragRetrievalRewriteJson;
+    }
+
+    public String getRagRewriteQueriesJson() {
+        return ragRewriteQueriesJson;
+    }
+
+    public void setRagRewriteQueriesJson(String ragRewriteQueriesJson) {
+        this.ragRewriteQueriesJson = ragRewriteQueriesJson;
+    }
+
+    public String getRagRewriteFactsJson() {
+        return ragRewriteFactsJson;
+    }
+
+    public void setRagRewriteFactsJson(String ragRewriteFactsJson) {
+        this.ragRewriteFactsJson = ragRewriteFactsJson;
     }
 
     public List<ChatMessageImage> getMessageImages() {

@@ -43,6 +43,10 @@ public class ChatCompletionsRequest {
 
     /** Сырой JSON ответа LLM query rewriter (RAG); сохраняется в user-сообщении. */
     private String ragRetrievalRewriteJson;
+    /** Нормализованные RAG-запросы, которые были сгенерированы rewriter для этого user-сообщения. */
+    private List<String> ragRewriteQueriesUsed;
+    /** Факты из памяти темы, переданные в rewriter при генерации запросов. */
+    private List<String> ragRewriteFactsUsed;
 
     /** Extra parameters to forward to the LLM API (top_p, tools, etc.). */
     private Map<String, Object> passthrough = new HashMap<>();
@@ -51,7 +55,7 @@ public class ChatCompletionsRequest {
             java.util.Set.of(
                     "model", "messages", "max_tokens", "maxTokens", "temperature", "stream",
                     "chatId", "originalUserMessage", "imageIds", "imageAnalysis", "ragQuery", "ragQueries",
-                    "verdiktModelType", "ragRetrievalRewriteJson");
+                    "verdiktModelType", "ragRetrievalRewriteJson", "ragRewriteQueriesUsed", "ragRewriteFactsUsed");
 
     public String getModel() {
         return model;
@@ -155,6 +159,22 @@ public class ChatCompletionsRequest {
 
     public void setRagRetrievalRewriteJson(String ragRetrievalRewriteJson) {
         this.ragRetrievalRewriteJson = ragRetrievalRewriteJson;
+    }
+
+    public List<String> getRagRewriteQueriesUsed() {
+        return ragRewriteQueriesUsed;
+    }
+
+    public void setRagRewriteQueriesUsed(List<String> ragRewriteQueriesUsed) {
+        this.ragRewriteQueriesUsed = ragRewriteQueriesUsed;
+    }
+
+    public List<String> getRagRewriteFactsUsed() {
+        return ragRewriteFactsUsed;
+    }
+
+    public void setRagRewriteFactsUsed(List<String> ragRewriteFactsUsed) {
+        this.ragRewriteFactsUsed = ragRewriteFactsUsed;
     }
 
     @JsonAnySetter
